@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="110" viewBox="0 0 500 110">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4B5F82" />
+      <stop offset="100%" stop-color="#1A2D56" />
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="1" dy="1" stdDeviation="1" flood-opacity="0.3" />
+    </filter>
+  </defs>
+  
+  <!-- Background curve representing a differential equation solution -->
+  <path d="M 20,85 Q 60,25 100,70 T 180,50 T 260,75 T 340,45 T 420,60 T 480,40" 
+        stroke="#E7EBF3" stroke-width="2" fill="none" />
+  
+  <!-- Library name with stylized text -->
+  <text x="250" y="65" font-family="'Fira Sans', sans-serif" font-size="40" 
+        font-weight="600" text-anchor="middle" fill="url(#gradient)" filter="url(#shadow)">
+    Differential Equations
+  </text>
+  
+  <!-- Derivative symbol -->
+  <text x="45" y="30" font-family="'Fira Math', serif" font-size="24" 
+        font-style="italic" fill="#4B5F82">
+    dy/dx
+  </text>
+  
+  <!-- Optional: Small tag line -->
+  <text x="250" y="90" font-family="'Fira Sans', sans-serif" font-size="14" 
+        text-anchor="middle" fill="#4B5F82">
+    Numerical computing in Rust
+  </text>
+</svg>

@@ -1,0 +1,42 @@
+[package]
+name = "differential-equations"
+version = "0.1.0"
+authors = ["Ryan D. Gast <ryan.d.gast@gmail.com>"]
+description = "A Rust library for solving differential equations."
+edition = "2024"
+
+documentation = "https://docs.rs/differential-equations"
+homepage = "https://github.com/Ryan-D-Gast/differential-equations"
+repository = "https://github.com/Ryan-D-Gast/differential-equations"
+readme = "README.md"
+
+keywords = ["differential", "equations", "solver", "ode", "ivp"]
+categories = ["science", "mathematics", "algorithms"]
+
+license = "Apache-2.0"
+
+include = [
+    "src/**/*",
+    "docs/**/*",
+    "examples/**/*", 
+    "assets/*",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+]
+
+[features]
+default = []
+polars = ["dep:polars"]
+
+[dependencies]
+nalgebra = "0.33.2"
+polars = { version = "0.46.0", optional = true }
+
+[dev-dependencies]
+criterion = { version = "0.5.1", features = ["html_reports"] }
+
+[[bench]]
+name = "ode"
+harness = false
+path = "benches/ode/main.rs"
