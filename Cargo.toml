@@ -40,3 +40,45 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 name = "ode"
 harness = false
 path = "benches/ode/main.rs"
+
+# Ordinary Differential Equation (ODE) examples
+[[example]]
+name = "ode_01_exponential_growth"
+path = "examples/ode/01_exponential_growth/main.rs"
+
+[[example]]
+name = "ode_02_harmonic_oscillator"
+path = "examples/ode/02_harmonic_oscillator/main.rs"
+
+[[example]]
+name = "ode_03_logistic_growth"
+path = "examples/ode/03_logistic_growth/main.rs"
+
+[[example]]
+name = "ode_04_sir_model"
+path = "examples/ode/04_sir_model/main.rs"
+
+[[example]]
+name = "ode_05_damped_pendulum"
+path = "examples/ode/05_damped_pendulum/main.rs"
+
+[[example]]
+name = "ode_06_integration"
+path = "examples/ode/06_integration/main.rs"
+
+[[example]]
+name = "ode_07_cr3bp"
+path = "examples/ode/07_cr3bp/main.rs"
+
+[[example]]
+name = "ode_08_damped_oscillator"
+path = "examples/ode/08_damped_oscillator/main.rs"
+
+[[example]]
+name = "ode_09_matrix_system"
+path = "examples/ode/09_matrix_system/main.rs"
+
+[[example]]
+name = "ode_10_custom_solout"
+path = "examples/ode/10_custom_solout/main.rs"
+
