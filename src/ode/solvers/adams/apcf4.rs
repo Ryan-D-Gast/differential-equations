@@ -87,9 +87,9 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
         // Initialize state
         self.t = t0;
-        self.y = y0.clone();
+        self.y = *y0;
         self.t_prev[0] = t0;
-        self.y_prev[0] = y0.clone();
+        self.y_prev[0] = *y0;
 
         // Old state for interpolation
         self.t_old = self.t;
@@ -150,7 +150,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         ) * (self.h / T::from_f64(24.0).unwrap());
 
         // Update state
-        self.t = self.t + self.h;
+        self.t += self.h;
         self.y = corrector;
         system.diff(self.t, &self.y, &mut self.dydt);
         self.steps += 1;

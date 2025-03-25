@@ -76,7 +76,13 @@ where
     {
         // Output the current time and state to the vectors
         t_out.push(solver.t());
-        y_out.push(solver.y().clone());
+        y_out.push(*solver.y());
+    }
+}
+
+impl Default for DefaultSolout {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -158,7 +158,7 @@ where
     /// * IVP Solver with the provided solout function ready for .solve() method.
     /// 
     pub fn solout<O: Solout<T, R, C, E>>(&self, solout: O) -> IVPSolver<'_, T, R, C, E, F, O> {
-        IVPSolver::new(&self, solout)
+        IVPSolver::new(self, solout)
     }
 
     /// Uses the an Even Solout implementation to output evenly spaced points between the initial and final time.
@@ -172,7 +172,7 @@ where
     /// 
     pub fn even(&self, dt: T) -> IVPSolver<'_, T, R, C, E, F, EvenSolout<T>> {
         let even_solout = EvenSolout::new(dt, self.t0, self.tf); // Even solout implementation
-        IVPSolver::new(&self, even_solout)
+        IVPSolver::new(self, even_solout)
     }
 
     /// Uses the Dense Output method to output n number of interpolation points between each step.
@@ -186,7 +186,7 @@ where
     /// 
     pub fn dense(&self, n: usize) -> IVPSolver<'_, T, R, C, E, F, DenseSolout> {
         let dense_solout = DenseSolout::new(n); // Dense solout implementation
-        IVPSolver::new(&self, dense_solout)
+        IVPSolver::new(self, dense_solout)
     }
 
     /// Uses the provided time points for evaluation instead of the default method.
@@ -200,7 +200,7 @@ where
     /// 
     pub fn t_eval(&self, points: Vec<T>) -> IVPSolver<'_, T, R, C, E, F, TEvalSolout<T>> {
         let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf); // Custom time evaluation solout implementation
-        IVPSolver::new(&self, t_eval_solout)
+        IVPSolver::new(self, t_eval_solout)
     }
 
     /// Uses the CrossingSolout method to output points when a specific component crosses a threshold.
@@ -216,7 +216,7 @@ where
     /// 
     pub fn crossing(&self, component_idx: usize, threshhold: T, direction: CrossingDirection) -> IVPSolver<'_, T, R, C, E, F, CrossingSolout<T>> {
         let crossing_solout = CrossingSolout::new(component_idx, threshhold).with_direction(direction); // Crossing solout implementation
-        IVPSolver::new(&self, crossing_solout)
+        IVPSolver::new(self, crossing_solout)
     }
 
     /// Uses the HyperplaneCrossingSolout method to output points when a specific hyperplane is crossed.
@@ -243,7 +243,7 @@ where
             extractor
         ).with_direction(direction);
         
-        IVPSolver::new(&self, solout)
+        IVPSolver::new(self, solout)
     }
 }
 

@@ -412,8 +412,8 @@ macro_rules! adaptive_runge_kutta_method {
                     dydt_prev: $crate::SMatrix::<T, R, C>::zeros(),
                     k,
                     a: a_t,
-                    b_higher: b_higher,         // Higher order (b)
-                    b_lower: b_lower,           // Lower order (b_hat)
+                    b_higher,         // Higher order (b)
+                    b_lower,           // Lower order (b_hat)
                     c: c_t,
                     rtol: T::from_f64(1.0e-6).unwrap(),
                     atol: T::from_f64(1.0e-6).unwrap(),

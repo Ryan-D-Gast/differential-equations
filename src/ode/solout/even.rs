@@ -96,7 +96,7 @@ where
                 // First time through, we need to include t0
                 if (t_prev - self.t0).abs() < T::default_epsilon() {
                     t_out.push(self.t0);
-                    y_out.push(solver.y_prev().clone());
+                    y_out.push(*solver.y_prev());
                     self.last_output_t = Some(self.t0);
                     self.t0 + self.dt * self.direction
                 } else {
@@ -137,13 +137,13 @@ where
             }
             
             // Move to the next point
-            ti = ti + self.dt * self.direction;
+            ti += self.dt * self.direction;
         }
         
         // Include final point if this step reaches tf and we haven't added it yet
         if t_curr == self.tf && (self.last_output_t.is_none() || self.last_output_t.unwrap() != self.tf) {
             t_out.push(self.tf);
-            y_out.push(solver.y().clone());
+            y_out.push(*solver.y());
             self.last_output_t = Some(self.tf);
         }
     }

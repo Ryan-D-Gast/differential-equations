@@ -121,13 +121,13 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
         // Initialize state
         self.t = t0;
-        self.y = y0.clone();
+        self.y = *y0;
         self.t_prev[0] = t0;
-        self.y_prev[0] = y0.clone();
+        self.y_prev[0] = *y0;
 
         // Previous saved steps
         self.t_old = t0;
-        self.y_old = y0.clone();
+        self.y_old = *y0;
 
         // Perform the first 3 steps using Runge-Kutta 4 method
         let two = T::from_f64(2.0).unwrap();
@@ -162,7 +162,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
     {        
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
-            self.status = SolverStatus::MaxSteps(self.t, self.y.clone());
+            self.status = SolverStatus::MaxSteps(self.t, self.y);
             return;
         }
 
@@ -220,7 +220,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             self.dydt_old = self.dydt;
 
             // Update state
-            self.t = self.t + self.h;
+            self.t += self.h;
             self.y = corrector;
             self.accepted_steps += 1;
 
@@ -282,7 +282,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
             // Calculate Previous Steps with new step size
             self.t_prev[0] = self.t;
-            self.y_prev[0] = self.y.clone();
+            self.y_prev[0] = self.y;
             let two = T::from_f64(2.0).unwrap();
             let six = T::from_f64(6.0).unwrap();
             for i in 1..=3 {
@@ -296,7 +296,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
                 self.y += (self.k1 + self.k2 * two + self.k3 * two + self.k4) * (self.h / six);
                 self.t += self.h;
                 self.t_prev[i] = self.t;
-                self.y_prev[i] = self.y.clone();
+                self.y_prev[i] = self.y;
                 self.evals += 4; // 4 evaluations per Runge-Kutta step
             }
         }

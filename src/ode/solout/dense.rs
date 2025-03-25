@@ -94,7 +94,7 @@ where
 
         // Save actual calculated step as well
         t_out.push(t_curr);
-        y_out.push(solver.y().clone());
+        y_out.push(*solver.y());
     }
 }
 

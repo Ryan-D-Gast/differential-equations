@@ -124,7 +124,7 @@ where
     };
 
     // Clear statistics in case it was used before and reset solver and check for errors
-    match solver.init(system, t0, tf, &y0) {
+    match solver.init(system, t0, tf, y0) {
         Ok(_) => {}
         Err(e) => return Err(e),
     }
@@ -136,7 +136,7 @@ where
     // Add initial point to output if include_t0_tf is true
     if solout.include_t0_tf() {
         t_out.push(t0);
-        y_out.push(y0.clone());
+        y_out.push(*y0);
     }
 
     // For event
@@ -144,13 +144,13 @@ where
     let mut ts: T;
 
     // Check Terminate before starting incase the initial conditions trigger it
-    match system.event(t0, &y0, solver.dydt()) {
+    match system.event(t0, y0, solver.dydt()) {
         EventAction::Continue => {}
         EventAction::Terminate(reason) => {
             return Ok(Solution {
                 y: y_out,
                 t: t_out,
-                solout: solout,
+                solout,
                 status: SolverStatus::Interrupted(reason),
                 evals: solver.evals(),
                 steps: solver.steps(),
@@ -294,7 +294,7 @@ where
                 return Ok(Solution {
                     y: y_out,
                     t: t_out,
-                    solout: solout,
+                    solout,
                     status: SolverStatus::Interrupted(reason),
                     evals: solver.evals(),
                     steps: solver.steps(),
@@ -314,13 +314,13 @@ where
             // Add final point to output if include_t0_tf is true
             if solout.include_t0_tf() && t_out.last().copied() != Some(tf) {
                 t_out.push(tf);
-                y_out.push(solver.y().clone());
+                y_out.push(*solver.y());
             }
 
             Ok(Solution {
                 y: y_out,
                 t: t_out,
-                solout: solout,
+                solout,
                 status: solver.status().clone(),
                 evals: solver.evals(),
                 steps: solver.steps(),

@@ -104,7 +104,7 @@ where
                 // If the evaluation point is exactly at the current step, just use the solver's state
                 if t_eval == t_curr {
                     t_out.push(t_eval);
-                    y_out.push(solver.y().clone());
+                    y_out.push(*solver.y());
                 } else {
                     // Otherwise interpolate
                     let y_eval = solver.interpolate(system, t_eval);
