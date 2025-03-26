@@ -216,7 +216,7 @@ where
                     let k_curr_component = solver.dydt()[self.component_idx];
                     
                     // Find crossing time using cubic Hermite interpolation
-                    if let Some(t_cross) = crate::common::interpolate::find_cubic_hermite_crossing(
+                    if let Some(t_cross) = find_cubic_hermite_crossing(
                         t_prev,
                         t_curr,
                         y_prev_component,

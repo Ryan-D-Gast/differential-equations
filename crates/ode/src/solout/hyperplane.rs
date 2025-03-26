@@ -240,7 +240,7 @@ where
                     let dist_rate_curr = vel_curr.dot(&self.normal);
                     
                     // Find the time when the distance function equals zero
-                    if let Some(t_cross) = crate::common::interpolate::find_cubic_hermite_crossing(
+                    if let Some(t_cross) = find_cubic_hermite_crossing(
                         t_prev,
                         t_curr,
                         last_distance,

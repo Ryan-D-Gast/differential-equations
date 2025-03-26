@@ -1,7 +1,7 @@
 //! Solution of IVP Problem returned by IVP::solve
 
 use crate::traits::Real;
-use crate::ode::{SolverStatus, Solout, EventData};
+use crate::{SolverStatus, Solout, EventData};
 use nalgebra::SMatrix;
 
 #[cfg(feature = "polars")]

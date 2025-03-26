@@ -1,9 +1,9 @@
 //! Adams Methods
 
 use nalgebra::SMatrix;
-use crate::ode::{Solver, SolverStatus, System, EventData};
+use crate::{Solver, SolverStatus, System, EventData};
 use crate::traits::Real;
-use crate::ode::solvers::utils::{validate_step_size_parameters, constrain_step_size};
+use crate::solvers::utils::{validate_step_size_parameters, constrain_step_size};
 
 mod apcf4;
 mod apcv4;

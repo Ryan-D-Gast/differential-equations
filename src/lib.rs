@@ -1,6 +1,6 @@
 //! # differential-equations
 //! 
-//! A comprehensive Rust library for solving various types of differential equations.
+//! A Rust library for solving various types of differential equations.
 //! 
 //! [![GitHub](https://img.shields.io/badge/GitHub-differential--equations-blue)](https://github.com/Ryan-D-Gast/differential-equations)
 //! [![Documentation](https://docs.rs/differential-equations/badge.svg)](https://docs.rs/differential-equations)
@@ -72,14 +72,7 @@
 //! limitations under the License.
 //! ```
 
-// Re-export nalgebra types
-pub use nalgebra::{SMatrix, SVector, vector, matrix};
-
-// Ordinary Differential Equations
-pub mod ode;
-
-// Traits for generic implementations
-pub mod traits;
-
-// Interpolation Functions
-pub mod common;
+// Ordinary Differential Equations (ODE) Module
+pub mod ode {
+    pub use ode::*;
+}

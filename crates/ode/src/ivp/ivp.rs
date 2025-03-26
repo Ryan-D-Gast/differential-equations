@@ -1,7 +1,7 @@
 //! Initial Value Problem Struct and Constructors
 
-use crate::ode::{System, Solout, Solution, SolverStatus, Solver, EventData};
-use crate::ode::solout::*;
+use crate::{System, Solout, Solution, SolverStatus, Solver, EventData};
+use crate::solout::*;
 use crate::traits::Real;
 use super::solve_ivp;
 use nalgebra::SMatrix;
@@ -148,7 +148,7 @@ where
     where 
         S: Solver<T, R, C, E>,
     {
-        let default_solout = crate::ode::solout::DefaultSolout::new(); // Default solout implementation
+        let default_solout = crate::solout::DefaultSolout::new(); // Default solout implementation
         solve_ivp(solver, &self.system, self.t0, self.tf, &self.y0, default_solout)
     }
 

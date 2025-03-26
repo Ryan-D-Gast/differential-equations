@@ -60,8 +60,9 @@
 //! 
 
 use nalgebra::SMatrix;
-use crate::ode::{Solver, System, EventData};
+use crate::{Solver, System, EventData};
 use crate::traits::Real;
+use crate::interpolate::find_cubic_hermite_crossing;
 
 // Solout Trait for controlling output of the solver
 mod solout;

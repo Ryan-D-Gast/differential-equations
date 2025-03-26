@@ -1,6 +1,6 @@
 //! Solve IVP function
 
-use crate::ode::{EventData, EventAction, Solution, Solver, SolverStatus, System, Solout};
+use crate::{EventData, EventAction, Solution, Solver, SolverStatus, System, Solout};
 use crate::traits::Real;
 use nalgebra::SMatrix;
 use std::time::Instant;
