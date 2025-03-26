@@ -1,33 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="500" height="110" viewBox="0 0 500 110">
   <defs>
-    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#4B5F82" />
-      <stop offset="100%" stop-color="#1A2D56" />
-    </linearGradient>
-    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
-      <feDropShadow dx="1" dy="1" stdDeviation="1" flood-opacity="0.3" />
-    </filter>
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E0E0E0" stroke-width="0.5"/>
+    </pattern>
   </defs>
   
-  <!-- Background curve representing a differential equation solution -->
-  <path d="M 20,85 Q 60,25 100,70 T 180,50 T 260,75 T 340,45 T 420,60 T 480,40" 
-        stroke="#E7EBF3" stroke-width="2" fill="none" />
+  <!-- Light blue background with grid lines -->
+  <rect x="0" y="0" width="500" height="110" fill="#F0F8FF" rx="5" ry="5" />
+  <rect x="0" y="0" width="500" height="110" fill="url(#grid)" rx="5" ry="5" />
   
-  <!-- Library name with stylized text -->
-  <text x="250" y="65" font-family="'Fira Sans', sans-serif" font-size="40" 
-        font-weight="600" text-anchor="middle" fill="url(#gradient)" filter="url(#shadow)">
+  <!-- Library name -->
+  <text x="250" y="56" font-family="'Palatino Linotype', 'Book Antiqua', 'Cambria Math', serif" font-size="42" 
+        font-weight="600" text-anchor="middle" fill="#2C5D99" letter-spacing="0.5">
     Differential Equations
   </text>
   
-  <!-- Derivative symbol -->
-  <text x="45" y="30" font-family="'Fira Math', serif" font-size="24" 
-        font-style="italic" fill="#4B5F82">
-    dy/dx
-  </text>
-  
-  <!-- Optional: Small tag line -->
-  <text x="250" y="90" font-family="'Fira Sans', sans-serif" font-size="14" 
-        text-anchor="middle" fill="#4B5F82">
-    Numerical computing in Rust
+  <!-- Rust tagline with background -->
+  <text x="250" y="85" font-family="'Palatino Linotype', 'Times New Roman', serif" font-size="14" 
+        font-weight="400" text-anchor="middle" fill="#333333">
+    Differential Equation Library for the Rust Programming Language
   </text>
 </svg>
