@@ -1,0 +1,15 @@
+[package]
+name = "rust"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+
+[dependencies]
+nalgebra = "0.33.2"
+ode = { path = "../../../../../ode" }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
