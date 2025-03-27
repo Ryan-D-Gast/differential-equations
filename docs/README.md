@@ -6,14 +6,6 @@
 
 - [Ordinary Differential Equations (ODE)](./ode/introduction.md) - Tools for solving initial value problems with various numerical methods
 
-## Planned Modules
-
-In the future, this library may include:
-- Partial Differential Equations (PDE)
-- Finite Element Method (FEM)
-- Stochastic Differential Equations (SDE)
-- Delay Differential Equations (DDE)
-
 ## Installation
 
 To use `differential-equations` in your Rust project, add it as a dependency using `cargo`:
