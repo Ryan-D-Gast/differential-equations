@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/logo.svg" width="500" alt="differential-equations">
+  <img src="./assets/logo.svg" width="1000" alt="differential-equations">
 </p>
 
 <p align="center">
