@@ -28,7 +28,7 @@
 -----
 
 <p align="center">
-<b>Differential equations solver library</b><br>
+<b>A high-performance library for numerically solving differential equations</b><br>
 <i>for the Rust programming language.</i>
 </p>
 
