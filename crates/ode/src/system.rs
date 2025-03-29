@@ -15,8 +15,7 @@ use nalgebra::SMatrix;
 /// 
 /// # Impl
 /// * `diff`        - Differential Equation dydt = f(t, y) in form f(t, &y, &mut dydt).
-/// * `termiante`   - Solout function to interupt solver when condition is met or event occurs.
-/// * `solout`      - Optional solout function to choose which points to output.
+/// * `event`   - Solout function to interupt solver when condition is met or event occurs.
 /// 
 /// Note that the solout function is optional and can be left out when implementing 
 /// in which can it will be set to return false by default.
