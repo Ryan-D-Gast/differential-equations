@@ -2,6 +2,12 @@
 
 **Legend:** `.` Minor change · `-` Bug fix · `+` New feature · `^` Improvement · `!` Breaking change · `*` Refactor
 
+## 2025-03-30 - `0.1.1`
+
+- `!` Renamed `System` trait to `ODE` for consistency with future differential equation types (e.g., `PDE`, `SDE`)
+- `*` Refactored documentation structure with modular approach to accommodate future equation types
+- `^` Improved README.md with clearer module navigation and installation instructions
+
 ## 2025-03-25 - `0.1.0`
 
 - `+` Initial release of differential-equations
