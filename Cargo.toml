@@ -81,8 +81,8 @@ name = "ode_08_damped_oscillator"
 path = "examples/ode/08_damped_oscillator/main.rs"
 
 [[example]]
-name = "ode_09_matrix_system"
-path = "examples/ode/09_matrix_system/main.rs"
+name = "ode_09_matrix_ode"
+path = "examples/ode/09_matrix_ode/main.rs"
 
 [[example]]
 name = "ode_10_custom_solout"
