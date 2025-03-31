@@ -5,7 +5,7 @@ The `ode` module provides tools for solving ordinary differential equations (ODE
 ## Table of Contents
 
 - [Solvers](#solvers)
-- [Defining a System](#defining-a-system)
+- [Defining a ODE](#defining-a-system)
 - [Solving an Initial Value Problem (IVP)](#solving-an-initial-value-problem-ivp)
 - [Examples](#examples)
 - [Notation](#notation)
@@ -39,11 +39,11 @@ The module includes a set of solvers for solving ODEs. The solver algorithmic co
 
 All solvers except `DOP853`, which has its own higher-order internal interpolation method, uses cubic Hermite interpolation method for calculating desired `t-out` values and finding `eventAction::Terminate` points.
 
-## Defining a System
+## Defining a ODE
 
-The `System` trait defines the differential equation `dydt = f(t, y)` for the solver. The differential equation is used to solve the ordinary differential equation. The trait also includes a `event` function to interrupt the solver when a condition is met or an event occurs.
+The `ODE` trait defines the differential equation `dydt = f(t, y)` for the solver. The differential equation is used to solve the ordinary differential equation. The trait also includes a `event` function to interrupt the solver when a condition is met or an event occurs.
 
-### System Trait
+### ODE Trait
 * `diff` - Differential Equation `dydt = f(t, y)` in the form `f(t, &y, &mut dydt)`.
 * `event` - Optional event function to interrupt the solver when a condition is met by returning `EventAction::Terminate(reason: EventData)`. The `event` function by default returns `EventAction::Continue` and thus is ignored. Note that `EventData` is by default a `String` but can be replaced with anything implementing `Clone + Debug`.
 
@@ -62,7 +62,7 @@ struct LogisticGrowth {
     m: f64,
 }
 
-impl System<f64, 1, 1> for LogisticGrowth {
+impl ODE<f64, 1, 1> for LogisticGrowth {
     fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
         dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
     }
@@ -77,7 +77,7 @@ impl System<f64, 1, 1> for LogisticGrowth {
 }
 ```
 
-Note that for clarity, the `System` is defined with generics `<T, R, C>` where `T` is the float type and `R, C` is the dimension of the system of ordinary differential equations. By default the generics are `f64, 1, 1` and thus can be omitted if the system is a single ODE with a `f64` type.
+Note that for clarity, the `ODE` is defined with generics `<T, R, C>` where `T` is the float type and `R, C` is the dimension of the system of ordinary differential equations. By default the generics are `f64, 1, 1` and thus can be omitted if the system is a single ODE with a `f64` type.
 
 ## Solving an Initial Value Problem (IVP)
 
@@ -89,8 +89,8 @@ fn main() {
     let y0 = vector![1.0];
     let t0 = 0.0;
     let tf = 10.0;
-    let system = LogisticGrowth { k: 1.0, m: 10.0 };
-    let logistic_growth_ivp = IVP::new(system, t0, tf, y0);
+    let ode = LogisticGrowth { k: 1.0, m: 10.0 };
+    let logistic_growth_ivp = IVP::new(ode, t0, tf, y0);
     match logistic_growth_ivp
         .even(1.0)          // uses EvenSolout to save with dt of 1.0
         .solve(&mut solver) // Solve the system and return the solution
@@ -142,7 +142,7 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 
 | Example | Description & Demonstrated Features |
 |---|---|
-| [Exponential Growth](../../examples/ode/01_exponential_growth/main.rs) | Solves a simple exponential growth equation using the `DOP853` solver. Demonstrates basic usage of `IVP` and `System` traits. Manually prints results from `Solution` struct fields. |
+| [Exponential Growth](../../examples/ode/01_exponential_growth/main.rs) | Solves a simple exponential growth equation using the `DOP853` solver. Demonstrates basic usage of `IVP` and `ODE` traits. Manually prints results from `Solution` struct fields. |
 | [Harmonic Oscillator](../../examples/ode/02_harmonic_oscillator/main.rs) | Simulates a harmonic oscillator system using `RK4` method. Uses a condensed setup to demonstrate chaining to solve without intermediate variables. Uses `last` method on solution to conveniently get results and print. |
 | [Logistic Growth](../../examples/ode/03_logistic_growth/main.rs) | Models logistic growth with a carrying capacity. Demonstrates the use of the `event` function to stop the solver based on a condition. In addition shows the use of `even` output for `IVP` setup and `iter` method on the solution for output. |
 | [SIR Model](../../examples/ode/04_sir_model/main.rs) | Simulates the SIR model for infectious diseases. Uses the `APCV4` solver to solve the system. Uses custom event termination enum. |
@@ -150,7 +150,7 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 | [Integration](../../examples/ode/06_integration/main.rs) | Demonstrates the differences between `even`, `dense`, `t_out`, and the default solout methods for a simple differential equation with an easily found analytical solution. |
 | [Cr3bp](../../examples/ode/07_cr3bp/main.rs) | Simulates the Circular Restricted Three-Body Problem (CR3BP) using the `DOP853` solver. Uses the `hyperplane_crossing` method to log when the spacecraft crosses a 3D plane. |
 | [Damped Oscillator](../../examples/ode/08_damped_oscillator/main.rs) | Demonstrates the use of the `crossing` method to use the CrossingSolout to log instances where a crossing occurs. In this case, the example saves points where the position is at zero. |
-| [Matrix System](../../examples/ode/09_matrix_system/main.rs) | Solves a system of ODEs using a matrix system. Demonstrates how to define a system of equations using matrices. |
+| [Matrix ODE](../../examples/ode/09_matrix_ode/main.rs) | Solves a system of ODEs using a matrix system. Demonstrates how to define a system of equations using matrices. |
 | [Custom Solout](../../examples/ode/10_custom_solout/main.rs) | Demonstrates how to create a custom `Solout` implementation to save points based on a custom condition. In addition inside the Solout struct additional calculations are stored and then accessed via `Solution.solout.(fields)` |
 
 ## Benchmarks

@@ -1,8 +1,8 @@
 //! Solver Trait for ODE Solvers
 
-use crate::traits::Real;
-use crate::{System, EventData};
+use crate::{ODE, EventData};
 use crate::interpolate::cubic_hermite_interpolate;
+use crate::traits::Real;
 use nalgebra::SMatrix;
 
 /// Solver Trait for ODE Solvers
@@ -28,18 +28,18 @@ where
     /// # Returns
     /// * Result<(), SolverStatus<T, R, C, E>> - Ok if initialization is successful,
     /// 
-    fn init<F>(&mut self, system: &F, t0: T, tf: T, y: &SMatrix<T, R, C>) -> Result<(), SolverStatus<T, R, C, E>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &SMatrix<T, R, C>) -> Result<(), SolverStatus<T, R, C, E>>
     where
-        F: System<T, R, C, E>;
+        F: ODE<T, R, C, E>;
 
     /// Step through solving the ODE by one step
     /// 
     /// # Arguments
     /// * `system` - System of ODEs to solve.
     /// 
-    fn step<F>(&mut self, system: &F)
+    fn step<F>(&mut self, ode: &F)
     where
-        F: System<T, R, C, E>;
+        F: ODE<T, R, C, E>;
 
     /// Interpolate solution between previous and current step
     /// 
@@ -51,9 +51,9 @@ where
     /// * Interpolated state vector at time t.
     /// 
     #[allow(unused_variables)]
-    fn interpolate<F>(&mut self, system: &F, t: T) -> SMatrix<T, R, C>
+    fn interpolate<F>(&mut self, ode: &F, t: T) -> SMatrix<T, R, C>
     where 
-        F: System<T, R, C, E> 
+        F: ODE<T, R, C, E> 
     {
         // By default use cubic hermite interpolation
         cubic_hermite_interpolate(self.t_prev(), self.t(), self.y_prev(), self.y(), self.dydt_prev(), self.dydt(), t)

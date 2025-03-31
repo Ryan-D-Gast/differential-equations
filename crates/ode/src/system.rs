@@ -6,22 +6,22 @@
 use crate::traits::Real;
 use nalgebra::SMatrix;
 
-/// System Trait for Differential Equations
+/// ODE Trait for Differential Equations
 /// 
-/// System trait defines the differential equation dydt = f(t, y) for the solver.
+/// ODE trait defines the differential equation dydt = f(t, y) for the solver.
 /// The differential equation is used to solve the ordinary differential equation.
 /// The trait also includes a solout function to interupt the solver when a condition
 /// is met or event occurs.
 /// 
 /// # Impl
-/// * `diff`        - Differential Equation dydt = f(t, y) in form f(t, &y, &mut dydt).
+/// * `diff`    - Differential Equation dydt = f(t, y) in form f(t, &y, &mut dydt).
 /// * `event`   - Solout function to interupt solver when condition is met or event occurs.
 /// 
 /// Note that the solout function is optional and can be left out when implementing 
 /// in which can it will be set to return false by default.
 /// 
 #[allow(unused_variables)]
-pub trait System<T = f64, const R: usize = 1, const C: usize = 1, E = String> 
+pub trait ODE<T = f64, const R: usize = 1, const C: usize = 1, E = String> 
 where 
     T: Real,
     E: EventData
@@ -96,11 +96,12 @@ where
     Terminate(E),
 }
 
-/// Event data type for System implementations
+/// Event data type for ODE implementations
 ///
 /// This trait represents data that can be returned from event functions
-/// in System implementations. It's designed to be flexible while ensuring
+/// in ODE implementations. It's designed to be flexible while ensuring
 /// the minimal requirements needed for event handling.
+/// 
 pub trait EventData: Clone + std::fmt::Debug {}
 
 // Implement for any type that already satisfies the bounds

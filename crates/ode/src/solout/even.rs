@@ -28,7 +28,7 @@ use super::*;
 /// // Simple harmonic oscillator
 /// struct HarmonicOscillator;
 ///
-/// impl System<f64, 2, 1> for HarmonicOscillator {
+/// impl ODE<f64, 2, 1> for HarmonicOscillator {
 ///     fn diff(&self, _t: f64, y: &Vector2<f64>, dydt: &mut Vector2<f64>) {
 ///         // y[0] = position, y[1] = velocity
 ///         dydt[0] = y[1];
@@ -78,9 +78,9 @@ where
     T: Real,
     E: EventData
 {
-    fn solout<S, F>(&mut self, solver: &mut S, system: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
+    fn solout<S, F>(&mut self, solver: &mut S, ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
     where 
-        F: System<T, R, C, E>,
+        F: ODE<T, R, C, E>,
         S: Solver<T, R, C, E>
     {
         let t_curr = solver.t();
@@ -130,7 +130,7 @@ where
             // Only output if the point falls within the current step
             if (self.direction > T::zero() && ti >= t_prev && ti <= t_curr) ||
                (self.direction < T::zero() && ti <= t_prev && ti >= t_curr) {
-                let yi = solver.interpolate(system, ti);
+                let yi = solver.interpolate(ode, ti);
                 t_out.push(ti);
                 y_out.push(yi);
                 self.last_output_t = Some(ti);

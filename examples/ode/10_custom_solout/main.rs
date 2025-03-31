@@ -2,13 +2,13 @@ use differential_equations::ode::*;
 use nalgebra::{SMatrix, SVector, vector};
 use std::f64::consts::PI;
 
-/// Pendulum system
+/// Pendulum ode
 struct Pendulum {
     g: f64,  // Gravitational constant
     l: f64,  // Length of pendulum
 }
 
-impl System<f64, 2> for Pendulum {
+impl ODE<f64, 2> for Pendulum {
     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
         // y[0] = theta (angle), y[1] = omega (angular velocity)
         dydt[0] = y[1];
@@ -59,9 +59,9 @@ impl PendulumSolout {
 }
 
 impl Solout<f64, 2, 1> for PendulumSolout {
-    fn solout<S, F>(&mut self, solver: &mut S, _system: &F, t_out: &mut Vec<f64>, y_out: &mut Vec<SMatrix<f64, 2, 1>>)
+    fn solout<S, F>(&mut self, solver: &mut S, _ode: &F, t_out: &mut Vec<f64>, y_out: &mut Vec<SMatrix<f64, 2, 1>>)
     where 
-        F: System<f64, 2, 1>,
+        F: ODE<f64, 2, 1>,
         S: Solver<f64, 2, 1>
     {
         let t = solver.t();
@@ -109,7 +109,7 @@ impl Solout<f64, 2, 1> for PendulumSolout {
 }
 
 fn main() {
-    // Create pendulum system
+    // Create pendulum ode
     let g = 9.81;
     let l = 1.0;
     let pendulum = Pendulum { g, l };

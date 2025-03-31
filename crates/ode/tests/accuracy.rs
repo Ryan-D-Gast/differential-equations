@@ -10,7 +10,7 @@ use nalgebra::vector;
 macro_rules! test_ode {
     (
         system_name: $system_name:ident,
-        system: $system:expr,
+        ode: $system:expr,
         t0: $t0:expr,
         tf: $tf:expr,
         y0: $y0:expr,
@@ -59,7 +59,7 @@ macro_rules! test_ode {
 fn accuracy() {
     test_ode! {
         system_name: exponential_growth_positive_direction,
-        system: ExponentialGrowth { k: 1.0 },
+        ode: ExponentialGrowth { k: 1.0 },
         t0: 0.0,
         tf: 10.0,
         y0: vector![1.0],
@@ -92,7 +92,7 @@ fn accuracy() {
 
     test_ode! {
         system_name: exponential_growth_negative_direction,
-        system: ExponentialGrowth { k: 1.0 },
+        ode: ExponentialGrowth { k: 1.0 },
         t0: 0.0,
         tf: -10.0,
         y0: vector![22026.46579479],
@@ -125,7 +125,7 @@ fn accuracy() {
 
     test_ode! {
         system_name: linear_equation,
-        system: LinearEquation { a: 1.0, b: 1.0 },
+        ode: LinearEquation { a: 1.0, b: 1.0 },
         t0: 0.0,
         tf: 10.0,
         y0: vector![1.0],
@@ -158,7 +158,7 @@ fn accuracy() {
 
     test_ode! {
         system_name: harmonic_oscillator,
-        system: HarmonicOscillator { k: 1.0 },
+        ode: HarmonicOscillator { k: 1.0 },
         t0: 0.0,
         tf: 10.0,
         y0: vector![1.0, 0.0],
@@ -191,7 +191,7 @@ fn accuracy() {
 
     test_ode! {
         system_name: logistic_equation,
-        system: LogisticEquation { k: 1.0, m: 10.0 },
+        ode: LogisticEquation { k: 1.0, m: 10.0 },
         t0: 0.0,
         tf: 10.0,
         y0: vector![0.1],

@@ -6,7 +6,7 @@ pub struct Cr3bp {
     pub mu: f64, // CR3BP mass ratio
 }
 
-impl System<f64, 6> for Cr3bp {
+impl ODE<f64, 6> for Cr3bp {
     /// Differential equation for the initial value Circular Restricted Three
     /// Body Problem (CR3BP).
     /// All parameters are in non-dimensional form.
@@ -36,8 +36,8 @@ fn main() {
     // Solver with relative and absolute tolerances
     let mut solver = DOP853::new(); // DOP853 is one of the most accurate and efficient solvers and highly favored for Orbital Mechanics
 
-    // Initialialize the CR3BP system
-    let system = Cr3bp { mu: 0.012150585609624 }; // Earth-Moon system
+    // Initialialize the CR3BP ode
+    let ode = Cr3bp { mu: 0.012150585609624 }; // Earth-Moon ode
 
     // Initial conditions
     let sv = vector![ // 9:2 L2 Southern NRHO orbit
@@ -47,16 +47,16 @@ fn main() {
     let t0 = 0.0;
     let tf = 3.0 * 1.509263667286943; // Period of the orbit (sv(t0) ~= sv(tf / 3.0))
 
-    let cr3bp_ivp = IVP::new(system, t0, tf, sv);
+    let cr3bp_ivp = IVP::new(ode, t0, tf, sv);
 
     fn extractor(y: &Vector6<f64>) -> Vector3<f64> {
         vector![y[3], y[4], y[5]] 
     }
 
-    // Solve the system with even output at interval dt: 1.0
+    // Solve the ode with even output at interval dt: 1.0
     match cr3bp_ivp
         .hyperplane_crossing(vector![1.0, 0.0, 0.0], vector![0.5, 0.5, 0.0], extractor, CrossingDirection::Both)
-        .solve(&mut solver) // Solve the system and return the solution
+        .solve(&mut solver) // Solve the ode and return the solution
     {
         Ok(solution) => {
             // Print the solution

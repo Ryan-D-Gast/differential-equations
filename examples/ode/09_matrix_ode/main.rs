@@ -2,13 +2,13 @@ use differential_equations::ode::*;
 use nalgebra::{SMatrix, Matrix2};
 use std::f64::consts::PI;
 
-/// Matrix Differential Equation System
+/// Matrix Differential Equation ODE
 /// dM/dt = AM - MA (matrix commutator)
-struct MatrixSystem {
+struct MatrixODE {
     omega: f64,
 }
 
-impl System<f64, 2, 2> for MatrixSystem {
+impl ODE<f64, 2, 2> for MatrixODE {
     fn diff(&self, _t: f64, y: &SMatrix<f64, 2, 2>, dydt: &mut SMatrix<f64, 2, 2>) {
         // Create the rotation generator matrix
         let a = SMatrix::<f64, 2, 2>::new(
@@ -36,10 +36,10 @@ fn main() {
     // Solve from t=0 to t=10
     let t0 = 0.0;
     let tf = 10.0;
-    let system = MatrixSystem { omega: 0.1 };
+    let ode = MatrixODE { omega: 0.1 };
     
     // Set up and solve the IVP
-    let matrix_ivp = IVP::new(system, t0, tf, y0);
+    let matrix_ivp = IVP::new(ode, t0, tf, y0);
     let result = matrix_ivp.dense(100).solve(&mut solver);
     
     match result {

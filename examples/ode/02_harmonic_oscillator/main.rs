@@ -5,7 +5,7 @@ struct HarmonicOscillator {
     k: f32,
 }
 
-impl System<f32, 2> for HarmonicOscillator {
+impl ODE<f32, 2> for HarmonicOscillator {
     fn diff(&self, _t: f32, y: &SVector<f32, 2>, dydt: &mut SVector<f32, 2>) {
         dydt[0] = y[1];
         dydt[1] = -self.k * y[0];

@@ -15,9 +15,9 @@ where
     /// * `t_out` - Vector to store the output time points.
     /// * `y_out` - Vector to store the output state points.
     /// 
-    fn solout<S, F>(&mut self, solver: &mut S, system: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
+    fn solout<S, F>(&mut self, solver: &mut S, ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
     where 
-        F: System<T, R, C, E>,
+        F: ODE<T, R, C, E>,
         S: Solver<T, R, C, E>;
 
     /// Tells solver if to include t0 and tf by appending them to the output vectors.

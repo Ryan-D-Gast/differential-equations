@@ -1,6 +1,6 @@
 //! Solve IVP function
 
-use crate::{EventData, EventAction, Solution, Solver, SolverStatus, System, Solout};
+use crate::{EventAction, Solution, Solver, SolverStatus, ODE, Solout, EventData};
 use crate::traits::Real;
 use nalgebra::SMatrix;
 use std::time::Instant;
@@ -34,7 +34,7 @@ use std::time::Instant;
 /// # Arguments
 /// 
 /// * `solver` - Configured solver instance with appropriate settings (e.g., tolerances)
-/// * `system` - The ODE system that implements the `System` trait
+/// * `system` - The ODE system that implements the `ODE` trait
 /// * `t0` - Initial time point
 /// * `tf` - Final time point (can be less than `t0` for backward integration)
 /// * `y0` - Initial state vector
@@ -72,10 +72,10 @@ use std::time::Instant;
 /// use differential_equations::ode::solout::DefaultSolout;
 /// use nalgebra::Vector1;
 /// 
-/// // Define a simple exponential growth system: dy/dt = y
+/// // Define a simple exponential growth ode: dy/dt = y
 /// struct ExponentialGrowth;
 /// 
-/// impl System<f64, 1, 1> for ExponentialGrowth {
+/// impl ODE<f64, 1, 1> for ExponentialGrowth {
 ///     fn diff(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
 ///         dydt[0] = y[0];
 ///     }
@@ -105,11 +105,11 @@ use std::time::Instant;
 /// * The `tf == t0` case is considered an error (no integration to perform).
 /// * The output points depend on the chosen `Solout` implementation.
 /// 
-pub fn solve_ivp<T, const R: usize, const C: usize, E, S, F, O>(solver: &mut S, system: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>, mut solout: O) -> Result<Solution<T, R, C, E, O>, SolverStatus<T, R, C, E>>
+pub fn solve_ivp<T, const R: usize, const C: usize, E, S, F, O>(solver: &mut S, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>, mut solout: O) -> Result<Solution<T, R, C, E, O>, SolverStatus<T, R, C, E>>
 where 
     T: Real,
     E: EventData,
-    F: System<T, R, C, E>,
+    F: ODE<T, R, C, E>,
     S: Solver<T, R, C, E>,
     O: Solout<T, R, C, E>
 {
@@ -124,7 +124,7 @@ where
     };
 
     // Clear statistics in case it was used before and reset solver and check for errors
-    match solver.init(system, t0, tf, y0) {
+    match solver.init(ode, t0, tf, y0) {
         Ok(_) => {}
         Err(e) => return Err(e),
     }
@@ -144,7 +144,7 @@ where
     let mut ts: T;
 
     // Check Terminate before starting incase the initial conditions trigger it
-    match system.event(t0, y0, solver.dydt()) {
+    match ode.event(t0, y0, solver.dydt()) {
         EventAction::Continue => {}
         EventAction::Terminate(reason) => {
             return Ok(Solution {
@@ -187,7 +187,7 @@ where
         }
 
         // Perform a step
-        solver.step(system);
+        solver.step(ode);
 
         // Check for rejected step
         match solver.status() {
@@ -197,10 +197,10 @@ where
         }
         
         // Record the result
-        solout.solout(solver, system, &mut t_out, &mut y_out);
+        solout.solout(solver, ode, &mut t_out, &mut y_out);
 
         // Check event condition
-        match system.event(solver.t(), solver.y(), solver.dydt()) {
+        match ode.event(solver.t(), solver.y(), solver.dydt()) {
             EventAction::Continue => { 
                 // Update last continue point
                 tc = solver.t(); 
@@ -214,7 +214,7 @@ where
 
                 // If event_tolerance is set, interpolate to the point where event is triggered
                 // Method: Regula Falsi (False Position) with Illinois adjustment
-                if let Some(tol) = system.event_tolerance() {
+                if let Some(tol) = ode.event_tolerance() {
                     let mut side_count = 0;   // Illinois method counter
                     
                     // For Illinois method adjustment
@@ -243,11 +243,11 @@ where
                         }
                         
                         // Interpolate state at guess point
-                        let y = solver.interpolate(system, t_guess);
+                        let y = solver.interpolate(ode, t_guess);
                         
                         // Check event at guess point
-                        system.diff(t_guess, &y, &mut dydt);
-                        match system.event(t_guess, &y, &dydt) {
+                        ode.diff(t_guess, &y, &mut dydt);
+                        match ode.event(t_guess, &y, &dydt) {
                             EventAction::Continue => {
                                 tc = t_guess;
 
@@ -269,7 +269,7 @@ where
                 }
 
                 // Final event point
-                let y_final = solver.interpolate(system, ts);
+                let y_final = solver.interpolate(ode, ts);
                 
                 // Remove points after the event point and add the event point
                 // Find the cutoff index based on integration direction

@@ -1,7 +1,7 @@
 //! Adams Methods
 
 use nalgebra::SMatrix;
-use crate::{Solver, SolverStatus, System, EventData};
+use crate::{Solver, SolverStatus, ODE, EventData};
 use crate::traits::Real;
 use crate::solvers::utils::{validate_step_size_parameters, constrain_step_size};
 

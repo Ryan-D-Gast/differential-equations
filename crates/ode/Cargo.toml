@@ -12,7 +12,7 @@ nalgebra = "0.33.2"
 polars = { version = "0.46.0", optional = true }
 
 [dev-dependencies]
-differential-equations = { path = "../../../differential-equations" }
+differential-equations = { path = "../../../differential-equations" } # Here for doctests only
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
 [[bench]]

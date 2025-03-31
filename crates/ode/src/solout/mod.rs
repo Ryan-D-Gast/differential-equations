@@ -15,7 +15,7 @@
 //! * `SolverStatus` enum for checking the status of the solver
 //! 
 //! ## Defining systems and solout
-//! * `System` trait for defining system of differential equations
+//! * `ODE` trait for defining system of differential equations
 //! * `EventAction` return enum for system.event function
 //! * `Solout` trait for controlling output of the solver
 //! 
@@ -59,8 +59,8 @@
 //! ```
 //! 
 
+use crate::{Solver, ODE, EventData};
 use nalgebra::SMatrix;
-use crate::{Solver, System, EventData};
 use crate::traits::Real;
 use crate::interpolate::find_cubic_hermite_crossing;
 

@@ -1,7 +1,7 @@
 //! Interpolation Methods for the IVP struct when solving the system.
 
-use crate::traits::Real;
 use nalgebra::SMatrix;
+use crate::traits::Real;
 
 /// Cubic Hermite Interpolation
 /// 

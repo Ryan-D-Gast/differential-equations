@@ -26,7 +26,7 @@ use super::*;
 ///     k: f64,
 /// }
 /// 
-/// impl System<f64, 2, 1> for HarmonicOscillator {
+/// impl ODE<f64, 2, 1> for HarmonicOscillator {
 ///     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
 ///         dydt[0] = y[1];
 ///         dydt[1] = -self.k * y[0];
@@ -101,9 +101,9 @@ pub struct APCV4<T: Real, const R: usize, const C: usize, E: EventData> {
 
 // Implement Solver Trait for APCV4
 impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> for APCV4<T, R, C, E> {
-    fn init<F>(&mut self, system: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>) -> Result<(), SolverStatus<T, R, C, E>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>) -> Result<(), SolverStatus<T, R, C, E>>
     where
-        F: System<T, R, C, E>,
+        F: ODE<T, R, C, E>,
     {
         self.tf = tf;
 
@@ -134,10 +134,10 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         let six = T::from_f64(6.0).unwrap();
         for i in 1..=3 {
             // Compute k1, k2, k3, k4 of Runge-Kutta 4 
-            system.diff(self.t, &self.y, &mut self.k1);
-            system.diff(self.t + self.h / two, &(self.y + self.k1 * (self.h / two)), &mut self.k2);
-            system.diff(self.t + self.h / two, &(self.y + self.k2 * (self.h / two)), &mut self.k3);
-            system.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
+            ode.diff(self.t, &self.y, &mut self.k1);
+            ode.diff(self.t + self.h / two, &(self.y + self.k1 * (self.h / two)), &mut self.k2);
+            ode.diff(self.t + self.h / two, &(self.y + self.k2 * (self.h / two)), &mut self.k3);
+            ode.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
 
             // Update State
             self.y += (self.k1 + self.k2 * two + self.k3 * two + self.k4) * (self.h / six);
@@ -156,9 +156,9 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         Ok(())
     }
 
-    fn step<F>(&mut self, system: &F)
+    fn step<F>(&mut self, ode: &F)
     where
-        F: System<T, R, C, E>,
+        F: ODE<T, R, C, E>,
     {        
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
@@ -172,10 +172,10 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             let six = T::from_f64(6.0).unwrap();
             
             // Perform a Runge-Kutta 4 step to finish.
-            system.diff(self.t, &self.y, &mut self.k1);
-            system.diff(self.t + self.h / two, &(self.y + self.k1 * (self.h / two)), &mut self.k2);
-            system.diff(self.t + self.h / two, &(self.y + self.k2 * (self.h / two)), &mut self.k3);
-            system.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
+            ode.diff(self.t, &self.y, &mut self.k1);
+            ode.diff(self.t + self.h / two, &(self.y + self.k1 * (self.h / two)), &mut self.k2);
+            ode.diff(self.t + self.h / two, &(self.y + self.k2 * (self.h / two)), &mut self.k3);
+            ode.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
 
             // Update State
             self.y += (self.k1 + self.k2 * two + self.k3 * two + self.k4) * (self.h / six);
@@ -184,10 +184,10 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         }
 
         // Compute derivatives for history
-        system.diff(self.t_prev[3], &self.y_prev[3], &mut self.k1);
-        system.diff(self.t_prev[2], &self.y_prev[2], &mut self.k2);
-        system.diff(self.t_prev[1], &self.y_prev[1], &mut self.k3);
-        system.diff(self.t_prev[0], &self.y_prev[0], &mut self.k4);
+        ode.diff(self.t_prev[3], &self.y_prev[3], &mut self.k1);
+        ode.diff(self.t_prev[2], &self.y_prev[2], &mut self.k2);
+        ode.diff(self.t_prev[1], &self.y_prev[1], &mut self.k3);
+        ode.diff(self.t_prev[0], &self.y_prev[0], &mut self.k4);
 
         let predictor = self.y_prev[3] + (
             self.k1 * T::from_f64(55.0).unwrap() -
@@ -197,7 +197,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         ) * self.h / T::from_f64(24.0).unwrap();
 
         // Corrector step:
-        system.diff(self.t + self.h, &predictor, &mut self.k4);
+        ode.diff(self.t + self.h, &predictor, &mut self.k4);
         let corrector = self.y_prev[3] + (
             self.k4 * T::from_f64(9.0).unwrap() +
             self.k1 * T::from_f64(19.0).unwrap() -
@@ -253,10 +253,10 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             let six = T::from_f64(6.0).unwrap();
             for i in 1..=3 {
                 // Compute k1, k2, k3, k4 of Runge-Kutta 4 
-                system.diff(self.t, &self.y, &mut self.k1);
-                system.diff(self.t + self.h / two, &(self.y + self.k1 * (self.h / two)), &mut self.k2);
-                system.diff(self.t + self.h / two, &(self.y + self.k2 * (self.h / two)), &mut self.k3);
-                system.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
+                ode.diff(self.t, &self.y, &mut self.k1);
+                ode.diff(self.t + self.h / two, &(self.y + self.k1 * (self.h / two)), &mut self.k2);
+                ode.diff(self.t + self.h / two, &(self.y + self.k2 * (self.h / two)), &mut self.k3);
+                ode.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
 
                 // Update State
                 self.y += (self.k1 + self.k2 * two + self.k3 * two + self.k4) * (self.h / six);
@@ -287,10 +287,10 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             let six = T::from_f64(6.0).unwrap();
             for i in 1..=3 {
                 // Compute k1, k2, k3, k4 of Runge-Kutta 4 
-                system.diff(self.t, &self.y, &mut self.k1);
-                system.diff(self.t + self.h / two, &(self.y + self.k1 * (self.h / two)), &mut self.k2);
-                system.diff(self.t + self.h / two, &(self.y + self.k2 * (self.h / two)), &mut self.k3);
-                system.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
+                ode.diff(self.t, &self.y, &mut self.k1);
+                ode.diff(self.t + self.h / two, &(self.y + self.k1 * (self.h / two)), &mut self.k2);
+                ode.diff(self.t + self.h / two, &(self.y + self.k2 * (self.h / two)), &mut self.k3);
+                ode.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
 
                 // Update State
                 self.y += (self.k1 + self.k2 * two + self.k3 * two + self.k4) * (self.h / six);

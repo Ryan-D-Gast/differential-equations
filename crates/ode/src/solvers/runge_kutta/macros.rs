@@ -114,9 +114,9 @@ macro_rules! runge_kutta_method {
         }
 
         impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::EventData> $crate::Solver<T, R, C, E> for $name<T, R, C, E> {
-            fn init<F>(&mut self, system: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<(), $crate::SolverStatus<T, R, C, E>>
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<(), $crate::SolverStatus<T, R, C, E>>
             where 
-                F: $crate::System<T, R, C, E>
+                F: $crate::ODE<T, R, C, E>
             {
                 // Check Bounds
                 match $crate::solvers::utils::validate_step_size_parameters(self.h, T::zero(), T::infinity(), t0, tf) {
@@ -131,7 +131,7 @@ macro_rules! runge_kutta_method {
                 // Initialize State
                 self.t = t0;
                 self.y = y.clone();
-                system.diff(t0, y, &mut self.k[0]);
+                ode.diff(t0, y, &mut self.k[0]);
 
                 // Initialize previous state
                 self.t_prev = t0;
@@ -144,9 +144,9 @@ macro_rules! runge_kutta_method {
                 Ok(())
             }
 
-            fn step<F>(&mut self, system: &F) 
+            fn step<F>(&mut self, ode: &F) 
             where 
-                F: $crate::System<T, R, C, E>
+                F: $crate::ODE<T, R, C, E>
             {
                 // Log previous state
                 self.t_prev = self.t;
@@ -154,7 +154,7 @@ macro_rules! runge_kutta_method {
                 self.dydt_prev = self.k[0];
 
                 // Compute k_0 = f(t, y)
-                system.diff(self.t, &self.y, &mut self.k[0]);
+                ode.diff(self.t, &self.y, &mut self.k[0]);
 
                 // Compute stage values
                 for i in 1..$stages {
@@ -167,7 +167,7 @@ macro_rules! runge_kutta_method {
                     }
                     
                     // Compute k_i = f(t + c_i*h, stage_y)
-                    system.diff(self.t + self.c[i] * self.h, &stage_y, &mut self.k[i]);
+                    ode.diff(self.t + self.c[i] * self.h, &stage_y, &mut self.k[i]);
                 }
                 
                 // Compute the final update
@@ -436,9 +436,9 @@ macro_rules! adaptive_runge_kutta_method {
         }
 
         impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::EventData> $crate::Solver<T, R, C, E> for $name<T, R, C, E> {
-            fn init<F>(&mut self, system: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<(), $crate::SolverStatus<T, R, C, E>>
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<(), $crate::SolverStatus<T, R, C, E>>
             where
-                F: $crate::System<T, R, C, E>,
+                F: $crate::ODE<T, R, C, E>,
             {
                 // Check bounds
                 match $crate::solvers::utils::validate_step_size_parameters(self.h0, self.h_min, self.h_max, t0, tf) {
@@ -457,7 +457,7 @@ macro_rules! adaptive_runge_kutta_method {
                 // Initialize State
                 self.t = t0;
                 self.y = y.clone();
-                system.diff(t0, y, &mut self.dydt);
+                ode.diff(t0, y, &mut self.dydt);
 
                 // Initialize previous state
                 self.t_prev = t0;
@@ -470,9 +470,9 @@ macro_rules! adaptive_runge_kutta_method {
                 Ok(())
             }
 
-            fn step<F>(&mut self, system: &F)
+            fn step<F>(&mut self, ode: &F)
             where
-                F: $crate::System<T, R, C, E>,
+                F: $crate::ODE<T, R, C, E>,
             {
                 // Make sure step size isn't too small
                 if self.h.abs() < T::default_epsilon() {
@@ -487,7 +487,7 @@ macro_rules! adaptive_runge_kutta_method {
                 }
 
                 // Compute stages
-                system.diff(self.t, &self.y, &mut self.k[0]);
+                ode.diff(self.t, &self.y, &mut self.k[0]);
                 
                 for i in 1..$stages {
                     let mut y_stage = self.y;
@@ -496,7 +496,7 @@ macro_rules! adaptive_runge_kutta_method {
                         y_stage += self.k[j] * (self.a[i][j] * self.h);
                     }
                     
-                    system.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
+                    ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
                 }
                 
                 // Compute higher order solution
@@ -543,7 +543,7 @@ macro_rules! adaptive_runge_kutta_method {
                     // Update state with the higher-order solution
                     self.t += self.h;
                     self.y = y_high;
-                    system.diff(self.t, &self.y, &mut self.dydt);
+                    ode.diff(self.t, &self.y, &mut self.dydt);
 
                     // Update statistics
                     self.steps += 1;

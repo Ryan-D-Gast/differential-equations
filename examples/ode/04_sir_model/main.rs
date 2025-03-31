@@ -27,11 +27,11 @@ impl std::fmt::Display for PopulationMonitor {
     }
 }
 
-// Unlike other examples where System defaults to have the 2nd generic type as String.
-// Here, the System trait is implemented with the 2nd generic type as PopulationMonitor.
+// Unlike other examples where ODE defaults to have the 2nd generic type as String.
+// Here, the ODE trait is implemented with the 2nd generic type as PopulationMonitor.
 // Custom types that implement Clone and Debug can be used and passed through back
 // to user when a termination event occurs.
-impl System<f64, 3, 1, PopulationMonitor> for SIRModel {
+impl ODE<f64, 3, 1, PopulationMonitor> for SIRModel {
     fn diff(&self, _t: f64, y: &SVector<f64, 3>, dydt: &mut SVector<f64, 3>) {
         let s = y[0]; // Susceptible
         let i = y[1]; // Infected
@@ -76,13 +76,13 @@ fn main() {
     let beta = 1.42;  // Transmission rate
     let gamma = 0.14; // Recovery rate
 
-    let system = SIRModel { beta, gamma, population };
-    let sir_ivp = IVP::new(system, t0, tf, y0);
+    let ode = SIRModel { beta, gamma, population };
+    let sir_ivp = IVP::new(ode, t0, tf, y0);
 
-    // Solve the system with even output at interval dt: 1.0
+    // Solve the ode with even output at interval dt: 1.0
     match sir_ivp
         .even(1.0)  // sets t-out at interval dt: 1.0
-        .solve(&mut solver) // Solve the system and return the solution
+        .solve(&mut solver) // Solve the ode and return the solution
     {
         Ok(solution) => {
             // Check if the solver stopped due to the event command

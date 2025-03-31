@@ -30,7 +30,7 @@ use super::*;
 /// // Simple exponential growth
 /// struct ExponentialGrowth;
 ///
-/// impl System<f64, 1, 1> for ExponentialGrowth {
+/// impl ODE<f64, 1, 1> for ExponentialGrowth {
 ///     fn diff(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
 ///         dydt[0] = y[0]; // dy/dt = y
 ///     }
@@ -69,9 +69,9 @@ where
     T: Real,
     E: EventData
 {
-    fn solout<S, F>(&mut self, solver: &mut S, _system: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
+    fn solout<S, F>(&mut self, solver: &mut S, _ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
     where 
-        F: System<T, R, C, E>,
+        F: ODE<T, R, C, E>,
         S: Solver<T, R, C, E>
     {
         // Output the current time and state to the vectors

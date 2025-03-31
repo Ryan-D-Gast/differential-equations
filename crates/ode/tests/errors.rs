@@ -4,11 +4,11 @@ use ode::IVP;
 use ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4};
 use ode::{EventAction, SolverStatus};
 use nalgebra::{SVector, vector};
-use ode::System;
+use ode::ODE;
 
-struct SimpleSystem;
+struct SimpleODE;
 
-impl System<f64, 1, 1> for SimpleSystem {
+impl ODE<f64, 1, 1> for SimpleODE {
     fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
         dydt[0] = y[0];
     }
@@ -25,7 +25,7 @@ impl System<f64, 1, 1> for SimpleSystem {
 macro_rules! test_error_ode {
     (
         test_name: $test_name:ident,
-        system: $system:expr,
+        ode: $system:expr,
         t0: $t0:expr,
         tf: $tf:expr,
         y0: $y0:expr,
@@ -70,7 +70,7 @@ macro_rules! test_error_ode {
 fn invalid_time_span() {
     test_error_ode! {
         test_name: invalid_time_span,
-        system: SimpleSystem,
+        ode: SimpleODE,
         t0: 0.0,
         tf: 0.0,
         y0: vector![1.0],
@@ -88,7 +88,7 @@ fn invalid_time_span() {
 fn initial_step_size_too_big() {
     test_error_ode! {
         test_name: initial_step_size_too_big,
-        system: SimpleSystem,
+        ode: SimpleODE,
         t0: 0.0,
         tf: 1.0,
         y0: vector![1.0],
@@ -106,7 +106,7 @@ fn initial_step_size_too_big() {
 fn terminate_initial_conditions_trigger() {
     test_error_ode! {
         test_name: terminate_initial_conditions_trigger,
-        system: SimpleSystem,
+        ode: SimpleODE,
         t0: 10.0,
         tf: 20.0,
         y0: vector![1.0],

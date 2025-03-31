@@ -6,7 +6,7 @@ struct LogisticGrowth {
     m: f64,
 }
 
-impl System<f64, 1, 1> for LogisticGrowth {
+impl ODE<f64, 1, 1> for LogisticGrowth {
     fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
         dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
     }
@@ -25,11 +25,11 @@ fn main() {
     let y0 = vector![1.0];
     let t0 = 0.0;
     let tf = 10.0;
-    let system = LogisticGrowth { k: 1.0, m: 10.0 };
-    let logistic_growth_ivp = IVP::new(system, t0, tf, y0);
+    let ode = LogisticGrowth { k: 1.0, m: 10.0 };
+    let logistic_growth_ivp = IVP::new(ode, t0, tf, y0);
     match logistic_growth_ivp
         .even(2.0)  // sets t-out at interval dt: 2.0
-        .solve(&mut solver) // Solve the system and return the solution
+        .solve(&mut solver) // Solve the ode and return the solution
     {
         Ok(solution) => {
             // Check if the solver stopped due to the event command

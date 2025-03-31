@@ -1,9 +1,9 @@
 //! Initial Value Problem Struct and Constructors
 
-use crate::{System, Solout, Solution, SolverStatus, Solver, EventData};
+use crate::{ODE, Solout, Solution, SolverStatus, Solver, EventData};
 use crate::solout::*;
-use crate::traits::Real;
 use super::solve_ivp;
+use crate::traits::Real;
 use nalgebra::SMatrix;
 
 /// Initial Value Problem Differential Equation Solver
@@ -26,21 +26,21 @@ use nalgebra::SMatrix;
 ///    pub b: f64,
 /// }
 /// 
-/// impl System<f64, 1, 1> for LinearEquation {
+/// impl ODE<f64, 1, 1> for LinearEquation {
 ///    fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
 ///        dydt[0] = self.a + self.b * y[0];
 ///   }
 /// }
 /// 
-/// // Create the system and initial conditions
-/// let system = LinearEquation { a: 1.0, b: 2.0 };
+/// // Create the ode and initial conditions
+/// let ode = LinearEquation { a: 1.0, b: 2.0 };
 /// let t0 = 0.0;
 /// let tf = 1.0;
 /// let y0 = vector![1.0];
 /// let mut solver = DOP853::new().rtol(1e-8).atol(1e-6);
 /// 
 /// // Basic usage:
-/// let ivp = IVP::new(system, t0, tf, y0);
+/// let ivp = IVP::new(ode, t0, tf, y0);
 /// let solution = ivp.solve(&mut solver).unwrap();
 /// 
 /// // Advanced output control:
@@ -49,14 +49,14 @@ use nalgebra::SMatrix;
 /// 
 /// # Fields
 /// 
-/// * `system` - System implementing the differential equation
+/// * `ode` - ODE implementing the differential equation
 /// * `t0` - Initial time
 /// * `tf` - Final time
 /// * `y0` - Initial state vector
 /// 
 /// # Basic Usage
 /// 
-/// * `new(system, t0, tf, y0)` - Create a new IVP
+/// * `new(ode, t0, tf, y0)` - Create a new IVP
 /// * `solve(&mut solver)` - Solve using default output (solver step points)
 /// 
 /// # Output Control Methods
@@ -78,18 +78,18 @@ use nalgebra::SMatrix;
 /// 
 /// struct HarmonicOscillator { k: f64 }
 /// 
-/// impl System<f64, 2, 1> for HarmonicOscillator {
+/// impl ODE<f64, 2, 1> for HarmonicOscillator {
 ///     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
 ///         dydt[0] = y[1];
 ///         dydt[1] = -self.k * y[0];
 ///     }
 /// }
 /// 
-/// let system = HarmonicOscillator { k: 1.0 };
+/// let ode = HarmonicOscillator { k: 1.0 };
 /// let mut solver = DOP853::new().rtol(1e-12).atol(1e-12);
 /// 
 /// // Basic usage with default output points
-/// let ivp = IVP::new(system, 0.0, 10.0, vector![1.0, 0.0]);
+/// let ivp = IVP::new(ode, 0.0, 10.0, vector![1.0, 0.0]);
 /// let results = ivp.solve(&mut solver).unwrap();
 /// 
 /// // Advanced: evenly spaced output with 0.1 time intervals
@@ -100,10 +100,10 @@ pub struct IVP<T, const R: usize, const C: usize, E, F>
 where 
     T: Real,
     E: EventData,
-    F: System<T, R, C, E>,
+    F: ODE<T, R, C, E>,
 {
     // Initial Value Problem Fields
-    pub system: F, // System containing the Differential Equation and Optional Terminate Function.
+    pub ode: F, // ODE containing the Differential Equation and Optional Terminate Function.
     pub t0: T, // Initial Time.
     pub tf: T, // Final Time.
     pub y0: SMatrix<T, R, C>, // Initial State Vector.
@@ -116,12 +116,12 @@ impl<T, const R: usize, const C: usize, E, F> IVP<T, R, C, E, F>
 where 
     T: Real,
     E: EventData,
-    F: System<T, R, C, E>,
+    F: ODE<T, R, C, E>,
 {
     /// Create a new Initial Value Problem
     /// 
     /// # Arguments
-    /// * `system`  - System containing the Differential Equation and Optional Terminate Function.
+    /// * `ode`  - ODE containing the Differential Equation and Optional Terminate Function.
     /// * `t0`      - Initial Time.
     /// * `tf`      - Final Time.
     /// * `y0`      - Initial State Vector.
@@ -129,9 +129,9 @@ where
     /// # Returns
     /// * IVP Problem ready to be solved.
     /// 
-    pub fn new(system: F, t0: T, tf: T, y0: SMatrix<T, R, C>) -> Self {
+    pub fn new(ode: F, t0: T, tf: T, y0: SMatrix<T, R, C>) -> Self {
         IVP {
-            system,
+            ode,
             t0,
             tf,
             y0,
@@ -148,8 +148,8 @@ where
     where 
         S: Solver<T, R, C, E>,
     {
-        let default_solout = crate::solout::DefaultSolout::new(); // Default solout implementation
-        solve_ivp(solver, &self.system, self.t0, self.tf, &self.y0, default_solout)
+        let default_solout = DefaultSolout::new(); // Default solout implementation
+        solve_ivp(solver, &self.ode, self.t0, self.tf, &self.y0, default_solout)
     }
 
     /// Returns an IVP Solver with the provided solout function for outputting points.
@@ -254,11 +254,11 @@ pub struct IVPSolver<'a, T, const R: usize, const C: usize, E, F, O>
 where 
     T: Real,
     E: EventData,
-    F: System<T, R, C, E>,
+    F: ODE<T, R, C, E>,
     O: Solout<T, R, C, E>,
 {
     // Initial Value Problem Fields References to original IVP
-    system: &'a F, // Reference to System
+    ode: &'a F, // Reference to ODE
     t0: &'a T,
     tf: &'a T,
     y0: &'a SMatrix<T, R, C>, // Reference to Initial State Vector
@@ -274,7 +274,7 @@ impl<'a, T, const R: usize, const C: usize, E, F, O> IVPSolver<'a, T, R, C, E, F
 where 
     T: Real,
     E: EventData,
-    F: System<T, R, C, E>,
+    F: ODE<T, R, C, E>,
     O: Solout<T, R, C, E>,
 {
     /// Create a new IVPSolver
@@ -288,7 +288,7 @@ where
     /// 
     pub fn new(ivp: &'a IVP<T, R, C, E, F>, solout: O) -> Self {
         IVPSolver {
-            system: &ivp.system,
+            ode: &ivp.ode,
             t0: &ivp.t0,
             tf: &ivp.tf,
             y0: &ivp.y0,
@@ -309,6 +309,6 @@ where
     where 
         S: Solver<T, R, C, E>
     {
-        solve_ivp(solver, self.system, *self.t0, *self.tf, self.y0, self.solout)
+        solve_ivp(solver, self.ode, *self.t0, *self.tf, self.y0, self.solout)
     }
 }

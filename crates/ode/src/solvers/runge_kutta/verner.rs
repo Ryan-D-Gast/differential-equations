@@ -165,9 +165,9 @@ macro_rules! adaptive_dense_runge_kutta_method {
         }
 
         impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::traits::EventData> $crate::Solver<T, R, C, E> for $name<T, R, C, E> {
-            fn init<F>(&mut self, system: &F, t0: T, tf: T, y: &$crate::ode::SMatrix<T, R, C>) -> Result<(), $crate::SolverStatus<T, R, C, E>>
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::ode::SMatrix<T, R, C>) -> Result<(), $crate::SolverStatus<T, R, C, E>>
             where
-                F: $crate::System<T, R, C, E>,
+                F: $crate::ODE<T, R, C, E>,
             {
                 // Check bounds
                 match $crate::solvers::utils::validate_step_size_parameters(self.h0, self.h_min, self.h_max, t0, tf) {
@@ -187,7 +187,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 // Initialize State
                 self.t = t0;
                 self.y = y.clone();
-                system.diff(t0, y, &mut self.dydt);
+                ode.diff(t0, y, &mut self.dydt);
                 self.evals += 1;
 
                 // Initialize previous state
@@ -201,9 +201,9 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 Ok(())
             }
 
-            fn step<F>(&mut self, system: &F)
+            fn step<F>(&mut self, ode: &F)
             where
-                F: $crate::System<T, R, C, E>,
+                F: $crate::ODE<T, R, C, E>,
             {
                 // Make sure step size isn't too small
                 if self.h.abs() < T::default_epsilon() {
@@ -228,7 +228,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                         y_stage += self.k[j] * (self.a[i][j] * self.h);
                     }
                     
-                    system.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
+                    ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
                 }
                 self.evals += $stages - 1; // We already have k[0]
                 
@@ -275,7 +275,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     // Update state with the higher-order solution
                     self.t += self.h;
                     self.y = y_high;
-                    system.diff(self.t, &self.y, &mut self.dydt);
+                    ode.diff(self.t, &self.y, &mut self.dydt);
                     self.evals += 1;
 
                     // Update statistics
@@ -312,9 +312,9 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 self.h = $crate::solvers::utils::constrain_step_size(self.h, self.h_min, self.h_max);
             }
 
-            fn interpolate<F>(&mut self, system: &F, t_interp: T) -> $crate::ode::SMatrix<T, R, C>
+            fn interpolate<F>(&mut self, ode: &F, t_interp: T) -> $crate::ode::SMatrix<T, R, C>
             where
-                F: $crate::System<T, R, C, E>
+                F: $crate::ODE<T, R, C, E>
             {
                 // Calculate the normalized distance within the step [0, 1]
                 let u = (t_interp - self.t_prev) / (self.t - self.t_prev);
@@ -334,7 +334,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                             y_stage += self.k[$stages + j] * (self.a_dense[i][$stages + j] * self.h);
                         }
                         
-                        system.diff(self.t_prev + self.c_dense[i] * self.h, &y_stage, &mut self.k[$stages + i]);
+                        ode.diff(self.t_prev + self.c_dense[i] * self.h, &y_stage, &mut self.k[$stages + i]);
                     }
                     self.evals += $extra_stages;
                     

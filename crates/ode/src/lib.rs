@@ -26,7 +26,7 @@
 //! 
 //! // f64: Time Type, 1: Column Dimension, 1: Row Dimension,
 //! // defaults to <f64, 1, 1> so can be omitted in this case
-//! impl System<f64, 1, 1> for LinearEquation {
+//! impl ODE<f64, 1, 1> for LinearEquation {
 //!     fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
 //!         dydt[0] = self.a + self.b * y[0];
 //!     }
@@ -52,7 +52,7 @@
 //! 
 //! ## Core Components
 //! 
-//! - [`System`]: Define your differential equation system by implementing this trait
+//! - [`ODE`]: Define your differential equation system by implementing this trait
 //! - [`IVP`]: Set up an initial value problem with your system, time span, and initial conditions
 //! - [`Solution`]: After solving, analyze and process your solution data
 //! 
@@ -78,15 +78,15 @@
 //! 
 //! ## Event Handling
 //! 
-//! The [`System`] trait includes event handling capabilities for detecting
+//! The [`ODE`] trait includes event handling capabilities for detecting
 //! and responding to significant conditions during integration.
 //! 
 
-// Traits for generics
-pub mod traits;
-
 // Re-export of nalgebra types for macros and convenience
 pub use nalgebra::{SMatrix, matrix, SVector, vector};
+
+// Traits for Floating Point Types
+pub mod traits;
 
 // IVP Struct which is used to solve the ODE given the system and a solver
 mod ivp;
@@ -95,19 +95,19 @@ pub use ivp::{
     solve_ivp, // Function to solve the IVP, used internally in IVP Struct
 };
 
-// System Trait for Differential Equations
+// ODE Trait for Differential Equations
 mod system;
 pub use system::{
-    System,       // System Trait for Differential Equations
-    EventAction,  // Command to the Solver for Returned in Terminate Function in System Trait
-    EventData,    // Event Data Trait for System Implementations
+    ODE,         // ODE Trait for Differential Equations
+    EventAction, // Command to the Solver for Returned in Terminate Function in ODE Trait
+    EventData,   // Data returned from the event function in the ODE Trait
 };
 
 // Solver Traits for ODE Solvers.
 mod solver;
 pub use solver::{
-    Solver,             // Solver Trait for ODE Solvers
-    SolverStatus,       // Status of the Solver for Control Flow and Error Handling
+    Solver,       // Solver Trait for ODE Solvers
+    SolverStatus, // Status of the Solver for Control Flow and Error Handling
 };
 
 // Solout Trait for controlling output of the solver
@@ -126,10 +126,9 @@ pub use solution::Solution;
 pub mod solvers;
 pub use solvers::{
     // Re-exporting popular solvers to ode module for quick access
-    RK4, // Fixed Step Runge-Kutta 4th Order Solver
+    RK4,    // Fixed Step Runge-Kutta 4th Order Solver
     DOPRI5, // Adaptive Step Dormand-Prince 5(4) Solver
     DOP853, // Adaptive Step Dormand-Prince 8(5,3) Solver with 7th order interpolant
 };
 
-// Interpolation Functions
 pub mod interpolate;

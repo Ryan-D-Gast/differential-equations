@@ -34,7 +34,7 @@ pub type ExtractorFn<V, P> = fn(&V) -> P;
 /// // CR3BP system (simplified representation)
 /// struct CR3BP { mu: f64 }
 ///
-/// impl System<f64, 6, 1> for CR3BP {
+/// impl ODE<f64, 6, 1> for CR3BP {
 ///     fn diff(&self, _t: f64, y: &Vector6<f64>, dydt: &mut Vector6<f64>) {
 ///     // Mass ratio
 ///     let mu = self.mu;
@@ -196,9 +196,9 @@ where
     T: Real,
     E: EventData
 {
-    fn solout<S, F>(&mut self, solver: &mut S, system: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R2, C2>>)
+    fn solout<S, F>(&mut self, solver: &mut S, ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R2, C2>>)
     where 
-        F: System<T, R2, C2, E>,
+        F: ODE<T, R2, C2, E>,
         S: Solver<T, R2, C2, E>
     {
         let t_curr = solver.t();
@@ -250,7 +250,7 @@ where
                         T::zero()
                     ) {
                         // Use solver's interpolation for the full state vector
-                        let y_cross = solver.interpolate(system, t_cross);
+                        let y_cross = solver.interpolate(ode, t_cross);
                         
                         // Record the crossing time and value
                         t_out.push(t_cross);
@@ -259,7 +259,7 @@ where
                         // Fallback to linear interpolation if cubic method fails
                         let frac = -last_distance / (distance - last_distance);
                         let t_cross = t_prev + frac * (t_curr - t_prev);
-                        let y_cross = solver.interpolate(system, t_cross);
+                        let y_cross = solver.interpolate(ode, t_cross);
                         
                         t_out.push(t_cross);
                         y_out.push(y_cross);

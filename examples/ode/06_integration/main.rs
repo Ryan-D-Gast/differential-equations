@@ -2,12 +2,12 @@ use differential_equations::ode::*;
 use differential_equations::ode::solvers::RKF;
 use nalgebra::{SVector, vector};
 
-/// Define the system for integration.
+/// Define the ode for integration.
 /// In this example, we will integrate a simple function: y' = t.
 #[derive(Clone)]
-struct IntegrationSystem;
+struct IntegrationODE;
 
-impl System for IntegrationSystem {
+impl ODE for IntegrationODE {
     fn diff(&self, t: f64, _y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
         dydt[0] = t;
     }
@@ -15,12 +15,12 @@ impl System for IntegrationSystem {
 
 fn main() {
     // Define the initial value problem.
-    let system = IntegrationSystem;
+    let ode = IntegrationODE;
     let t0 = 0.0;
     let tf = 5.0;
     let y0 = vector![0.0];
 
-    let ivp = IVP::new(system, t0, tf, y0);
+    let ivp = IVP::new(ode, t0, tf, y0);
 
     // Create a solver (RKF in this case).
     let mut solver = RKF::new(0.01);

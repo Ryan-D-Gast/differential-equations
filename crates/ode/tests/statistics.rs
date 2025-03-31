@@ -30,7 +30,7 @@ macro_rules! generate_solver_statistics_harmonic {
         fn compare_solvers_harmonic() {
             let mut statistics = Vec::new();
 
-            // Harmonic Oscillator System
+            // Harmonic Oscillator ODE
             let t0 = 0.0;
             let tf = 10.0;
             let y0 = SVector::<f64, 2>::new(1.0, 0.0);
@@ -78,7 +78,7 @@ macro_rules! generate_solver_statistics_logistic {
         fn compare_solvers_logistic() {
             let mut statistics = Vec::new();
 
-            // Logistic Equation System
+            // Logistic Equation ODE
             let t0 = 0.0;
             let tf = 10.0;
             let y0 = SVector::<f64, 1>::new(0.1);

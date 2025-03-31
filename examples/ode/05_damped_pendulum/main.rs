@@ -12,7 +12,7 @@ struct DampedPendulumModel {
     m: f64, // Mass of the pendulum bob (kg)
 }
 
-impl System<f64, 2> for DampedPendulumModel {
+impl ODE<f64, 2> for DampedPendulumModel {
     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
         let theta = y[0]; // Angle (radians)
         let omega = y[1]; // Angular velocity (radians/s)
@@ -52,13 +52,13 @@ fn main() {
     let b = 0.2; // Damping coefficient (kg/s)
     let m = 1.0; // Mass of the pendulum bob (kg)
 
-    let system = DampedPendulumModel { g, l, b, m };
-    let pendulum_ivp = IVP::new(system, t0, tf, y0);
+    let ode = DampedPendulumModel { g, l, b, m };
+    let pendulum_ivp = IVP::new(ode, t0, tf, y0);
 
     // t-out points
     let t_out = vec![0.0, 1.0, 3.0, 4.5, 6.9, 10.0];
 
-    // Solve the system with even output at interval dt: 0.1
+    // Solve the ode with even output at interval dt: 0.1
     match pendulum_ivp
         .t_eval(t_out)
         .solve(&mut solver)

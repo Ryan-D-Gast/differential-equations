@@ -1,4 +1,4 @@
-use differential_equations::ode::*;
+use ode::*;
 use nalgebra::SVector;
 
 pub mod linear;

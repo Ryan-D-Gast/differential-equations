@@ -1,14 +1,14 @@
 use differential_equations::ode::*;
 use nalgebra::{SVector, vector}; // These re-exported from differential_equations::ode but are included here for clarity
 
-// Define the system
+// Define the ode
 struct ExponentialGrowth {
     k: f64,
 }
 
-// Implement the System trait for the ExponentialGrowth system
-// Notice instead of System<f64, 1, 1> which matches the defaults for the generic parameters, we can just use System
-impl System for ExponentialGrowth {
+// Implement the ODE trait for the ExponentialGrowth ode
+// Notice instead of ODE<f64, 1, 1> which matches the defaults for the generic parameters, we can just use ODE
+impl ODE for ExponentialGrowth {
     fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
         dydt[0] = self.k * y[0];
     }
@@ -24,8 +24,8 @@ fn main() {
     let y0 = vector![1.0]; // vector! is a nalgebra macro to create a SVector; functions similarly to vec! but creates a static vector e.g. not dynamic and has a fixed size
     let t0 = 0.0;
     let tf = 10.0;
-    let system = ExponentialGrowth { k: 1.0 };
-    let exponential_growth_ivp = IVP::new(system, t0, tf, y0);
+    let ode = ExponentialGrowth { k: 1.0 };
+    let exponential_growth_ivp = IVP::new(ode, t0, tf, y0);
 
     // Solve the initial value problem
     let solution = match exponential_growth_ivp.solve(&mut solver) {

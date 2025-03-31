@@ -30,7 +30,7 @@ use super::*;
 /// // Simple harmonic oscillator - position will cross zero periodically
 /// struct HarmonicOscillator;
 ///
-/// impl System<f64, 2, 1> for HarmonicOscillator {
+/// impl ODE<f64, 2, 1> for HarmonicOscillator {
 ///     fn diff(&self, _t: f64, y: &Vector2<f64>, dydt: &mut Vector2<f64>) {
 ///         // y[0] = position, y[1] = velocity
 ///         dydt[0] = y[1];
@@ -181,9 +181,9 @@ where
     T: Real,
     E: EventData
 {
-    fn solout<S, F>(&mut self, solver: &mut S, _system: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
+    fn solout<S, F>(&mut self, solver: &mut S, _ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
     where 
-        F: System<T, R, C, E>,
+        F: ODE<T, R, C, E>,
         S: Solver<T, R, C, E>,
     {
         let t_curr = solver.t();
@@ -226,7 +226,7 @@ where
                         self.threshold
                     ) {
                         // Use solver's interpolation for the full state vector
-                        let y_cross = solver.interpolate(_system, t_cross);
+                        let y_cross = solver.interpolate(_ode, t_cross);
                         
                         // Record the crossing time and value
                         t_out.push(t_cross);
@@ -235,7 +235,7 @@ where
                         // Fallback to linear interpolation if cubic method fails
                         let frac = (self.threshold - y_prev_component) / (y_curr_component - y_prev_component);
                         let t_cross = t_prev + frac * (t_curr - t_prev);
-                        let y_cross = solver.interpolate(_system, t_cross);
+                        let y_cross = solver.interpolate(_ode, t_cross);
                         
                         t_out.push(t_cross);
                         y_out.push(y_cross);

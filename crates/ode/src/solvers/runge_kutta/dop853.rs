@@ -1,6 +1,6 @@
 //! DOP853 Solver for Ordinary Differential Equations.
 
-use crate::{Solver, SolverStatus, System, EventData};
+use crate::{Solver, SolverStatus, ODE, EventData};
 use crate::traits::Real;
 use crate::solvers::utils::{constrain_step_size, validate_step_size_parameters};
 use nalgebra::SMatrix;
@@ -25,7 +25,7 @@ use nalgebra::SMatrix;
 /// let tf = 10.0;
 /// let y0 = vector![1.0, 0.0];
 /// struct Example;
-/// impl System<f64, 2, 1> for Example {
+/// impl ODE<f64, 2, 1> for Example {
 ///    fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
 ///       dydt[0] = y[1];
 ///       dydt[1] = -y[0];
@@ -137,9 +137,9 @@ pub struct DOP853<T: Real, const R: usize, const C: usize, E: EventData> {
 }
 
 impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> for DOP853<T, R, C, E> {    
-    fn init<S>(&mut self, system: &S, t0: T, tf: T, y0: &SMatrix<T, R, C>)  -> Result<(), SolverStatus<T, R, C, E>>
+    fn init<S>(&mut self, ode: &S, t0: T, tf: T, y0: &SMatrix<T, R, C>)  -> Result<(), SolverStatus<T, R, C, E>>
     where 
-        S: System<T, R, C, E>
+        S: ODE<T, R, C, E>
     {
         // Set tf so step size doesn't go past it
         self.tf = tf;
@@ -155,7 +155,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         self.y = *y0;
 
         // Calculate derivative at t0
-        system.diff(t0, y0, &mut self.k[0]);
+        ode.diff(t0, y0, &mut self.k[0]);
         self.evals += 1;
 
         // Initialize Previous State
@@ -165,7 +165,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
         // Calculate Initial Step
         if self.h0 == T::zero() {
-            self.h_init(system, t0, tf);
+            self.h_init(ode, t0, tf);
 
             // Adjust h0 to be within bounds
             let posneg = (tf - t0).signum();
@@ -199,9 +199,9 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         Ok(())
     }
 
-    fn step<S>(&mut self, system: &S) 
+    fn step<S>(&mut self, ode: &S) 
     where 
-        S: System<T, R, C, E>
+        S: ODE<T, R, C, E>
     {
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
@@ -216,59 +216,59 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         }
     
         // The twelve stages
-        system.diff(
+        ode.diff(
             self.t + self.c[1] * self.h,
             &(self.y + self.k[0] * (self.a[1][0] * self.h)),
             &mut self.k[1]
         );
-        system.diff(
+        ode.diff(
             self.t + self.c[2] * self.h,
             &(self.y + self.k[0] * (self.a[2][0] * self.h) + self.k[1] * (self.a[2][1] * self.h)),
             &mut self.k[2]
         );
-        system.diff(
+        ode.diff(
             self.t + self.c[3] * self.h,
             &(self.y + self.k[0] * (self.a[3][0] * self.h) + self.k[2] * (self.a[3][2] * self.h)),
             &mut self.k[3]
         );
-        system.diff(
+        ode.diff(
             self.t + self.c[4] * self.h,
             &(self.y + self.k[0] * (self.a[4][0] * self.h) + self.k[2] * (self.a[4][2] * self.h) + self.k[3] * (self.a[4][3] * self.h)),
             &mut self.k[4]
         );
-        system.diff(
+        ode.diff(
             self.t + self.c[5] * self.h,
             &(self.y + self.k[0] * (self.a[5][0] * self.h) + self.k[3] * (self.a[5][3] * self.h) + self.k[4] * (self.a[5][4] * self.h)),
             &mut self.k[5]
         );
-        system.diff(
+        ode.diff(
             self.t + self.c[6] * self.h,
             &(self.y + self.k[0] * (self.a[6][0] * self.h) + self.k[3] * (self.a[6][3] * self.h) + self.k[4] * (self.a[6][4] * self.h) + self.k[5] * (self.a[6][5] * self.h)),
             &mut self.k[6]
         );
-        system.diff(
+        ode.diff(
             self.t + self.c[7] * self.h,
             &(self.y + self.k[0] * (self.a[7][0] * self.h) + self.k[3] * (self.a[7][3] * self.h) + self.k[4] * (self.a[7][4] * self.h) + self.k[5] * (self.a[7][5] * self.h) + self.k[6] * (self.a[7][6] * self.h)),
             &mut self.k[7]
         );
-        system.diff(
+        ode.diff(
             self.t + self.c[8] * self.h,
             &(self.y + self.k[0] * (self.a[8][0] * self.h) + self.k[3] * (self.a[8][3] * self.h) + self.k[4] * (self.a[8][4] * self.h) + self.k[5] * (self.a[8][5] * self.h) + self.k[6] * (self.a[8][6] * self.h) + self.k[7] * (self.a[8][7] * self.h)),
             &mut self.k[8]
         );
-        system.diff(
+        ode.diff(
             self.t + self.c[9] * self.h,
             &(self.y + self.k[0] * (self.a[9][0] * self.h) + self.k[3] * (self.a[9][3] * self.h) + self.k[4] * (self.a[9][4] * self.h) + self.k[5] * (self.a[9][5] * self.h) + self.k[6] * (self.a[9][6] * self.h) + self.k[7] * (self.a[9][7] * self.h) + self.k[8] * (self.a[9][8] * self.h)),
             &mut self.k[9]
         );
-        system.diff(
+        ode.diff(
             self.t + self.c[10] * self.h,
             &(self.y + self.k[0] * (self.a[10][0] * self.h) + self.k[3] * (self.a[10][3] * self.h) + self.k[4] * (self.a[10][4] * self.h) + self.k[5] * (self.a[10][5] * self.h) + self.k[6] * (self.a[10][6] * self.h) + self.k[7] * (self.a[10][7] * self.h) + self.k[8] * (self.a[10][8] * self.h) + self.k[9] * (self.a[10][9] * self.h)),
             &mut self.k[1]
         );
         let t_new = self.t + self.h;
         let yy1 = self.y + self.k[0] * (self.a[11][0] * self.h) + self.k[3] * (self.a[11][3] * self.h) + self.k[4] * (self.a[11][4] * self.h) + self.k[5] * (self.a[11][5] * self.h) + self.k[6] * (self.a[11][6] * self.h) + self.k[7] * (self.a[11][7] * self.h) + self.k[8] * (self.a[11][8] * self.h) + self.k[9] * (self.a[11][9] * self.h) + self.k[1] * (self.a[11][10] * self.h);
-        system.diff(
+        ode.diff(
             t_new,
             &yy1,
             &mut self.k[2]
@@ -317,7 +317,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             self.facold = err.max(T::from_f64(1.0e-4).unwrap());
             self.accepted_steps += 1;
             let y_new = self.k[4];
-            system.diff(t_new, &y_new, &mut self.k[3]);
+            ode.diff(t_new, &y_new, &mut self.k[3]);
             self.evals += 1;
     
             // stiffness detection
@@ -376,9 +376,9 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         self.steps += 1;
     }
 
-    fn interpolate<F>(&mut self, system: &F, t: T) -> SMatrix<T, R, C>
+    fn interpolate<F>(&mut self, ode: &F, t: T) -> SMatrix<T, R, C>
     where
-        F: System<T, R, C, E>
+        F: ODE<T, R, C, E>
     {
         if self.cached_step_num != self.steps {
             // Initial coefficients
@@ -427,7 +427,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
                            self.k[2] * self.dense[3][11];
     
             // Next 3 Function Evaluations - using the stored a_dense and c_dense arrays
-            system.diff(
+            ode.diff(
                 self.t_old + self.c_dense[0] * self.h_old,
                 &(self.y_old + (
                     self.k_old * self.a_dense[0][0] + 
@@ -442,7 +442,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
                 &mut self.k[9]
             );
             
-            system.diff(
+            ode.diff(
                 self.t_old + self.c_dense[1] * self.h_old,
                 &(self.y_old + (
                     self.k_old * self.a_dense[1][0] + 
@@ -457,7 +457,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
                 &mut self.k[1]
             );
             
-            system.diff(
+            ode.diff(
                 self.t_old + self.c_dense[2] * self.h_old,
                 &(self.y_old + (
                     self.k_old * self.a_dense[2][0] + 
@@ -597,9 +597,9 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> DOP853<T, R, C, E> {
     /// # Returns
     /// * Updates self.h with the initial step size.
     /// 
-    fn h_init<S>(&mut self, system: &S, t0: T, tf: T)
+    fn h_init<S>(&mut self, ode: &S, t0: T, tf: T)
     where 
-        S: System<T, R, C, E>
+        S: ODE<T, R, C, E>
     {
         // Set the initial step size h0 to h, if its 0.0 then it will be calculated
         self.h = self.h0;
@@ -626,7 +626,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> DOP853<T, R, C, E> {
         };
 
         // perform an explicit Euler step
-        system.diff(self.t + self.h, &(self.y + (self.k[0] * self.h)), &mut self.k[1]);
+        ode.diff(self.t + self.h, &(self.y + (self.k[0] * self.h)), &mut self.k[1]);
         self.evals += 1;
 
         // estimate the second derivative of the solution

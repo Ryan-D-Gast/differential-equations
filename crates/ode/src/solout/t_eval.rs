@@ -31,7 +31,7 @@ use super::*;
 /// // Simple harmonic oscillator
 /// struct HarmonicOscillator;
 ///
-/// impl System<f64, 2, 1> for HarmonicOscillator {
+/// impl ODE<f64, 2, 1> for HarmonicOscillator {
 ///     fn diff(&self, _t: f64, y: &Vector2<f64>, dydt: &mut Vector2<f64>) {
 ///         // y[0] = position, y[1] = velocity
 ///         dydt[0] = y[1];
@@ -80,9 +80,9 @@ where
     T: Real,
     E: EventData
 {
-    fn solout<S, F>(&mut self, solver: &mut S, system: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
+    fn solout<S, F>(&mut self, solver: &mut S, ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
     where 
-        F: System<T, R, C, E>,
+        F: ODE<T, R, C, E>,
         S: Solver<T, R, C, E>,
     {
         let t_prev = solver.t_prev();
@@ -107,7 +107,7 @@ where
                     y_out.push(*solver.y());
                 } else {
                     // Otherwise interpolate
-                    let y_eval = solver.interpolate(system, t_eval);
+                    let y_eval = solver.interpolate(ode, t_eval);
                     t_out.push(t_eval);
                     y_out.push(y_eval);
                 }
