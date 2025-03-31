@@ -6,7 +6,7 @@ members = [
 
 [package]
 name = "differential-equations"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Ryan D. Gast <ryan.d.gast@gmail.com>"]
 description = "A Rust library for solving differential equations."
 edition = "2024"
