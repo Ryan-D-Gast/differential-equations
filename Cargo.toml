@@ -37,6 +37,8 @@ polars = ["dep:polars"]
 [dependencies]
 # Linear algebra
 nalgebra = "0.33.2"
+
+# Optional features
 polars = { version = "0.46.0", optional = true }
 
 [dev-dependencies]
