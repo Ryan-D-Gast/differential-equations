@@ -1,7 +1,7 @@
 // Defines systems for testing the ODE solvers
 
 use nalgebra::SVector;
-use ode::ODE;
+use differential_equations::ode::ODE;
 
 pub struct ExponentialGrowth {
     pub k: f64,

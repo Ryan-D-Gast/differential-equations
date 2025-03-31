@@ -1,10 +1,9 @@
 //! Compares the performance of solvers by the statistics, i.e. number of steps, function evaluations, etc.
 
-mod systems;
-
+use super::systems;
 use systems::{HarmonicOscillator, LogisticEquation};
-use ode::IVP;
-use ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4};
+use differential_equations::ode::IVP;
+use differential_equations::ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4};
 use std::{
     fs::{self, File},
     io::Write,

@@ -13,7 +13,7 @@
 /// # Example
 /// 
 /// ```
-/// use differential_equations::ode::runge_kutta_method;
+/// use differential_equations::runge_kutta_method;
 /// 
 /// // Define classical RK4 method
 /// runge_kutta_method!(
@@ -284,7 +284,7 @@ macro_rules! runge_kutta_method {
 /// # Example
 /// 
 /// ```
-/// use differential_equations::ode::adaptive_runge_kutta_method;
+/// use differential_equations::adaptive_runge_kutta_method;
 /// 
 /// // Define RKF45 method
 /// adaptive_runge_kutta_method!(

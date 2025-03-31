@@ -1,9 +1,8 @@
 //! Suite of test cases for checking the interpolation of the solvers.
 
-mod systems;
-
-use ode::IVP;
-use ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4};
+use super::systems;
+use differential_equations::ode::IVP;
+use differential_equations::ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4};
 use nalgebra::vector;
 use systems::ExponentialGrowth;
 

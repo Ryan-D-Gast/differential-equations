@@ -1,10 +1,10 @@
 //! Suite of test cases for Solvers error handling
 
-use ode::IVP;
-use ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4};
-use ode::{EventAction, SolverStatus};
+use differential_equations::ode::IVP;
+use differential_equations::ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4};
+use differential_equations::ode::{EventAction, SolverStatus};
+use differential_equations::ode::ODE;
 use nalgebra::{SVector, vector};
-use ode::ODE;
 
 struct SimpleODE;
 
