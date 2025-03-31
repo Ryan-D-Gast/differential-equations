@@ -1,8 +1,8 @@
 //! DOP853 Solver for Ordinary Differential Equations.
 
-use crate::{Solver, SolverStatus, ODE, EventData};
+use crate::ode::{Solver, SolverStatus, ODE, EventData};
+use crate::ode::solvers::utils::{constrain_step_size, validate_step_size_parameters};
 use crate::traits::Real;
-use crate::solvers::utils::{constrain_step_size, validate_step_size_parameters};
 use nalgebra::SMatrix;
 
 /// Dormand Prince 8(5, 3) Method for solving ordinary differential equations.

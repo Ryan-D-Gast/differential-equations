@@ -1,6 +1,6 @@
 //! Solver Trait for ODE Solvers
 
-use crate::{ODE, EventData};
+use crate::ode::{ODE, EventData};
 use crate::interpolate::cubic_hermite_interpolate;
 use crate::traits::Real;
 use nalgebra::SMatrix;

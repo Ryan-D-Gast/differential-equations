@@ -72,7 +72,14 @@
 //! limitations under the License.
 //! ```
 
+// Re-export of nalgebra types for macros and convenience
+pub use nalgebra::{SMatrix, matrix, SVector, vector};
+
+// Traits for Floating Point Types
+pub mod traits;
+
+// Interpolation Functions
+pub mod interpolate;
+
 // Ordinary Differential Equations (ODE) Module
-pub mod ode {
-    pub use ode::*;
-}
+pub mod ode;

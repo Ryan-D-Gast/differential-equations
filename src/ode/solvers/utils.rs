@@ -1,5 +1,5 @@
 use crate::traits::Real;
-use crate::{SolverStatus, EventData};
+use crate::ode::{SolverStatus, EventData};
 
 /// Validate the step size parameters.
 ///

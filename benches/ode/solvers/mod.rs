@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, Criterion, BenchmarkId};
 use nalgebra::vector;
-use ode::*;
-use ode::solvers::*;
+use differential_equations::ode::*;
+use differential_equations::ode::solvers::*;
 use crate::systems::{
     linear::*,
     oscillators::*,

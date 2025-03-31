@@ -59,7 +59,7 @@
 //! ```
 //! 
 
-use crate::{Solver, ODE, EventData};
+use crate::ode::{Solver, ODE, EventData};
 use nalgebra::SMatrix;
 use crate::traits::Real;
 use crate::interpolate::find_cubic_hermite_crossing;

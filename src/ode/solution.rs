@@ -1,6 +1,6 @@
 //! Solution of IVP Problem returned by IVP::solve
 
-use crate::{SolverStatus, Solout, EventData};
+use crate::ode::{SolverStatus, Solout, EventData};
 use nalgebra::SMatrix;
 use crate::traits::Real;
 

@@ -82,12 +82,6 @@
 //! and responding to significant conditions during integration.
 //! 
 
-// Re-export of nalgebra types for macros and convenience
-pub use nalgebra::{SMatrix, matrix, SVector, vector};
-
-// Traits for Floating Point Types
-pub mod traits;
-
 // IVP Struct which is used to solve the ODE given the system and a solver
 mod ivp;
 pub use ivp::{
@@ -130,5 +124,3 @@ pub use solvers::{
     DOPRI5, // Adaptive Step Dormand-Prince 5(4) Solver
     DOP853, // Adaptive Step Dormand-Prince 8(5,3) Solver with 7th order interpolant
 };
-
-pub mod interpolate;
