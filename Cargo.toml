@@ -45,7 +45,7 @@ polars = ["ode/polars"]
 nalgebra = "0.33.2"
 
 # Differential equations sub-crates
-ode = { version = "0.1.1", path = "crates/ode" }
+ode = { version = "0.1.0", path = "crates/ode" }
 
 # Ordinary Differential Equation (ODE) examples
 [[example]]
