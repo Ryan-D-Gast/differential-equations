@@ -6,8 +6,8 @@ edition = "2021"
 [workspace]
 
 [dependencies]
+differential-equations = "0.1.1"
 nalgebra = "0.33.2"
-ode = { path = "../../../../../ode" }
 
 [profile.release]
 opt-level = 3

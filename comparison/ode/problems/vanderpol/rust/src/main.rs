@@ -1,4 +1,4 @@
-use ode::*;
+use differential_equations::ode::*;
 use nalgebra::{SVector, vector};
 use std::env;
 
