@@ -2,7 +2,7 @@
 
 use super::systems::{ExponentialGrowth, LinearEquation, HarmonicOscillator, LogisticEquation};
 use differential_equations::ode::IVP;
-use differential_equations::ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4};
+use differential_equations::ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4, Verner65, Verner98};
 use nalgebra::vector;
 
 macro_rules! test_ode {
@@ -85,7 +85,15 @@ fn accuracy() {
 
         solver_name: APCV4,
         solver: APCV4::new(0.01),
-        tolerance: 1e3
+        tolerance: 1e3,
+
+        solver_name: Verner65,
+        solver: Verner65::new(0.01),
+        tolerance: 1e-1,
+
+        solver_name: Verner98,
+        solver: Verner98::new(0.01),
+        tolerance: 1e-1
     }
 
     test_ode! {
@@ -118,7 +126,15 @@ fn accuracy() {
 
         solver_name: APCV4,
         solver: APCV4::new(-0.01),
-        tolerance: 1e-1
+        tolerance: 1e-1,
+
+        solver_name: Verner65,
+        solver: Verner65::new(-0.01),
+        tolerance: 1e-2,
+
+        solver_name: Verner98,
+        solver: Verner98::new(-0.01),
+        tolerance: 1e-2
     }
 
     test_ode! {
@@ -151,7 +167,15 @@ fn accuracy() {
 
         solver_name: APCV4,
         solver: APCV4::new(0.01),
-        tolerance: 1e4
+        tolerance: 1e4,
+
+        solver_name: Verner65,
+        solver: Verner65::new(0.01),
+        tolerance: 1e1,
+
+        solver_name: Verner98,
+        solver: Verner98::new(0.01),
+        tolerance: 1e1
     }
 
     test_ode! {
@@ -184,7 +208,15 @@ fn accuracy() {
 
         solver_name: APCV4,
         solver: APCV4::new(0.01),
-        tolerance: 1e-1
+        tolerance: 1e-1,
+
+        solver_name: Verner65,
+        solver: Verner65::new(0.01),
+        tolerance: 1e-3,
+
+        solver_name: Verner98,
+        solver: Verner98::new(0.01),
+        tolerance: 1e-3
     }
 
     test_ode! {
@@ -217,6 +249,14 @@ fn accuracy() {
 
         solver_name: APCV4,
         solver: APCV4::new(0.01),
-        tolerance: 1e-2
+        tolerance: 1e-2,
+
+        solver_name: Verner65,
+        solver: Verner65::new(0.01),
+        tolerance: 1e-3,
+
+        solver_name: Verner98,
+        solver: Verner98::new(0.01),
+        tolerance: 1e-3
     }
 }

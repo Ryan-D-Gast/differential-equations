@@ -123,4 +123,6 @@ pub use solvers::{
     RK4,    // Fixed Step Runge-Kutta 4th Order Solver
     DOPRI5, // Adaptive Step Dormand-Prince 5(4) Solver
     DOP853, // Adaptive Step Dormand-Prince 8(5,3) Solver with 7th order interpolant
+    Verner65, // Verner 6(5) adaptive method with dense output of order 5
+    Verner98, // Verner 9(8) adaptive method with dense output of order 9
 };

@@ -2,7 +2,7 @@
 
 use super::systems;
 use differential_equations::ode::IVP;
-use differential_equations::ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4};
+use differential_equations::ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4, Verner65, Verner98};
 use nalgebra::vector;
 use systems::ExponentialGrowth;
 
@@ -57,6 +57,8 @@ fn interpolation() {
         tolerance: 1e-3,
         // This method uses a internal high order interpolation method
         solver_name: DOP853, solver: DOP853::new(),
+        solver_name: Verner65, solver: Verner65::new(0.01),
+        solver_name: Verner98, solver: Verner98::new(0.01),
 
         // These methods use cubic Hermite interpolation
         solver_name: RKF, solver: RKF::new(0.01),
