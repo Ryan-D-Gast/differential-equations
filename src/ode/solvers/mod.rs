@@ -32,7 +32,7 @@ pub use {
 
         // Dense output methods for adaptive Runge-Kutta methods
         Verner65,    // Verner 6(5) adaptive method with dense output
-        Verner98,    // Verner 8(7) adaptive method with dense output
+        Verner98,    // Verner 9(8) adaptive method with dense output
     },
 
     // Adams Predictor Corrector Methods.
