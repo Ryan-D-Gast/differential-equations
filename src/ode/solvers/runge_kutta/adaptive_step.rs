@@ -1,4 +1,4 @@
-//! Adaptive step size Runge-Kutta methods
+//! Adaptive step size Runge-Kutta methods without integrated dense output
 
 use crate::adaptive_runge_kutta_method;
 
@@ -120,60 +120,447 @@ adaptive_runge_kutta_method!(
     stages: 7
 );
 
-//adaptive_dense_runge_kutta_method!(
-//    /// Verner 6(5) method with 5th order dense output
-//    /// 
-//    /// This is an efficient 9-stage method with embedded 5th order error estimation
-//    /// and continuous 5th order interpolation requiring one additional stage.
-//    /// 
-//    /// The method has excellent stability properties and high-quality dense output
-//    /// that makes it suitable for problems requiring accurate solutions at 
-//    /// intermediate points between steps.
-//    name: Verner65,
-//    a: [
-//        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-//        [0.6e-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-//        [0.1923996296296296296296296296296296296296e-1, 0.7669337037037037037037037037037037037037e-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-//        [0.35975e-1, 0.0, 0.107925, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-//        [1.318683415233148260919747276431735612861, 0.0, -5.042058063628562225427761634715637693344, 4.220674648395413964508014358283902080483, 0.0, 0.0, 0.0, 0.0, 0.0],
-//        [-41.87259166432751461803757780644346812905, 0.0, 159.4325621631374917700365669070346830453, -122.1192135650100309202516203389242140663, 5.531743066200053768252631238332999150076, 0.0, 0.0, 0.0, 0.0],
-//        [-54.43015693531650433250642051294142461271, 0.0, 207.0672513650184644273657173866509835987, -158.6108137845899991828742424365058599469, 6.991816585950242321992597280791793907096, -0.1859723106220323397765171799549294623692e-1, 0.0, 0.0, 0.0],
-//        [-54.66374178728197680241215648050386959351, 0.0, 207.9528062553893734515824816699834244238, -159.2889574744995071508959805871426654216, 7.018743740796944434698170760964252490817, -0.1833878590504572306472782005141738268361e-1, -0.5119484997882099077875432497245168395840e-3, 0.0, 0.0],
-//        [0.3438957868357036009278820124728322386520e-1, 0.0, 0.0, 0.2582624555633503404659558098586120858767, 0.4209371189673537150642551514069801967032, 4.405396469669310170148836816197095664891, -176.4831190242986576151740942499002125029, 172.3641334014150730294022582711902413315, 0.0]
-//    ],
-//    b: [
-//        [0.3438957868357036009278820124728322386520e-1, 0.0, 0.0, 0.2582624555633503404659558098586120858767, 0.4209371189673537150642551514069801967032, 4.405396469669310170148836816197095664891, -176.4831190242986576151740942499002125029, 172.3641334014150730294022582711902413315, 0.0],
-//        [0.4909967648382489730906854927971225836479e-1, 0.0, 0.0, 0.2251112229516524153401395320539875329485, 0.4694682253029562039431948525047387412553, 0.8065792249988867707634161808995217981443, 0.0, -0.6071194891777959797672951465256217122488, 0.5686113944047569241147603178766138153594e-1]
-//    ],
-//    c: [
-//        0.0, 
-//        0.6e-1, 
-//        0.9593333333333333333333333333333333333333e-1, 
-//        0.1439, 
-//        0.4973, 
-//        0.9725, 
-//        0.9995, 
-//        1.0, 
-//        1.0
-//    ],
-//    order: 6,
-//    stages: 9,
-//    dense_stages: 6,
-//    extra_stages: 1,
-//    a_dense: [
-//        [0.1652415901357280684383619367363197852645e-1, 0.0, 0.0, 0.3053128187514178931377105638345583032476, 0.2071200938201978848991082158995582390341, -1.293879140655123187129665774327355723229, 57.11988411588149149650780257779402737914, -55.87979207510932290773937033203265749155, 0.2483002829776601348057855515823731483430e-1]
-//    ],
-//    c_dense: [0.5],
-//    b_dense: [
-//        [0.0, 1.0, -5.308169607103576297743491917539437544903, 10.18168044895868030520877351032733768603, -7.520036991611714828300683961994073691563, 0.9340485368631160925057442706475838478288],
-//        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-//        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-//        [0.0, 0.0, 6.272050253212501244827865529084399503479, -16.02618147467745958442607061022576892601, 12.84435632451961742214954703737612797249, -1.148794504476759027536609501260874665600],
-//        [0.0, 0.0, 6.876491702846304590450466371720363234704, -24.63576726084633318864583120149461053641, 33.21078648379717088772133447477731248517, -17.49461528263643828092150992351036511970],
-//        [0.0, 0.0, -35.54445171059960218765875699270358093032, 165.7016170190242105108446269288474846144, -385.4635395491142731464726480659809841649, 442.4324137015701845319394642134164121973],
-//        [0.0, 0.0, 1918.654856698011449175045220651610014945, -9268.121508966042500195164712930044037430, 20858.33702877255011893787944928058522511, -22645.82767158481047968149020787687967272],
-//        [0.0, 0.0, -1883.069802132718312960582779305006646556, 9101.025187200633795903395040749471730528, -20473.18855195953591834830509979123557878, 22209.76555125653413900516974418122400018],
-//        [0.0, 0.0, 0.1190247963512364356614756628348873476063, -0.1250269670503937512118264468821359362429, 1.779956919394999075328101026471971070697, -4.660932123043762639666625363637083723091],
-//        [0.0, 0.0, -8.0, 32.0, -40.0, 16.0]
-//    ]
-//);
+/// Macro to create an adaptive Runge-Kutta solver with embedded error estimation
+///
+/// # Arguments
+/// 
+/// * `name`: Name of the solver struct to create
+/// * `a`: Matrix of coefficients for intermediate stages
+/// * `b`: 2D array where first row is higher order weights, second row is lower order weights
+/// * `c`: Time offsets for each stage
+/// * `order`: Order of accuracy of the method
+/// * `stages`: Number of stages in the method
+///
+/// # Example
+/// 
+/// ```
+/// use differential_equations::adaptive_runge_kutta_method;
+/// 
+/// // Define RKF45 method
+/// adaptive_runge_kutta_method!(
+///     /// Runge-Kutta-Fehlberg 4(5) adaptive step size method
+///     name: RKF,
+///     a: [
+///         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+///         [1.0/4.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+///         [3.0/32.0, 9.0/32.0, 0.0, 0.0, 0.0, 0.0],
+///         [1932.0/2197.0, -7200.0/2197.0, 7296.0/2197.0, 0.0, 0.0, 0.0],
+///         [439.0/216.0, -8.0, 3680.0/513.0, -845.0/4104.0, 0.0, 0.0],
+///         [-8.0/27.0, 2.0, -3544.0/2565.0, 1859.0/4104.0, -11.0/40.0, 0.0]
+///     ],
+///     b: [
+///         [16.0/135.0, 0.0, 6656.0/12825.0, 28561.0/56430.0, -9.0/50.0, 2.0/55.0], // 5th order
+///         [25.0/216.0, 0.0, 1408.0/2565.0, 2197.0/4104.0, -1.0/5.0, 0.0]           // 4th order
+///     ],
+///     c: [0.0, 1.0/4.0, 3.0/8.0, 12.0/13.0, 1.0, 1.0/2.0],
+///     order: 5,
+///     stages: 6
+/// );
+/// ```
+/// 
+/// # Note on Butcher Tableaus
+/// 
+/// The `a` matrix is typically a lower triangular matrix with zeros on the diagonal.
+/// when creating the `a` matrix for implementation simplicity it is generated as a
+/// 2D array with zeros in the upper triangular portion of the matrix. The array size
+/// is known at compile time and it is a O(1) operation to access the desired elements.
+/// When computing the Runge-Kutta stages only the elements in the lower triangular portion
+/// of the matrix and unnessary multiplication by zero is avoided. The Rust compiler is also
+/// likely to optimize the array out instead of memory addresses directly.
+/// 
+/// The `b` matrix is a 2D array where the first row is the higher order weights and the
+/// second row is the lower order weights. This is used for embedded error estimation.
+/// 
+#[macro_export]
+macro_rules! adaptive_runge_kutta_method {
+    (
+        $(#[$attr:meta])*
+        name: $name:ident,
+        a: $a:expr,
+        b: $b:expr,
+        c: $c:expr,
+        order: $order:expr,
+        stages: $stages:expr
+        $(,)? // Optional trailing comma
+    ) => {
+        $(#[$attr])*
+        #[doc = "\n\n"]
+        #[doc = "This adaptive solver was automatically generated using the `adaptive_runge_kutta_method` macro."]
+        pub struct $name<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> {
+            // Initial Step Size
+            pub h0: T,
+
+            // Current Step Size
+            h: T,
+
+            // Current State
+            t: T,
+            y: $crate::SMatrix<T, R, C>,
+            dydt: $crate::SMatrix<T, R, C>,
+
+            // Previous State
+            t_prev: T,
+            y_prev: $crate::SMatrix<T, R, C>,
+            dydt_prev: $crate::SMatrix<T, R, C>,
+
+            // Stage values (fixed size array of Vs)
+            k: [$crate::SMatrix<T, R, C>; $stages],
+
+            // Constants from Butcher tableau (fixed size arrays)
+            a: [[T; $stages]; $stages],
+            b_higher: [T; $stages],
+            b_lower: [T; $stages],
+            c: [T; $stages],
+
+            // Settings
+            pub rtol: T,
+            pub atol: T,
+            pub h_max: T,
+            pub h_min: T,
+            pub max_steps: usize,
+            pub max_rejects: usize,
+            pub safety_factor: T,
+            pub min_scale: T,
+            pub max_scale: T,
+            
+            // Iteration tracking
+            reject: bool,
+            n_stiff: usize,
+
+            // Statistic Tracking
+            pub evals: usize,
+            pub steps: usize,
+            pub rejected_steps: usize,
+            pub accepted_steps: usize,
+
+            // Status
+            status: $crate::ode::SolverStatus<T, R, C, E>,
+        }
+
+        impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> Default for $name<T, R, C, E> {
+            fn default() -> Self {
+                // Initialize k vectors with zeros
+                let k: [$crate::SMatrix<T, R, C>; $stages] = [$crate::SMatrix::<T, R, C>::zeros(); $stages];
+
+                // Convert Butcher tableau values to type T
+                let a_t: [[T; $stages]; $stages] = $a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+                
+                // Handle the 2D array for b, where first row is higher order and second row is lower order
+                let b_higher: [T; $stages] = $b[0].map(|x| T::from_f64(x).unwrap());
+                let b_lower: [T; $stages] = $b[1].map(|x| T::from_f64(x).unwrap());
+                
+                let c_t: [T; $stages] = $c.map(|x| T::from_f64(x).unwrap());
+
+                $name {
+                    h0: T::from_f64(0.1).unwrap(),
+                    h: T::from_f64(0.1).unwrap(),
+                    t: T::from_f64(0.0).unwrap(),
+                    y: $crate::SMatrix::<T, R, C>::zeros(),
+                    dydt: $crate::SMatrix::<T, R, C>::zeros(),
+                    t_prev: T::from_f64(0.0).unwrap(),
+                    y_prev: $crate::SMatrix::<T, R, C>::zeros(),
+                    dydt_prev: $crate::SMatrix::<T, R, C>::zeros(),
+                    k,
+                    a: a_t,
+                    b_higher,         // Higher order (b)
+                    b_lower,           // Lower order (b_hat)
+                    c: c_t,
+                    rtol: T::from_f64(1.0e-6).unwrap(),
+                    atol: T::from_f64(1.0e-6).unwrap(),
+                    h_max: T::infinity(),
+                    h_min: T::from_f64(0.0).unwrap(),
+                    max_steps: 10000,
+                    max_rejects: 100,
+                    safety_factor: T::from_f64(0.9).unwrap(),
+                    min_scale: T::from_f64(0.2).unwrap(),
+                    max_scale: T::from_f64(10.0).unwrap(),
+                    reject: false,
+                    n_stiff: 0,
+                    evals: 0,
+                    steps: 0,
+                    rejected_steps: 0,
+                    accepted_steps: 0,
+                    status: $crate::ode::SolverStatus::Uninitialized,
+                }
+            }
+        }
+
+        impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> $crate::ode::Solver<T, R, C, E> for $name<T, R, C, E> {
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<(), $crate::ode::SolverStatus<T, R, C, E>>
+            where
+                F: $crate::ode::ODE<T, R, C, E>,
+            {
+                // Check bounds
+                match $crate::ode::solvers::utils::validate_step_size_parameters(self.h0, self.h_min, self.h_max, t0, tf) {
+                    Ok(h0) => self.h = h0,
+                    Err(status) => return Err(status),
+                }
+
+                // Initialize Statistics
+                self.evals = 0;
+                self.steps = 0;
+                self.rejected_steps = 0;
+                self.accepted_steps = 0;
+                self.reject = false;
+                self.n_stiff = 0;
+
+                // Initialize State
+                self.t = t0;
+                self.y = y.clone();
+                ode.diff(t0, y, &mut self.dydt);
+
+                // Initialize previous state
+                self.t_prev = t0;
+                self.y_prev = y.clone();
+                self.dydt_prev = self.dydt;
+
+                // Initialize Status
+                self.status = $crate::ode::SolverStatus::Initialized;
+
+                Ok(())
+            }
+
+            fn step<F>(&mut self, ode: &F)
+            where
+                F: $crate::ode::ODE<T, R, C, E>,
+            {
+                // Make sure step size isn't too small
+                if self.h.abs() < T::default_epsilon() {
+                    self.status = $crate::ode::SolverStatus::StepSize(self.t, self.y.clone());
+                    return;
+                }
+
+                // Check if max steps has been reached
+                if self.steps >= self.max_steps {
+                    self.status = $crate::ode::SolverStatus::MaxSteps(self.t, self.y.clone());
+                    return;
+                }
+
+                // Compute stages
+                ode.diff(self.t, &self.y, &mut self.k[0]);
+                
+                for i in 1..$stages {
+                    let mut y_stage = self.y;
+                    
+                    for j in 0..i {
+                        y_stage += self.k[j] * (self.a[i][j] * self.h);
+                    }
+                    
+                    ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
+                }
+                
+                // Compute higher order solution
+                let mut y_high = self.y;
+                for i in 0..$stages {
+                    y_high += self.k[i] * (self.b_higher[i] * self.h);
+                }
+                
+                // Compute lower order solution for error estimation
+                let mut y_low = self.y;
+                for i in 0..$stages {
+                    y_low += self.k[i] * (self.b_lower[i] * self.h);
+                }
+                
+                // Compute error estimate
+                let err = y_high - y_low;
+                
+                // Calculate error norm
+                // Using WRMS (weighted root mean square) norm
+                let mut err_norm: T = T::zero();
+                
+                // Iterate through matrix elements
+                for r in 0..R {
+                    for c in 0..C {
+                        let tol = self.atol + self.rtol * self.y[(r, c)].abs().max(y_high[(r, c)].abs());
+                        err_norm = err_norm.max((err[(r, c)] / tol).abs());
+                    }
+                }
+                
+                // Determine if step is accepted
+                if err_norm <= T::one() {
+                    // Log previous state
+                    self.t_prev = self.t;
+                    self.y_prev = self.y;
+                    self.dydt_prev = self.dydt;
+
+                    if self.reject {
+                        // Not rejected this time
+                        self.n_stiff = 0;
+                        self.reject = false;
+                        self.status = $crate::ode::SolverStatus::Solving;
+                    }
+                    
+                    // Update state with the higher-order solution
+                    self.t += self.h;
+                    self.y = y_high;
+                    ode.diff(self.t, &self.y, &mut self.dydt);
+
+                    // Update statistics
+                    self.steps += 1;
+                    self.accepted_steps += 1;
+                    self.evals += $stages + 1;
+                } else {
+                    // Step rejected
+                    self.reject = true;
+                    self.rejected_steps += 1;
+                    self.evals += $stages;
+                    self.status = $crate::ode::SolverStatus::RejectedStep;
+                    self.n_stiff += 1;
+                    
+                    // Check for stiffness
+                    if self.n_stiff >= self.max_rejects {
+                        self.status = $crate::ode::SolverStatus::Stiffness(self.t, self.y.clone());
+                        return;
+                    }
+                }
+                
+                // Calculate new step size
+                let order = T::from_usize($order).unwrap();
+                let err_order = T::one() / order;
+                
+                // Standard step size controller formula
+                let scale = self.safety_factor * err_norm.powf(-err_order);
+                
+                // Apply constraints to step size changes
+                let scale = scale.max(self.min_scale).min(self.max_scale);
+                
+                // Update step size
+                self.h *= scale;
+                
+                // Ensure step size is within bounds
+                self.h = $crate::ode::solvers::utils::constrain_step_size(self.h, self.h_min, self.h_max);
+            }
+
+            fn t(&self) -> T {
+                self.t
+            }
+
+            fn y(&self) -> &$crate::SMatrix<T, R, C> {
+                &self.y
+            }
+
+            fn dydt(&self) -> &$crate::SMatrix<T, R, C> {
+                &self.dydt
+            }
+
+            fn t_prev(&self) -> T {
+                self.t_prev
+            }
+
+            fn y_prev(&self) -> &$crate::SMatrix<T, R, C> {
+                &self.y_prev
+            }
+
+            fn dydt_prev(&self) -> &$crate::SMatrix<T, R, C> {
+                &self.dydt_prev
+            }
+
+            fn h(&self) -> T {
+                self.h
+            }
+
+            fn set_h(&mut self, h: T) {
+                self.h = h;
+            }
+
+            fn evals(&self) -> usize {
+                self.evals
+            }
+
+            fn steps(&self) -> usize {
+                self.steps
+            }
+
+            fn rejected_steps(&self) -> usize {
+                self.rejected_steps
+            }
+
+            fn accepted_steps(&self) -> usize {
+                self.accepted_steps
+            }
+
+            fn status(&self) -> &$crate::ode::SolverStatus<T, R, C, E> {
+                &self.status
+            }
+
+            fn set_status(&mut self, status: $crate::ode::SolverStatus<T, R, C, E>) {
+                self.status = status;
+            }
+        }
+
+        impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> $name<T, R, C, E> {
+            /// Create a new solver with the specified initial step size
+            pub fn new(h0: T) -> Self {
+                Self {
+                    h0,
+                    h: h0,
+                    ..Default::default()
+                }
+            }
+            
+            /// Set the relative tolerance for error control
+            pub fn rtol(mut self, rtol: T) -> Self {
+                self.rtol = rtol;
+                self
+            }
+            
+            /// Set the absolute tolerance for error control
+            pub fn atol(mut self, atol: T) -> Self {
+                self.atol = atol;
+                self
+            }
+            
+            /// Set the minimum allowed step size
+            pub fn h_min(mut self, h_min: T) -> Self {
+                self.h_min = h_min;
+                self
+            }
+            
+            /// Set the maximum allowed step size
+            pub fn h_max(mut self, h_max: T) -> Self {
+                self.h_max = h_max;
+                self
+            }
+            
+            /// Set the maximum number of steps allowed
+            pub fn max_steps(mut self, max_steps: usize) -> Self {
+                self.max_steps = max_steps;
+                self
+            }
+            
+            /// Set the maximum number of consecutive rejected steps before declaring stiffness
+            pub fn max_rejects(mut self, max_rejects: usize) -> Self {
+                self.max_rejects = max_rejects;
+                self
+            }
+            
+            /// Set the safety factor for step size control (default: 0.9)
+            pub fn safety_factor(mut self, safety_factor: T) -> Self {
+                self.safety_factor = safety_factor;
+                self
+            }
+            
+            /// Set the minimum scale factor for step size changes (default: 0.2)
+            pub fn min_scale(mut self, min_scale: T) -> Self {
+                self.min_scale = min_scale;
+                self
+            }
+            
+            /// Set the maximum scale factor for step size changes (default: 10.0)
+            pub fn max_scale(mut self, max_scale: T) -> Self {
+                self.max_scale = max_scale;
+                self
+            }
+            
+            /// Get the order of the method
+            pub fn order(&self) -> usize {
+                $order
+            }
+
+            /// Get the number of stages in the method
+            pub fn stages(&self) -> usize {
+                $stages
+            }
+        }
+    };
+}
