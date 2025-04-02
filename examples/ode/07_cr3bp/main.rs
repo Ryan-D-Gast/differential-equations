@@ -34,7 +34,7 @@ impl ODE<f64, 6> for Cr3bp {
 
 fn main() {
     // Solver with relative and absolute tolerances
-    let mut solver = DOP853::new(); // DOP853 is one of the most accurate and efficient solvers and highly favored for Orbital Mechanics
+    let mut solver = DOP853::new().rtol(1e-12).atol(1e-12); // DOP853 is one of the most accurate and efficient solvers and highly favored for Orbital Mechanics
 
     // Initialialize the CR3BP ode
     let ode = Cr3bp { mu: 0.012150585609624 }; // Earth-Moon ode

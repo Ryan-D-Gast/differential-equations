@@ -558,7 +558,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
     }
 
     fn accepted_steps(&self) -> usize {
-        self.steps
+        self.accepted_steps
     }
 
     fn status(&self) -> &SolverStatus<T, R, C, E> {
