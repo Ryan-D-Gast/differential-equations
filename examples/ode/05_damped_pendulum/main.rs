@@ -74,11 +74,7 @@ fn main() {
             println!("Solution:");
             println!("Time, Angle (radians), Angular Velocity (radians/s)");
             for (t, y) in solution.iter() {
-                println!(
-                    "{:.4}, {:.4}, {:.4}",  // Keep in mind due to rounding it will look like
-                                            // 10.0 is repeat but it is not due to float point arthmetic
-                    t, y[0], y[1]
-                );
+                println!("{:.4}, {:.4}, {:.4}", t, y[0], y[1]);
             }
 
             // Print the statistics
