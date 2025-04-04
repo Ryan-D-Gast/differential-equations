@@ -121,6 +121,7 @@ adaptive_runge_kutta_method!(
 );
 
 /// Macro to create an adaptive Runge-Kutta solver with embedded error estimation
+/// and interpolation vs cubic Hermite interpolation.
 ///
 /// # Arguments
 /// 
@@ -396,7 +397,6 @@ macro_rules! adaptive_runge_kutta_method {
                     ode.diff(self.t, &self.y, &mut self.dydt);
 
                     // Update statistics
-                    self.steps += 1;
                     self.accepted_steps += 1;
                     self.evals += $stages + 1;
                 } else {
@@ -429,6 +429,9 @@ macro_rules! adaptive_runge_kutta_method {
                 
                 // Ensure step size is within bounds
                 self.h = $crate::ode::solvers::utils::constrain_step_size(self.h, self.h_min, self.h_max);
+
+                // Log step
+                self.steps += 1;
             }
 
             fn t(&self) -> T {
