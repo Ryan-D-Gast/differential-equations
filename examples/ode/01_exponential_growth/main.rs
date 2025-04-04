@@ -1,5 +1,5 @@
 use differential_equations::ode::*;
-use nalgebra::{SVector, vector}; // These re-exported from differential_equations::ode but are included here for clarity
+use nalgebra::{SVector, vector};
 
 // Define the ode
 struct ExponentialGrowth {
