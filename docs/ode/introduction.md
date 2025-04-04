@@ -157,7 +157,7 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 
 Included in the [ode comparion folder](../../comparison/ode/README.md) which contains benchmarks comparing the speed of the `DOP853` solver implementation in `differential-equations` against implementations in other programming languages including Fortran.
 
-A sample result via `differential-equations-benchmarks` is shown below:
+A sample result via `comparison/ode/...` is shown below:
 
 [![Benchmark Results](./ode_benchmark.png)](../differential-equations-benchmarks "Averaged over 100 runs for each problem per solver implementation")
 
