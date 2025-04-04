@@ -454,20 +454,12 @@ macro_rules! adaptive_runge_kutta_method {
                 &self.y
             }
 
-            fn dydt(&self) -> &$crate::SMatrix<T, R, C> {
-                &self.dydt
-            }
-
             fn t_prev(&self) -> T {
                 self.t_prev
             }
 
             fn y_prev(&self) -> &$crate::SMatrix<T, R, C> {
                 &self.y_prev
-            }
-
-            fn dydt_prev(&self) -> &$crate::SMatrix<T, R, C> {
-                &self.dydt_prev
             }
 
             fn h(&self) -> T {

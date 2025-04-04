@@ -207,31 +207,23 @@ where
                 
                 if record_crossing {
                     let t_prev = solver.t_prev();
-                    let y_prev_component = solver.y_prev()[self.component_idx];
-                    let y_curr_component = current_value;
                     
-                    // Get derivatives from the solver - no need to recalculate
-                    let k_prev_component = solver.dydt_prev()[self.component_idx];
-                    let k_curr_component = solver.dydt()[self.component_idx];
-                    
-                    // Find crossing time using cubic Hermite interpolation
-                    if let Some(t_cross) = find_cubic_hermite_crossing(
-                        t_prev,
-                        t_curr,
-                        y_prev_component,
-                        y_curr_component,
-                        k_prev_component,
-                        k_curr_component,
-                        self.threshold
+                    // Find crossing time using Newton's method
+                    if let Some(t_cross) = self.find_crossing_newton(
+                        solver, 
+                        t_prev, 
+                        t_curr, 
+                        last_offset, 
+                        offset_value
                     ) {
-                        // Use solver's interpolation for the full state vector
+                        // Use solver's interpolation for the full state vector at crossing time
                         let y_cross = solver.interpolate(t_cross).unwrap();
                         
                         // Record the crossing time and value
                         solution.push(t_cross, y_cross);
                     } else {
-                        // Fallback to linear interpolation if cubic method fails
-                        let frac = (self.threshold - y_prev_component) / (y_curr_component - y_prev_component);
+                        // Fallback to linear interpolation if Newton's method fails
+                        let frac = -last_offset / (offset_value - last_offset);
                         let t_cross = t_prev + frac * (t_curr - t_prev);
                         let y_cross = solver.interpolate(t_cross).unwrap();
                         
@@ -248,5 +240,85 @@ where
 
     fn include_t0_tf(&self) -> bool {
         false // Do not include t0 and tf in the output
+    }
+}
+
+// Add the Newton's method implementation
+impl<T: Real> CrossingSolout<T> {
+    /// Find the crossing time using Newton's method with solver interpolation
+    fn find_crossing_newton<S, const R: usize, const C: usize, E>(
+        &self, 
+        solver: &mut S, 
+        t_lower: T, 
+        t_upper: T, 
+        offset_lower: T, 
+        offset_upper: T
+    ) -> Option<T>
+    where
+        S: Solver<T, R, C, E>,
+        E: EventData,
+    {
+        // Start with linear interpolation as initial guess
+        let mut t = t_lower - offset_lower * (t_upper - t_lower) / (offset_upper - offset_lower);
+        
+        // Newton's method parameters
+        let max_iterations = 10;
+        let tolerance = T::default_epsilon() * T::from_f64(100.0).unwrap(); // Higher tolerance for numerical stability
+        let mut offset;
+        
+        // Newton's method iterations
+        for _ in 0..max_iterations {
+            // Get interpolated state at current time guess
+            let y_t = solver.interpolate(t).unwrap();
+            
+            // Calculate offset from threshold at this time point
+            offset = y_t[self.component_idx] - self.threshold;
+            
+            // Check if we're close enough to the crossing
+            if offset.abs() < tolerance {
+                return Some(t);
+            }
+            
+            // Calculate numerical derivative of the offset function
+            let delta_t = (t_upper - t_lower) * T::from_f64(1e-6).unwrap();
+            let t_plus = t + delta_t;
+            let y_plus = solver.interpolate(t_plus).unwrap();
+            let offset_plus = y_plus[self.component_idx] - self.threshold;
+            
+            let derivative = (offset_plus - offset) / delta_t;
+            
+            // Avoid division by zero or very small derivatives
+            if derivative.abs() < T::default_epsilon() * T::from_f64(10.0).unwrap() {
+                break;
+            }
+            
+            // Newton step
+            let t_new = t - offset / derivative;
+            
+            // Ensure we stay within bounds
+            if t_new < t_lower || t_new > t_upper {
+                // Bisection fallback
+                t = (t_lower + t_upper) / T::from_f64(2.0).unwrap();
+            } else {
+                // Check if we're making progress
+                let change = (t_new - t).abs();
+                if change < tolerance * T::from_f64(0.1).unwrap() {
+                    // We're barely moving, consider it converged
+                    t = t_new;
+                    break;
+                }
+                t = t_new;
+            }
+        }
+        
+        // Final check: Get interpolated value and see if we're close enough
+        let y_t = solver.interpolate(t).unwrap();
+        offset = y_t[self.component_idx] - self.threshold;
+        
+        if offset.abs() < tolerance * T::from_f64(10.0).unwrap() {
+            Some(t)
+        } else {
+            None // Failed to converge
+        }
     }
 }

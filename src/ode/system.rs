@@ -61,7 +61,7 @@ where
     /// # Returns
     /// * `EventAction` - Command to continue or stop solver.
     /// 
-    fn event(&self, t: T, y: &SMatrix<T, R, C>, dydt: &SMatrix<T, R, C>) -> EventAction<E> {
+    fn event(&self, t: T, y: &SMatrix<T, R, C>) -> EventAction<E> {
         EventAction::Continue
     }
 

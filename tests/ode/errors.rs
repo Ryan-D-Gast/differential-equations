@@ -13,7 +13,7 @@ impl ODE<f64, 1, 1> for SimpleODE {
         dydt[0] = y[0];
     }
 
-    fn event(&self, t: f64, _y: &SVector<f64, 1>, _dydt: &SVector<f64, 1>) -> EventAction {
+    fn event(&self, t: f64, _y: &SVector<f64, 1>) -> EventAction {
         if t == 10.0 {
             EventAction::Terminate("Initial condition trigger".to_string())
         } else {

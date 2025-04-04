@@ -42,7 +42,7 @@ impl ODE<f64, 3, 1, PopulationMonitor> for SIRModel {
         dydt[2] = self.gamma * i;                            // Recovered
     }
 
-    fn event(&self, _t: f64, y: &SVector<f64, 3>, _dydt: &SVector<f64, 3>) -> EventAction<PopulationMonitor> {
+    fn event(&self, _t: f64, y: &SVector<f64, 3>) -> EventAction<PopulationMonitor> {
         let i = y[1]; // Infected
 
         // Check the PopulationMonitor

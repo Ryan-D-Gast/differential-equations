@@ -130,7 +130,6 @@ pub struct DOP853<T: Real, const R: usize, const C: usize, E: EventData> {
 
     // For Interpolation - using array instead of individually numbered variables
     y_old: SMatrix<T, R, C>, // State at Previous Step
-    k_old: SMatrix<T, R, C>, // Derivative at Previous Step
     t_old: T, // Time of Previous Step
     h_old: T, // Step Size of Previous Step
     cont: [SMatrix<T, R, C>; 8], // Interpolation coefficients
@@ -161,7 +160,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         // Initialize Previous State
         self.t_old = self.t;
         self.y_old = self.y;
-        self.k_old = self.k[0];
 
         // Calculate Initial Step
         if self.h0 == T::zero() {
@@ -466,7 +464,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
     
             // For Interpolation
             self.y_old = self.y;
-            self.k_old = self.k[0];
             self.t_old = self.t;
             self.h_old = self.h;
     
@@ -518,20 +515,12 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         &self.y
     }
 
-    fn dydt(&self) -> &SMatrix<T, R, C> {
-        &self.k[0]
-    }
-
     fn t_prev(&self) -> T {
         self.t_old
     }
 
     fn y_prev(&self) -> &SMatrix<T, R, C> {
         &self.y_old
-    }
-
-    fn dydt_prev(&self) -> &SMatrix<T, R, C> {
-        &self.k_old
     }
 
     fn h(&self) -> T {
@@ -784,7 +773,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Default for DOP853<T
             // Coefficents and temporary storage
             k: k_zeros,
             y_old: SMatrix::zeros(),
-            k_old: SMatrix::zeros(),
             t_old: T::zero(),
             h_old: T::zero(),
             cont: cont_zeros,

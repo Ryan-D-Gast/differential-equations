@@ -324,20 +324,12 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         &self.y
     }
 
-    fn dydt(&self) -> &SMatrix<T, R, C> {
-        &self.dydt
-    }
-
     fn t_prev(&self) -> T {
         self.t_old
     }
 
     fn y_prev(&self) -> &SMatrix<T, R, C> {
         &self.y_old
-    }
-
-    fn dydt_prev(&self) -> &SMatrix<T, R, C> {
-        &self.dydt_old
     }
 
     fn h(&self) -> T {

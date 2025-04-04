@@ -58,17 +58,11 @@ where
     /// Access solution of last accepted step
     fn y(&self) -> &SMatrix<T, R, C>;
 
-    /// Access derivative of last accepted step
-    fn dydt(&self) -> &SMatrix<T, R, C>;
-
     /// Access time of previous accepted step
     fn t_prev(&self) -> T;
 
     /// Access solution of previous accepted step
     fn y_prev(&self) -> &SMatrix<T, R, C>;
-
-    /// Access derivative of previous accepted step
-    fn dydt_prev(&self) -> &SMatrix<T, R, C>;
 
     /// Access step size of next step
     fn h(&self) -> T;

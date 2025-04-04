@@ -214,6 +214,7 @@ where
                              (last_distance == zero && distance != zero) ||
                              (last_distance != zero && distance == zero);
             
+            // Check if we are crossing the hyperplane
             if is_crossing {
                 // Check crossing direction if specified
                 let record_crossing = match self.direction {
@@ -225,36 +226,15 @@ where
                 if record_crossing {
                     let t_prev = solver.t_prev();
                     
-                    // Extract position derivatives
-                    let vel_prev = (self.extractor)(solver.dydt_prev());
-                    let vel_curr = (self.extractor)(solver.dydt());
-                    
-                    // Find intersection time by finding when distance function equals zero
-                    // For each component affected by the normal vector:
-                    // Solve: point + normal * t = pos_prev + (pos_curr - pos_prev) * t
-                    
-                    // Calculate cubic hermite crossing for the signed distance function
-                    // Get rates of change of the signed distance function
-                    let dist_rate_prev = vel_prev.dot(&self.normal);
-                    let dist_rate_curr = vel_curr.dot(&self.normal);
-                    
-                    // Find the time when the distance function equals zero
-                    if let Some(t_cross) = find_cubic_hermite_crossing(
-                        t_prev,
-                        t_curr,
-                        last_distance,
-                        distance,
-                        dist_rate_prev,
-                        dist_rate_curr,
-                        T::zero()
-                    ) {
-                        // Use solver's interpolation for the full state vector
+                    // Find the crossing time using Newton's method
+                    if let Some(t_cross) = self.find_crossing_newton(solver, t_prev, t_curr, last_distance, distance) {
+                        // Use solver's interpolation for the full state vector at crossing time
                         let y_cross = solver.interpolate(t_cross).unwrap();
                         
                         // Record the crossing time and value
                         solution.push(t_cross, y_cross);
                     } else {
-                        // Fallback to linear interpolation if cubic method fails
+                        // Fallback to linear interpolation if Newton's method fails
                         let frac = -last_distance / (distance - last_distance);
                         let t_cross = t_prev + frac * (t_curr - t_prev);
                         let y_cross = solver.interpolate(t_cross).unwrap();
@@ -272,5 +252,83 @@ where
 
     fn include_t0_tf(&self) -> bool {
         false // Do not include t0 and tf in the output unless they are crossings
+    }
+}
+
+impl<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize> HyperplaneCrossingSolout<T, R1, C1, R2, C2>
+where
+    T: Real,
+{
+    /// Find the crossing time using Newton's method with solver interpolation
+    fn find_crossing_newton<S, E>(
+        &self, 
+        solver: &mut S, 
+        t_lower: T, 
+        t_upper: T, 
+        dist_lower: T, 
+        dist_upper: T
+    ) -> Option<T>
+    where
+        S: Solver<T, R2, C2, E>,
+        E: EventData,
+    {
+        // Start with linear interpolation as initial guess
+        let mut t = t_lower - dist_lower * (t_upper - t_lower) / (dist_upper - dist_lower);
+        
+        // Newton's method parameters
+        let max_iterations = 10;
+        let tolerance = T::default_epsilon() * T::from_f64(100.0).unwrap(); // Adjust tolerance as needed
+        let mut dist;
+        
+        // Newton's method iterations
+        for _ in 0..max_iterations {
+            // Get interpolated state at current time guess
+            let y_t = solver.interpolate(t).unwrap();
+            
+            // Extract position and calculate signed distance
+            let pos_t = (self.extractor)(&y_t);
+            dist = self.signed_distance(&pos_t);
+            
+            // Check if we're close enough to the crossing
+            if dist.abs() < tolerance {
+                return Some(t);
+            }
+            
+            // Calculate numerical derivative of the distance function
+            let delta_t = (t_upper - t_lower) * T::from_f64(1e-6).unwrap();
+            let t_plus = t + delta_t;
+            let y_plus = solver.interpolate(t_plus).unwrap();
+            let pos_plus = (self.extractor)(&y_plus);
+            let dist_plus = self.signed_distance(&pos_plus);
+            
+            let derivative = (dist_plus - dist) / delta_t;
+            
+            // Avoid division by zero
+            if derivative.abs() < T::default_epsilon() {
+                break;
+            }
+            
+            // Newton step
+            let t_new = t - dist / derivative;
+            
+            // Ensure we stay within bounds
+            if t_new < t_lower || t_new > t_upper {
+                // Bisection fallback
+                t = (t_lower + t_upper) / T::from_f64(2.0).unwrap();
+            } else {
+                t = t_new;
+            }
+        }
+        
+        // If we didn't converge within max_iterations, check if we're close enough
+        let y_t = solver.interpolate(t).unwrap();
+        let pos_t = (self.extractor)(&y_t);
+        dist = self.signed_distance(&pos_t);
+        
+        if dist.abs() < tolerance * T::from_f64(10.0).unwrap() {
+            Some(t)
+        } else {
+            None // Failed to converge
+        }
     }
 }

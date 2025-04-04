@@ -24,13 +24,28 @@ where
     T: Real,
     E: EventData,
 {
+    /// Outputted independent variable points.
     pub t: Vec<T>,
+
+    /// Outputted dependent variable points.
     pub y: Vec<SMatrix<T, R, C>>,
+
+    /// Status of the solver.
     pub status: SolverStatus<T, R, C, E>,
+
+    /// Number of function evaluations.
     pub evals: usize,
+
+    /// Total number of steps taken by the solver.
     pub steps: usize,
+    
+    /// Number of rejected steps where the solution step-size had to be reduced.
     pub rejected_steps: usize,
+
+    /// Number of accepted steps where the solution moved closer to tf.
     pub accepted_steps: usize,
+
+    /// Time taken to solve the ODE in seconds.
     pub solve_time: T,
 }
 

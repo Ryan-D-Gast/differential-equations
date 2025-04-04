@@ -11,7 +11,7 @@ impl ODE<f64, 1, 1> for LogisticGrowth {
         dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
     }
 
-    fn event(&self, _t: f64, y: &SVector<f64, 1>, _dydt: &SVector<f64, 1>) -> EventAction {
+    fn event(&self, _t: f64, y: &SVector<f64, 1>) -> EventAction {
         if y[0] > 0.9 * self.m {
             EventAction::Terminate("Reached 90% of carrying capacity".to_string())
         } else {

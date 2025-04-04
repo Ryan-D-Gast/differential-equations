@@ -143,7 +143,7 @@ where
     let mut ts: T;
 
     // Check Terminate before starting incase the initial conditions trigger it
-    match ode.event(t0, y0, solver.dydt()) {
+    match ode.event(t0, y0) {
         EventAction::Continue => {}
         EventAction::Terminate(reason) => {
             solution.status = SolverStatus::Interrupted(reason.clone());
@@ -195,7 +195,7 @@ where
         solout.solout(solver, &mut solution);
 
         // Check event condition
-        match ode.event(solver.t(), solver.y(), solver.dydt()) {
+        match ode.event(solver.t(), solver.y()) {
             EventAction::Continue => { 
                 // Update last continue point
                 tc = solver.t(); 
@@ -218,7 +218,6 @@ where
                     let mut t_guess: T;
                     
                     let max_iterations = 20; // Prevent infinite loops
-                    let mut dydt = SMatrix::<T, R, C>::zeros(); // Derivative vector
                     
                     // False position method with Illinois adjustment
                     for _ in 0..max_iterations {
@@ -241,8 +240,7 @@ where
                         let y = solver.interpolate(t_guess).unwrap();
                         
                         // Check event at guess point
-                        ode.diff(t_guess, &y, &mut dydt);
-                        match ode.event(t_guess, &y, &dydt) {
+                        match ode.event(t_guess, &y) {
                             EventAction::Continue => {
                                 tc = t_guess;
 
