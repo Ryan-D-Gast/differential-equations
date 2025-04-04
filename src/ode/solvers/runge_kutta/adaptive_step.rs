@@ -434,6 +434,13 @@ macro_rules! adaptive_runge_kutta_method {
                 self.steps += 1;
             }
 
+            fn interpolate<F>(&mut self, _ode: &F, t: T) -> $crate::SMatrix<T, R, C>
+            where 
+                F: $crate::ode::ODE<T, R, C, E> 
+            {
+                $crate::interpolate::cubic_hermite_interpolate(self.t_prev, self.t, &self.y_prev, &self.y, &self.dydt_prev, &self.dydt, t)
+            }
+
             fn t(&self) -> T {
                 self.t
             }

@@ -327,6 +327,13 @@ macro_rules! runge_kutta_method {
                 self.evals += $stages;
             }
 
+            fn interpolate<F>(&mut self, _ode: &F, t: T) -> $crate::SMatrix<T, R, C>
+            where 
+                F: $crate::ode::ODE<T, R, C, E> 
+            {
+                $crate::interpolate::cubic_hermite_interpolate(self.t_prev, self.t, &self.y_prev, &self.y, &self.dydt_prev, &self.k[0], t)
+            }
+
             fn t(&self) -> T {
                 self.t
             }

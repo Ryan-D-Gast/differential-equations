@@ -163,6 +163,12 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         self.y_prev[3] = self.y;
     }
 
+    fn interpolate<F>(&mut self, _ode: &F, t: T) -> SMatrix<T, R, C>
+        where 
+            F: ODE<T, R, C, E> {
+        cubic_hermite_interpolate(self.t_old, self.t, &self.y_old, &self.y, &self.dydt_old, &self.dydt, t)
+    }
+
     fn t(&self) -> T {
         self.t
     }

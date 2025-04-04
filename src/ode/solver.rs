@@ -1,7 +1,6 @@
 //! Solver Trait for ODE Solvers
 
 use crate::ode::{ODE, EventData};
-use crate::interpolate::cubic_hermite_interpolate;
 use crate::traits::Real;
 use nalgebra::SMatrix;
 
@@ -50,14 +49,9 @@ where
     /// # Returns
     /// * Interpolated state vector at time t.
     /// 
-    #[allow(unused_variables)]
     fn interpolate<F>(&mut self, ode: &F, t: T) -> SMatrix<T, R, C>
     where 
-        F: ODE<T, R, C, E> 
-    {
-        // By default use cubic hermite interpolation
-        cubic_hermite_interpolate(self.t_prev(), self.t(), self.y_prev(), self.y(), self.dydt_prev(), self.dydt(), t)
-    }
+        F: ODE<T, R, C, E>;
 
     // Access fields of the solver
 

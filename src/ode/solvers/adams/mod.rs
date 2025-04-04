@@ -4,6 +4,7 @@ use nalgebra::SMatrix;
 use crate::ode::{Solver, SolverStatus, ODE, EventData};
 use crate::ode::solvers::utils::{validate_step_size_parameters, constrain_step_size};
 use crate::traits::Real;
+use crate::interpolate::cubic_hermite_interpolate;
 
 mod apcf4;
 mod apcv4;
