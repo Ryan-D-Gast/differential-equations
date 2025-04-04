@@ -299,7 +299,7 @@ where
                     evals: solver.evals(),
                     steps: solver.steps(),
                     rejected_steps: solver.rejected_steps(),
-                    accepted_steps: solver.steps(),
+                    accepted_steps: solver.accepted_steps(),
                     solve_time: T::from_f64(start.elapsed().as_secs_f64()).unwrap(),
                 });
             }
@@ -325,7 +325,7 @@ where
                 evals: solver.evals(),
                 steps: solver.steps(),
                 rejected_steps: solver.rejected_steps(),
-                accepted_steps: solver.steps(),
+                accepted_steps: solver.accepted_steps(),
                 solve_time: T::from_f64(start.elapsed().as_secs_f64()).unwrap(),
             })
         }
