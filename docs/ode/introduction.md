@@ -54,8 +54,8 @@ The `ODE` trait defines the differential equation `dydt = f(t, y)` for the solve
 ```rust
 // Includes required elements and common solvers.
 // Less common solvers are in the `solvers` module
-// Also re-exports nalgebra SVector type and vector! macro
 use differential_equations::ode::*; 
+use nalgebra::{SVector, vector};
 
 struct LogisticGrowth {
     k: f64,
@@ -133,7 +133,7 @@ Solution:
 Function evaluations: 359
 Steps: 25
 Rejected Steps: 4        
-Accepted Steps: 25
+Accepted Steps: 21
 ```
 
 ## Examples
@@ -146,7 +146,7 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 | [Harmonic Oscillator](../../examples/ode/02_harmonic_oscillator/main.rs) | Simulates a harmonic oscillator system using `RK4` method. Uses a condensed setup to demonstrate chaining to solve without intermediate variables. Uses `last` method on solution to conveniently get results and print. |
 | [Logistic Growth](../../examples/ode/03_logistic_growth/main.rs) | Models logistic growth with a carrying capacity. Demonstrates the use of the `event` function to stop the solver based on a condition. In addition shows the use of `even` output for `IVP` setup and `iter` method on the solution for output. |
 | [SIR Model](../../examples/ode/04_sir_model/main.rs) | Simulates the SIR model for infectious diseases. Uses the `APCV4` solver to solve the system. Uses custom event termination enum. |
-| [Damped Pendulum](../../examples/ode/05_damped_pendulum/main.rs) | Simulates a simple pendulum using the `RKF` solver. Shows the use of `ivp.t_out` to define points to be saved e.g. `t_eval = [1.0, 3.0, 7.5, 10.0]` |
+| [Damped Pendulum](../../examples/ode/05_damped_pendulum/main.rs) | Simulates a simple pendulum using the `RKF` solver. Shows the use of `ivp.t_out` to define points to be saved e.g. `t_out = [1.0, 3.0, 7.5, 10.0]` |
 | [Integration](../../examples/ode/06_integration/main.rs) | Demonstrates the differences between `even`, `dense`, `t_out`, and the default solout methods for a simple differential equation with an easily found analytical solution. |
 | [Cr3bp](../../examples/ode/07_cr3bp/main.rs) | Simulates the Circular Restricted Three-Body Problem (CR3BP) using the `DOP853` solver. Uses the `hyperplane_crossing` method to log when the spacecraft crosses a 3D plane. |
 | [Damped Oscillator](../../examples/ode/08_damped_oscillator/main.rs) | Demonstrates the use of the `crossing` method to use the CrossingSolout to log instances where a crossing occurs. In this case, the example saves points where the position is at zero. |
