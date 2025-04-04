@@ -2,7 +2,7 @@
 
 use super::systems::{ExponentialGrowth, LinearEquation, HarmonicOscillator, LogisticEquation};
 use differential_equations::ode::IVP;
-use differential_equations::ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4, Verner65, Verner98};
+use differential_equations::ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4, RKV65, RKV98};
 use nalgebra::vector;
 
 macro_rules! test_ode {
@@ -87,12 +87,12 @@ fn accuracy() {
         solver: APCV4::new(0.01),
         tolerance: 1e3,
 
-        solver_name: Verner65,
-        solver: Verner65::new(0.01),
+        solver_name: RKV65,
+        solver: RKV65::new(0.01),
         tolerance: 1e-1,
 
-        solver_name: Verner98,
-        solver: Verner98::new(0.01),
+        solver_name: RKV98,
+        solver: RKV98::new(0.01),
         tolerance: 1e-1
     }
 
@@ -128,12 +128,12 @@ fn accuracy() {
         solver: APCV4::new(-0.01),
         tolerance: 1e-1,
 
-        solver_name: Verner65,
-        solver: Verner65::new(-0.01),
+        solver_name: RKV65,
+        solver: RKV65::new(-0.01),
         tolerance: 1e-2,
 
-        solver_name: Verner98,
-        solver: Verner98::new(-0.01),
+        solver_name: RKV98,
+        solver: RKV98::new(-0.01),
         tolerance: 1e-2
     }
 
@@ -169,12 +169,12 @@ fn accuracy() {
         solver: APCV4::new(0.01),
         tolerance: 1e4,
 
-        solver_name: Verner65,
-        solver: Verner65::new(0.01),
+        solver_name: RKV65,
+        solver: RKV65::new(0.01),
         tolerance: 1e1,
 
-        solver_name: Verner98,
-        solver: Verner98::new(0.01),
+        solver_name: RKV98,
+        solver: RKV98::new(0.01),
         tolerance: 1e1
     }
 
@@ -210,12 +210,12 @@ fn accuracy() {
         solver: APCV4::new(0.01),
         tolerance: 1e-1,
 
-        solver_name: Verner65,
-        solver: Verner65::new(0.01),
+        solver_name: RKV65,
+        solver: RKV65::new(0.01),
         tolerance: 1e-3,
 
-        solver_name: Verner98,
-        solver: Verner98::new(0.01),
+        solver_name: RKV98,
+        solver: RKV98::new(0.01),
         tolerance: 1e-3
     }
 
@@ -251,12 +251,12 @@ fn accuracy() {
         solver: APCV4::new(0.01),
         tolerance: 1e-2,
 
-        solver_name: Verner65,
-        solver: Verner65::new(0.01),
+        solver_name: RKV65,
+        solver: RKV65::new(0.01),
         tolerance: 1e-3,
 
-        solver_name: Verner98,
-        solver: Verner98::new(0.01),
+        solver_name: RKV98,
+        solver: RKV98::new(0.01),
         tolerance: 1e-3
     }
 }

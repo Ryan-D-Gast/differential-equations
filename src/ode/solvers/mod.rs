@@ -31,8 +31,8 @@ pub use {
         DOP853,      // Explicit Runge-Kutta method of order 8 with 5th order error estimate and 3rd order interpolant
 
         // Dense output methods for adaptive Runge-Kutta methods
-        Verner65,    // Verner 6(5) adaptive method with dense output
-        Verner98,    // Verner 9(8) adaptive method with dense output
+        RKV65,    // Verner 6(5) adaptive method with dense output
+        RKV98,    // Verner 9(8) adaptive method with dense output
     },
 
     // Adams Predictor Corrector Methods.

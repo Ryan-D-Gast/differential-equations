@@ -1,7 +1,7 @@
 //! Suite of test cases for Solvers error handling
 
 use differential_equations::ode::IVP;
-use differential_equations::ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4, Verner65, Verner98};
+use differential_equations::ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4, RKV65, RKV98};
 use differential_equations::ode::{EventAction, SolverStatus};
 use differential_equations::ode::ODE;
 use nalgebra::{SVector, vector};
@@ -81,8 +81,8 @@ fn invalid_time_span() {
         solver_name: Euler, solver: Euler::new(0.1),
         solver_name: APCF4, solver: APCF4::new(0.1),
         solver_name: APCV4, solver: APCV4::new(0.1),
-        solver_name: Verner65, solver: Verner65::new(0.1),
-        solver_name: Verner98, solver: Verner98::new(0.1)
+        solver_name: RKV65, solver: RKV65::new(0.1),
+        solver_name: RKV98, solver: RKV98::new(0.1)
     }
 }
 
@@ -101,8 +101,8 @@ fn initial_step_size_too_big() {
         solver_name: Euler, solver: Euler::new(10.0),
         solver_name: APCF4, solver: APCF4::new(10.0),
         solver_name: APCV4, solver: APCV4::new(10.0),
-        solver_name: Verner65, solver: Verner65::new(10.0),
-        solver_name: Verner98, solver: Verner98::new(10.0)
+        solver_name: RKV65, solver: RKV65::new(10.0),
+        solver_name: RKV98, solver: RKV98::new(10.0)
     }
 }
 
@@ -121,7 +121,7 @@ fn terminate_initial_conditions_trigger() {
         solver_name: Euler, solver: Euler::new(0.1),
         solver_name: APCF4, solver: APCF4::new(0.1),
         solver_name: APCV4, solver: APCV4::new(0.1),
-        solver_name: Verner65, solver: Verner65::new(0.1),
-        solver_name: Verner98, solver: Verner98::new(0.1)
+        solver_name: RKV65, solver: RKV65::new(0.1),
+        solver_name: RKV98, solver: RKV98::new(0.1)
     }
 }

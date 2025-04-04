@@ -3,7 +3,7 @@
 use crate::adaptive_dense_runge_kutta_method;
 
 adaptive_dense_runge_kutta_method!(
-    /// Verner 6(5) method is 6th order method with a embedded 5th order for
+    /// Verner's 6(5) method is 6th order method with a embedded 5th order for
     /// error estimation and 5th order interpolation via dense output.
     /// 
     /// This is an efficient 9-stage method with embedded 5th order error estimation
@@ -14,7 +14,7 @@ adaptive_dense_runge_kutta_method!(
     /// intermediate points between steps.
     /// 
     /// Source: [Verner's Website](https://www.sfu.ca/~jverner/RKV65.IIIXb.Efficient.00000144617.081204.RATOnWeb)
-    name: Verner65,
+    name: RKV65,
     a: [
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.6e-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -64,7 +64,7 @@ adaptive_dense_runge_kutta_method!(
 );
 
 adaptive_dense_runge_kutta_method!(
-    /// Verner 9(8) method is 9th order method with a embedded 8th order for
+    /// Verner's 9(8) method is 9th order method with a embedded 8th order for
     /// error estimation and 9th order interpolation via dense output.
     /// 
     /// This is an efficient 16-stage method with embedded 8th order error estimation
@@ -75,7 +75,7 @@ adaptive_dense_runge_kutta_method!(
     /// intermediate points between steps.
     /// 
     /// Source: [Verner's Website](https://www.sfu.ca/~jverner/RKV98.IIa.Efficient.00000034399.240407.BetterEfficientonWebRKV98.IIa.Efficient.00000034399.240407.BetterEfficientonWeb)
-    name: Verner98,
+    name: RKV98,
     a: [
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.3571e-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
