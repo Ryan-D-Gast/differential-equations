@@ -522,8 +522,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 // Compute the interpolated value
                 let mut result = self.y_prev;
                 for i in 0..($stages + $extra_stages) {
-                    // Only include this stage if it has a non-zero coefficient in cont
-                    result += self.k[i] * (self.cont[i] * self.h_prev);
+                    result += self.k[i] * self.cont[i] * self.h_prev;
                 }
                 
                 result
