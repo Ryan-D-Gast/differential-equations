@@ -155,15 +155,13 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 
 ## Benchmarks
 
-Included is a submodule [differential-equations-benchmarks](../differential-equations-benchmarks) which contains benchmarks comparing the speed of the `DOP853` solver implementation in `differential-equations` against implementations in other programming languages including Fortran.
+Included in the [ode comparion folder](../../comparison/ode/README.md) which contains benchmarks comparing the speed of the `DOP853` solver implementation in `differential-equations` against implementations in other programming languages including Fortran.
 
 A sample result via `differential-equations-benchmarks` is shown below:
 
 [![Benchmark Results](./ode_benchmark.png)](../differential-equations-benchmarks "Averaged over 100 runs for each problem per solver implementation")
 
 Testing has shown that the `differential-equations` Rust implementation is about 10% faster than the Fortran implementations above. Take the result with a grain of salt as more testing by other users is needed to confirm the results.
-
-More information can be found in the [differential-equations-benchmarks](../differential-equations-benchmarks) directory's [README](../differential-equations-benchmarks/README.md).
 
 ## Notation
 
