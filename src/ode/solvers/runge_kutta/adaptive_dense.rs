@@ -3,7 +3,8 @@
 use crate::adaptive_dense_runge_kutta_method;
 
 adaptive_dense_runge_kutta_method!(
-    /// Verner 6(5) method with 5th order dense output
+    /// Verner 6(5) method is 6th order method with a embedded 5th order for
+    /// error estimation and 5th order interpolation via dense output.
     /// 
     /// This is an efficient 9-stage method with embedded 5th order error estimation
     /// and continuous 5th order interpolation requiring one additional stage.
@@ -12,7 +13,7 @@ adaptive_dense_runge_kutta_method!(
     /// that makes it suitable for problems requiring accurate solutions at 
     /// intermediate points between steps.
     /// 
-    /// Source: [Verner](https://www.sfu.ca/~jverner/RKV65.IIIXb.Efficient.00000144617.081204.RATOnWeb)
+    /// Source: [Verner's Website](https://www.sfu.ca/~jverner/RKV65.IIIXb.Efficient.00000144617.081204.RATOnWeb)
     name: Verner65,
     a: [
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -63,16 +64,17 @@ adaptive_dense_runge_kutta_method!(
 );
 
 adaptive_dense_runge_kutta_method!(
-    /// Verner 9(8) method with 9th order dense output
+    /// Verner 9(8) method is 9th order method with a embedded 8th order for
+    /// error estimation and 9th order interpolation via dense output.
     /// 
     /// This is an efficient 16-stage method with embedded 8th order error estimation
-    /// and continuous th order interpolation requiring 10 additional stages.
+    /// and continuous the order interpolation requiring 10 additional stages.
     /// 
     /// The method has excellent stability properties and high-quality dense output
     /// that makes it suitable for problems requiring accurate solutions at 
     /// intermediate points between steps.
     /// 
-    /// Source: [Verner](https://www.sfu.ca/~jverner/RKV98.IIa.Efficient.00000034399.240407.BetterEfficientonWeb)
+    /// Source: [Verner's Website](https://www.sfu.ca/~jverner/RKV98.IIa.Efficient.00000034399.240407.BetterEfficientonWebRKV98.IIa.Efficient.00000034399.240407.BetterEfficientonWeb)
     name: Verner98,
     a: [
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
