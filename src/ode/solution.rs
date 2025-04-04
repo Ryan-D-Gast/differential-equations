@@ -1,6 +1,6 @@
 //! Solution of IVP Problem returned by IVP::solve
 
-use crate::ode::{SolverStatus, Solout, EventData};
+use crate::ode::{SolverStatus, EventData};
 use nalgebra::SMatrix;
 use crate::traits::Real;
 
@@ -19,15 +19,13 @@ use polars::prelude::*;
 /// * `accepted_steps` - Number of accepted steps.
 ///
 #[derive(Debug, Clone)]
-pub struct Solution<T, const R: usize, const C: usize, E, S> 
+pub struct Solution<T, const R: usize, const C: usize, E> 
 where 
     T: Real,
     E: EventData,
-    S: Solout<T, R, C, E>
 {
     pub t: Vec<T>,
     pub y: Vec<SMatrix<T, R, C>>,
-    pub solout: S,
     pub status: SolverStatus<T, R, C, E>,
     pub evals: usize,
     pub steps: usize,
@@ -37,14 +35,60 @@ where
 }
 
 // Current Solution of the ODE Solver
-
-
-// Post-processing methods for the solution
-impl<T, const R: usize, const C: usize, E, S> Solution<T, R, C, E, S> 
+impl<T, const R: usize, const C: usize, E> Solution<T, R, C, E> 
 where 
     T: Real,
     E: EventData,
-    S: Solout<T, R, C, E>
+{
+    /// Creates a new Solution object.
+    /// 
+    /// # Arguments
+    /// * `solout` - The solution output object.
+    /// 
+    pub fn new() -> Self {
+        Solution {
+            t: Vec::with_capacity(100),
+            y: Vec::with_capacity(100),
+            status: SolverStatus::Uninitialized,
+            evals: 0,
+            steps: 0,
+            rejected_steps: 0,
+            accepted_steps: 0,
+            solve_time: T::zero(),
+        }
+    }
+
+    /// Puhes a new point to the solution, e.g. t and y vecs.
+    /// 
+    /// # Arguments
+    /// * `t` - The time point.
+    /// * `y` - The state vector.
+    /// 
+    pub fn push(&mut self, t: T, y: SMatrix<T, R, C>) {
+        self.t.push(t);
+        self.y.push(y);
+    }
+
+    /// Pops the last point from the solution, e.g. t and y vecs.
+    /// 
+    /// # Returns
+    /// * `Option<(T, SMatrix<T, R, C>)>` - The last point in the solution.
+    /// 
+    pub fn pop(&mut self) -> Option<(T, SMatrix<T, R, C>)> {
+        if self.t.is_empty() || self.y.is_empty() {
+            return None;
+        }
+        let t = self.t.pop().unwrap();
+        let y = self.y.pop().unwrap();
+        Some((t, y))
+    }
+}
+
+// Post-processing methods for the solution
+impl<T, const R: usize, const C: usize, E> Solution<T, R, C, E> 
+where 
+    T: Real,
+    E: EventData,
 {
     /// Simplifies the Solution into a tuple of vectors in form (t, y).
     /// By doing so, the Solution will be consumed and the status,

@@ -40,11 +40,11 @@ use super::*;
 /// let mut solver = DOP853::new().rtol(1e-6).atol(1e-8);
 ///
 /// // Generate 9 additional points between each solver step (10 total per interval)
-/// let dense_output = DenseSolout::new(10);
+/// let mut dense_output = DenseSolout::new(10);
 ///
 /// // Solve with dense output
 /// let ivp = IVP::new(system, t0, tf, y0);
-/// let solution = ivp.solout(dense_output).solve(&mut solver).unwrap();
+/// let solution = ivp.solout(&mut dense_output).solve(&mut solver).unwrap();
 ///
 /// // Note: This is equivalent to using the convenience method:
 /// let solution = ivp.dense(10).solve(&mut solver).unwrap();
@@ -75,10 +75,9 @@ where
     T: Real,
     E: EventData
 {
-    fn solout<S, F>(&mut self, solver: &mut S, _ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
     where 
-        F: ODE<T, R, C, E>,
-        S: Solver<T, R, C, E>,
+        S: Solver<T, R, C, E> 
     {
         let t_prev = solver.t_prev();
         let t_curr = solver.t();
@@ -88,13 +87,11 @@ where
             let h_old = t_curr - t_prev;
             let ti = t_prev + T::from_usize(i).unwrap() * h_old / T::from_usize(self.n).unwrap();
             let yi = solver.interpolate(ti).unwrap();
-            t_out.push(ti);
-            y_out.push(yi);
+            solution.push(ti, yi);
         }
 
         // Save actual calculated step as well
-        t_out.push(t_curr);
-        y_out.push(*solver.y());
+        solution.push(t_curr, *solver.y());
     }
 }
 

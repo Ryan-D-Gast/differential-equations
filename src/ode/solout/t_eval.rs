@@ -48,11 +48,11 @@ use super::*;
 ///
 /// // Define specific time points of interest
 /// let evaluation_points = vec![0.0, 0.5, 1.0, 2.0, 3.14, 5.0, 7.5, 10.0];
-/// let t_eval_output = TEvalSolout::new(evaluation_points, t0, tf);
+/// let mut t_eval_output = TEvalSolout::new(evaluation_points, t0, tf);
 ///
 /// // Solve with specific evaluation points
 /// let ivp = IVP::new(system, t0, tf, y0);
-/// let solution = ivp.solout(t_eval_output).solve(&mut solver).unwrap();
+/// let solution = ivp.solout(&mut t_eval_output).solve(&mut solver).unwrap();
 ///
 /// // Note: This is equivalent to using the convenience method:
 /// let solution = ivp
@@ -80,10 +80,9 @@ where
     T: Real,
     E: EventData
 {
-    fn solout<S, F>(&mut self, solver: &mut S, _ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
-    where 
-        F: ODE<T, R, C, E>,
-        S: Solver<T, R, C, E>,
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
+        where 
+            S: Solver<T, R, C, E>
     {
         let t_prev = solver.t_prev();
         let t_curr = solver.t();
@@ -103,13 +102,11 @@ where
             if in_range {
                 // If the evaluation point is exactly at the current step, just use the solver's state
                 if t_eval == t_curr {
-                    t_out.push(t_eval);
-                    y_out.push(*solver.y());
+                    solution.push(t_eval, *solver.y());
                 } else {
                     // Otherwise interpolate
                     let y_eval = solver.interpolate(t_eval).unwrap();
-                    t_out.push(t_eval);
-                    y_out.push(y_eval);
+                    solution.push(t_eval, y_eval);
                 }
                 idx += 1;
             } else {

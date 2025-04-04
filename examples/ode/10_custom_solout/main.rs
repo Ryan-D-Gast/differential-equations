@@ -1,5 +1,5 @@
 use differential_equations::ode::*;
-use nalgebra::{SMatrix, SVector, vector};
+use nalgebra::{SVector, vector};
 use std::f64::consts::PI;
 
 /// Pendulum ode
@@ -59,10 +59,9 @@ impl PendulumSolout {
 }
 
 impl Solout<f64, 2, 1> for PendulumSolout {
-    fn solout<S, F>(&mut self, solver: &mut S, _ode: &F, t_out: &mut Vec<f64>, y_out: &mut Vec<SMatrix<f64, 2, 1>>)
-    where 
-        F: ODE<f64, 2, 1>,
-        S: Solver<f64, 2, 1>
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<f64, 2, 1, String>)
+        where 
+            S: Solver<f64, 2, 1, String> 
     {
         let t = solver.t();
         let y = solver.y();
@@ -84,8 +83,7 @@ impl Solout<f64, 2, 1> for PendulumSolout {
         let angle_crossed_zero = self.last_angle.signum() != current_angle.signum();
         
         if dt >= self.min_dt && (angle_crossed_zero || significant_change) {
-            t_out.push(t);
-            y_out.push(*y);
+            solution.push(t, y.clone());
             
             // Calculate and store energy
             self.energy_values.push(self.calculate_energy(y));
@@ -123,7 +121,7 @@ fn main() {
     let tf = 10.0;
     
     // Create custom solout
-    let solout = PendulumSolout::new(g, l, 0.1);
+    let mut solout = PendulumSolout::new(g, l, 0.1);
     
     // Create solver and solve the IVP
     // Note DOP853 is so accurate the energy will remain almost constant. Other solvers will show some energy change due to lower accuracy.
@@ -131,18 +129,18 @@ fn main() {
     let mut solver = DOP853::new().rtol(1e-8).atol(1e-8);
     let ivp = IVP::new(pendulum, t0, tf, y0);
     
-    let result = ivp.solout(solout).solve(&mut solver).unwrap();
+    let result = ivp.solout(&mut solout).solve(&mut solver).unwrap();
     
     // Display results
     println!("Pendulum simulation results:");
     println!("Number of output points: {}", result.t.len());
-    println!("Number of oscillations: {}", result.solout.oscillation_count / 2); // Divide by 2 because we count both crossings
+    println!("Number of oscillations: {}", solout.oscillation_count / 2); // Divide by 2 because we count both crossings
     
     println!("\n Time   | Angle (rad) | Angular Vel | Energy");
     println!("------------------------------------------------");
     for (i, (t, y)) in result.iter().enumerate() {
-        let energy = if i < result.solout.energy_values.len() {
-            result.solout.energy_values[i]
+        let energy = if i < solout.energy_values.len() {
+            solout.energy_values[i]
         } else {
             0.0 // For t0/tf points that might not have energy calculated
         };

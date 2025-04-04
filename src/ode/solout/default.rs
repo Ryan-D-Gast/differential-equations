@@ -44,11 +44,11 @@ use super::*;
 /// let mut solver = DOP853::new().rtol(1e-6).atol(1e-8);
 ///
 /// // Use the default output handler explicitly
-/// let default_output = DefaultSolout::new();
+/// let mut default_output = DefaultSolout::new();
 ///
 /// // Solve with default output
 /// let ivp = IVP::new(system, t0, tf, y0);
-/// let solution = ivp.solout(default_output).solve(&mut solver).unwrap();
+/// let solution = ivp.solout(&mut default_output).solve(&mut solver).unwrap();
 ///
 /// // Note: This is equivalent to the default behavior
 /// let solution2 = ivp.solve(&mut solver).unwrap();
@@ -69,14 +69,12 @@ where
     T: Real,
     E: EventData
 {
-    fn solout<S, F>(&mut self, solver: &mut S, _ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
     where 
-        F: ODE<T, R, C, E>,
         S: Solver<T, R, C, E>
     {
         // Output the current time and state to the vectors
-        t_out.push(solver.t());
-        y_out.push(*solver.y());
+        solution.push(solver.t(), *solver.y());
     }
 }
 

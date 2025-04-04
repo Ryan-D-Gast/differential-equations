@@ -11,13 +11,10 @@ where
     /// 
     /// # Arguments
     /// * `solver` - Reference to the solver to use for solving the IVP.
-    /// * `system` - Reference to the system of equations being solved.
-    /// * `t_out` - Vector to store the output time points.
-    /// * `y_out` - Vector to store the output state points.
+    /// * `solution` - Immutable reference to the solution struct to avoid ownership issues.
     /// 
-    fn solout<S, F>(&mut self, solver: &mut S, ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
     where 
-        F: ODE<T, R, C, E>,
         S: Solver<T, R, C, E>;
 
     /// Tells solver if to include t0 and tf by appending them to the output vectors.

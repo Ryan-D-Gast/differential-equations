@@ -83,9 +83,10 @@ use std::time::Instant;
 /// 
 /// // Solve from t=0 to t=1 with initial condition y=1
 /// let mut solver = DOP853::new().rtol(1e-8).atol(1e-10);
+/// let mut solout = DefaultSolout::new();
 /// let system = ExponentialGrowth;
 /// let y0 = Vector1::new(1.0);
-/// let result = solve_ivp(&mut solver, &system, 0.0, 1.0, &y0, DefaultSolout::new());
+/// let result = solve_ivp(&mut solver, &system, 0.0, 1.0, &y0, &mut solout);
 /// 
 /// match result {
 ///     Ok(solution) => {
@@ -105,7 +106,7 @@ use std::time::Instant;
 /// * The `tf == t0` case is considered an error (no integration to perform).
 /// * The output points depend on the chosen `Solout` implementation.
 /// 
-pub fn solve_ivp<T, const R: usize, const C: usize, E, S, F, O>(solver: &mut S, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>, mut solout: O) -> Result<Solution<T, R, C, E, O>, SolverStatus<T, R, C, E>>
+pub fn solve_ivp<T, const R: usize, const C: usize, E, S, F, O>(solver: &mut S, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>, solout: &mut O) -> Result<Solution<T, R, C, E>, SolverStatus<T, R, C, E>>
 where 
     T: Real,
     E: EventData,
@@ -115,6 +116,14 @@ where
 {
     // Timer for measuring solve time
     let start = Instant::now();
+
+    // Initialize the Solution object
+    let mut solution = Solution::new();
+
+    // Add initial point to output if include_t0_tf is true
+    if solout.include_t0_tf() {
+        solution.push(t0, *y0);
+    }
 
     // Determine integration direction and check that tf != t0
     let integration_direction =  match (tf - t0).signum() {
@@ -129,16 +138,6 @@ where
         Err(e) => return Err(e),
     }
 
-    // Solution Vectors
-    let mut t_out: Vec<T> = Vec::with_capacity(100); // Pre-allocate space for 100 time points
-    let mut y_out: Vec<SMatrix<T, R, C>> = Vec::with_capacity(100);
-
-    // Add initial point to output if include_t0_tf is true
-    if solout.include_t0_tf() {
-        t_out.push(t0);
-        y_out.push(*y0);
-    }
-
     // For event
     let mut tc: T = t0;
     let mut ts: T;
@@ -147,17 +146,13 @@ where
     match ode.event(t0, y0, solver.dydt()) {
         EventAction::Continue => {}
         EventAction::Terminate(reason) => {
-            return Ok(Solution {
-                y: y_out,
-                t: t_out,
-                solout,
-                status: SolverStatus::Interrupted(reason),
-                evals: solver.evals(),
-                steps: solver.steps(),
-                rejected_steps: solver.rejected_steps(),
-                accepted_steps: solver.steps(),
-                solve_time: T::from_f64(start.elapsed().as_secs_f64()).unwrap(),
-            });
+            solution.status = SolverStatus::Interrupted(reason.clone());
+            solution.evals = solver.evals();
+            solution.steps = solver.steps();
+            solution.rejected_steps = solver.rejected_steps();
+            solution.accepted_steps = solver.steps();
+            solution.solve_time = T::from_f64(start.elapsed().as_secs_f64()).unwrap();
+            return Ok(solution);
         }
     }
 
@@ -197,7 +192,7 @@ where
         }
         
         // Record the result
-        solout.solout(solver, ode, &mut t_out, &mut y_out);
+        solout.solout(solver, &mut solution);
 
         // Check event condition
         match ode.event(solver.t(), solver.y(), solver.dydt()) {
@@ -275,33 +270,30 @@ where
                 // Find the cutoff index based on integration direction
                 let cutoff_index = if integration_direction > T::zero() {
                     // Forward integration - find first index where t > ts
-                    t_out.iter().position(|&t| t > ts)
+                    solution.t.iter().position(|&t| t > ts)
                 } else {
                     // Backward integration - find first index where t < ts
-                    t_out.iter().position(|&t| t < ts)
+                    solution.t.iter().position(|&t| t < ts)
                 };
 
                 // If we found a cutoff point, truncate both vectors
                 if let Some(idx) = cutoff_index {
-                    t_out.truncate(idx);
-                    y_out.truncate(idx);
+                    solution.t.truncate(idx);
+                    solution.y.truncate(idx);
                 }
 
                 // Add the event point
-                t_out.push(ts);
-                y_out.push(y_final);
+                solution.push(ts, y_final);
 
-                return Ok(Solution {
-                    y: y_out,
-                    t: t_out,
-                    solout,
-                    status: SolverStatus::Interrupted(reason),
-                    evals: solver.evals(),
-                    steps: solver.steps(),
-                    rejected_steps: solver.rejected_steps(),
-                    accepted_steps: solver.accepted_steps(),
-                    solve_time: T::from_f64(start.elapsed().as_secs_f64()).unwrap(),
-                });
+                // Set solution parameters
+                solution.status = SolverStatus::Interrupted(reason.clone());
+                solution.evals = solver.evals();
+                solution.steps = solver.steps();
+                solution.rejected_steps = solver.rejected_steps();
+                solution.accepted_steps = solver.steps();
+                solution.solve_time = T::from_f64(start.elapsed().as_secs_f64()).unwrap();
+
+                return Ok(solution);
             }
         }
     }
@@ -312,22 +304,19 @@ where
             solver.set_status(SolverStatus::Complete);
 
             // Add final point to output if include_t0_tf is true
-            if solout.include_t0_tf() && t_out.last().copied() != Some(tf) {
-                t_out.push(tf);
-                y_out.push(*solver.y());
+            if solout.include_t0_tf() && solution.t.last().copied() != Some(tf) {
+                solution.push(tf, *solver.y());
             }
 
-            Ok(Solution {
-                y: y_out,
-                t: t_out,
-                solout,
-                status: solver.status().clone(),
-                evals: solver.evals(),
-                steps: solver.steps(),
-                rejected_steps: solver.rejected_steps(),
-                accepted_steps: solver.accepted_steps(),
-                solve_time: T::from_f64(start.elapsed().as_secs_f64()).unwrap(),
-            })
+            // Set solution parameters
+            solution.status = SolverStatus::Complete;
+            solution.evals = solver.evals();
+            solution.steps = solver.steps();
+            solution.rejected_steps = solver.rejected_steps();
+            solution.accepted_steps = solver.steps();
+            solution.solve_time = T::from_f64(start.elapsed().as_secs_f64()).unwrap();
+
+            Ok(solution)
         }
         status => Err(status.clone()),
     }

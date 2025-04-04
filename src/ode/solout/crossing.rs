@@ -46,11 +46,11 @@ use super::*;
 /// let mut solver = DOP853::new().rtol(1e-8).atol(1e-8);
 ///
 /// // Detect zero-crossings of the position component (index 0)
-/// let crossing_detector = CrossingSolout::new(0, 0.0);
+/// let mut crossing_detector = CrossingSolout::new(0, 0.0);
 ///
 /// // Solve and get only the crossing points
 /// let ivp = IVP::new(system, t0, tf, y0);
-/// let solution = ivp.solout(crossing_detector).solve(&mut solver).unwrap();
+/// let solution = ivp.solout(&mut crossing_detector).solve(&mut solver).unwrap();
 ///
 /// // solution now contains only the points where position crosses zero
 /// println!("Zero crossings occurred at times: {:?}", solution.t);
@@ -181,10 +181,9 @@ where
     T: Real,
     E: EventData
 {
-    fn solout<S, F>(&mut self, solver: &mut S, _ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
     where 
-        F: ODE<T, R, C, E>,
-        S: Solver<T, R, C, E>,
+        S: Solver<T, R, C, E> 
     {
         let t_curr = solver.t();
         let y_curr = solver.y();
@@ -229,16 +228,15 @@ where
                         let y_cross = solver.interpolate(t_cross).unwrap();
                         
                         // Record the crossing time and value
-                        t_out.push(t_cross);
-                        y_out.push(y_cross);
+                        solution.push(t_cross, y_cross);
                     } else {
                         // Fallback to linear interpolation if cubic method fails
                         let frac = (self.threshold - y_prev_component) / (y_curr_component - y_prev_component);
                         let t_cross = t_prev + frac * (t_curr - t_prev);
                         let y_cross = solver.interpolate(t_cross).unwrap();
                         
-                        t_out.push(t_cross);
-                        y_out.push(y_cross);
+                        // Record the estimated crossing time and value
+                        solution.push(t_cross, y_cross);
                     }
                 }
             }
