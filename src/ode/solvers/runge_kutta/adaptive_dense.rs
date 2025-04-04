@@ -358,7 +358,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 // Initialize previous state
                 self.t_prev = t0;
                 self.y_prev = y.clone();
-                self.dydt_prev = self.dydt.clone();
+                self.dydt_prev = self.dydt;
 
                 // Initialize Status
                 self.status = $crate::ode::SolverStatus::Initialized;
@@ -372,22 +372,22 @@ macro_rules! adaptive_dense_runge_kutta_method {
             {
                 // Make sure step size isn't too small
                 if self.h.abs() < T::default_epsilon() {
-                    self.status = $crate::ode::SolverStatus::StepSize(self.t, self.y.clone());
+                    self.status = $crate::ode::SolverStatus::StepSize(self.t, self.y);
                     return;
                 }
 
                 // Check if max steps has been reached
                 if self.steps >= self.max_steps {
-                    self.status = $crate::ode::SolverStatus::MaxSteps(self.t, self.y.clone());
+                    self.status = $crate::ode::SolverStatus::MaxSteps(self.t, self.y);
                     return;
                 }
 
                 // Save k[0] as the current derivative
-                self.k[0] = self.dydt.clone();
+                self.k[0] = self.dydt;
                 
                 // Compute stages
                 for i in 1..$stages {
-                    let mut y_stage = self.y.clone();
+                    let mut y_stage = self.y;
                     
                     for j in 0..i {
                         y_stage += self.k[j] * (self.a[i][j] * self.h);
@@ -398,13 +398,13 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 self.evals += $stages - 1; // We already have k[0]
                 
                 // Compute higher order solution
-                let mut y_high = self.y.clone();
+                let mut y_high = self.y;
                 for i in 0..$stages {
                     y_high += self.k[i] * (self.b_higher[i] * self.h);
                 }
                 
                 // Compute lower order solution for error estimation
-                let mut y_low = self.y.clone();
+                let mut y_low = self.y;
                 for i in 0..$stages {
                     y_low += self.k[i] * (self.b_lower[i] * self.h);
                 }
@@ -427,8 +427,8 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 if err_norm <= T::one() {
                     // Log previous state
                     self.t_prev = self.t;
-                    self.y_prev = self.y.clone();
-                    self.dydt_prev = self.dydt.clone();
+                    self.y_prev = self.y;
+                    self.dydt_prev = self.dydt;
                     self.h_prev = self.h;
 
                     if self.reject {
@@ -445,7 +445,6 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     self.evals += 1;
 
                     // Update statistics
-                    self.steps += 1;
                     self.accepted_steps += 1;
                 } else {
                     // Step rejected
@@ -456,7 +455,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     
                     // Check for stiffness
                     if self.n_stiff >= self.max_rejects {
-                        self.status = $crate::ode::SolverStatus::Stiffness(self.t, self.y.clone());
+                        self.status = $crate::ode::SolverStatus::Stiffness(self.t, self.y);
                         return;
                     }
                 }
@@ -476,6 +475,9 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 
                 // Ensure step size is within bounds
                 self.h = $crate::ode::solvers::utils::constrain_step_size(self.h, self.h_min, self.h_max);
+
+                // Log the step
+                self.steps += 1;
             }
 
             fn interpolate<F>(&mut self, ode: &F, t_interp: T) -> $crate::SMatrix<T, R, C>
@@ -489,7 +491,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 if self.cached_step_num != self.steps {
                     // Compute extra stages for interpolation
                     for i in 0..$extra_stages {
-                        let mut y_stage = self.y_prev.clone();
+                        let mut y_stage = self.y_prev;
                         // Sum over the main stages
                         for j in 0..($stages + $extra_stages) {
                             y_stage += self.k[j] * (self.a_dense[i][j] * self.h_prev);
@@ -518,7 +520,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 }
             
                 // Compute the interpolated value
-                let mut result = self.y_prev.clone();
+                let mut result = self.y_prev;
                 for i in 0..($stages + $extra_stages) {
                     // Only include this stage if it has a non-zero coefficient in cont
                     result += self.k[i] * (self.cont[i] * self.h_prev);
