@@ -102,6 +102,7 @@ mod solver;
 pub use solver::{
     Solver,       // Solver Trait for ODE Solvers
     SolverStatus, // Status of the Solver for Control Flow and Error Handling
+    InterpolationError, // Error returned from the Interpolate Function in the Solver Trait
 };
 
 // Solout Trait for controlling output of the solver

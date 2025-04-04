@@ -327,11 +327,15 @@ macro_rules! runge_kutta_method {
                 self.evals += $stages;
             }
 
-            fn interpolate<F>(&mut self, _ode: &F, t: T) -> $crate::SMatrix<T, R, C>
-            where 
-                F: $crate::ode::ODE<T, R, C, E> 
-            {
-                $crate::interpolate::cubic_hermite_interpolate(self.t_prev, self.t, &self.y_prev, &self.y, &self.dydt_prev, &self.k[0], t)
+            fn interpolate(&mut self, t_interp: T) -> Result<$crate::SMatrix<T, R, C>, $crate::ode::InterpolationError<T, R, C>> {
+                // Check if t is within the bounds of the current step
+                if t_interp < self.t_prev || t_interp > self.t {
+                    return Err($crate::ode::InterpolationError::OutOfBounds(t_interp, self.t_prev, self.t));
+                }
+
+                let y_interp = $crate::interpolate::cubic_hermite_interpolate(self.t_prev, self.t, &self.y_prev, &self.y, &self.dydt_prev, &self.k[0], t_interp);
+
+                Ok(y_interp)
             }
 
             fn t(&self) -> T {

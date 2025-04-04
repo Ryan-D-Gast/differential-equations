@@ -78,7 +78,7 @@ where
     T: Real,
     E: EventData
 {
-    fn solout<S, F>(&mut self, solver: &mut S, ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
+    fn solout<S, F>(&mut self, solver: &mut S, _ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
     where 
         F: ODE<T, R, C, E>,
         S: Solver<T, R, C, E>
@@ -130,7 +130,7 @@ where
             // Only output if the point falls within the current step
             if (self.direction > T::zero() && ti >= t_prev && ti <= t_curr) ||
                (self.direction < T::zero() && ti <= t_prev && ti >= t_curr) {
-                let yi = solver.interpolate(ode, ti);
+                let yi = solver.interpolate(ti).unwrap();
                 t_out.push(ti);
                 y_out.push(yi);
                 self.last_output_t = Some(ti);

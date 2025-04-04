@@ -80,7 +80,7 @@ where
     T: Real,
     E: EventData
 {
-    fn solout<S, F>(&mut self, solver: &mut S, ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
+    fn solout<S, F>(&mut self, solver: &mut S, _ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
     where 
         F: ODE<T, R, C, E>,
         S: Solver<T, R, C, E>,
@@ -107,7 +107,7 @@ where
                     y_out.push(*solver.y());
                 } else {
                     // Otherwise interpolate
-                    let y_eval = solver.interpolate(ode, t_eval);
+                    let y_eval = solver.interpolate(t_eval).unwrap();
                     t_out.push(t_eval);
                     y_out.push(y_eval);
                 }

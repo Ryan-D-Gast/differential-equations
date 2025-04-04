@@ -237,8 +237,6 @@ macro_rules! adaptive_dense_runge_kutta_method {
             a_dense: [[T; $stages + $extra_stages]; $extra_stages],  // Type inferred from a_dense
             c_dense: [T; $extra_stages],
             b_dense: [[T; $order]; $dense_stages],
-            // For interpolation caching
-            cached_step_num: usize,
             cont: [T; $dense_stages], // Interpolation polynomial coefficients
 
             // Settings
@@ -307,7 +305,6 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     a_dense: a_dense_t,
                     c_dense: c_dense_t,
                     b_dense: b_dense_t,
-                    cached_step_num: 0,
                     cont,
                     rtol: T::from_f64(1.0e-6).unwrap(),
                     atol: T::from_f64(1.0e-6).unwrap(),
@@ -347,7 +344,6 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 self.accepted_steps = 0;
                 self.reject = false;
                 self.n_stiff = 0;
-                self.cached_step_num = 0;
 
                 // Initialize State
                 self.t = t0;
@@ -437,6 +433,18 @@ macro_rules! adaptive_dense_runge_kutta_method {
                         self.reject = false;
                         self.status = $crate::ode::SolverStatus::Solving;
                     }
+
+                    // Compute extra stages for dense / continious output via interpolation
+                    for i in 0..$extra_stages {
+                        let mut y_stage = self.y;
+                        // Sum over the main stages
+                        for j in 0..($stages + $extra_stages) {
+                            y_stage += self.k[j] * (self.a_dense[i][j] * self.h);
+                        }
+                        
+                        ode.diff(self.t + self.c_dense[i] * self.h, &y_stage, &mut self.k[$stages + i]);
+                    }
+                    self.evals += $extra_stages;
                     
                     // Update state with the higher-order solution
                     self.t += self.h;
@@ -480,26 +488,10 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 self.steps += 1;
             }
 
-            fn interpolate<F>(&mut self, ode: &F, t_interp: T) -> $crate::SMatrix<T, R, C>
-            where
-                F: $crate::ode::ODE<T, R, C, E>
-            {
-                // Compute extra stages for interpolation only if we're in a new step
-                if self.cached_step_num != self.steps {
-                    // Compute extra stages for interpolation
-                    for i in 0..$extra_stages {
-                        let mut y_stage = self.y_prev;
-                        // Sum over the main stages
-                        for j in 0..($stages + $extra_stages) {
-                            y_stage += self.k[j] * (self.a_dense[i][j] * self.h_prev);
-                        }
-                        
-                        ode.diff(self.t_prev + self.c_dense[i] * self.h_prev, &y_stage, &mut self.k[$stages + i]);
-                    }
-                    self.evals += $extra_stages;
-            
-                    // Mark the step as cached
-                    self.cached_step_num = self.steps;
+            fn interpolate(&mut self, t_interp: T) -> Result<$crate::SMatrix<T, R, C>, $crate::ode::InterpolationError<T, R, C>> {
+                // Check if t is within bounds
+                if t_interp < self.t_prev || t_interp > self.t {
+                    return Err($crate::ode::InterpolationError::OutOfBounds(t_interp, self.t_prev, self.t));
                 }
 
                 // Calculate the normalized distance within the step [0, 1]
@@ -520,12 +512,12 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 }
             
                 // Compute the interpolated value
-                let mut result = self.y_prev;
+                let mut y_interp = self.y_prev;
                 for i in 0..($stages + $extra_stages) {
-                    result += self.k[i] * self.cont[i] * self.h_prev;
+                    y_interp += self.k[i] * self.cont[i] * self.h_prev;
                 }
                 
-                result
+                Ok(y_interp)
             }
 
             fn t(&self) -> T {

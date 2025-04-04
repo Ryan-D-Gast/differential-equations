@@ -75,7 +75,7 @@ where
     T: Real,
     E: EventData
 {
-    fn solout<S, F>(&mut self, solver: &mut S, ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
+    fn solout<S, F>(&mut self, solver: &mut S, _ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R, C>>)
     where 
         F: ODE<T, R, C, E>,
         S: Solver<T, R, C, E>,
@@ -87,7 +87,7 @@ where
         for i in 1..self.n {
             let h_old = t_curr - t_prev;
             let ti = t_prev + T::from_usize(i).unwrap() * h_old / T::from_usize(self.n).unwrap();
-            let yi = solver.interpolate(ode, ti);
+            let yi = solver.interpolate(ti).unwrap();
             t_out.push(ti);
             y_out.push(yi);
         }

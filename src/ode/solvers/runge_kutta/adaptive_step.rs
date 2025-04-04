@@ -434,11 +434,16 @@ macro_rules! adaptive_runge_kutta_method {
                 self.steps += 1;
             }
 
-            fn interpolate<F>(&mut self, _ode: &F, t: T) -> $crate::SMatrix<T, R, C>
-            where 
-                F: $crate::ode::ODE<T, R, C, E> 
-            {
-                $crate::interpolate::cubic_hermite_interpolate(self.t_prev, self.t, &self.y_prev, &self.y, &self.dydt_prev, &self.dydt, t)
+            fn interpolate(&mut self, t_interp: T) -> Result<$crate::SMatrix<T, R, C>, $crate::ode::InterpolationError<T, R, C>> {
+                // Check if t is within bounds
+                if t_interp < self.t_prev || t_interp > self.t {
+                    return Err($crate::ode::InterpolationError::OutOfBounds(t_interp, self.t_prev, self.t));
+                }
+
+                // Compute the interpolated value using cubic Hermite interpolation
+                let y_interp = $crate::interpolate::cubic_hermite_interpolate(self.t_prev, self.t, &self.y_prev, &self.y, &self.dydt_prev, &self.dydt, t_interp);
+
+                Ok(y_interp)
             }
 
             fn t(&self) -> T {

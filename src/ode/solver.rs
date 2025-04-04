@@ -43,15 +43,12 @@ where
     /// Interpolate solution between previous and current step
     /// 
     /// # Arguments
-    /// * `system` - System of ODEs to solve.
-    /// * `t`      - Time to interpolate to.
+    /// * `t_interp` - Time to interpolate to.
     /// 
     /// # Returns
-    /// * Interpolated state vector at time t.
+    /// * Interpolated state vector at t_interp.
     /// 
-    fn interpolate<F>(&mut self, ode: &F, t: T) -> SMatrix<T, R, C>
-    where 
-        F: ODE<T, R, C, E>;
+    fn interpolate(&mut self, t_interp: T) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>>;
 
     // Access fields of the solver
 
@@ -123,11 +120,25 @@ where
     Uninitialized, // Solvers default to this until solver.init is called
     BadInput(String), // During solver.init, if input is bad, return this with reason
     Initialized, // After solver.init is called
-    Solving, // While the IMatrix<T, R, C, S>P is being solved via .solve or .step
+    Solving, // While the ODE is being solved
     RejectedStep, // If the solver rejects a step, in this case it will repeat with new smaller step size typically, will return to Solving once the step is accepted
     MaxSteps(T, SMatrix<T, R, C>), // If the solver reaches the maximum number of steps
     StepSize(T, SMatrix<T, R, C>), // If the solver step size converges to zero / becomes smaller then T::default_epsilon (machine default_epsilon)
     Stiffness(T, SMatrix<T, R, C>), // If the solver detects stiffness e.g. step size converging and/or repeated rejected steps unable to progress
     Interrupted(E), // If the solver is interrupted by event with reason
     Complete, // If the solver is solving and has reached the final time of the IMatrix<T, R, C, S>P then Complete is returned to indicate such.
+}
+
+/// Interpolation Error for ODE Solvers
+/// 
+/// # Variants
+/// * `OutOfBounds` - Given t is not within the previous and current step.
+/// 
+#[derive(Debug, PartialEq, Clone)]
+pub enum InterpolationError<T, const R: usize, const C: usize> 
+where 
+    T: Real
+{
+    /// Given t is not within the previous and current step
+    OutOfBounds(T, T, T), // t is not within the previous and current step returns the t, t_prev, t_curr
 }

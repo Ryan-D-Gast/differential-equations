@@ -196,7 +196,7 @@ where
     T: Real,
     E: EventData
 {
-    fn solout<S, F>(&mut self, solver: &mut S, ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R2, C2>>)
+    fn solout<S, F>(&mut self, solver: &mut S, _ode: &F, t_out: &mut Vec<T>, y_out: &mut Vec<SMatrix<T, R2, C2>>)
     where 
         F: ODE<T, R2, C2, E>,
         S: Solver<T, R2, C2, E>
@@ -250,7 +250,7 @@ where
                         T::zero()
                     ) {
                         // Use solver's interpolation for the full state vector
-                        let y_cross = solver.interpolate(ode, t_cross);
+                        let y_cross = solver.interpolate(t_cross).unwrap();
                         
                         // Record the crossing time and value
                         t_out.push(t_cross);
@@ -259,7 +259,7 @@ where
                         // Fallback to linear interpolation if cubic method fails
                         let frac = -last_distance / (distance - last_distance);
                         let t_cross = t_prev + frac * (t_curr - t_prev);
-                        let y_cross = solver.interpolate(ode, t_cross);
+                        let y_cross = solver.interpolate(t_cross).unwrap();
                         
                         t_out.push(t_cross);
                         y_out.push(y_cross);

@@ -226,7 +226,7 @@ where
                         self.threshold
                     ) {
                         // Use solver's interpolation for the full state vector
-                        let y_cross = solver.interpolate(_ode, t_cross);
+                        let y_cross = solver.interpolate(t_cross).unwrap();
                         
                         // Record the crossing time and value
                         t_out.push(t_cross);
@@ -235,7 +235,7 @@ where
                         // Fallback to linear interpolation if cubic method fails
                         let frac = (self.threshold - y_prev_component) / (y_curr_component - y_prev_component);
                         let t_cross = t_prev + frac * (t_curr - t_prev);
-                        let y_cross = solver.interpolate(_ode, t_cross);
+                        let y_cross = solver.interpolate(t_cross).unwrap();
                         
                         t_out.push(t_cross);
                         y_out.push(y_cross);

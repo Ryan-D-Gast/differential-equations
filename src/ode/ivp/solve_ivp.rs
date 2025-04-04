@@ -243,7 +243,7 @@ where
                         }
                         
                         // Interpolate state at guess point
-                        let y = solver.interpolate(ode, t_guess);
+                        let y = solver.interpolate(t_guess).unwrap();
                         
                         // Check event at guess point
                         ode.diff(t_guess, &y, &mut dydt);
@@ -269,7 +269,7 @@ where
                 }
 
                 // Final event point
-                let y_final = solver.interpolate(ode, ts);
+                let y_final = solver.interpolate(ts).unwrap();
                 
                 // Remove points after the event point and add the event point
                 // Find the cutoff index based on integration direction

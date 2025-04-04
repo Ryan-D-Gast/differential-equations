@@ -163,10 +163,16 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         self.y_prev[3] = self.y;
     }
 
-    fn interpolate<F>(&mut self, _ode: &F, t: T) -> SMatrix<T, R, C>
-        where 
-            F: ODE<T, R, C, E> {
-        cubic_hermite_interpolate(self.t_old, self.t, &self.y_old, &self.y, &self.dydt_old, &self.dydt, t)
+    fn interpolate(&mut self, t_interp: T) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
+        // Check if t is within bounds
+        if t_interp < self.t_prev[0] || t_interp > self.t {
+            return Err(InterpolationError::OutOfBounds(t_interp, self.t_prev[0], self.t));
+        }
+
+        // Calculate the interpolation using cubic hermite interpolation
+        let y_interp = cubic_hermite_interpolate(self.t_old, self.t, &self.y_old, &self.y, &self.dydt_old, &self.dydt, t_interp);
+
+        Ok(y_interp)
     }
 
     fn t(&self) -> T {

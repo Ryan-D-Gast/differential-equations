@@ -1,6 +1,6 @@
 //! DOP853 Solver for Ordinary Differential Equations.
 
-use crate::ode::{Solver, SolverStatus, ODE, EventData};
+use crate::ode::{Solver, SolverStatus, ODE, EventData, InterpolationError};
 use crate::ode::solvers::utils::{constrain_step_size, validate_step_size_parameters};
 use crate::traits::Real;
 use nalgebra::SMatrix;
@@ -129,7 +129,6 @@ pub struct DOP853<T: Real, const R: usize, const C: usize, E: EventData> {
     k: [SMatrix<T, R, C>; 12],  // k[0] is derivative at t, others are stage derivatives
 
     // For Interpolation - using array instead of individually numbered variables
-    cached_step_num: usize,
     y_old: SMatrix<T, R, C>, // State at Previous Step
     k_old: SMatrix<T, R, C>, // Derivative at Previous Step
     t_old: T, // Time of Previous Step
@@ -348,6 +347,122 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
                     }
                 }
             }
+
+            // Preperation for dense / continuous output
+            self.cont[0] = self.y;
+            let ydiff = self.k[4] - self.y;
+            self.cont[1] = ydiff;
+            let bspl = self.k[0] * self.h - ydiff;
+            self.cont[2] = bspl;
+            self.cont[3] = ydiff - self.k[3] * self.h - bspl;
+            
+            self.cont[4] = self.k[0] * self.dense[0][0] + 
+                           self.k[5] * self.dense[0][5] + 
+                           self.k[6] * self.dense[0][6] + 
+                           self.k[7] * self.dense[0][7] +
+                           self.k[8] * self.dense[0][8] + 
+                           self.k[9] * self.dense[0][9] + 
+                           self.k[1] * self.dense[0][10] + 
+                           self.k[2] * self.dense[0][11];
+                         
+            self.cont[5] = self.k[0] * self.dense[1][0] + 
+                           self.k[5] * self.dense[1][5] + 
+                           self.k[6] * self.dense[1][6] + 
+                           self.k[7] * self.dense[1][7] +
+                           self.k[8] * self.dense[1][8] + 
+                           self.k[9] * self.dense[1][9] + 
+                           self.k[1] * self.dense[1][10] + 
+                           self.k[2] * self.dense[1][11];
+                         
+            self.cont[6] = self.k[0] * self.dense[2][0] + 
+                           self.k[5] * self.dense[2][5] + 
+                           self.k[6] * self.dense[2][6] + 
+                           self.k[7] * self.dense[2][7] +
+                           self.k[8] * self.dense[2][8] + 
+                           self.k[9] * self.dense[2][9] + 
+                           self.k[1] * self.dense[2][10] + 
+                           self.k[2] * self.dense[2][11];
+                         
+            self.cont[7] = self.k[0] * self.dense[3][0] + 
+                           self.k[5] * self.dense[3][5] + 
+                           self.k[6] * self.dense[3][6] + 
+                           self.k[7] * self.dense[3][7] +
+                           self.k[8] * self.dense[3][8] + 
+                           self.k[9] * self.dense[3][9] + 
+                           self.k[1] * self.dense[3][10] + 
+                           self.k[2] * self.dense[3][11];
+    
+            ode.diff(
+                self.t + self.c_dense[0] * self.h,
+                &(self.y + (
+                    self.k[0] * self.a_dense[0][0] + 
+                    self.k[6] * self.a_dense[0][6] + 
+                    self.k[7] * self.a_dense[0][7] + 
+                    self.k[8] * self.a_dense[0][8] + 
+                    self.k[9] * self.a_dense[0][9] + 
+                    self.k[1] * self.a_dense[0][10] + 
+                    self.k[2] * self.a_dense[0][11] +
+                    self.k[3] * self.a_dense[0][12]) * self.h
+                ),
+                &mut self.k[9]
+            );
+            
+            ode.diff(
+                self.t + self.c_dense[1] * self.h,
+                &(self.y + (
+                    self.k[0] * self.a_dense[1][0] + 
+                    self.k[5] * self.a_dense[1][5] + 
+                    self.k[6] * self.a_dense[1][6] + 
+                    self.k[7] * self.a_dense[1][7] + 
+                    self.k[1] * self.a_dense[1][10] + 
+                    self.k[2] * self.a_dense[1][11] + 
+                    self.k[3] * self.a_dense[1][12] + 
+                    self.k[9] * self.a_dense[1][13]) * self.h
+                ),
+                &mut self.k[1]
+            );
+            
+            ode.diff(
+                self.t + self.c_dense[2] * self.h,
+                &(self.y + (
+                    self.k[0] * self.a_dense[2][0] + 
+                    self.k[5] * self.a_dense[2][5] + 
+                    self.k[6] * self.a_dense[2][6] + 
+                    self.k[7] * self.a_dense[2][7] + 
+                    self.k[8] * self.a_dense[2][8] + 
+                    self.k[3] * self.a_dense[2][12] + 
+                    self.k[9] * self.a_dense[2][13] + 
+                    self.k[1] * self.a_dense[2][14]) * self.h
+                ),
+                &mut self.k[2]
+            );
+            self.evals += 3;
+    
+            // Final preparation - add contributions from the extra stages and scale
+            self.cont[4] = (self.cont[4] + 
+                           self.k[3] * self.dense[0][12] + 
+                           self.k[9] * self.dense[0][13] + 
+                           self.k[1] * self.dense[0][14] + 
+                           self.k[2] * self.dense[0][15]) * self.h;
+                         
+            self.cont[5] = (self.cont[5] + 
+                           self.k[3] * self.dense[1][12] + 
+                           self.k[9] * self.dense[1][13] + 
+                           self.k[1] * self.dense[1][14] + 
+                           self.k[2] * self.dense[1][15]) * self.h;
+                         
+            self.cont[6] = (self.cont[6] + 
+                           self.k[3] * self.dense[2][12] + 
+                           self.k[9] * self.dense[2][13] + 
+                           self.k[1] * self.dense[2][14] + 
+                           self.k[2] * self.dense[2][15]) * self.h;
+                         
+            self.cont[7] = (self.cont[7] + 
+                           self.k[3] * self.dense[3][12] + 
+                           self.k[9] * self.dense[3][13] + 
+                           self.k[1] * self.dense[3][14] + 
+                           self.k[2] * self.dense[3][15]) * self.h;
+
     
             // For Interpolation
             self.y_old = self.y;
@@ -377,140 +492,22 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         self.steps += 1;
     }
 
-    fn interpolate<F>(&mut self, ode: &F, t: T) -> SMatrix<T, R, C>
-    where
-        F: ODE<T, R, C, E>
-    {
-        if self.cached_step_num != self.steps {
-            // Initial coefficients
-            self.cont[0] = self.y_old;
-            let ydiff = self.k[4] - self.y_old;
-            self.cont[1] = ydiff;
-            let bspl = self.k_old * self.h_old - ydiff;
-            self.cont[2] = bspl;
-            self.cont[3] = ydiff - self.k[3] * self.h_old - bspl;
-            
-            self.cont[4] = self.k_old * self.dense[0][0] + 
-                           self.k[5] * self.dense[0][5] + 
-                           self.k[6] * self.dense[0][6] + 
-                           self.k[7] * self.dense[0][7] +
-                           self.k[8] * self.dense[0][8] + 
-                           self.k[9] * self.dense[0][9] + 
-                           self.k[1] * self.dense[0][10] + 
-                           self.k[2] * self.dense[0][11];
-                         
-            self.cont[5] = self.k_old * self.dense[1][0] + 
-                           self.k[5] * self.dense[1][5] + 
-                           self.k[6] * self.dense[1][6] + 
-                           self.k[7] * self.dense[1][7] +
-                           self.k[8] * self.dense[1][8] + 
-                           self.k[9] * self.dense[1][9] + 
-                           self.k[1] * self.dense[1][10] + 
-                           self.k[2] * self.dense[1][11];
-                         
-            self.cont[6] = self.k_old * self.dense[2][0] + 
-                           self.k[5] * self.dense[2][5] + 
-                           self.k[6] * self.dense[2][6] + 
-                           self.k[7] * self.dense[2][7] +
-                           self.k[8] * self.dense[2][8] + 
-                           self.k[9] * self.dense[2][9] + 
-                           self.k[1] * self.dense[2][10] + 
-                           self.k[2] * self.dense[2][11];
-                         
-            self.cont[7] = self.k_old * self.dense[3][0] + 
-                           self.k[5] * self.dense[3][5] + 
-                           self.k[6] * self.dense[3][6] + 
-                           self.k[7] * self.dense[3][7] +
-                           self.k[8] * self.dense[3][8] + 
-                           self.k[9] * self.dense[3][9] + 
-                           self.k[1] * self.dense[3][10] + 
-                           self.k[2] * self.dense[3][11];
-    
-            // Next 3 Function Evaluations - using the stored a_dense and c_dense arrays
-            ode.diff(
-                self.t_old + self.c_dense[0] * self.h_old,
-                &(self.y_old + (
-                    self.k_old * self.a_dense[0][0] + 
-                    self.k[6] * self.a_dense[0][6] + 
-                    self.k[7] * self.a_dense[0][7] + 
-                    self.k[8] * self.a_dense[0][8] + 
-                    self.k[9] * self.a_dense[0][9] + 
-                    self.k[1] * self.a_dense[0][10] + 
-                    self.k[2] * self.a_dense[0][11] +
-                    self.k[3] * self.a_dense[0][12]) * self.h_old
-                ),
-                &mut self.k[9]
-            );
-            
-            ode.diff(
-                self.t_old + self.c_dense[1] * self.h_old,
-                &(self.y_old + (
-                    self.k_old * self.a_dense[1][0] + 
-                    self.k[5] * self.a_dense[1][5] + 
-                    self.k[6] * self.a_dense[1][6] + 
-                    self.k[7] * self.a_dense[1][7] + 
-                    self.k[1] * self.a_dense[1][10] + 
-                    self.k[2] * self.a_dense[1][11] + 
-                    self.k[3] * self.a_dense[1][12] + 
-                    self.k[9] * self.a_dense[1][13]) * self.h_old
-                ),
-                &mut self.k[1]
-            );
-            
-            ode.diff(
-                self.t_old + self.c_dense[2] * self.h_old,
-                &(self.y_old + (
-                    self.k_old * self.a_dense[2][0] + 
-                    self.k[5] * self.a_dense[2][5] + 
-                    self.k[6] * self.a_dense[2][6] + 
-                    self.k[7] * self.a_dense[2][7] + 
-                    self.k[8] * self.a_dense[2][8] + 
-                    self.k[3] * self.a_dense[2][12] + 
-                    self.k[9] * self.a_dense[2][13] + 
-                    self.k[1] * self.a_dense[2][14]) * self.h_old
-                ),
-                &mut self.k[2]
-            );
-            self.evals += 3;
-    
-            // Final preparation - add contributions from the extra stages and scale
-            self.cont[4] = (self.cont[4] + 
-                           self.k[3] * self.dense[0][12] + 
-                           self.k[9] * self.dense[0][13] + 
-                           self.k[1] * self.dense[0][14] + 
-                           self.k[2] * self.dense[0][15]) * self.h_old;
-                         
-            self.cont[5] = (self.cont[5] + 
-                           self.k[3] * self.dense[1][12] + 
-                           self.k[9] * self.dense[1][13] + 
-                           self.k[1] * self.dense[1][14] + 
-                           self.k[2] * self.dense[1][15]) * self.h_old;
-                         
-            self.cont[6] = (self.cont[6] + 
-                           self.k[3] * self.dense[2][12] + 
-                           self.k[9] * self.dense[2][13] + 
-                           self.k[1] * self.dense[2][14] + 
-                           self.k[2] * self.dense[2][15]) * self.h_old;
-                         
-            self.cont[7] = (self.cont[7] + 
-                           self.k[3] * self.dense[3][12] + 
-                           self.k[9] * self.dense[3][13] + 
-                           self.k[1] * self.dense[3][14] + 
-                           self.k[2] * self.dense[3][15]) * self.h_old;
-    
-            // Step is cached
-            self.cached_step_num = self.steps;
+    fn interpolate(&mut self, t_interp: T) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
+        // Check if interpolation is out of bounds
+        if t_interp < self.t_old || t_interp > self.t {
+            return Err(InterpolationError::OutOfBounds(t_interp, self.t_old, self.t));
         }
-    
+
         // Evaluate the interpolation polynomial at the requested time
-        let s = (t - self.t_old) / self.h_old;
+        let s = (t_interp - self.t_old) / self.h_old;
         let s1 = T::one() - s;
     
         // Compute the interpolated value using nested polynomial evaluation
         let conpar = self.cont[4] + (self.cont[5] + (self.cont[6] + self.cont[7] * s) * s1) * s;
         
-    
-        self.cont[0] + (self.cont[1] + (self.cont[2] + (self.cont[3] + conpar * s1) * s) * s1) * s
+        let y_interp = self.cont[0] + (self.cont[1] + (self.cont[2] + (self.cont[3] + conpar * s1) * s) * s1) * s;
+
+        Ok(y_interp)
     }
 
     fn t(&self) -> T {
@@ -786,7 +783,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Default for DOP853<T
             
             // Coefficents and temporary storage
             k: k_zeros,
-            cached_step_num: 0,
             y_old: SMatrix::zeros(),
             k_old: SMatrix::zeros(),
             t_old: T::zero(),

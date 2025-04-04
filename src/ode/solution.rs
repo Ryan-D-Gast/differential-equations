@@ -36,6 +36,10 @@ where
     pub solve_time: T,
 }
 
+// Current Solution of the ODE Solver
+
+
+// Post-processing methods for the solution
 impl<T, const R: usize, const C: usize, E, S> Solution<T, R, C, E, S> 
 where 
     T: Real,
