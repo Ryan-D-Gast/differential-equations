@@ -6,7 +6,8 @@ use crate::traits::Real;
 use nalgebra::SMatrix;
 
 /// Dormand Prince 8(5, 3) Method for solving ordinary differential equations.
-/// 8th order Dormand Prince method with 5th order error estimation and 3rd order interpolation.
+/// 8th order Dormand Prince method with embedded 5th order error estimation and 3rd order interpolation.
+/// The resulting interpolant is of order 7.
 /// 
 /// Builds should begin with weight, normal, dense, or even methods.
 /// and then chain the other methods to set the parameters.
@@ -389,7 +390,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             self.cont[2] = bspl;
             self.cont[3] = ydiff - self.k[3] * self.h_old - bspl;
             
-            // Use stored dense output coefficients instead of direct T::from_f64() calls
             self.cont[4] = self.k_old * self.dense[0][0] + 
                            self.k[5] * self.dense[0][5] + 
                            self.k[6] * self.dense[0][6] + 
