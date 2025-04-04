@@ -1,4 +1,4 @@
-//! Adaptive step size Runge-Kutta methods without integrated dense output
+//! Adaptive step size Runge-Kutta methods without integrated dense output via cubic Hermite interpolation.
 
 use crate::adaptive_runge_kutta_method;
 

@@ -1,4 +1,4 @@
-//! Adaptive Runge-Kutta method with dense output
+//! Adaptive Runge-Kutta method with high order dense output via embedded stages.
 
 use crate::adaptive_dense_runge_kutta_method;
 
