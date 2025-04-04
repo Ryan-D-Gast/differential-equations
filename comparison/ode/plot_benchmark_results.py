@@ -187,7 +187,7 @@ def create_bar_graph(df, hardware_info=None, exclude=None, output_path=None, pro
         axes[i].set_visible(False)
     
     # Add overall title
-    fig.suptitle(f'rgode DOP853 Performance vs Fortran Implementations', fontsize=16, y=0.98)
+    fig.suptitle(f'Rust DOP853 Performance vs Fortran Implementations', fontsize=16, y=0.98)
     
     # Create language legend
     language_patches = [plt.Rectangle((0, 0), 1, 1, color=color_map[lang]) for lang in languages]
