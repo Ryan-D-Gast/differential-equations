@@ -484,9 +484,6 @@ macro_rules! adaptive_dense_runge_kutta_method {
             where
                 F: $crate::ode::ODE<T, R, C, E>
             {
-                // Calculate the normalized distance within the step [0, 1]
-                let u = (t_interp - self.t_prev) / self.h_prev;
-            
                 // Compute extra stages for interpolation only if we're in a new step
                 if self.cached_step_num != self.steps {
                     // Compute extra stages for interpolation
@@ -504,6 +501,9 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     // Mark the step as cached
                     self.cached_step_num = self.steps;
                 }
+
+                // Calculate the normalized distance within the step [0, 1]
+                let s = (t_interp - self.t_prev) / self.h_prev;
             
                 // Compute the interpolation coefficients using Horner's method
                 for i in 0..$dense_stages {
@@ -512,11 +512,11 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     
                     // Apply Horner's method for polynomial evaluation
                     for j in (0..$order-1).rev() {
-                        self.cont[i] = self.cont[i] * u + self.b_dense[i][j];
+                        self.cont[i] = self.cont[i] * s + self.b_dense[i][j];
                     }
                     
-                    // Multiply by u as all interpolation terms start at u^1
-                    self.cont[i] *= u;
+                    // Multiply by s as all interpolation terms start at s^1
+                    self.cont[i] *= s;
                 }
             
                 // Compute the interpolated value
