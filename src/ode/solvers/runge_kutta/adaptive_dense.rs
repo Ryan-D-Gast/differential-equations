@@ -72,7 +72,7 @@ adaptive_dense_runge_kutta_method!(
     /// that makes it suitable for problems requiring accurate solutions at 
     /// intermediate points between steps.
     /// 
-    /// Source: [Verner](https://www.sfu.ca/~jverner/)
+    /// Source: [Verner](https://www.sfu.ca/~jverner/RKV98.IIa.Efficient.00000034399.240407.BetterEfficientonWeb)
     name: Verner98,
     a: [
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
