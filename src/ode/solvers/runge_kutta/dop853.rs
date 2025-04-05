@@ -117,7 +117,7 @@ pub struct DOP853<T: Real, const R: usize, const C: usize, E: EventData> {
     // Dense output coefficients
     a_dense: [[T; 16]; 3],
     c_dense: [T; 3],
-    dense: [[T; 16]; 4],
+    b_dense: [[T; 16]; 4],
 
     // Derivatives - using array instead of individually numbered variables
     k: [SMatrix<T, R, C>; 12],  // k[0] is derivative at t, others are stage derivatives
@@ -343,41 +343,41 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             self.cont[2] = bspl;
             self.cont[3] = ydiff - self.k[3] * self.h - bspl;
             
-            self.cont[4] = self.k[0] * self.dense[0][0] + 
-                           self.k[5] * self.dense[0][5] + 
-                           self.k[6] * self.dense[0][6] + 
-                           self.k[7] * self.dense[0][7] +
-                           self.k[8] * self.dense[0][8] + 
-                           self.k[9] * self.dense[0][9] + 
-                           self.k[1] * self.dense[0][10] + 
-                           self.k[2] * self.dense[0][11];
+            self.cont[4] = self.k[0] * self.b_dense[0][0] + 
+                           self.k[5] * self.b_dense[0][5] + 
+                           self.k[6] * self.b_dense[0][6] + 
+                           self.k[7] * self.b_dense[0][7] +
+                           self.k[8] * self.b_dense[0][8] + 
+                           self.k[9] * self.b_dense[0][9] + 
+                           self.k[1] * self.b_dense[0][10] + 
+                           self.k[2] * self.b_dense[0][11];
                          
-            self.cont[5] = self.k[0] * self.dense[1][0] + 
-                           self.k[5] * self.dense[1][5] + 
-                           self.k[6] * self.dense[1][6] + 
-                           self.k[7] * self.dense[1][7] +
-                           self.k[8] * self.dense[1][8] + 
-                           self.k[9] * self.dense[1][9] + 
-                           self.k[1] * self.dense[1][10] + 
-                           self.k[2] * self.dense[1][11];
+            self.cont[5] = self.k[0] * self.b_dense[1][0] + 
+                           self.k[5] * self.b_dense[1][5] + 
+                           self.k[6] * self.b_dense[1][6] + 
+                           self.k[7] * self.b_dense[1][7] +
+                           self.k[8] * self.b_dense[1][8] + 
+                           self.k[9] * self.b_dense[1][9] + 
+                           self.k[1] * self.b_dense[1][10] + 
+                           self.k[2] * self.b_dense[1][11];
                          
-            self.cont[6] = self.k[0] * self.dense[2][0] + 
-                           self.k[5] * self.dense[2][5] + 
-                           self.k[6] * self.dense[2][6] + 
-                           self.k[7] * self.dense[2][7] +
-                           self.k[8] * self.dense[2][8] + 
-                           self.k[9] * self.dense[2][9] + 
-                           self.k[1] * self.dense[2][10] + 
-                           self.k[2] * self.dense[2][11];
+            self.cont[6] = self.k[0] * self.b_dense[2][0] + 
+                           self.k[5] * self.b_dense[2][5] + 
+                           self.k[6] * self.b_dense[2][6] + 
+                           self.k[7] * self.b_dense[2][7] +
+                           self.k[8] * self.b_dense[2][8] + 
+                           self.k[9] * self.b_dense[2][9] + 
+                           self.k[1] * self.b_dense[2][10] + 
+                           self.k[2] * self.b_dense[2][11];
                          
-            self.cont[7] = self.k[0] * self.dense[3][0] + 
-                           self.k[5] * self.dense[3][5] + 
-                           self.k[6] * self.dense[3][6] + 
-                           self.k[7] * self.dense[3][7] +
-                           self.k[8] * self.dense[3][8] + 
-                           self.k[9] * self.dense[3][9] + 
-                           self.k[1] * self.dense[3][10] + 
-                           self.k[2] * self.dense[3][11];
+            self.cont[7] = self.k[0] * self.b_dense[3][0] + 
+                           self.k[5] * self.b_dense[3][5] + 
+                           self.k[6] * self.b_dense[3][6] + 
+                           self.k[7] * self.b_dense[3][7] +
+                           self.k[8] * self.b_dense[3][8] + 
+                           self.k[9] * self.b_dense[3][9] + 
+                           self.k[1] * self.b_dense[3][10] + 
+                           self.k[2] * self.b_dense[3][11];
     
             ode.diff(
                 self.t + self.c_dense[0] * self.h,
@@ -425,32 +425,32 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             );
 
             // Log evals
-            stats.add_evals(3); // Increment function evaluations for the dense output calculations
+            stats.add_evals(3); // Increment function evaluations for the b_dense output calculations
     
             // Final preparation - add contributions from the extra stages and scale
             self.cont[4] = (self.cont[4] + 
-                           self.k[3] * self.dense[0][12] + 
-                           self.k[9] * self.dense[0][13] + 
-                           self.k[1] * self.dense[0][14] + 
-                           self.k[2] * self.dense[0][15]) * self.h;
+                           self.k[3] * self.b_dense[0][12] + 
+                           self.k[9] * self.b_dense[0][13] + 
+                           self.k[1] * self.b_dense[0][14] + 
+                           self.k[2] * self.b_dense[0][15]) * self.h;
                          
             self.cont[5] = (self.cont[5] + 
-                           self.k[3] * self.dense[1][12] + 
-                           self.k[9] * self.dense[1][13] + 
-                           self.k[1] * self.dense[1][14] + 
-                           self.k[2] * self.dense[1][15]) * self.h;
+                           self.k[3] * self.b_dense[1][12] + 
+                           self.k[9] * self.b_dense[1][13] + 
+                           self.k[1] * self.b_dense[1][14] + 
+                           self.k[2] * self.b_dense[1][15]) * self.h;
                          
             self.cont[6] = (self.cont[6] + 
-                           self.k[3] * self.dense[2][12] + 
-                           self.k[9] * self.dense[2][13] + 
-                           self.k[1] * self.dense[2][14] + 
-                           self.k[2] * self.dense[2][15]) * self.h;
+                           self.k[3] * self.b_dense[2][12] + 
+                           self.k[9] * self.b_dense[2][13] + 
+                           self.k[1] * self.b_dense[2][14] + 
+                           self.k[2] * self.b_dense[2][15]) * self.h;
                          
             self.cont[7] = (self.cont[7] + 
-                           self.k[3] * self.dense[3][12] + 
-                           self.k[9] * self.dense[3][13] + 
-                           self.k[1] * self.dense[3][14] + 
-                           self.k[2] * self.dense[3][15]) * self.h;
+                           self.k[3] * self.b_dense[3][12] + 
+                           self.k[9] * self.b_dense[3][13] + 
+                           self.k[1] * self.b_dense[3][14] + 
+                           self.k[2] * self.b_dense[3][15]) * self.h;
 
     
             // For Interpolation
@@ -692,7 +692,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Default for DOP853<T
         
         let a_dense = DOP853_A_DENSE.map(|row| row.map(|x| T::from_f64(x).unwrap()));
         let c_dense = DOP853_C_DENSE.map(|x| T::from_f64(x).unwrap());
-        let dense = DOP853_DENSE.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b_dense = DOP853_DENSE.map(|row| row.map(|x| T::from_f64(x).unwrap()));
         
         // Create arrays of zeros for k and cont matrices
         let k_zeros = [SMatrix::zeros(); 12];
@@ -732,7 +732,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Default for DOP853<T
             bhh,
             a_dense,
             c_dense,
-            dense,
+            b_dense,
             
             // Status and Counters
             status: SolverStatus::Uninitialized,
