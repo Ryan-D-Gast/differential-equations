@@ -220,6 +220,9 @@ macro_rules! runge_kutta_method {
             b: [T; $stages],
             c: [T; $stages],
 
+            // Number of function evaluations
+            evals: usize,
+
             // Status
             status: $crate::ode::SolverStatus<T, R, C, E>,
         }
@@ -244,16 +247,16 @@ macro_rules! runge_kutta_method {
                     a: a_t,
                     b: b_t,
                     c: c_t,
+                    evals: 0,
                     status: $crate::ode::SolverStatus::Uninitialized,
                 }
             }
         }
 
         impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> $crate::ode::Solver<T, R, C, E> for $name<T, R, C, E> {
-            fn init<F, S>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>, stats: &mut S) -> Result<(), $crate::ode::SolverStatus<T, R, C, E>>
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<(), $crate::ode::SolverStatus<T, R, C, E>>
             where 
-                F: $crate::ode::ODE<T, R, C, E>,
-                S: $crate::ode::Statistics
+                F: $crate::ode::ODE<T, R, C, E>
             {
                 // Check Bounds
                 match $crate::ode::solvers::utils::validate_step_size_parameters(self.h, T::zero(), T::infinity(), t0, tf) {
@@ -265,7 +268,7 @@ macro_rules! runge_kutta_method {
                 self.t = t0;
                 self.y = y.clone();
                 ode.diff(t0, y, &mut self.k[0]);
-                stats.add_evals(1);
+                self.evals += 1;
 
                 // Initialize previous state
                 self.t_prev = t0;
@@ -278,10 +281,9 @@ macro_rules! runge_kutta_method {
                 Ok(())
             }
 
-            fn step<F ,S>(&mut self, ode: &F, stats: &mut S)
+            fn step<F>(&mut self, ode: &F)
             where 
-                F: $crate::ode::ODE<T, R, C, E>,
-                S: $crate::ode::Statistics
+                F: $crate::ode::ODE<T, R, C, E>
             {
                 // Log previous state
                 self.t_prev = self.t;
@@ -306,7 +308,7 @@ macro_rules! runge_kutta_method {
                 }
 
                 // Record the number of function evaluations
-                stats.add_evals($stages);
+                self.evals += $stages;
                 
                 // Compute the final update
                 let mut delta_y = $crate::SMatrix::<T, R, C>::zeros();
@@ -344,6 +346,10 @@ macro_rules! runge_kutta_method {
 
             fn y_prev(&self) -> &$crate::SMatrix<T, R, C> {
                 &self.y_prev
+            }
+
+            fn evals(&self) -> usize {
+                self.evals
             }
 
             fn h(&self) -> T {

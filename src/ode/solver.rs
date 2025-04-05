@@ -1,6 +1,6 @@
 //! Solver Trait for ODE Solvers
 
-use crate::ode::{ODE, EventData, Statistics};
+use crate::ode::{ODE, EventData};
 use crate::traits::Real;
 use nalgebra::SMatrix;
 
@@ -27,10 +27,9 @@ where
     /// # Returns
     /// * Result<(), SolverStatus<T, R, C, E>> - Ok if initialization is successful,
     /// 
-    fn init<F, S>(&mut self, ode: &F, t0: T, tf: T, y: &SMatrix<T, R, C>, stats: &mut S) -> Result<(), SolverStatus<T, R, C, E>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &SMatrix<T, R, C>) -> Result<(), SolverStatus<T, R, C, E>>
     where
-        F: ODE<T, R, C, E>,
-        S: Statistics;
+        F: ODE<T, R, C, E>;
 
     /// Step through solving the ODE by one step
     /// 
@@ -40,10 +39,9 @@ where
     /// # Returns
     /// * `Number of function evaluations` - Number of function evaluations performed during the step.
     /// 
-    fn step<F, S>(&mut self, ode: &F, stats: &mut S)
+    fn step<F>(&mut self, ode: &F)
     where
-        F: ODE<T, R, C, E>,
-        S: Statistics;
+        F: ODE<T, R, C, E>;
 
     /// Interpolate solution between previous and current step
     /// 
@@ -68,6 +66,9 @@ where
 
     /// Access solution of previous accepted step
     fn y_prev(&self) -> &SMatrix<T, R, C>;
+
+    /// Access the number of function evaluations
+    fn evals(&self) -> usize;
 
     /// Access step size of next step
     fn h(&self) -> T;

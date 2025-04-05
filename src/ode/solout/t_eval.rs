@@ -80,9 +80,10 @@ where
     T: Real,
     E: EventData
 {
-    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
-        where 
-            S: Solver<T, R, C, E>
+    fn solout<SV, SI>(&mut self, solver: &mut SV, solution: &mut SI)
+    where 
+        SV: Solver<T, R, C, E>,
+        SI: SolutionInterface<T, R, C, E>
     {
         let t_prev = solver.t_prev();
         let t_curr = solver.t();
@@ -102,11 +103,11 @@ where
             if in_range {
                 // If the evaluation point is exactly at the current step, just use the solver's state
                 if t_eval == t_curr {
-                    solution.push(t_eval, *solver.y());
+                    solution.record(t_eval, *solver.y());
                 } else {
                     // Otherwise interpolate
                     let y_eval = solver.interpolate(t_eval).unwrap();
-                    solution.push(t_eval, y_eval);
+                    solution.record(t_eval, y_eval);
                 }
                 idx += 1;
             } else {

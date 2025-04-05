@@ -62,16 +62,17 @@ pub struct APCF4<T: Real, const R: usize, const C: usize, E: EventData> {
     k2: SMatrix<T, R, C>,
     k3: SMatrix<T, R, C>,
     k4: SMatrix<T, R, C>,
+    // Number of evaluations
+    pub evals: usize,
     // Status
     status: SolverStatus<T, R, C, E>,
 }
 
 // Implement Solver Trait for APCF4
 impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> for APCF4<T, R, C, E> {
-    fn init<F, S>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>, stats: &mut S) -> Result<(), SolverStatus<T, R, C, E>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>) -> Result<(), SolverStatus<T, R, C, E>>
     where
         F: ODE<T, R, C, E>,
-        S: Statistics,
     {
         // Check Bounds
         match validate_step_size_parameters(self.h, T::zero(), T::infinity(), t0, tf) {
@@ -103,7 +104,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             self.t += self.h;
             self.t_prev[i] = self.t;
             self.y_prev[i] = self.y;
-            stats.add_evals(4); // 4 evaluations per Runge-Kutta step
+            self.evals += 4; // 4 evaluations per Runge-Kutta step
 
             if i == 1 {
                 self.dydt = self.k1;
@@ -115,10 +116,9 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         Ok(())
     }
 
-    fn step<F, S>(&mut self, ode: &F, stats: &mut S)
+    fn step<F>(&mut self, ode: &F)
     where
         F: ODE<T, R, C, E>,
-        S: Statistics,
     {
         // state for interpolation
         self.t_old = self.t;
@@ -148,7 +148,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         self.t += self.h;
         self.y = corrector;
         ode.diff(self.t, &self.y, &mut self.dydt);
-        stats.add_evals(6); // 6 evaluations for predictor-corrector step
+        self.evals += 6; // 6 evaluations for predictor-corrector step
 
         // Shift history: drop the oldest and add the new state at the end.
         self.t_prev.copy_within(1..4, 0);
@@ -183,6 +183,10 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
     fn y_prev(&self) -> &SMatrix<T, R, C> {
         &self.y_old
+    }
+
+    fn evals(&self) -> usize {
+        self.evals
     }
 
     fn h(&self) -> T {
@@ -227,6 +231,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Default for APCF4<T,
             k2: SMatrix::<T, R, C>::zeros(),
             k3: SMatrix::<T, R, C>::zeros(),
             k4: SMatrix::<T, R, C>::zeros(),
+            evals: 0,
             status: SolverStatus::Uninitialized,
         }
     }

@@ -1,6 +1,6 @@
 //! DOP853 Solver for Ordinary Differential Equations.
 
-use crate::ode::{Solver, SolverStatus, ODE, EventData, InterpolationError, Statistics};
+use crate::ode::{Solver, SolverStatus, ODE, EventData, InterpolationError};
 use crate::ode::solvers::utils::{constrain_step_size, validate_step_size_parameters};
 use crate::traits::Real;
 use nalgebra::SMatrix;
@@ -101,6 +101,9 @@ pub struct DOP853<T: Real, const R: usize, const C: usize, E: EventData> {
 
     // Iteration Tracking
     status: SolverStatus<T, R, C, E>,
+    evals: usize, // Function Evaluations
+    steps: usize, // Number of Steps
+    n_accepted: usize, // Number of Accepted Steps
 
     // Stiffness Detection
     h_lamb: T,
@@ -130,10 +133,9 @@ pub struct DOP853<T: Real, const R: usize, const C: usize, E: EventData> {
 }
 
 impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> for DOP853<T, R, C, E> {    
-    fn init<F, S>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>, stats: &mut S)  -> Result<(), SolverStatus<T, R, C, E>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>)  -> Result<(), SolverStatus<T, R, C, E>>
     where 
         F: ODE<T, R, C, E>,
-        S: Statistics,
     {
         // Set tf so step size doesn't go past it
         self.tf = tf;
@@ -144,7 +146,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
         // Calculate derivative at t0
         ode.diff(t0, y0, &mut self.k[0]);
-        stats.add_evals(1); // Increment function evaluations for initial derivative calculation
+        self.evals += 1; // Increment function evaluations for initial derivative calculation
 
         // Initialize Previous State
         self.t_old = self.t;
@@ -153,7 +155,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         // Calculate Initial Step
         if self.h0 == T::zero() {
             self.h_init(ode, t0, tf);
-            stats.add_evals(1); // Increment function evaluations for initial step size calculation
+            self.evals += 1; // Increment function evaluations for initial step size calculation
 
             // Adjust h0 to be within bounds
             let posneg = (tf - t0).signum();
@@ -187,13 +189,12 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         Ok(())
     }
 
-    fn step<F, S>(&mut self, ode: &F, stats: &mut S)
+    fn step<F>(&mut self, ode: &F)
     where 
         F: ODE<T, R, C, E>,
-        S: Statistics,
     {
         // Check if Max Steps Reached
-        if stats.steps() >= self.max_steps {
+        if self.steps >= self.max_steps {
             self.status = SolverStatus::MaxSteps(self.t, self.y);
         }
     
@@ -265,7 +266,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         self.k[4] = self.y + self.k[3] * self.h;
 
         // Log evals
-        stats.add_evals(11); // Increment function evaluations for the final derivative calculation
+        self.evals += 11; // Increment function evaluations for the 11 derivative calculations
         
         // Error Estimation
         let mut err = T::zero();
@@ -305,10 +306,10 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             self.facold = err.max(T::from_f64(1.0e-4).unwrap());
             let y_new = self.k[4];
             ode.diff(t_new, &y_new, &mut self.k[3]);
-            stats.add_evals(1);
+            self.evals += 1; // Increment function evaluations for the new derivative calculation
     
             // stiffness detection
-            if stats.accepted_steps() % self.n_stiff == 0 {
+            if self.n_accepted % self.n_stiff == 0 {
                 let mut stdnum = T::zero();
                 let mut stden = T::zero();
                 let sqr = self.k[3] - self.k[2];
@@ -425,7 +426,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             );
 
             // Log evals
-            stats.add_evals(3); // Increment function evaluations for the b_dense output calculations
+            self.evals += 3; // Increment function evaluations for the dense output calculations
     
             // Final preparation - add contributions from the extra stages and scale
             self.cont[4] = (self.cont[4] + 
@@ -514,6 +515,10 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
     fn h(&self) -> T {
         self.h
+    }
+
+    fn evals(&self) -> usize {
+        self.evals
     }
 
     fn set_h(&mut self, h: T) {
@@ -737,6 +742,9 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Default for DOP853<T
             h_lamb: T::zero(),
             non_stiff_counter: 0,
             stiffness_counter: 0,
+            evals: 0,
+            steps: 0,
+            n_accepted: 0,
             
             // Coefficents and temporary storage
             k: k_zeros,

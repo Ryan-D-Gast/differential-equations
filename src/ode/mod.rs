@@ -117,7 +117,7 @@ pub use solout::{
 mod solution;
 pub use solution::{
     Solution,
-    Statistics,
+    SolutionInterface,
 };
 
 // Solver for ODEs

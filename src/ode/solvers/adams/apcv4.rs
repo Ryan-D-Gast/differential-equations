@@ -84,10 +84,8 @@ pub struct APCV4<T: Real, const R: usize, const C: usize, E: EventData> {
     k4: SMatrix<T, R, C>,
 
     // Statistic Tracking
-    pub evals: usize,
-    pub steps: usize,
-    pub rejected_steps: usize,
-    pub accepted_steps: usize,
+    evals: usize,
+    steps: usize,
 
     // Status
     status: SolverStatus<T, R, C, E>,
@@ -101,10 +99,9 @@ pub struct APCV4<T: Real, const R: usize, const C: usize, E: EventData> {
 
 // Implement Solver Trait for APCV4
 impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> for APCV4<T, R, C, E> {
-    fn init<F, S>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>, stats: &mut S) -> Result<(), SolverStatus<T, R, C, E>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>) -> Result<(), SolverStatus<T, R, C, E>>
     where
         F: ODE<T, R, C, E>,
-        S: Statistics,
     {
         self.tf = tf;
 
@@ -139,7 +136,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             self.t += self.h;
             self.t_prev[i] = self.t;
             self.y_prev[i] = self.y;
-            stats.add_evals(4); // 4 evaluations per Runge-Kutta step
+            self.evals += 4; // 4 evaluations per Runge-Kutta step
 
             if i == 1 {
                 self.dydt = self.k1;
@@ -151,16 +148,16 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         Ok(())
     }
 
-    fn step<F, S>(&mut self, ode: &F, stats: &mut S)
+    fn step<F>(&mut self, ode: &F)
     where
         F: ODE<T, R, C, E>,
-        S: Statistics,
     {
         // Check if Max Steps Reached
-        if stats.steps() >= self.max_steps {
+        if self.steps >= self.max_steps {
             self.status = SolverStatus::MaxSteps(self.t, self.y);
             return;
         }
+        self.steps += 1;
 
         // If Step size changed and it takes us to the final time perform a Runge-Kutta 4 step to finish
         if self.h != self.t_prev[0] - self.t_prev[1] && self.t + self.h == self.tf {
@@ -218,7 +215,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             // Update state
             self.t += self.h;
             self.y = corrector;
-            self.accepted_steps += 1;
 
             // Check if previous step rejected
             if let SolverStatus::RejectedStep = self.status {
@@ -268,7 +264,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         } else {
             // Step Rejected
             self.status = SolverStatus::RejectedStep;
-            self.rejected_steps += 1;
 
             // Adjust Step Size
             let two = T::from_f64(2.0).unwrap();
@@ -296,8 +291,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
                 self.evals += 4; // 4 evaluations per Runge-Kutta step
             }
         }
-        // Step Complete
-        self.steps += 1;
     }
 
     fn interpolate(&mut self, t_interp: T) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
@@ -326,6 +319,10 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
     fn y_prev(&self) -> &SMatrix<T, R, C> {
         &self.y_old
+    }
+
+    fn evals(&self) -> usize {
+        self.evals
     }
 
     fn h(&self) -> T {
@@ -398,8 +395,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Default for APCV4<T,
             tf: T::zero(),
             evals: 0,
             steps: 0,
-            accepted_steps: 0,
-            rejected_steps: 0,
             status: SolverStatus::Uninitialized,
             tol: T::from_f64(1.0e-6).unwrap(),
             h_max: T::infinity(),

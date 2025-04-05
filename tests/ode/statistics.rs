@@ -126,8 +126,8 @@ fn comparision_csv() {
         RK4, RK4::new(0.01),
         Euler, Euler::new(0.01),
         APCF4, APCF4::new(0.01),
-        RKV65, RKV65::new(0.01),
-        RKV98, RKV98::new(0.01)
+        RKV65, RKV65::new(),
+        RKV98, RKV98::new()
     }
 
     generate_solver_statistics_logistic! {
@@ -137,8 +137,8 @@ fn comparision_csv() {
         RK4, RK4::new(0.01),
         Euler, Euler::new(0.01),
         APCF4, APCF4::new(0.01),
-        RKV65, RKV65::new(0.01),
-        RKV98, RKV98::new(0.01)
+        RKV65, RKV65::new(),
+        RKV98, RKV98::new()
     }
 
     compare_solvers_harmonic();

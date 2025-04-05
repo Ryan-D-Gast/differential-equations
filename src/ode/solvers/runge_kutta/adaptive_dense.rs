@@ -253,6 +253,8 @@ macro_rules! adaptive_dense_runge_kutta_method {
             // Iteration tracking
             reject: bool,
             n_stiff: usize,
+            evals: usize, // Number of function evaluations
+            steps: usize, // Number of steps taken
 
             // Status
             status: $crate::ode::SolverStatus<T, R, C, E>,
@@ -282,8 +284,8 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     $b_dense.map(|row| row.map(|x| T::from_f64(x).unwrap()));
 
                 $name {
-                    h0: T::from_f64(0.1).unwrap(),
-                    h: T::from_f64(0.1).unwrap(),
+                    h0: T::from_f64(0.0).unwrap(),
+                    h: T::from_f64(0.0).unwrap(),
                     t: T::from_f64(0.0).unwrap(),
                     y: $crate::SMatrix::<T, R, C>::zeros(),
                     dydt: $crate::SMatrix::<T, R, C>::zeros(),
@@ -311,17 +313,25 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     max_scale: T::from_f64(10.0).unwrap(),
                     reject: false,
                     n_stiff: 0,
+                    evals: 0,
+                    steps: 0,
                     status: $crate::ode::SolverStatus::Uninitialized,
                 }
             }
         }
 
         impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> $crate::ode::Solver<T, R, C, E> for $name<T, R, C, E> {
-            fn init<F, S>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>, stats: &mut S) -> Result<(), $crate::ode::SolverStatus<T, R, C, E>>
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<(), $crate::ode::SolverStatus<T, R, C, E>>
             where
                 F: $crate::ode::ODE<T, R, C, E>,
-                S: $crate::ode::Statistics,
             {
+                // If h0 is zero, calculate initial step size using the utility function
+                if self.h0 == T::zero() {
+                    // Call standalone hinit function with order parameter
+                    self.h0 = $crate::ode::solvers::utils::h_init(ode, t0, tf, y, $order, self.rtol, self.atol, self.h_min, self.h_max);
+                    self.evals += 2; // hinit uses 2 evaluation
+                }
+
                 // Check bounds
                 match $crate::ode::solvers::utils::validate_step_size_parameters(self.h0, self.h_min, self.h_max, t0, tf) {
                     Ok(h0) => self.h = h0,
@@ -336,7 +346,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 self.t = t0;
                 self.y = y.clone();
                 ode.diff(t0, y, &mut self.dydt);
-                stats.add_evals(1); // Initial derivative evaluation
+                self.evals += 1; // Initial derivative evaluation
 
                 // Initialize previous state
                 self.t_prev = t0;
@@ -349,10 +359,9 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 Ok(())
             }
 
-            fn step<F, S>(&mut self, ode: &F, stats: &mut S)
+            fn step<F>(&mut self, ode: &F)
             where
                 F: $crate::ode::ODE<T, R, C, E>,
-                S: $crate::ode::Statistics,
             {
                 // Make sure step size isn't too small
                 if self.h.abs() < T::default_epsilon() {
@@ -361,10 +370,11 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 }
 
                 // Check if max steps has been reached
-                if stats.steps() >= self.max_steps {
+                if self.steps >= self.max_steps {
                     self.status = $crate::ode::SolverStatus::MaxSteps(self.t, self.y);
                     return;
                 }
+                self.steps += 1;
 
                 // Save k[0] as the current derivative
                 self.k[0] = self.dydt;
@@ -379,7 +389,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     
                     ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
                 }
-                stats.add_evals($stages - 1); // We already have k[0]
+                self.evals += $stages - 1; // We already have k[0]
                 
                 // Compute higher order solution
                 let mut y_high = self.y;
@@ -432,13 +442,13 @@ macro_rules! adaptive_dense_runge_kutta_method {
                         
                         ode.diff(self.t + self.c_dense[i] * self.h, &y_stage, &mut self.k[$stages + i]);
                     }
-                    stats.add_evals($extra_stages);
+                    self.evals += $extra_stages; // Extra stages for interpolation
                     
                     // Update state with the higher-order solution
                     self.t += self.h;
                     self.y = y_high;
                     ode.diff(self.t, &self.y, &mut self.dydt);
-                    stats.add_evals(1); // Final derivative evaluation
+                    self.evals += 1; // Final derivative evaluation
                 } else {
                     // Step rejected
                     self.reject = true;
@@ -517,6 +527,10 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 &self.y_prev
             }
 
+            fn evals(&self) -> usize {
+                self.evals
+            }
+
             fn h(&self) -> T {
                 self.h
             }
@@ -536,10 +550,8 @@ macro_rules! adaptive_dense_runge_kutta_method {
 
         impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> $name<T, R, C, E> {
             /// Create a new solver with the specified initial step size
-            pub fn new(h0: T) -> Self {
+            pub fn new() -> Self {
                 Self {
-                    h0,
-                    h: h0,
                     ..Default::default()
                 }
             }
@@ -558,6 +570,12 @@ macro_rules! adaptive_dense_runge_kutta_method {
             /// Set the absolute tolerance for error control
             pub fn atol(mut self, atol: T) -> Self {
                 self.atol = atol;
+                self
+            }
+
+            /// Set the initial step size
+            pub fn h0(mut self, h0: T) -> Self {
+                self.h0 = h0;
                 self
             }
             

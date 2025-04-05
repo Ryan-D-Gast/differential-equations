@@ -57,8 +57,8 @@ fn interpolation() {
         tolerance: 1e-3,
         // This method uses a internal high order interpolation method
         solver_name: DOP853, solver: DOP853::new(),
-        solver_name: RKV65, solver: RKV65::new(0.01),
-        solver_name: RKV98, solver: RKV98::new(0.01),
+        solver_name: RKV65, solver: RKV65::new(),
+        solver_name: RKV98, solver: RKV98::new(),
 
         // These methods use cubic Hermite interpolation
         solver_name: RKF, solver: RKF::new(0.01),

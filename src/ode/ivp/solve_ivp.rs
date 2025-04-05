@@ -133,7 +133,7 @@ where
     };
 
     // Clear statistics in case it was used before and reset solver and check for errors
-    match solver.init(ode, t0, tf, y0, &mut solution) {
+    match solver.init(ode, t0, tf, y0) {
         Ok(_) => {}
         Err(e) => return Err(e),
     }
@@ -147,6 +147,7 @@ where
         EventAction::Continue => {}
         EventAction::Terminate(reason) => {
             solution.status = SolverStatus::Interrupted(reason.clone());
+            solution.evals = solver.evals();
             solution.solve_time = T::from_f64(start.elapsed().as_secs_f64()).unwrap();
             return Ok(solution);
         }
@@ -178,7 +179,7 @@ where
         }
 
         // Perform a step
-        solver.step(ode, &mut solution);
+        solver.step(ode);
         solution.steps += 1;
 
         // Check for rejected step
@@ -285,6 +286,7 @@ where
 
                 // Set solution parameters
                 solution.status = SolverStatus::Interrupted(reason.clone());
+                solution.evals = solver.evals();
                 solution.solve_time = T::from_f64(start.elapsed().as_secs_f64()).unwrap();
 
                 return Ok(solution);
@@ -304,6 +306,7 @@ where
 
             // Set solution parameters
             solution.status = SolverStatus::Complete;
+            solution.evals = solver.evals();
             solution.solve_time = T::from_f64(start.elapsed().as_secs_f64()).unwrap();
 
             Ok(solution)

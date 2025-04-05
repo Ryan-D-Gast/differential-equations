@@ -81,8 +81,8 @@ fn invalid_time_span() {
         solver_name: Euler, solver: Euler::new(0.1),
         solver_name: APCF4, solver: APCF4::new(0.1),
         solver_name: APCV4, solver: APCV4::new(0.1),
-        solver_name: RKV65, solver: RKV65::new(0.1),
-        solver_name: RKV98, solver: RKV98::new(0.1)
+        solver_name: RKV65, solver: RKV65::new().h0(0.1),
+        solver_name: RKV98, solver: RKV98::new().h0(0.1)
     }
 }
 
@@ -101,8 +101,8 @@ fn initial_step_size_too_big() {
         solver_name: Euler, solver: Euler::new(10.0),
         solver_name: APCF4, solver: APCF4::new(10.0),
         solver_name: APCV4, solver: APCV4::new(10.0),
-        solver_name: RKV65, solver: RKV65::new(10.0),
-        solver_name: RKV98, solver: RKV98::new(10.0)
+        solver_name: RKV65, solver: RKV65::new().h0(10.0),
+        solver_name: RKV98, solver: RKV98::new().h0(10.0)
     }
 }
 
@@ -121,7 +121,7 @@ fn terminate_initial_conditions_trigger() {
         solver_name: Euler, solver: Euler::new(0.1),
         solver_name: APCF4, solver: APCF4::new(0.1),
         solver_name: APCV4, solver: APCV4::new(0.1),
-        solver_name: RKV65, solver: RKV65::new(0.1),
-        solver_name: RKV98, solver: RKV98::new(0.1)
+        solver_name: RKV65, solver: RKV65::new().h0(0.1),
+        solver_name: RKV98, solver: RKV98::new().h0(0.1)
     }
 }

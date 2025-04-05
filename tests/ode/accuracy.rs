@@ -88,11 +88,11 @@ fn accuracy() {
         tolerance: 1e3,
 
         solver_name: RKV65,
-        solver: RKV65::new(0.01),
+        solver: RKV65::new(),
         tolerance: 1e-1,
 
         solver_name: RKV98,
-        solver: RKV98::new(0.01),
+        solver: RKV98::new(),
         tolerance: 1e-1
     }
 
@@ -129,11 +129,11 @@ fn accuracy() {
         tolerance: 1e-1,
 
         solver_name: RKV65,
-        solver: RKV65::new(-0.01),
+        solver: RKV65::new(),
         tolerance: 1e-2,
 
         solver_name: RKV98,
-        solver: RKV98::new(-0.01),
+        solver: RKV98::new(),
         tolerance: 1e-2
     }
 
@@ -170,11 +170,11 @@ fn accuracy() {
         tolerance: 1e4,
 
         solver_name: RKV65,
-        solver: RKV65::new(0.01),
+        solver: RKV65::new(),
         tolerance: 1e1,
 
         solver_name: RKV98,
-        solver: RKV98::new(0.01),
+        solver: RKV98::new(),
         tolerance: 1e1
     }
 
@@ -211,11 +211,11 @@ fn accuracy() {
         tolerance: 1e-1,
 
         solver_name: RKV65,
-        solver: RKV65::new(0.01),
+        solver: RKV65::new(),
         tolerance: 1e-3,
 
         solver_name: RKV98,
-        solver: RKV98::new(0.01),
+        solver: RKV98::new(),
         tolerance: 1e-3
     }
 
@@ -252,11 +252,11 @@ fn accuracy() {
         tolerance: 1e-2,
 
         solver_name: RKV65,
-        solver: RKV65::new(0.01),
+        solver: RKV65::new(),
         tolerance: 1e-3,
 
         solver_name: RKV98,
-        solver: RKV98::new(0.01),
+        solver: RKV98::new(),
         tolerance: 1e-3
     }
 }
