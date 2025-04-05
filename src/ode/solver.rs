@@ -1,6 +1,6 @@
 //! Solver Trait for ODE Solvers
 
-use crate::ode::{ODE, EventData};
+use crate::ode::{ODE, EventData, Statistics};
 use crate::traits::Real;
 use nalgebra::SMatrix;
 
@@ -27,18 +27,23 @@ where
     /// # Returns
     /// * Result<(), SolverStatus<T, R, C, E>> - Ok if initialization is successful,
     /// 
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &SMatrix<T, R, C>) -> Result<(), SolverStatus<T, R, C, E>>
+    fn init<F, S>(&mut self, ode: &F, t0: T, tf: T, y: &SMatrix<T, R, C>, stats: &mut S) -> Result<(), SolverStatus<T, R, C, E>>
     where
-        F: ODE<T, R, C, E>;
+        F: ODE<T, R, C, E>,
+        S: Statistics;
 
     /// Step through solving the ODE by one step
     /// 
     /// # Arguments
     /// * `system` - System of ODEs to solve.
     /// 
-    fn step<F>(&mut self, ode: &F)
+    /// # Returns
+    /// * `Number of function evaluations` - Number of function evaluations performed during the step.
+    /// 
+    fn step<F, S>(&mut self, ode: &F, stats: &mut S)
     where
-        F: ODE<T, R, C, E>;
+        F: ODE<T, R, C, E>,
+        S: Statistics;
 
     /// Interpolate solution between previous and current step
     /// 
@@ -69,20 +74,6 @@ where
 
     /// Set step size of next step
     fn set_h(&mut self, h: T);
-
-    // Statistics of the solver
-
-    /// Number of function evaluations
-    fn evals(&self) -> usize;
-
-    /// Number of steps
-    fn steps(&self) -> usize;
-
-    /// Number of rejected steps default to 0 so fixed step solvers can ignore this trait
-    fn rejected_steps(&self) -> usize { 0 }
-
-    /// Number of accepted steps, default to steps - rejected_steps so fixed step solvers can ignore this trait
-    fn accepted_steps(&self) -> usize { self.steps() - self.rejected_steps() }
 
     /// Status of solver
     fn status(&self) -> &SolverStatus<T, R, C, E>;

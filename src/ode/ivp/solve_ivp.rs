@@ -133,7 +133,7 @@ where
     };
 
     // Clear statistics in case it was used before and reset solver and check for errors
-    match solver.init(ode, t0, tf, y0) {
+    match solver.init(ode, t0, tf, y0, &mut solution) {
         Ok(_) => {}
         Err(e) => return Err(e),
     }
@@ -147,10 +147,6 @@ where
         EventAction::Continue => {}
         EventAction::Terminate(reason) => {
             solution.status = SolverStatus::Interrupted(reason.clone());
-            solution.evals = solver.evals();
-            solution.steps = solver.steps();
-            solution.rejected_steps = solver.rejected_steps();
-            solution.accepted_steps = solver.steps();
             solution.solve_time = T::from_f64(start.elapsed().as_secs_f64()).unwrap();
             return Ok(solution);
         }
@@ -182,12 +178,18 @@ where
         }
 
         // Perform a step
-        solver.step(ode);
+        solver.step(ode, &mut solution);
+        solution.steps += 1;
 
         // Check for rejected step
         match solver.status() {
-            SolverStatus::Solving => {}
-            SolverStatus::RejectedStep => continue,
+            SolverStatus::Solving => {
+                solution.accepted_steps += 1;
+            }
+            SolverStatus::RejectedStep => {
+                solution.rejected_steps += 1;
+                continue
+            }
             _ => break,
         }
         
@@ -209,54 +211,53 @@ where
 
                 // If event_tolerance is set, interpolate to the point where event is triggered
                 // Method: Regula Falsi (False Position) with Illinois adjustment
-                if let Some(tol) = ode.event_tolerance() {
-                    let mut side_count = 0;   // Illinois method counter
+                let mut side_count = 0;   // Illinois method counter
+                
+                // For Illinois method adjustment
+                let mut f_low: T = T::from_f64(-1.0).unwrap();     // Continue represented as -1
+                let mut f_high: T = T::from_f64(1.0).unwrap();     // Terminate represented as +1
+                let mut t_guess: T;
+                
+                let max_iterations = 20; // Prevent infinite loops
+                let tol = T::from_f64(1e-10).unwrap(); // Tolerance for convergence
+                
+                // False position method with Illinois adjustment
+                for _ in 0..max_iterations {
+                    // Check if we've reached desired precision
+                    if (ts - tc).abs() <= tol {
+                        break;
+                    }
                     
-                    // For Illinois method adjustment
-                    let mut f_low: T = T::from_f64(-1.0).unwrap();     // Continue represented as -1
-                    let mut f_high: T = T::from_f64(1.0).unwrap();     // Terminate represented as +1
-                    let mut t_guess: T;
+                    // False position formula with Illinois adjustment
+                    t_guess = (tc * f_high - ts * f_low) / (f_high - f_low);
                     
-                    let max_iterations = 20; // Prevent infinite loops
+                    // Protect against numerical issues
+                    if !t_guess.is_finite() || 
+                        (integration_direction > T::zero() && (t_guess <= tc || t_guess >= ts)) ||
+                        (integration_direction < T::zero() && (t_guess >= tc || t_guess <= ts)) {
+                        t_guess = (tc + ts) / T::from_f64(2.0).unwrap();  // Fall back to bisection
+                    }
                     
-                    // False position method with Illinois adjustment
-                    for _ in 0..max_iterations {
-                        // Check if we've reached desired precision
-                        if (ts - tc).abs() <= tol {
-                            break;
-                        }
-                        
-                        // False position formula with Illinois adjustment
-                        t_guess = (tc * f_high - ts * f_low) / (f_high - f_low);
-                        
-                        // Protect against numerical issues
-                        if !t_guess.is_finite() || 
-                            (integration_direction > T::zero() && (t_guess <= tc || t_guess >= ts)) ||
-                            (integration_direction < T::zero() && (t_guess >= tc || t_guess <= ts)) {
-                            t_guess = (tc + ts) / T::from_f64(2.0).unwrap();  // Fall back to bisection
-                        }
-                        
-                        // Interpolate state at guess point
-                        let y = solver.interpolate(t_guess).unwrap();
-                        
-                        // Check event at guess point
-                        match ode.event(t_guess, &y) {
-                            EventAction::Continue => {
-                                tc = t_guess;
+                    // Interpolate state at guess point
+                    let y = solver.interpolate(t_guess).unwrap();
+                    
+                    // Check event at guess point
+                    match ode.event(t_guess, &y) {
+                        EventAction::Continue => {
+                            tc = t_guess;
 
-                                // Illinois adjustment to improve convergence
-                                side_count += 1;
-                                if side_count >= 2 {
-                                    f_high /= T::from_f64(2.0).unwrap();  // Reduce influence of high point
-                                    side_count = 0;
-                                }
-                            }
-                            EventAction::Terminate(re) => {
-                                reason = re;
-                                ts = t_guess;
+                            // Illinois adjustment to improve convergence
+                            side_count += 1;
+                            if side_count >= 2 {
+                                f_high /= T::from_f64(2.0).unwrap();  // Reduce influence of high point
                                 side_count = 0;
-                                f_low = T::from_f64(-1.0).unwrap();  // Reset low point influence
                             }
+                        }
+                        EventAction::Terminate(re) => {
+                            reason = re;
+                            ts = t_guess;
+                            side_count = 0;
+                            f_low = T::from_f64(-1.0).unwrap();  // Reset low point influence
                         }
                     }
                 }
@@ -285,10 +286,6 @@ where
 
                 // Set solution parameters
                 solution.status = SolverStatus::Interrupted(reason.clone());
-                solution.evals = solver.evals();
-                solution.steps = solver.steps();
-                solution.rejected_steps = solver.rejected_steps();
-                solution.accepted_steps = solver.steps();
                 solution.solve_time = T::from_f64(start.elapsed().as_secs_f64()).unwrap();
 
                 return Ok(solution);
@@ -308,10 +305,6 @@ where
 
             // Set solution parameters
             solution.status = SolverStatus::Complete;
-            solution.evals = solver.evals();
-            solution.steps = solver.steps();
-            solution.rejected_steps = solver.rejected_steps();
-            solution.accepted_steps = solver.steps();
             solution.solve_time = T::from_f64(start.elapsed().as_secs_f64()).unwrap();
 
             Ok(solution)

@@ -236,3 +236,48 @@ where
         DataFrame::new(columns)
     }
 }
+
+/// Statistics tracker trait whom ODE solvers take to track the number of function evaluations
+/// and examine types of steps taken by the solver.
+pub trait Statistics {
+    /// Add function evaluations to the solution
+    fn add_evals(&mut self, evals: usize);
+
+    /// Number of function evaluations performed during the step.
+    fn evals(&self) -> usize;
+
+    /// Total number of steps taken by the solution.
+    fn steps(&self) -> usize;
+
+    /// Number of rejected steps where the solution step-size had to be reduced.
+    fn rejected_steps(&self) -> usize;
+
+    /// Number of accepted steps where the solution moved closer to tf.
+    fn accepted_steps(&self) -> usize;
+}
+
+impl<T, const R: usize, const C: usize, E> Statistics for Solution<T, R, C, E> 
+where 
+    T: Real,
+    E: EventData,
+{
+    fn add_evals(&mut self, evals: usize) {
+        self.evals += evals;
+    }
+
+    fn evals(&self) -> usize {
+        self.evals
+    }
+
+    fn steps(&self) -> usize {
+        self.steps
+    }
+
+    fn rejected_steps(&self) -> usize {
+        self.rejected_steps
+    }
+
+    fn accepted_steps(&self) -> usize {
+        self.accepted_steps
+    }
+}

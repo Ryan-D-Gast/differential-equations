@@ -64,19 +64,6 @@ where
     fn event(&self, t: T, y: &SMatrix<T, R, C>) -> EventAction<E> {
         EventAction::Continue
     }
-
-    /// Tolerance for event detection
-    /// 
-    /// Tolerance for event detection. Default is 1e-6.
-    /// Users can override this by implementing this function
-    /// in their system with the desired tolerance value.
-    /// 
-    /// # Returns
-    /// * `T` - Tolerance value for event detection.
-    /// 
-    fn event_tolerance(&self) -> Option<T> {
-        T::from_f64(1e-6)
-    }
 }
 
 /// Termination Condition for ODE Solver

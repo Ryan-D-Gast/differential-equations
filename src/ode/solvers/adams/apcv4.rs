@@ -101,9 +101,10 @@ pub struct APCV4<T: Real, const R: usize, const C: usize, E: EventData> {
 
 // Implement Solver Trait for APCV4
 impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> for APCV4<T, R, C, E> {
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>) -> Result<(), SolverStatus<T, R, C, E>>
+    fn init<F, S>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>, stats: &mut S) -> Result<(), SolverStatus<T, R, C, E>>
     where
         F: ODE<T, R, C, E>,
+        S: Statistics,
     {
         self.tf = tf;
 
@@ -112,12 +113,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
-
-        // Initialize Statistics
-        self.evals = 0;
-        self.steps = 0;
-        self.rejected_steps = 0;
-        self.accepted_steps = 0;
 
         // Initialize state
         self.t = t0;
@@ -144,7 +139,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             self.t += self.h;
             self.t_prev[i] = self.t;
             self.y_prev[i] = self.y;
-            self.evals += 4; // 4 evaluations per Runge-Kutta step
+            stats.add_evals(4); // 4 evaluations per Runge-Kutta step
 
             if i == 1 {
                 self.dydt = self.k1;
@@ -156,12 +151,13 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         Ok(())
     }
 
-    fn step<F>(&mut self, ode: &F)
+    fn step<F, S>(&mut self, ode: &F, stats: &mut S)
     where
         F: ODE<T, R, C, E>,
-    {        
+        S: Statistics,
+    {
         // Check if Max Steps Reached
-        if self.steps >= self.max_steps {
+        if stats.steps() >= self.max_steps {
             self.status = SolverStatus::MaxSteps(self.t, self.y);
             return;
         }
@@ -341,22 +337,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
     fn set_h(&mut self, h: T) {
         self.h = h;
-    }
-
-    fn evals(&self) -> usize {
-        self.evals
-    }
-
-    fn steps(&self) -> usize {
-        self.steps
-    }
-
-    fn rejected_steps(&self) -> usize {
-        self.rejected_steps
-    }
-
-    fn accepted_steps(&self) -> usize {
-        self.accepted_steps
     }
 
     fn status(&self) -> &SolverStatus<T, R, C, E> {

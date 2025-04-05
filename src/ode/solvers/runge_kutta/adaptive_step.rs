@@ -228,12 +228,6 @@ macro_rules! adaptive_runge_kutta_method {
             reject: bool,
             n_stiff: usize,
 
-            // Statistic Tracking
-            pub evals: usize,
-            pub steps: usize,
-            pub rejected_steps: usize,
-            pub accepted_steps: usize,
-
             // Status
             status: $crate::ode::SolverStatus<T, R, C, E>,
         }
@@ -263,8 +257,8 @@ macro_rules! adaptive_runge_kutta_method {
                     dydt_prev: $crate::SMatrix::<T, R, C>::zeros(),
                     k,
                     a: a_t,
-                    b_higher,         // Higher order (b)
-                    b_lower,           // Lower order (b_hat)
+                    b_higher, // Higher order (b)
+                    b_lower,  // Lower order (b_hat)
                     c: c_t,
                     rtol: T::from_f64(1.0e-6).unwrap(),
                     atol: T::from_f64(1.0e-6).unwrap(),
@@ -277,19 +271,16 @@ macro_rules! adaptive_runge_kutta_method {
                     max_scale: T::from_f64(10.0).unwrap(),
                     reject: false,
                     n_stiff: 0,
-                    evals: 0,
-                    steps: 0,
-                    rejected_steps: 0,
-                    accepted_steps: 0,
                     status: $crate::ode::SolverStatus::Uninitialized,
                 }
             }
         }
 
         impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> $crate::ode::Solver<T, R, C, E> for $name<T, R, C, E> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<(), $crate::ode::SolverStatus<T, R, C, E>>
+            fn init<F, S>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>, stats: &mut S) -> Result<(), $crate::ode::SolverStatus<T, R, C, E>>
             where
                 F: $crate::ode::ODE<T, R, C, E>,
+                S: $crate::ode::Statistics,
             {
                 // Check bounds
                 match $crate::ode::solvers::utils::validate_step_size_parameters(self.h0, self.h_min, self.h_max, t0, tf) {
@@ -298,10 +289,6 @@ macro_rules! adaptive_runge_kutta_method {
                 }
 
                 // Initialize Statistics
-                self.evals = 0;
-                self.steps = 0;
-                self.rejected_steps = 0;
-                self.accepted_steps = 0;
                 self.reject = false;
                 self.n_stiff = 0;
 
@@ -309,6 +296,7 @@ macro_rules! adaptive_runge_kutta_method {
                 self.t = t0;
                 self.y = y.clone();
                 ode.diff(t0, y, &mut self.dydt);
+                stats.add_evals(1);
 
                 // Initialize previous state
                 self.t_prev = t0;
@@ -321,9 +309,10 @@ macro_rules! adaptive_runge_kutta_method {
                 Ok(())
             }
 
-            fn step<F>(&mut self, ode: &F)
+            fn step<F, S>(&mut self, ode: &F, stats: &mut S)
             where
                 F: $crate::ode::ODE<T, R, C, E>,
+                S: $crate::ode::Statistics,
             {
                 // Make sure step size isn't too small
                 if self.h.abs() < T::default_epsilon() {
@@ -332,7 +321,7 @@ macro_rules! adaptive_runge_kutta_method {
                 }
 
                 // Check if max steps has been reached
-                if self.steps >= self.max_steps {
+                if stats.steps() >= self.max_steps {
                     self.status = $crate::ode::SolverStatus::MaxSteps(self.t, self.y.clone());
                     return;
                 }
@@ -397,13 +386,11 @@ macro_rules! adaptive_runge_kutta_method {
                     ode.diff(self.t, &self.y, &mut self.dydt);
 
                     // Update statistics
-                    self.accepted_steps += 1;
-                    self.evals += $stages + 1;
+                    stats.add_evals($stages + 1);
                 } else {
                     // Step rejected
                     self.reject = true;
-                    self.rejected_steps += 1;
-                    self.evals += $stages;
+                    stats.add_evals($stages);
                     self.status = $crate::ode::SolverStatus::RejectedStep;
                     self.n_stiff += 1;
                     
@@ -429,9 +416,6 @@ macro_rules! adaptive_runge_kutta_method {
                 
                 // Ensure step size is within bounds
                 self.h = $crate::ode::solvers::utils::constrain_step_size(self.h, self.h_min, self.h_max);
-
-                // Log step
-                self.steps += 1;
             }
 
             fn interpolate(&mut self, t_interp: T) -> Result<$crate::SMatrix<T, R, C>, $crate::ode::InterpolationError<T, R, C>> {
@@ -468,22 +452,6 @@ macro_rules! adaptive_runge_kutta_method {
 
             fn set_h(&mut self, h: T) {
                 self.h = h;
-            }
-
-            fn evals(&self) -> usize {
-                self.evals
-            }
-
-            fn steps(&self) -> usize {
-                self.steps
-            }
-
-            fn rejected_steps(&self) -> usize {
-                self.rejected_steps
-            }
-
-            fn accepted_steps(&self) -> usize {
-                self.accepted_steps
             }
 
             fn status(&self) -> &$crate::ode::SolverStatus<T, R, C, E> {

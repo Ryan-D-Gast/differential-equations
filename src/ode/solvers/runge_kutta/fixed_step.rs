@@ -220,10 +220,6 @@ macro_rules! runge_kutta_method {
             b: [T; $stages],
             c: [T; $stages],
 
-            // Statistic Tracking
-            pub evals: usize,
-            pub steps: usize,
-
             // Status
             status: $crate::ode::SolverStatus<T, R, C, E>,
         }
@@ -248,32 +244,28 @@ macro_rules! runge_kutta_method {
                     a: a_t,
                     b: b_t,
                     c: c_t,
-                    evals: 0,
-                    steps: 0,
                     status: $crate::ode::SolverStatus::Uninitialized,
                 }
             }
         }
 
         impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> $crate::ode::Solver<T, R, C, E> for $name<T, R, C, E> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<(), $crate::ode::SolverStatus<T, R, C, E>>
+            fn init<F, S>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>, stats: &mut S) -> Result<(), $crate::ode::SolverStatus<T, R, C, E>>
             where 
-                F: $crate::ode::ODE<T, R, C, E>
+                F: $crate::ode::ODE<T, R, C, E>,
+                S: $crate::ode::Statistics
             {
                 // Check Bounds
                 match $crate::ode::solvers::utils::validate_step_size_parameters(self.h, T::zero(), T::infinity(), t0, tf) {
-                    Ok(h) => self.h = h,
+                    Ok(_) => {},
                     Err(e) => return Err(e),
                 }
-
-                // Initialize Statistics
-                self.evals = 0;
-                self.steps = 0;
 
                 // Initialize State
                 self.t = t0;
                 self.y = y.clone();
                 ode.diff(t0, y, &mut self.k[0]);
+                stats.add_evals(1);
 
                 // Initialize previous state
                 self.t_prev = t0;
@@ -282,13 +274,14 @@ macro_rules! runge_kutta_method {
 
                 // Initialize Status
                 self.status = $crate::ode::SolverStatus::Initialized;
-
+            
                 Ok(())
             }
 
-            fn step<F>(&mut self, ode: &F) 
+            fn step<F ,S>(&mut self, ode: &F, stats: &mut S)
             where 
-                F: $crate::ode::ODE<T, R, C, E>
+                F: $crate::ode::ODE<T, R, C, E>,
+                S: $crate::ode::Statistics
             {
                 // Log previous state
                 self.t_prev = self.t;
@@ -311,6 +304,9 @@ macro_rules! runge_kutta_method {
                     // Compute k_i = f(t + c_i*h, stage_y)
                     ode.diff(self.t + self.c[i] * self.h, &stage_y, &mut self.k[i]);
                 }
+
+                // Record the number of function evaluations
+                stats.add_evals($stages);
                 
                 // Compute the final update
                 let mut delta_y = $crate::SMatrix::<T, R, C>::zeros();
@@ -321,10 +317,6 @@ macro_rules! runge_kutta_method {
                 // Update state
                 self.y += delta_y;
                 self.t += self.h;
-
-                // Update Statistics
-                self.steps += 1;
-                self.evals += $stages;
             }
 
             fn interpolate(&mut self, t_interp: T) -> Result<$crate::SMatrix<T, R, C>, $crate::ode::InterpolationError<T, R, C>> {
@@ -360,22 +352,6 @@ macro_rules! runge_kutta_method {
 
             fn set_h(&mut self, h: T) {
                 self.h = h;
-            }
-
-            fn evals(&self) -> usize {
-                self.evals
-            }
-
-            fn steps(&self) -> usize {
-                self.steps
-            }
-
-            fn rejected_steps(&self) -> usize {
-                0
-            }
-
-            fn accepted_steps(&self) -> usize {
-                self.steps
             }
 
             fn status(&self) -> &$crate::ode::SolverStatus<T, R, C, E> {
