@@ -277,8 +277,7 @@ where
 
                 // If we found a cutoff point, truncate both vectors
                 if let Some(idx) = cutoff_index {
-                    solution.t.truncate(idx);
-                    solution.y.truncate(idx);
+                    solution.truncate(idx);
                 }
 
                 // Add the event point

@@ -97,6 +97,16 @@ where
         let y = self.y.pop().unwrap();
         Some((t, y))
     }
+
+    /// Truncates the solution's (t, y) points to the given index.
+    /// 
+    /// # Arguments
+    /// * `index` - The index to truncate to.
+    /// 
+    pub fn truncate(&mut self, index: usize) {
+        self.t.truncate(index);
+        self.y.truncate(index);
+    }
 }
 
 // Post-processing methods for the solution
