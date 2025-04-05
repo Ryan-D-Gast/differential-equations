@@ -3,6 +3,7 @@
 use crate::ode::{ODE, EventData};
 use crate::traits::Real;
 use nalgebra::SMatrix;
+use std::fmt::{Display, Debug};
 
 /// Solver Trait for ODE Solvers
 /// 
@@ -120,11 +121,37 @@ where
 /// # Variants
 /// * `OutOfBounds` - Given t is not within the previous and current step.
 /// 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub enum InterpolationError<T, const R: usize, const C: usize> 
 where 
     T: Real
 {
     /// Given t is not within the previous and current step
     OutOfBounds(T, T, T), // t is not within the previous and current step returns the t, t_prev, t_curr
+}
+
+impl<T, const R: usize, const C: usize> Display for InterpolationError<T, R, C> 
+where 
+    T: Real
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InterpolationError::OutOfBounds(t, t_prev, t_curr) => {
+                write!(f, "Interpolation Error: t {} is not within the previous and current step: t_prev {}, t_curr {}", t, t_prev, t_curr)
+            }
+        }
+    }
+}
+
+impl<T, const R: usize, const C: usize> Debug for InterpolationError<T, R, C> 
+where 
+    T: Real
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InterpolationError::OutOfBounds(t, t_prev, t_curr) => {
+                write!(f, "Interpolation Error: t {} is not within the previous and current step: t_prev {}, t_curr {}", t, t_prev, t_curr)
+            }
+        }
+    }
 }
