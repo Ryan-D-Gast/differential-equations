@@ -3,7 +3,7 @@
 use super::systems;
 use systems::{HarmonicOscillator, LogisticEquation};
 use differential_equations::ode::IVP;
-use differential_equations::ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4, RKV65, RKV98};
+use differential_equations::ode::solvers::{DOP853, DOPRI5, RK4, RKF, Euler, APCF4, APCV4, RKV65, RKV98};
 use std::{
     fs::{self, File},
     io::Write,
@@ -121,6 +121,7 @@ macro_rules! generate_solver_statistics_logistic {
 fn comparision_csv() {
     generate_solver_statistics_harmonic! {
         DOP853, DOP853::new().rtol(1e-12).atol(1e-12), // Set to extremely high accuracy due to being compared against by other solvers below
+        DOPRI5, DOPRI5::new(),
         RKF, RKF::new(0.01).rtol(1e-6),
         APCV4, APCV4::new(0.01).tol(1e-6),
         RK4, RK4::new(0.01),
@@ -132,6 +133,7 @@ fn comparision_csv() {
 
     generate_solver_statistics_logistic! {
         DOP853, DOP853::new().rtol(1e-12).atol(1e-12), // Set to extremely high accuracy due to being compared against by other solvers below
+        DOPRI5, DOPRI5::new(),
         RKF, RKF::new(0.01).rtol(1e-6),
         APCV4, APCV4::new(0.01).tol(1e-6),
         RK4, RK4::new(0.01),

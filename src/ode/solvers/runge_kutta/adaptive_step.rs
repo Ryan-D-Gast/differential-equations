@@ -80,45 +80,6 @@ adaptive_runge_kutta_method!(
     stages: 6
 );
 
-adaptive_runge_kutta_method!(
-    /// Dormand-Prince 5(4) adaptive method
-    /// This method uses seven function evaluations to calculate a fifth-order accurate 
-    /// solution, with an embedded fourth-order method for error estimation.
-    /// The DOPRI5 method is one of the most widely used adaptive step size methods due to
-    /// its excellent balance of efficiency and accuracy.
-    /// The Butcher Tableau is as follows:
-    /// ```text
-    /// 0      |
-    /// 1/5    | 1/5
-    /// 3/10   | 3/40         9/40
-    /// 4/5    | 44/45        -56/15      32/9
-    /// 8/9    | 19372/6561   -25360/2187 64448/6561   -212/729
-    /// 1      | 9017/3168    -355/33     46732/5247   49/176        -5103/18656
-    /// 1      | 35/384       0           500/1113     125/192       -2187/6784    11/84
-    /// ----------------------------------------------------------------------------------------------
-    ///        | 35/384       0           500/1113     125/192       -2187/6784    11/84       0       (5th order)
-    ///        | 5179/57600   0           7571/16695   393/640       -92097/339200 187/2100    1/40    (4th order)
-    /// ```
-    /// 
-    /// Reference: [Wikipedia](https://en.wikipedia.org/wiki/Dormand%E2%80%93Prince_method)
-    name: DOPRI5,
-    a: [
-        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [1.0/5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [3.0/40.0, 9.0/40.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [44.0/45.0, -56.0/15.0, 32.0/9.0, 0.0, 0.0, 0.0, 0.0],
-        [19372.0/6561.0, -25360.0/2187.0, 64448.0/6561.0, -212.0/729.0, 0.0, 0.0, 0.0],
-        [9017.0/3168.0, -355.0/33.0, 46732.0/5247.0, 49.0/176.0, -5103.0/18656.0, 0.0, 0.0],
-        [35.0/384.0, 0.0, 500.0/1113.0, 125.0/192.0, -2187.0/6784.0, 11.0/84.0, 0.0]
-    ],
-    b: [
-        [35.0/384.0, 0.0, 500.0/1113.0, 125.0/192.0, -2187.0/6784.0, 11.0/84.0, 0.0], // 5th order
-        [5179.0/57600.0, 0.0, 7571.0/16695.0, 393.0/640.0, -92097.0/339200.0, 187.0/2100.0, 1.0/40.0] // 4th order
-    ],
-    c: [0.0, 0.2, 0.3, 0.8, 8.0/9.0, 1.0, 1.0],
-    order: 5,
-    stages: 7
-);
 
 /// Macro to create an adaptive Runge-Kutta solver with embedded error estimation
 /// and interpolation vs cubic Hermite interpolation.

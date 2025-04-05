@@ -1,7 +1,7 @@
 //! Suite of test cases for Solvers error handling
 
 use differential_equations::ode::IVP;
-use differential_equations::ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4, RKV65, RKV98};
+use differential_equations::ode::solvers::{DOP853, DOPRI5, RK4, RKF, Euler, APCF4, APCV4, RKV65, RKV98};
 use differential_equations::ode::{EventAction, SolverStatus};
 use differential_equations::ode::ODE;
 use nalgebra::{SVector, vector};
@@ -76,6 +76,7 @@ fn invalid_time_span() {
         y0: vector![1.0],
         expected_result: SolverStatus::<f64, 1, 1, String>::BadInput("Invalid input: tf (0.0) cannot be equal to t0 (0.0)".to_string()),
         solver_name: DOP853, solver: DOP853::new(),
+        solver_name: DOPRI5, solver: DOPRI5::new(),
         solver_name: RKF, solver: RKF::new(0.1),
         solver_name: RK4, solver: RK4::new(0.1),
         solver_name: Euler, solver: Euler::new(0.1),
@@ -96,6 +97,7 @@ fn initial_step_size_too_big() {
         y0: vector![1.0],
         expected_result: SolverStatus::<f64, 1, 1, String>::BadInput("Invalid input: Absolute value of initial step size (10.0) must be less than or equal to the absolute value of the integration interval (tf - t0 = 1.0)".to_string()),
         solver_name: DOP853, solver: DOP853::new().h0(10.0),
+        solver_name: DOPRI5, solver: DOPRI5::new().h0(10.0),
         solver_name: RKF, solver: RKF::new(10.0),
         solver_name: RK4, solver: RK4::new(10.0),
         solver_name: Euler, solver: Euler::new(10.0),
@@ -116,6 +118,7 @@ fn terminate_initial_conditions_trigger() {
         y0: vector![1.0],
         expected_result: SolverStatus::<f64, 1, 1, String>::Interrupted("Initial condition trigger".to_string()),
         solver_name: DOP853, solver: DOP853::new(),
+        solver_name: DOPRI5, solver: DOPRI5::new(),
         solver_name: RKF, solver: RKF::new(0.1),
         solver_name: RK4, solver: RK4::new(0.1),
         solver_name: Euler, solver: Euler::new(0.1),

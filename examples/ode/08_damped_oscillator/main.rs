@@ -17,7 +17,7 @@ impl ODE<f64, 2> for DampedOscillator {
 
 fn main() {
     // Initialize the solver
-    let mut solver = DOPRI5::new(0.01).rtol(1e-12).atol(1e-12);
+    let mut solver = DOPRI5::new().rtol(1e-8).atol(1e-8);
 
     // Define the ode parameters
     let damping = 0.5;

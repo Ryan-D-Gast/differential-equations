@@ -2,7 +2,7 @@
 
 use super::systems::{ExponentialGrowth, LinearEquation, HarmonicOscillator, LogisticEquation};
 use differential_equations::ode::IVP;
-use differential_equations::ode::solvers::{DOP853, RK4, RKF, Euler, APCF4, APCV4, RKV65, RKV98};
+use differential_equations::ode::solvers::{DOP853, DOPRI5, RK4, RKF, Euler, APCF4, APCV4, RKV65, RKV98};
 use nalgebra::vector;
 
 macro_rules! test_ode {
@@ -67,6 +67,10 @@ fn accuracy() {
         solver: DOP853::new().rtol(1e-12).atol(1e-12),
         tolerance: 1e-3,
 
+        solver_name: DOPRI5,
+        solver: DOPRI5::new(),
+        tolerance: 1e1,
+
         solver_name: RKF,
         solver: RKF::new(0.01),
         tolerance: 1e3,
@@ -107,6 +111,10 @@ fn accuracy() {
         solver_name: DOP853,
         solver: DOP853::new().rtol(1e-12).atol(1e-12),
         tolerance: 1e-3,
+
+        solver_name: DOPRI5,
+        solver: DOPRI5::new(),
+        tolerance: 1e-2,
 
         solver_name: RKF,
         solver: RKF::new(-0.01),
@@ -149,6 +157,10 @@ fn accuracy() {
         solver: DOP853::new().rtol(1e-12).atol(1e-12),
         tolerance: 1e-3,
 
+        solver_name: DOPRI5,
+        solver: DOPRI5::new(),
+        tolerance: 1e1,
+
         solver_name: RKF,
         solver: RKF::new(0.01),
         tolerance: 1e3,
@@ -190,6 +202,10 @@ fn accuracy() {
         solver: DOP853::new().rtol(1e-12).atol(1e-12),
         tolerance: 1e-3,
 
+        solver_name: DOPRI5,
+        solver: DOPRI5::new(),
+        tolerance: 1e-2,
+
         solver_name: RKF,
         solver: RKF::new(0.01),
         tolerance: 1e-3,
@@ -229,6 +245,10 @@ fn accuracy() {
 
         solver_name: DOP853,
         solver: DOP853::new().rtol(1e-12).atol(1e-12),
+        tolerance: 1e-3,
+
+        solver_name: DOPRI5,
+        solver: DOPRI5::new(),
         tolerance: 1e-3,
 
         solver_name: RKF,
