@@ -2,6 +2,14 @@
 
 **Legend:** `.` Minor change · `-` Bug fix · `+` New feature · `^` Improvement · `!` Breaking change · `*` Refactor
 
+## 2025-04-05 - `0.1.2`
+- `+` Added Verner Runge-Kutta methods with dense output support: `RKV65` and `RKV98`
+- `^` Enhanced `DOPRI5` method with optimized implementation matching Fortran versions, reducing memory usage and adding dense output support
+- `!` Changed `Solout` function signature to `fn(&mut Solver, &mut SolutionInterface)`, providing direct access to solution storage. See [custom solout](./examples/ode/10_custom_solout/main.rs) for an example of usage.
+- `!` Modified `Solver.interpolate(t)` to return a `Result<_, InterpolationError>` instead of hoping it was called within the interpolation range `t_prev..=t`.
+- `*` Relocated step tracking (steps, accepted, rejected) from `Solver` to the `Solution` struct updated in `solve_ivp`.
+- `-` Fixed bug where `rejected_steps` was not being counted in the total `steps` in some solvers.
+
 ## 2025-03-30 - `0.1.1`
 
 - `!` Renamed `System` trait to `ODE` for consistency with future differential equation types (e.g., `PDE`, `SDE`)
