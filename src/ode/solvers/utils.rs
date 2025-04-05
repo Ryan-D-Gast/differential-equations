@@ -118,11 +118,13 @@ pub fn constrain_step_size<T: Real>(h: T, h_min: T, h_max: T) -> T {
 /// * `order` - The order of the numerical method
 /// * `rtol` - Relative tolerance
 /// * `atol` - Absolute tolerance
+/// * `h_min` - Minimum allowed step size
 /// * `h_max` - Maximum allowed step size
 /// 
 /// # Returns
 /// 
 /// The estimated initial step size
+/// 
 pub fn h_init<T, F, const R: usize, const C: usize, E>(
     ode: &F, 
     t0: T, 
