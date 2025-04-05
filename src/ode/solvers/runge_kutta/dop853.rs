@@ -556,7 +556,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> DOP853<T, R, C, E> {
     /// # Returns
     /// * Updates self.h with the initial step size.
     /// 
-    fn h_init<S>(&mut self, ode: &S, t0: T, tf: T) -> usize
+    fn h_init<S>(&mut self, ode: &S, t0: T, tf: T)
     where 
         S: ODE<T, R, C, E>
     {
@@ -605,8 +605,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> DOP853<T, R, C, E> {
         // Make sure step is going in the right direction
         self.h = self.h.abs() * posneg;
         self.h0 = self.h;
-
-        return 1; // 1 function evaluation for h_init
     }
 
     // Builder Functions
