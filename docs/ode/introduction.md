@@ -33,11 +33,68 @@ The module includes a set of solvers for solving ODEs. The solver algorithmic co
 |--------|-------------|
 | `RKF` | Runge-Kutta-Fehlberg 4(5) adaptive method |
 | `CashKarp` | Cash-Karp 4(5) adaptive method |
-| `DOPRI5` | Dormand-Prince 5(4) adaptive method |
-| `DOP853` | Explicit Runge-Kutta method of order 8 |
+| `DOPRI5` | Dormand-Prince 5(4) adaptive method with dense output |
+| `DOP853` | Dormand-Prince 8(5,3) adaptive method with dense output |
+| `RKV65` | Verner's 6(5) method with dense output |
+| `RKV98` | Verner's 9(8) method with dense output |
 | `APCV4` | Adams-Predictor-Corrector 4th order variable step-size method |
 
-All solvers except `DOP853`, which has its own higher-order internal interpolation method, uses cubic Hermite interpolation method for calculating desired `t-out` values and finding `eventAction::Terminate` points.
+**Note:** `dense output` references the solver having an high-order interpolant to provide accurate results between `t_prev` and `t` between steps. Often these require a few extra function evaluations. The order of the interpolant can be found in the docs of the solver. The remaining solvers use a cubic Hermite polynomial to provide interpolated results. For event detection the interpolant for each solver is used to find the location of the event. 
+
+## Solvers Comparison
+
+Solver Selection Tables below provide detailed rankings of all available solvers across key metrics to help you select the right one for your specific needs.
+
+### 1. Accuracy Ranking
+
+| Rank | Solver | Order | Accuracy Level |
+|------|--------|-------|----------------|
+| 1 | RKV98 | 9(8) | Very High |
+| 2 | DOP853 | 8(5,3) | High |
+| 3 | RKV65 | 6(5) | Medium-High |
+| 4 | DOPRI5 | 5(4) | Medium |
+| 5 | RKF, CashKarp | 4(5) | Medium-Low |
+| 6 | RK4, ThreeEights, APCF4, APCV4 | 4 | Low |
+| 7 | Midpoint, Heuns, Ralston | 2 | Very Low |
+| 8 | Euler | 1 | Minimal |
+
+> Note: Higher-order methods are note just more accurate but often quicker as they can take larger steps. The sweet spot for most problems is between 4th and 8th order methods. The `DOPRI5` and `DOP853` solvers are recommended for most general-purpose applications due to their balance of accuracy and efficiency. The `RKV98` solver is the best choice for high-precision requirements where a large part of the error is due to floating-point error.
+
+### 2. Memory Usage Ranking
+
+| Rank | Solver | Stages | Memory Requirement |
+|------|--------|--------|-------------------|
+| 1 | Euler | 1 | Minimal |
+| 2 | Midpoint, Heuns, Ralston | 2 | Very Low |
+| 3 | RK4, ThreeEights | 4 | Low |
+| 4 | RKF, CashKarp | 6 | Medium-Low |
+| 5 | DOPRI5 | 7 | Medium |
+| 6 | RKV65 | 8 | Medium-High |
+| 7 | DOP853 | 12 | High |
+| 8 | RKV98, APCF4, APCV4 | 16+ | Very High |
+
+### 3. Best Use Cases
+
+| Problem Type | Recommended Solvers | Reasoning |
+|--------------|---------------------|-----------|
+| Quick prototyping | RK4 | Simple, reliable, good balance |
+| Non-stiff, low precision | RKF, CashKarp | Efficient with adequate accuracy |
+| General purpose | DOPRI5 | Good balance of accuracy and speed |
+| High accuracy needs | DOP853, RKV65 | Excellent precision with reasonable efficiency |
+| Extremely high precision | RKV98 | Highest accuracy available |
+
+### 4. Adaptive vs Fixed Trade-offs
+
+| Feature | Adaptive Solvers | Fixed-Step Solvers |
+|---------|------------------|-------------------|
+| Step size control | Automatic based on error tolerance | Manual specification required |
+| Efficiency | High | Low |
+| Predictable computation time | No | Yes |
+| Memory overhead | Higher | Lower |
+| Best for | Problems with varying dynamics | Predictable, smooth problems |
+| Examples | DOPRI5, DOP853, RKV65 | RK4, Euler |
+
+> Note: The main trade-off between using an adaptive or fixed-step method is the cost of the differential equation. If it is a complex function then reducing the number of evaluations via an adaptive step size method is optimal. If the function is very simple, relatively short distance between `t0` and `tf` then fixed step size could be optimal if the high memory usage of the adaptive method is a concern. Given all the stipulations for using fixed step size methods for almost all problems, it is recommended to use adaptive step size methods.
 
 ## Defining a ODE
 
@@ -63,11 +120,11 @@ struct LogisticGrowth {
 }
 
 impl ODE<f64, 1, 1> for LogisticGrowth {
-    fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
+    fn diff(&self, t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
         dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
     }
 
-    fn event(&self, _t: f64, y: &SVector<f64, 1>, _dydt: &SVector<f64, 1>) -> EventAction {
+    fn event(&self, t: f64, y: &SVector<f64, 1>) -> EventAction {
         if y[0] > 0.9 * self.m {
             EventAction::Terminate("Reached 90% of carrying capacity".to_string())
         } else {
