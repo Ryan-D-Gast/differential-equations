@@ -166,18 +166,6 @@ where
             solving = false;
         }
 
-        // Check if Step Size is too smaller then machine default_epsilon
-        if solver.h().abs() < T::default_epsilon() {
-            // If the step size is converging at the final point then consider it solved
-            if (solver.t() - tf).abs() < T::default_epsilon() {
-                break;
-            // Otherwise, return StepSize error
-            } else {
-                solver.set_status(SolverStatus::Error(SolverError::StepSize(solver.t(), *solver.y())));
-                return Err(SolverError::StepSize(solver.t(), *solver.y())) // Step size converging to zero
-            }
-        }
-
         // Perform a step
         match solver.step(ode) {
             Ok(_) => {}
