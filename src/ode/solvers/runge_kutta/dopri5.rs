@@ -68,9 +68,6 @@ pub struct DOPRI5<T: Real, const R: usize, const C: usize, E: EventData> {
     // Initial Conditions
     pub h0: T,                // Initial Step Size
 
-    // Final Time to Solve to
-    tf: T,
-
     // Current iteration
     t: T,
     y: SMatrix<T, R, C>,
@@ -135,9 +132,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
     where 
         F: ODE<T, R, C, E>,
     {
-        // Set tf so step size doesn't go past it
-        self.tf = tf;
-
         // Set Current State as Initial State
         self.t = t0;
         self.y = *y0;
@@ -169,12 +163,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
-
-        // Set h_max to prevent single step overshoot
-        self.h_max = match self.h_max {
-            x if x > (self.tf - t0).abs() => (self.tf - t0).abs(),
-            _ => self.h_max.abs(),
-        };
 
         // Make sure iteration variables are reset
         self.h_lamb = T::zero();
@@ -580,7 +568,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Default for DOPRI5<T
             h: T::zero(),
 
             // Settings
-            tf: T::zero(),
             h0: T::zero(),
             rtol: T::from_f64(1e-3).unwrap(),
             atol: T::from_f64(1e-6).unwrap(),
