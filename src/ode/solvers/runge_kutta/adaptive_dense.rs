@@ -222,7 +222,6 @@ macro_rules! adaptive_dense_runge_kutta_method {
             h_prev: T,
             t_prev: T,
             y_prev: $crate::SMatrix<T, R, C>,
-            dydt_prev: $crate::SMatrix<T, R, C>,
 
             // Stage values (fixed size array of matrices)
             k: [$crate::SMatrix<T, R, C>; $stages + $extra_stages], // Main stages + extra stages for interpolation
@@ -292,7 +291,6 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     h_prev: T::from_f64(0.0).unwrap(),
                     t_prev: T::from_f64(0.0).unwrap(),
                     y_prev: $crate::SMatrix::<T, R, C>::zeros(),
-                    dydt_prev: $crate::SMatrix::<T, R, C>::zeros(),
                     k,
                     a: a_t,
                     b_higher: b_higher,
@@ -351,7 +349,6 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 // Initialize previous state
                 self.t_prev = t0;
                 self.y_prev = y.clone();
-                self.dydt_prev = self.dydt;
 
                 // Initialize Status
                 self.status = $crate::ode::SolverStatus::Initialized;
@@ -422,7 +419,6 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     // Log previous state
                     self.t_prev = self.t;
                     self.y_prev = self.y;
-                    self.dydt_prev = self.dydt;
                     self.h_prev = self.h;
 
                     if self.reject {
