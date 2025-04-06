@@ -70,12 +70,12 @@ pub struct APCF4<T: Real, const R: usize, const C: usize, E: EventData> {
 
 // Implement Solver Trait for APCF4
 impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> for APCF4<T, R, C, E> {
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>) -> Result<(), SolverStatus<T, R, C, E>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>) -> Result<(), SolverError<T, R, C>>
     where
         F: ODE<T, R, C, E>,
     {
         // Check Bounds
-        match validate_step_size_parameters(self.h, T::zero(), T::infinity(), t0, tf) {
+        match validate_step_size_parameters::<T, R, C, E>(self.h, T::zero(), T::infinity(), t0, tf) {
             Ok(h) => self.h = h,
             Err(e) => return Err(e),
         }
@@ -116,7 +116,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         Ok(())
     }
 
-    fn step<F>(&mut self, ode: &F)
+    fn step<F>(&mut self, ode: &F) -> Result<(), SolverError<T, R, C>>
     where
         F: ODE<T, R, C, E>,
     {
@@ -155,6 +155,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         self.y_prev.copy_within(1..4, 0);
         self.t_prev[3] = self.t;
         self.y_prev[3] = self.y;
+        Ok(())
     }
 
     fn interpolate(&mut self, t_interp: T) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {

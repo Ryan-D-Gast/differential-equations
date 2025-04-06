@@ -1,6 +1,6 @@
 //! Initial Value Problem Struct and Constructors
 
-use crate::ode::{ODE, Solout, Solution, SolverStatus, Solver, EventData};
+use crate::ode::{ODE, Solout, Solution, SolverError, Solver, EventData};
 use crate::ode::solout::*;
 use super::solve_ivp;
 use crate::traits::Real;
@@ -144,7 +144,7 @@ where
     /// # Returns
     /// * `Result<Solution<T, V, E>, SolverStatus<T, V, E>>` - `Ok(Solution)` if successful or interrupted by events, `Err(SolverStatus)` if an errors or issues such as stiffness are encountered.
     /// 
-    pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, R, C, E>, SolverStatus<T, R, C, E>>
+    pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, R, C, E>, SolverError<T, R, C>>
     where 
         S: Solver<T, R, C, E>,
     {
@@ -284,9 +284,9 @@ where
     /// * `solver` - Solver to use for solving the IVP
     /// 
     /// # Returns
-    /// * `Result<Solution<T, R, C, E>, SolverStatus<T, R, C, E>>` - `Ok(Solution)` if successful or interrupted by events, `Err(SolverStatus)` if an errors or issues such as stiffness are encountered.
+    /// * `Result<Solution<T, R, C, E>, SolverError<T, R, C>>` - `Ok(Solution)` if successful or interrupted by events, `Err(SolverError)` if an errors or issues such as stiffness are encountered.
     /// 
-    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, R, C, E>, SolverStatus<T, R, C, E>>
+    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, R, C, E>, SolverError<T, R, C>>
     where 
         S: Solver<T, R, C, E>,
     {
@@ -331,9 +331,9 @@ where
     /// * `solver` - Solver to use for solving the IVP
     /// 
     /// # Returns
-    /// * `Result<Solution<T, R, C, E>, SolverStatus<T, R, C, E>>` - `Ok(Solution)` if successful or interrupted by events, `Err(SolverStatus)` if an errors or issues such as stiffness are encountered.
+    /// * `Result<Solution<T, R, C, E>, SolverError<T, R, C>>` - `Ok(Solution)` if successful or interrupted by events, `Err(SolverError)` if an errors or issues such as stiffness are encountered.
     /// 
-    pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, R, C, E>, SolverStatus<T, R, C, E>>
+    pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, R, C, E>, SolverError<T, R, C>>
     where 
         S: Solver<T, R, C, E>,
     {

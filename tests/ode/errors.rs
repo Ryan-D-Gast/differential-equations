@@ -1,8 +1,8 @@
 //! Suite of test cases for Solvers error handling
 
-use differential_equations::ode::IVP;
+use differential_equations::ode::{SolverError, SolverStatus, IVP};
 use differential_equations::ode::solvers::{DOP853, DOPRI5, RK4, RKF, Euler, APCF4, APCV4, RKV65, RKV98};
-use differential_equations::ode::{EventAction, SolverStatus};
+use differential_equations::ode::EventAction;
 use differential_equations::ode::ODE;
 use nalgebra::{SVector, vector};
 
@@ -22,59 +22,100 @@ impl ODE<f64, 1, 1> for SimpleODE {
     }
 }
 
-macro_rules! test_error_ode {
+/// Macro for testing cases where we expect a SolverError to be returned
+macro_rules! test_solver_error {
     (
         test_name: $test_name:ident,
         ode: $system:expr,
         t0: $t0:expr,
         tf: $tf:expr,
         y0: $y0:expr,
-        expected_result: $expected_result:expr,
+        expected_error: $expected_error:expr,
         $(solver_name: $solver_name:ident, solver: $solver:expr),+
     ) => {
         $(
             // Initialize the system
             let system = $system;
-
-            // Set initial conditions
             let t0 = $t0;
             let tf = $tf;
             let y0 = $y0;
-
-            // Create Initial Value Problem (IVP) for the system
+            
             let ivp = IVP::new(system, t0, tf, y0);
-
-            // Initialize the solver
             let mut solver = $solver;
-
+            
             // Solve the system
             let results = ivp.solve(&mut solver);
-
-            // Assert the result
+            
+            // Assert the result matches expected error
             match results {
-                Ok(result) => {
-                    let status = result.status;
-                    assert_eq!(status, $expected_result, "Test {} {} failed: Expected: {:?}, Got: {:?}", stringify!($solver_name), stringify!($test_name), $expected_result, status);
+                Ok(r) => {
+                    panic!("Test {} {} failed: Expected error {:?} but got success with status {:?}", 
+                        stringify!($solver_name), stringify!($test_name), $expected_error, r.status);
                 },
                 Err(e) => {
-                    //println!("Test {} {} failed with error: {:?}", stringify!($solver_name), stringify!($test_name), e);
-                    assert_eq!(e, $expected_result, "Test {:?} {:?} failed: Expected: {:?}, Got: {:?}", stringify!($solver_name), stringify!($test_name), $expected_result, e);
+                    assert_eq!(e, $expected_error, 
+                        "Test {} {} failed: Expected: {:?}, Got: {:?}", 
+                        stringify!($solver_name), stringify!($test_name), $expected_error, e);
+                    println!("{} {} passed with expected error: {:?}", 
+                        stringify!($solver_name), stringify!($test_name), e);
                 }
             }
-            println!("{} {} passed", stringify!($solver_name), stringify!($test_name));
+        )+
+    };
+}
+
+/// Macro for testing cases where we expect a successful solution with specific status
+macro_rules! test_solver_status {
+    (
+        test_name: $test_name:ident,
+        ode: $system:expr,
+        t0: $t0:expr,
+        tf: $tf:expr,
+        y0: $y0:expr,
+        expected_status: $expected_status:expr,
+        $(solver_name: $solver_name:ident, solver: $solver:expr),+
+    ) => {
+        $(
+            // Initialize the system
+            let system = $system;
+            let t0 = $t0;
+            let tf = $tf;
+            let y0 = $y0;
+            
+            let ivp = IVP::new(system, t0, tf, y0);
+            let mut solver = $solver;
+            
+            // Solve the system
+            let results = ivp.solve(&mut solver);
+            
+            // Assert the result matches expected status
+            match results {
+                Ok(r) => {
+                    let stat = r.status;
+                    assert_eq!(stat, $expected_status,
+                        "Test {} {} failed: Expected status: {:?}, Got: {:?}", 
+                        stringify!($solver_name), stringify!($test_name), $expected_status, stat);
+                    println!("{} {} passed with expected status: {:?}", 
+                        stringify!($solver_name), stringify!($test_name), stat);
+                },
+                Err(e) => {
+                    panic!("Test {} {} failed: Expected status {:?} but got error {:?}", 
+                        stringify!($solver_name), stringify!($test_name), $expected_status, e);
+                }
+            }
         )+
     };
 }
 
 #[test]
 fn invalid_time_span() {
-    test_error_ode! {
+    test_solver_error! {
         test_name: invalid_time_span,
         ode: SimpleODE,
         t0: 0.0,
         tf: 0.0,
         y0: vector![1.0],
-        expected_result: SolverStatus::<f64, 1, 1, String>::BadInput("Invalid input: tf (0.0) cannot be equal to t0 (0.0)".to_string()),
+        expected_error: SolverError::<f64, 1, 1>::BadInput("Invalid input: tf (0.0) cannot be equal to t0 (0.0)".to_string()),
         solver_name: DOP853, solver: DOP853::new(),
         solver_name: DOPRI5, solver: DOPRI5::new(),
         solver_name: RKF, solver: RKF::new(0.1),
@@ -89,13 +130,13 @@ fn invalid_time_span() {
 
 #[test]
 fn initial_step_size_too_big() {
-    test_error_ode! {
+    test_solver_error! {
         test_name: initial_step_size_too_big,
         ode: SimpleODE,
         t0: 0.0,
         tf: 1.0,
         y0: vector![1.0],
-        expected_result: SolverStatus::<f64, 1, 1, String>::BadInput("Invalid input: Absolute value of initial step size (10.0) must be less than or equal to the absolute value of the integration interval (tf - t0 = 1.0)".to_string()),
+        expected_error: SolverError::<f64, 1, 1>::BadInput("Invalid input: Absolute value of initial step size (10.0) must be less than or equal to the absolute value of the integration interval (tf - t0 = 1.0)".to_string()),
         solver_name: DOP853, solver: DOP853::new().h0(10.0),
         solver_name: DOPRI5, solver: DOPRI5::new().h0(10.0),
         solver_name: RKF, solver: RKF::new(10.0),
@@ -110,13 +151,13 @@ fn initial_step_size_too_big() {
 
 #[test]
 fn terminate_initial_conditions_trigger() {
-    test_error_ode! {
+    test_solver_status! {
         test_name: terminate_initial_conditions_trigger,
         ode: SimpleODE,
         t0: 10.0,
         tf: 20.0,
         y0: vector![1.0],
-        expected_result: SolverStatus::<f64, 1, 1, String>::Interrupted("Initial condition trigger".to_string()),
+        expected_status: SolverStatus::<f64, 1, 1, String>::Interrupted("Initial condition trigger".to_string()),
         solver_name: DOP853, solver: DOP853::new(),
         solver_name: DOPRI5, solver: DOPRI5::new(),
         solver_name: RKF, solver: RKF::new(0.1),

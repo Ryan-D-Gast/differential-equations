@@ -99,14 +99,14 @@ pub struct APCV4<T: Real, const R: usize, const C: usize, E: EventData> {
 
 // Implement Solver Trait for APCV4
 impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> for APCV4<T, R, C, E> {
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>) -> Result<(), SolverStatus<T, R, C, E>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>) -> Result<(), SolverError<T, R, C>>
     where
         F: ODE<T, R, C, E>,
     {
         self.tf = tf;
 
         // Check that the initial step size is set
-        match validate_step_size_parameters(self.h0, T::zero(), T::infinity(), t0, tf) {
+        match validate_step_size_parameters::<T, R, C, E>(self.h0, T::zero(), T::infinity(), t0, tf) {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
@@ -148,14 +148,14 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         Ok(())
     }
 
-    fn step<F>(&mut self, ode: &F)
+    fn step<F>(&mut self, ode: &F) -> Result<(), SolverError<T, R, C>>
     where
         F: ODE<T, R, C, E>,
     {
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
-            self.status = SolverStatus::MaxSteps(self.t, self.y);
-            return;
+            self.status = SolverStatus::Error(SolverError::MaxSteps(self.t, self.y));
+            return Err(SolverError::MaxSteps(self.t, self.y));
         }
         self.steps += 1;
 
@@ -173,7 +173,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             // Update State
             self.y += (self.k1 + self.k2 * two + self.k3 * two + self.k4) * (self.h / six);
             self.t += self.h;
-            return;
+            return Ok(());
         }
 
         // Compute derivatives for history
@@ -291,6 +291,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
                 self.evals += 4; // 4 evaluations per Runge-Kutta step
             }
         }
+        Ok(())
     }
 
     fn interpolate(&mut self, t_interp: T) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {

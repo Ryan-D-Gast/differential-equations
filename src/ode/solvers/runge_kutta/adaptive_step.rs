@@ -242,12 +242,12 @@ macro_rules! adaptive_runge_kutta_method {
         }
 
         impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> $crate::ode::Solver<T, R, C, E> for $name<T, R, C, E> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<(), $crate::ode::SolverStatus<T, R, C, E>>
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<(), $crate::ode::SolverError<T, R, C>>
             where
                 F: $crate::ode::ODE<T, R, C, E>,
             {
                 // Check bounds
-                match $crate::ode::solvers::utils::validate_step_size_parameters(self.h0, self.h_min, self.h_max, t0, tf) {
+                match $crate::ode::solvers::utils::validate_step_size_parameters::<T, R, C, E>(self.h0, self.h_min, self.h_max, t0, tf) {
                     Ok(h0) => self.h = h0,
                     Err(status) => return Err(status),
                 }
@@ -273,20 +273,20 @@ macro_rules! adaptive_runge_kutta_method {
                 Ok(())
             }
 
-            fn step<F>(&mut self, ode: &F)
+            fn step<F>(&mut self, ode: &F) -> Result<(), $crate::ode::SolverError<T, R, C>>
             where
                 F: $crate::ode::ODE<T, R, C, E>,
             {
                 // Make sure step size isn't too small
                 if self.h.abs() < T::default_epsilon() {
-                    self.status = $crate::ode::SolverStatus::StepSize(self.t, self.y.clone());
-                    return;
+                    self.status = $crate::ode::SolverStatus::Error($crate::ode::SolverError::StepSize(self.t, self.y.clone()));
+                    return Err($crate::ode::SolverError::StepSize(self.t, self.y.clone()));
                 }
 
                 // Check if max steps has been reached
                 if self.steps >= self.max_steps {
-                    self.status = $crate::ode::SolverStatus::MaxSteps(self.t, self.y.clone());
-                    return;
+                    self.status = $crate::ode::SolverStatus::Error($crate::ode::SolverError::MaxSteps(self.t, self.y.clone()));
+                    return Err($crate::ode::SolverError::MaxSteps(self.t, self.y.clone()));
                 }
                 self.steps += 1;
 
@@ -361,8 +361,8 @@ macro_rules! adaptive_runge_kutta_method {
                     
                     // Check for stiffness
                     if self.n_stiff >= self.max_rejects {
-                        self.status = $crate::ode::SolverStatus::Stiffness(self.t, self.y.clone());
-                        return;
+                        self.status = $crate::ode::SolverStatus::Error($crate::ode::SolverError::Stiffness(self.t, self.y.clone()));
+                        return Err($crate::ode::SolverError::Stiffness(self.t, self.y.clone()));
                     }
                 }
                 
@@ -381,12 +381,13 @@ macro_rules! adaptive_runge_kutta_method {
                 
                 // Ensure step size is within bounds
                 self.h = $crate::ode::solvers::utils::constrain_step_size(self.h, self.h_min, self.h_max);
+                Ok(())
             }
 
-            fn interpolate(&mut self, t_interp: T) -> Result<$crate::SMatrix<T, R, C>, $crate::ode::InterpolationError<T, R, C>> {
+            fn interpolate(&mut self, t_interp: T) -> Result<$crate::SMatrix<T, R, C>, $crate::interpolate::InterpolationError<T, R, C>> {
                 // Check if t is within bounds
                 if t_interp < self.t_prev || t_interp > self.t {
-                    return Err($crate::ode::InterpolationError::OutOfBounds(t_interp, self.t_prev, self.t));
+                    return Err($crate::interpolate::InterpolationError::OutOfBounds(t_interp, self.t_prev, self.t));
                 }
 
                 // Compute the interpolated value using cubic Hermite interpolation

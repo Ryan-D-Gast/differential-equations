@@ -254,12 +254,12 @@ macro_rules! runge_kutta_method {
         }
 
         impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> $crate::ode::Solver<T, R, C, E> for $name<T, R, C, E> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<(), $crate::ode::SolverStatus<T, R, C, E>>
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<(), $crate::ode::SolverError<T, R, C>>
             where 
                 F: $crate::ode::ODE<T, R, C, E>
             {
                 // Check Bounds
-                match $crate::ode::solvers::utils::validate_step_size_parameters(self.h, T::zero(), T::infinity(), t0, tf) {
+                match $crate::ode::solvers::utils::validate_step_size_parameters::<T, R, C, E>(self.h, T::zero(), T::infinity(), t0, tf) {
                     Ok(_) => {},
                     Err(e) => return Err(e),
                 }
@@ -281,7 +281,7 @@ macro_rules! runge_kutta_method {
                 Ok(())
             }
 
-            fn step<F>(&mut self, ode: &F)
+            fn step<F>(&mut self, ode: &F) -> Result<(), $crate::ode::SolverError<T, R, C>>
             where 
                 F: $crate::ode::ODE<T, R, C, E>
             {
@@ -319,12 +319,14 @@ macro_rules! runge_kutta_method {
                 // Update state
                 self.y += delta_y;
                 self.t += self.h;
+
+                Ok(())
             }
 
-            fn interpolate(&mut self, t_interp: T) -> Result<$crate::SMatrix<T, R, C>, $crate::ode::InterpolationError<T, R, C>> {
+            fn interpolate(&mut self, t_interp: T) -> Result<$crate::SMatrix<T, R, C>, $crate::interpolate::InterpolationError<T, R, C>> {
                 // Check if t is within the bounds of the current step
                 if t_interp < self.t_prev || t_interp > self.t {
-                    return Err($crate::ode::InterpolationError::OutOfBounds(t_interp, self.t_prev, self.t));
+                    return Err($crate::interpolate::InterpolationError::OutOfBounds(t_interp, self.t_prev, self.t));
                 }
 
                 let y_interp = $crate::interpolate::cubic_hermite_interpolate(self.t_prev, self.t, &self.y_prev, &self.y, &self.dydt_prev, &self.k[0], t_interp);

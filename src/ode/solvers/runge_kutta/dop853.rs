@@ -1,7 +1,8 @@
 //! DOP853 Solver for Ordinary Differential Equations.
 
-use crate::ode::{Solver, SolverStatus, ODE, EventData, InterpolationError};
+use crate::ode::{EventData, Solver, SolverError, SolverStatus, ODE};
 use crate::ode::solvers::utils::{constrain_step_size, validate_step_size_parameters};
+use crate::interpolate::InterpolationError;
 use crate::traits::Real;
 use nalgebra::SMatrix;
 
@@ -133,7 +134,7 @@ pub struct DOP853<T: Real, const R: usize, const C: usize, E: EventData> {
 }
 
 impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> for DOP853<T, R, C, E> {    
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>)  -> Result<(), SolverStatus<T, R, C, E>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>)  -> Result<(), SolverError<T, R, C>>
     where 
         F: ODE<T, R, C, E>,
     {
@@ -167,7 +168,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         }
 
         // Check if h0 is within bounds, and h_min and h_max are valid
-        match validate_step_size_parameters(self.h0, self.h_min, self.h_max, t0, tf) {
+        match validate_step_size_parameters::<T, R, C, E>(self.h0, self.h_min, self.h_max, t0, tf) {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
@@ -189,18 +190,20 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         Ok(())
     }
 
-    fn step<F>(&mut self, ode: &F)
+    fn step<F>(&mut self, ode: &F) -> Result<(), SolverError<T, R, C>>
     where 
         F: ODE<T, R, C, E>,
     {
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
-            self.status = SolverStatus::MaxSteps(self.t, self.y);
+            self.status = SolverStatus::Error(SolverError::MaxSteps(self.t, self.y));
+            return Err(SolverError::MaxSteps(self.t, self.y));
         }
     
         // Check if Step Size is too smaller then machine default_epsilon
         if self.h.abs() < T::default_epsilon() {
-            self.status = SolverStatus::StepSize(self.t, self.y);
+            self.status = SolverStatus::Error(SolverError::StepSize(self.t, self.y));
+            return Err(SolverError::StepSize(self.t, self.y));
         }
     
         // The twelve stages
@@ -325,8 +328,8 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
                     self.stiffness_counter += 1;
                     if self.stiffness_counter == 15 {
                         // Early Exit Stiffness Detected
-                        self.status = SolverStatus::Stiffness(self.t, self.y);
-                        return;
+                        self.status = SolverStatus::Error(SolverError::Stiffness(self.t, self.y));
+                        return Err(SolverError::Stiffness(self.t, self.y));
                     }
                 } else {
                     self.non_stiff_counter += 1;
@@ -477,6 +480,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
         // Step Complete
         self.h = constrain_step_size(h_new, self.h_min, self.h_max);
+        Ok(())
     }
 
     fn interpolate(&mut self, t_interp: T) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {

@@ -1,6 +1,6 @@
 //! Solve IVP function
 
-use crate::ode::{EventAction, Solution, Solver, SolverStatus, ODE, Solout, EventData};
+use crate::ode::{EventAction, Solution, Solver, SolverStatus, SolverError, ODE, Solout, EventData};
 use crate::traits::Real;
 use nalgebra::SMatrix;
 use std::time::Instant;
@@ -106,7 +106,7 @@ use std::time::Instant;
 /// * The `tf == t0` case is considered an error (no integration to perform).
 /// * The output points depend on the chosen `Solout` implementation.
 /// 
-pub fn solve_ivp<T, const R: usize, const C: usize, E, S, F, O>(solver: &mut S, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>, solout: &mut O) -> Result<Solution<T, R, C, E>, SolverStatus<T, R, C, E>>
+pub fn solve_ivp<T, const R: usize, const C: usize, E, S, F, O>(solver: &mut S, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>, solout: &mut O) -> Result<Solution<T, R, C, E>, SolverError<T, R, C>>
 where 
     T: Real,
     E: EventData,
@@ -129,7 +129,7 @@ where
     let integration_direction =  match (tf - t0).signum() {
         x if x == T::one() => T::one(),
         x if x == T::from_f64(-1.0).unwrap() => T::from_f64(-1.0).unwrap(),
-        _ => return Err(SolverStatus::BadInput("Final time tf must be different from initial time t0.".to_string())),
+        _ => return Err(SolverError::BadInput("Final time tf must be different from initial time t0.".to_string())),
     };
 
     // Clear statistics in case it was used before and reset solver and check for errors
@@ -173,13 +173,19 @@ where
                 break;
             // Otherwise, return StepSize error
             } else {
-                solver.set_status(SolverStatus::StepSize(solver.t(), *solver.y()));
-                break;
+                solver.set_status(SolverStatus::Error(SolverError::StepSize(solver.t(), *solver.y())));
+                return Err(SolverError::StepSize(solver.t(), *solver.y())) // Step size converging to zero
             }
         }
 
         // Perform a step
-        solver.step(ode);
+        match solver.step(ode) {
+            Ok(_) => {}
+            Err(e) => {
+                // Set solver status to error and return error
+                return Err(e);
+            }
+        }
         solution.steps += 1;
 
         // Check for rejected step
@@ -311,6 +317,9 @@ where
 
             Ok(solution)
         }
-        status => Err(status.clone()),
+        // Everything below should be unreachable.
+        _ => {
+            unreachable!()
+        }
     }
 }
