@@ -33,17 +33,27 @@
 //! }
 //! 
 //! fn main() {
+//!     // Define the ODE system and Initial Conditions
 //!     let system = LinearEquation { a: 1.0, b: 2.0 };
 //!     let t0 = 0.0;
 //!     let tf = 1.0;
 //!     let y0 = vector![1.0];
-//!     let ivp = IVP::new(system, t0, tf, y0);
-//!     let mut solver = DOP853::new().rtol(1e-8).atol(1e-6);
-//!     let solution = match ivp.solve(&mut solver) {
-//!     Ok(sol) => sol,
-//!     Err(e) => panic!("Error: {:?}", e),
-//! };
 //! 
+//!     // Create an IVP instance
+//!     let ivp = IVP::new(system, t0, tf, y0);
+//! 
+//!     // Initialize solver with desired settings or use defaults
+//!     let mut solver = DOP853::new()
+//!         .rtol(1e-8)  // Relative tolerance
+//!         .atol(1e-6); // Absolute tolerance
+//! 
+//!     // Solve the IVP
+//!     let solution = match ivp.solve(&mut solver) {
+//!         Ok(sol) => sol,
+//!         Err(e) => panic!("Error: {:?}", e),
+//!     };
+//! 
+//!     // Print the solution
 //!     for (t, y) in solution.iter() {
 //!       println!("t: {:.4}, y: {:.4}", t, y[0]);
 //!     }
@@ -63,23 +73,25 @@
 //! - [`RK4`]: Fixed step 4th order Runge-Kutta method
 //! - [`DOPRI5`]: Adaptive step Dormand-Prince 5(4) method
 //! - [`DOP853`]: Adaptive step Dormand-Prince 8(5,3) method with 7th order interpolant
+//! - [`RKV65`]: Verner 6(5) adaptive method with dense output of order 5
+//! - [`RKV98`]: Verner 9(8) adaptive method with dense output of order 9
 //! 
 //! Additional solvers are available in the [`solvers`] module.
 //! 
 //! ## Solution Output Control
 //! 
 //! Custom solution output behaviors can be defined using the [`Solout`] trait.
-//! Common implementations are available in the [`solout`] module.
-//! 
-//! ## Advanced Usage
-//! 
-//! For more control over the solving process, you can use [`solve_ivp`] directly
-//! with custom solvers and output handlers.
+//! Common implementations are available in the [`solout`] module or via
+//! extension methods on the [`IVP`] struct. For example, you can use the
+//! `IVP.dense(2).solve(&mut solver)` method to set output all calculated steps and an
+//! interpolated solution between them. e.g. 2 output points per step.
 //! 
 //! ## Event Handling
 //! 
 //! The [`ODE`] trait includes event handling capabilities for detecting
-//! and responding to significant conditions during integration.
+//! and responding to significant conditions during integration. These events
+//! when detected use a root-finding algorithm to determine the point it takes 
+//! place and interrupt the solution at that point.
 //! 
 
 // IVP Struct which is used to solve the ODE given the system and a solver
