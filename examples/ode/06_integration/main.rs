@@ -1,5 +1,5 @@
-use differential_equations::ode::*;
 use differential_equations::ode::solvers::RKF;
+use differential_equations::ode::*;
 use nalgebra::{SVector, vector};
 
 /// Define the ode for integration.

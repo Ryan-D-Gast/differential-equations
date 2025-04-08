@@ -1,15 +1,17 @@
 //! Compares the performance of solvers by the statistics, i.e. number of steps, function evaluations, etc.
 
 use super::systems;
-use systems::{HarmonicOscillator, LogisticEquation};
 use differential_equations::ode::IVP;
-use differential_equations::ode::solvers::{DOP853, DOPRI5, RK4, RKF, Euler, APCF4, APCV4, RKV65, RKV98};
+use differential_equations::ode::solvers::{
+    APCF4, APCV4, DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98,
+};
+use nalgebra::SVector;
 use std::{
     fs::{self, File},
     io::Write,
-    path::Path
+    path::Path,
 };
-use nalgebra::SVector;
+use systems::{HarmonicOscillator, LogisticEquation};
 
 struct TestStatistics<const N: usize> {
     name: String,

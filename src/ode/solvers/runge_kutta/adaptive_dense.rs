@@ -5,14 +5,14 @@ use crate::adaptive_dense_runge_kutta_method;
 adaptive_dense_runge_kutta_method!(
     /// Verner's 6(5) method is 6th order method with a embedded 5th order for
     /// error estimation and 5th order interpolation via dense output.
-    /// 
+    ///
     /// This is an efficient 9-stage method with embedded 5th order error estimation
     /// and continuous 5th order interpolation requiring one additional stage.
-    /// 
+    ///
     /// The method has excellent stability properties and high-quality dense output
-    /// that makes it suitable for problems requiring accurate solutions at 
+    /// that makes it suitable for problems requiring accurate solutions at
     /// intermediate points between steps.
-    /// 
+    ///
     /// Source: [Verner's Website](https://www.sfu.ca/~jverner/RKV65.IIIXb.Efficient.00000144617.081204.RATOnWeb)
     name: RKV65,
     a: [
@@ -31,14 +31,14 @@ adaptive_dense_runge_kutta_method!(
         [0.4909967648382489730906854927971225836479e-1, 0.0, 0.0, 0.2251112229516524153401395320539875329485, 0.4694682253029562039431948525047387412553, 0.8065792249988867707634161808995217981443, 0.0, -0.6071194891777959797672951465256217122488, 0.5686113944047569241147603178766138153594e-1]
     ],
     c: [
-        0.0, 
-        0.6e-1, 
-        0.9593333333333333333333333333333333333333e-1, 
-        0.1439, 
-        0.4973, 
-        0.9725, 
-        0.9995, 
-        1.0, 
+        0.0,
+        0.6e-1,
+        0.9593333333333333333333333333333333333333e-1,
+        0.1439,
+        0.4973,
+        0.9725,
+        0.9995,
+        1.0,
         1.0
     ],
     order: 6,
@@ -66,14 +66,14 @@ adaptive_dense_runge_kutta_method!(
 adaptive_dense_runge_kutta_method!(
     /// Verner's 9(8) method is 9th order method with a embedded 8th order for
     /// error estimation and 9th order interpolation via dense output.
-    /// 
+    ///
     /// This is an efficient 16-stage method with embedded 8th order error estimation
     /// and continuous the order interpolation requiring 10 additional stages.
-    /// 
+    ///
     /// The method has excellent stability properties and high-quality dense output
-    /// that makes it suitable for problems requiring accurate solutions at 
+    /// that makes it suitable for problems requiring accurate solutions at
     /// intermediate points between steps.
-    /// 
+    ///
     /// Source: [Verner's Website](https://www.sfu.ca/~jverner/RKV98.IIa.Efficient.00000034399.240407.BetterEfficientonWebRKV98.IIa.Efficient.00000034399.240407.BetterEfficientonWeb)
     name: RKV98,
     a: [
@@ -99,21 +99,21 @@ adaptive_dense_runge_kutta_method!(
         [0.1897210532481101330735875918987801428423e-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.408110314549493848404398964228060776034, 0.1260323883820920906560270507988839661845, 0.1188375063451149770930378540709095182997, 0.2491041997838687569190073177760326138188, -3.269966219928978218713853055139116510335, 0.3023798100228882907409723963501699715077, 0.0, 0.0, 0.4652989552070924159305071272518165020637e-1]
     ],
     c: [
-        0.0, 
-        0.3571e-1, 
-        0.9906028091267414072062290548990445721420e-1, 
-        0.1485904213690112110809343582348566858213, 
-        0.6134, 
-        0.2327359473605626756631680289030288192566, 
-        0.5538640526394373243368319710969711807434, 
-        0.6555, 
-        0.491625, 
-        0.6858e-1, 
-        0.253, 
-        0.6620641795412045944786226689660879617864, 
-        0.8309, 
-        0.8998, 
-        1.0, 
+        0.0,
+        0.3571e-1,
+        0.9906028091267414072062290548990445721420e-1,
+        0.1485904213690112110809343582348566858213,
+        0.6134,
+        0.2327359473605626756631680289030288192566,
+        0.5538640526394373243368319710969711807434,
+        0.6555,
+        0.491625,
+        0.6858e-1,
+        0.253,
+        0.6620641795412045944786226689660879617864,
+        0.8309,
+        0.8998,
+        1.0,
         1.0
     ],
     order: 9,
@@ -166,7 +166,7 @@ adaptive_dense_runge_kutta_method!(
 /// Macro to create a Runge-Kutta solver with dense output capabilities
 ///
 /// # Arguments
-/// 
+///
 /// * `name`: Name of the solver struct to create
 /// * `a`: Matrix of coefficients for intermediate stages
 /// * `b`: 2D array where first row is higher order weights, second row is lower order weights
@@ -180,11 +180,11 @@ adaptive_dense_runge_kutta_method!(
 /// * `b_dense`: Coefficients for interpolation polynomial
 ///
 /// # Note
-/// 
+///
 /// This macro generates a full solver with the ability to interpolate the solution
 /// at any point within a step. The interpolation capability requires additional
 /// function evaluations but provides high-order continuous output.
-/// 
+///
 #[macro_export]
 macro_rules! adaptive_dense_runge_kutta_method {
     (
@@ -231,7 +231,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
             b_higher: [T; $stages],
             b_lower: [T; $stages],
             c: [T; $stages],
-            
+
             // Interpolation coefficients
             a_dense: [[T; $stages + $extra_stages]; $extra_stages],  // Type inferred from a_dense
             c_dense: [T; $extra_stages],
@@ -248,7 +248,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
             pub safety_factor: T,
             pub min_scale: T,
             pub max_scale: T,
-            
+
             // Iteration tracking
             reject: bool,
             n_stiff: usize,
@@ -268,17 +268,17 @@ macro_rules! adaptive_dense_runge_kutta_method {
 
                 // Convert Butcher tableau values to type T
                 let a_t: [[T; $stages]; $stages] = $a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
-                
+
                 // Handle the 2D array for b, where first row is higher order and second row is lower order
                 let b_higher: [T; $stages] = $b[0].map(|x| T::from_f64(x).unwrap());
                 let b_lower: [T; $stages] = $b[1].map(|x| T::from_f64(x).unwrap());
-                
+
                 let c_t: [T; $stages] = $c.map(|x| T::from_f64(x).unwrap());
 
                 // Convert interpolation coefficients
                 let a_dense_t: [[T; $stages + $extra_stages]; $extra_stages] = $a_dense.map(|row| row.map(|x| T::from_f64(x).unwrap()));
                 let c_dense_t: [T; $extra_stages] = $c_dense.map(|x| T::from_f64(x).unwrap());
-                let b_dense_t: [[T; $order]; $stages + $extra_stages] = 
+                let b_dense_t: [[T; $order]; $stages + $extra_stages] =
                     $b_dense.map(|row| row.map(|x| T::from_f64(x).unwrap()));
 
                 $name {
@@ -375,37 +375,37 @@ macro_rules! adaptive_dense_runge_kutta_method {
 
                 // Save k[0] as the current derivative
                 self.k[0] = self.dydt;
-                
+
                 // Compute stages
                 for i in 1..$stages {
                     let mut y_stage = self.y;
-                    
+
                     for j in 0..i {
                         y_stage += self.k[j] * (self.a[i][j] * self.h);
                     }
-                    
+
                     ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
                 }
                 let mut evals = $stages - 1; // We already have k[0]
-                
+
                 // Compute higher order solution
                 let mut y_high = self.y;
                 for i in 0..$stages {
                     y_high += self.k[i] * (self.b_higher[i] * self.h);
                 }
-                
+
                 // Compute lower order solution for error estimation
                 let mut y_low = self.y;
                 for i in 0..$stages {
                     y_low += self.k[i] * (self.b_lower[i] * self.h);
                 }
-                
+
                 // Compute error estimate
                 let err = y_high - y_low;
-                
+
                 // Calculate error norm using WRMS (weighted root mean square) norm
                 let mut err_norm: T = T::zero();
-                
+
                 // Iterate through matrix elements
                 for r in 0..R {
                     for c in 0..C {
@@ -413,7 +413,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                         err_norm = err_norm.max((err[(r, c)] / tol).abs());
                     }
                 }
-                
+
                 // Determine if step is accepted
                 if err_norm <= T::one() {
                     // Log previous state
@@ -435,11 +435,11 @@ macro_rules! adaptive_dense_runge_kutta_method {
                         for j in 0..($stages + $extra_stages) {
                             y_stage += self.k[j] * (self.a_dense[i][j] * self.h);
                         }
-                        
+
                         ode.diff(self.t + self.c_dense[i] * self.h, &y_stage, &mut self.k[$stages + i]);
                     }
                     evals += $extra_stages; // Extra stages for interpolation
-                    
+
                     // Update state with the higher-order solution
                     self.t += self.h;
                     self.y = y_high;
@@ -450,27 +450,27 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     self.reject = true;
                     self.status = $crate::ode::SolverStatus::RejectedStep;
                     self.n_stiff += 1;
-                    
+
                     // Check for stiffness
                     if self.n_stiff >= self.max_rejects {
                         self.status = $crate::ode::SolverStatus::Error($crate::ode::SolverError::Stiffness(self.t, self.y));
                         return Err($crate::ode::SolverError::Stiffness(self.t, self.y));
                     }
                 }
-                
+
                 // Calculate new step size
                 let order = T::from_usize($order).unwrap();
                 let err_order = T::one() / order;
-                
+
                 // Standard step size controller formula
                 let scale = self.safety_factor * err_norm.powf(-err_order);
-                
+
                 // Apply constraints to step size changes
                 let scale = scale.max(self.min_scale).min(self.max_scale);
-                
+
                 // Update step size
                 self.h *= scale;
-                
+
                 // Ensure step size is within bounds
                 self.h = $crate::ode::solvers::utils::constrain_step_size(self.h, self.h_min, self.h_max);
                 Ok(evals)
@@ -484,27 +484,27 @@ macro_rules! adaptive_dense_runge_kutta_method {
 
                 // Calculate the normalized distance within the step [0, 1]
                 let s = (t_interp - self.t_prev) / self.h_prev;
-            
+
                 // Compute the interpolation coefficients using Horner's method
                 for i in 0..$dense_stages {
                     // Start with the highest-order term
                     self.cont[i] = self.b_dense[i][$order-1];
-                    
+
                     // Apply Horner's method for polynomial evaluation
                     for j in (0..$order-1).rev() {
                         self.cont[i] = self.cont[i] * s + self.b_dense[i][j];
                     }
-                    
+
                     // Multiply by s as all interpolation terms start at s^1
                     self.cont[i] *= s;
                 }
-            
+
                 // Compute the interpolated value
                 let mut y_interp = self.y_prev;
                 for i in 0..($stages + $extra_stages) {
                     y_interp += self.k[i] * self.cont[i] * self.h_prev;
                 }
-                
+
                 Ok(y_interp)
             }
 
@@ -548,18 +548,18 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     ..Default::default()
                 }
             }
-            
+
             /// Get the number of terms in the dense output interpolation polynomial
             pub fn dense_stages(&self) -> usize {
                 $dense_stages
             }
-            
+
             /// Set the relative tolerance for error control
             pub fn rtol(mut self, rtol: T) -> Self {
                 self.rtol = rtol;
                 self
             }
-            
+
             /// Set the absolute tolerance for error control
             pub fn atol(mut self, atol: T) -> Self {
                 self.atol = atol;
@@ -571,49 +571,49 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 self.h0 = h0;
                 self
             }
-            
+
             /// Set the minimum allowed step size
             pub fn h_min(mut self, h_min: T) -> Self {
                 self.h_min = h_min;
                 self
             }
-            
+
             /// Set the maximum allowed step size
             pub fn h_max(mut self, h_max: T) -> Self {
                 self.h_max = h_max;
                 self
             }
-            
+
             /// Set the maximum number of steps allowed
             pub fn max_steps(mut self, max_steps: usize) -> Self {
                 self.max_steps = max_steps;
                 self
             }
-            
+
             /// Set the maximum number of consecutive rejected steps before declaring stiffness
             pub fn max_rejects(mut self, max_rejects: usize) -> Self {
                 self.max_rejects = max_rejects;
                 self
             }
-            
+
             /// Set the safety factor for step size control (default: 0.9)
             pub fn safety_factor(mut self, safety_factor: T) -> Self {
                 self.safety_factor = safety_factor;
                 self
             }
-            
+
             /// Set the minimum scale factor for step size changes (default: 0.2)
             pub fn min_scale(mut self, min_scale: T) -> Self {
                 self.min_scale = min_scale;
                 self
             }
-            
+
             /// Set the maximum scale factor for step size changes (default: 10.0)
             pub fn max_scale(mut self, max_scale: T) -> Self {
                 self.max_scale = max_scale;
                 self
             }
-            
+
             /// Get the order of the method
             pub fn order(&self) -> usize {
                 $order

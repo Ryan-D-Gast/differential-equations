@@ -6,7 +6,7 @@
 use super::*;
 
 /// The default output handler that returns solution values at each solver step.
-/// 
+///
 /// # Overview
 ///
 /// `DefaultSolout` is the simplest output handler that captures the solution
@@ -61,18 +61,18 @@ use super::*;
 /// adaptive step size control.
 ///
 /// For evenly spaced output points, consider using `EvenSolout` instead.
-/// 
-pub struct DefaultSolout{}
+///
+pub struct DefaultSolout {}
 
 impl<T, const R: usize, const C: usize, E> Solout<T, R, C, E> for DefaultSolout
-where 
+where
     T: Real,
-    E: EventData
+    E: EventData,
 {
     fn solout<SV, SI>(&mut self, solver: &mut SV, solution: &mut SI)
-    where 
+    where
         SV: Solver<T, R, C, E>,
-        SI: SolutionInterface<T, R, C, E>
+        SI: SolutionInterface<T, R, C, E>,
     {
         // Output the current time and state to the vectors
         solution.record(solver.t(), *solver.y());

@@ -1,61 +1,68 @@
 //! Solver Trait for ODE Solvers
 
-use crate::ode::{ODE, EventData};
 use crate::interpolate::InterpolationError;
+use crate::ode::{EventData, ODE};
 use crate::traits::Real;
 use nalgebra::SMatrix;
-use std::fmt::{Display, Debug};
+use std::fmt::{Debug, Display};
 
 pub type NumEvals = usize; // Number of function evaluations
 
 /// Solver Trait for ODE Solvers
-/// 
+///
 /// ODE Solvers implement this trait to solve ordinary differential equations.
 /// This step function is called iteratively to solve the ODE.
 /// By implementing this trait, different functions can use a user provided
 /// ODE solver to solve the ODE that fits their requirements.
-/// 
+///
 pub trait Solver<T, const R: usize, const C: usize, E = String>
 where
     T: Real,
     E: EventData,
 {
     /// Initialize Solver before solving ODE
-    /// 
+    ///
     /// # Arguments
     /// * `system` - System of ODEs to solve.
     /// * `t0`     - Initial time.
     /// * `tf`     - Final time.
     /// * `y`      - Initial state.
-    /// 
+    ///
     /// # Returns
     /// * Result<(), SolverStatus<T, R, C, E>> - Ok if initialization is successful,
-    /// 
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &SMatrix<T, R, C>) -> Result<NumEvals, SolverError<T, R, C>>
+    ///
+    fn init<F>(
+        &mut self,
+        ode: &F,
+        t0: T,
+        tf: T,
+        y: &SMatrix<T, R, C>,
+    ) -> Result<NumEvals, SolverError<T, R, C>>
     where
         F: ODE<T, R, C, E>;
 
     /// Step through solving the ODE by one step
-    /// 
+    ///
     /// # Arguments
     /// * `system` - System of ODEs to solve.
-    /// 
+    ///
     /// # Returns
     /// * Result<usize, SolverStatus<T, R, C, E>> - Ok if step is successful with the number of function evaluations,
-    /// 
+    ///
     fn step<F>(&mut self, ode: &F) -> Result<NumEvals, SolverError<T, R, C>>
     where
         F: ODE<T, R, C, E>;
 
     /// Interpolate solution between previous and current step
-    /// 
+    ///
     /// # Arguments
     /// * `t_interp` - Time to interpolate to.
-    /// 
+    ///
     /// # Returns
     /// * Interpolated state vector at t_interp.
-    /// 
-    fn interpolate(&mut self, t_interp: T) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>>;
+    ///
+    fn interpolate(&mut self, t_interp: T)
+    -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>>;
 
     // Access fields of the solver
 
@@ -85,13 +92,13 @@ where
 }
 
 /// Solver Error for ODE Solvers
-/// 
+///
 /// # Variants
 /// * `BadInput` - Solver input was bad.
 /// * `MaxSteps` - Solver reached maximum steps.
 /// * `StepSize` - Solver terminated due to step size converging too small of a value.
 /// * `Stiffness` - Solver terminated due to stiffness.
-/// 
+///
 #[derive(Debug, PartialEq, Clone)]
 pub enum SolverError<T, const R: usize, const C: usize>
 where
@@ -128,20 +135,20 @@ where
 /// * `RejectedStep`  - Solver rejected step.
 /// * `Interrupted`    - Solver was interrupted by event with reason.
 /// * `Complete`      - Solver completed.
-/// 
+///
 #[derive(Debug, PartialEq, Clone)]
-pub enum SolverStatus<T, const R: usize, const C: usize, E> 
-where 
+pub enum SolverStatus<T, const R: usize, const C: usize, E>
+where
     T: Real,
-    E: EventData
+    E: EventData,
 {
-    Uninitialized,  // Solvers default to this until solver.init is called
-    Initialized,    // After solver.init is called
-    Error(SolverError<T, R, C>),  // If the solver encounters an error, this status is set so solver status is indicated that an error.
-    Solving,        // While the ODE is being solved
-    RejectedStep,   // If the solver rejects a step, in this case it will repeat with new smaller step size typically, will return to Solving once the step is accepted
-    Interrupted(E), // If the solver is interrupted by event with reason
-    Complete,       // If the solver is solving and has reached the final time of the IMatrix<T, R, C, S>P then Complete is returned to indicate such.
+    Uninitialized,               // Solvers default to this until solver.init is called
+    Initialized,                 // After solver.init is called
+    Error(SolverError<T, R, C>), // If the solver encounters an error, this status is set so solver status is indicated that an error.
+    Solving,                     // While the ODE is being solved
+    RejectedStep,                // If the solver rejects a step, in this case it will repeat with new smaller step size typically, will return to Solving once the step is accepted
+    Interrupted(E),              // If the solver is interrupted by event with reason
+    Complete,                    // If the solver is solving and has reached the final time of the IMatrix<T, R, C, S>P then Complete is returned to indicate such.
 }
 
 impl<T, const R: usize, const C: usize, E> Display for SolverStatus<T, R, C, E>

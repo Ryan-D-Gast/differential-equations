@@ -1,5 +1,5 @@
 //! Solout trait and common implementations for controlling the output of ODE solvers in the `ode` module.
-//! 
+//!
 //! ## Includes
 //! * `DefaultSolout` for capturing all solver steps
 //! * `EvenSolout` for capturing evenly spaced solution points
@@ -7,11 +7,11 @@
 //! * `TEvalSolout` for capturing points based on a user-defined function
 //! * `CrossingSolout` for capturing points when crossing a specified value
 //! * `HyperplaneCrossingSolout` for capturing points when crossing a hyperplane
-//! 
+//!
 
-use crate::ode::{Solver, EventData, SolutionInterface};
-use nalgebra::SMatrix;
+use crate::ode::{EventData, SolutionInterface, Solver};
 use crate::traits::Real;
+use nalgebra::SMatrix;
 
 // Solout Trait for controlling output of the solver
 mod solout;
@@ -30,7 +30,7 @@ pub use dense::DenseSolout;
 mod t_eval;
 pub use t_eval::TEvalSolout;
 
-// Crossing Detecting Solouts 
+// Crossing Detecting Solouts
 
 /// Defines the direction of threshold crossing to detect.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

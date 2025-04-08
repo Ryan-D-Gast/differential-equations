@@ -1,7 +1,7 @@
 use criterion::criterion_main;
 
-mod systems;
 mod solvers;
+mod systems;
 
 criterion_main! {
     solvers::fixed_step::fixed_step_benchmarks,

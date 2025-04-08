@@ -1,8 +1,10 @@
 //! Suite of test cases for Solvers vs results of SciPy using DOP853 & Tolerences = 1e-12
 
-use super::systems::{ExponentialGrowth, LinearEquation, HarmonicOscillator, LogisticEquation};
+use super::systems::{ExponentialGrowth, HarmonicOscillator, LinearEquation, LogisticEquation};
 use differential_equations::ode::IVP;
-use differential_equations::ode::solvers::{DOP853, DOPRI5, RK4, RKF, Euler, APCF4, APCV4, RKV65, RKV98};
+use differential_equations::ode::solvers::{
+    APCF4, APCV4, DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98,
+};
 use nalgebra::vector;
 
 macro_rules! test_ode {

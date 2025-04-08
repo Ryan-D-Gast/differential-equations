@@ -9,7 +9,7 @@ use super::*;
 pub type ExtractorFn<V, P> = fn(&V) -> P;
 
 /// A solout that detects when a trajectory crosses a hyperplane.
-/// 
+///
 /// # Overview
 ///
 /// `HyperplaneSolout` monitors a trajectory and detects when it crosses a specified
@@ -82,8 +82,13 @@ pub type ExtractorFn<V, P> = fn(&V) -> P;
 ///
 /// // solution now contains only the points where the trajectory crosses the z=0 plane
 /// ```
-pub struct HyperplaneCrossingSolout<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize>
-where
+pub struct HyperplaneCrossingSolout<
+    T,
+    const R1: usize,
+    const C1: usize,
+    const R2: usize,
+    const C2: usize,
+> where
     T: Real,
 {
     /// Point on the hyperplane
@@ -100,7 +105,8 @@ where
     _phantom: std::marker::PhantomData<SMatrix<T, R2, C2>>,
 }
 
-impl<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize> HyperplaneCrossingSolout<T, R1, C1, R2, C2>
+impl<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize>
+    HyperplaneCrossingSolout<T, R1, C1, R2, C2>
 where
     T: Real,
 {
@@ -115,14 +121,18 @@ where
     ///
     /// # Returns
     /// * A new `HyperplaneCrossingSolout` instance
-    /// 
-    pub fn new(point: SMatrix<T, R1, C1>, mut normal: SMatrix<T, R1, C1>, extractor: ExtractorFn<SMatrix<T, R2, C2>, SMatrix<T, R1, C1>>) -> Self {
+    ///
+    pub fn new(
+        point: SMatrix<T, R1, C1>,
+        mut normal: SMatrix<T, R1, C1>,
+        extractor: ExtractorFn<SMatrix<T, R2, C2>, SMatrix<T, R1, C1>>,
+    ) -> Self {
         // Normalize the normal vector
         let norm = normal.norm();
         if norm > T::default_epsilon() {
             normal = normal * T::one() / norm;
         }
-        
+
         HyperplaneCrossingSolout {
             point,
             normal,
@@ -132,7 +142,7 @@ where
             _phantom: std::marker::PhantomData,
         }
     }
-    
+
     /// Set the direction of crossings to detect.
     ///
     /// # Arguments
@@ -140,12 +150,12 @@ where
     ///
     /// # Returns
     /// * `Self` - The modified HyperplaneSolout (builder pattern)
-    /// 
+    ///
     pub fn with_direction(mut self, direction: CrossingDirection) -> Self {
         self.direction = direction;
         self
     }
-    
+
     /// Set to detect only positive crossings (from negative to positive side).
     ///
     /// A positive crossing occurs when the trajectory transitions from the
@@ -154,12 +164,12 @@ where
     ///
     /// # Returns
     /// * `Self` - The modified HyperplaneSolout (builder pattern)
-    /// 
+    ///
     pub fn positive_only(mut self) -> Self {
         self.direction = CrossingDirection::Positive;
         self
     }
-    
+
     /// Set to detect only negative crossings (from positive to negative side).
     ///
     /// A negative crossing occurs when the trajectory transitions from the
@@ -168,12 +178,12 @@ where
     ///
     /// # Returns
     /// * `Self` - The modified HyperplaneSolout (builder pattern)
-    /// 
+    ///
     pub fn negative_only(mut self) -> Self {
         self.direction = CrossingDirection::Negative;
         self
     }
-    
+
     /// Calculate signed distance from a point to the hyperplane.
     ///
     /// # Arguments
@@ -181,40 +191,41 @@ where
     ///
     /// # Returns
     /// * Signed distance (positive if on same side as normal vector)
-    /// 
+    ///
     fn signed_distance(&self, pos: &SMatrix<T, R1, C1>) -> T {
         // Calculate displacement vector from plane point to position
         let displacement = pos - self.point;
-        
+
         // Dot product with normal gives signed distance
         displacement.dot(&self.normal)
     }
 }
 
-impl<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize, E: EventData> Solout<T, R2, C2, E> for HyperplaneCrossingSolout<T, R1, C1, R2, C2>
-where 
+impl<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize, E: EventData>
+    Solout<T, R2, C2, E> for HyperplaneCrossingSolout<T, R1, C1, R2, C2>
+where
     T: Real,
-    E: EventData
+    E: EventData,
 {
     fn solout<SV, SI>(&mut self, solver: &mut SV, solution: &mut SI)
-    where 
+    where
         SV: Solver<T, R2, C2, E>,
-        SI: SolutionInterface<T, R2, C2, E>
+        SI: SolutionInterface<T, R2, C2, E>,
     {
         let t_curr = solver.t();
         let y_curr = solver.y();
-        
+
         // Extract position from current state and calculate distance
         let pos_curr = (self.extractor)(y_curr);
         let distance = self.signed_distance(&pos_curr);
-        
+
         // If we have a previous distance, check for crossing
         if let Some(last_distance) = self.last_distance {
             let zero = T::zero();
-            let is_crossing = last_distance.signum() != distance.signum() || 
-                             (last_distance == zero && distance != zero) ||
-                             (last_distance != zero && distance == zero);
-            
+            let is_crossing = last_distance.signum() != distance.signum()
+                || (last_distance == zero && distance != zero)
+                || (last_distance != zero && distance == zero);
+
             // Check if we are crossing the hyperplane
             if is_crossing {
                 // Check crossing direction if specified
@@ -223,15 +234,17 @@ where
                     CrossingDirection::Negative => last_distance > zero && distance <= zero,
                     CrossingDirection::Both => true, // any crossing
                 };
-                
+
                 if record_crossing {
                     let t_prev = solver.t_prev();
-                    
+
                     // Find the crossing time using Newton's method
-                    if let Some(t_cross) = self.find_crossing_newton(solver, t_prev, t_curr, last_distance, distance) {
+                    if let Some(t_cross) =
+                        self.find_crossing_newton(solver, t_prev, t_curr, last_distance, distance)
+                    {
                         // Use solver's interpolation for the full state vector at crossing time
                         let y_cross = solver.interpolate(t_cross).unwrap();
-                        
+
                         // Record the crossing time and value
                         solution.record(t_cross, y_cross);
                     } else {
@@ -239,14 +252,14 @@ where
                         let frac = -last_distance / (distance - last_distance);
                         let t_cross = t_prev + frac * (t_curr - t_prev);
                         let y_cross = solver.interpolate(t_cross).unwrap();
-                        
+
                         // Record estimated crossing time and value
                         solution.record(t_cross, y_cross);
                     }
                 }
             }
         }
-        
+
         // Update last distance for next comparison
         self.last_distance = Some(distance);
     }
@@ -256,18 +269,19 @@ where
     }
 }
 
-impl<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize> HyperplaneCrossingSolout<T, R1, C1, R2, C2>
+impl<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize>
+    HyperplaneCrossingSolout<T, R1, C1, R2, C2>
 where
     T: Real,
 {
     /// Find the crossing time using Newton's method with solver interpolation
     fn find_crossing_newton<S, E>(
-        &self, 
-        solver: &mut S, 
-        t_lower: T, 
-        t_upper: T, 
-        dist_lower: T, 
-        dist_upper: T
+        &self,
+        solver: &mut S,
+        t_lower: T,
+        t_upper: T,
+        dist_lower: T,
+        dist_upper: T,
     ) -> Option<T>
     where
         S: Solver<T, R2, C2, E>,
@@ -275,43 +289,43 @@ where
     {
         // Start with linear interpolation as initial guess
         let mut t = t_lower - dist_lower * (t_upper - t_lower) / (dist_upper - dist_lower);
-        
+
         // Newton's method parameters
         let max_iterations = 10;
         let tolerance = T::default_epsilon() * T::from_f64(100.0).unwrap(); // Adjust tolerance as needed
         let mut dist;
-        
+
         // Newton's method iterations
         for _ in 0..max_iterations {
             // Get interpolated state at current time guess
             let y_t = solver.interpolate(t).unwrap();
-            
+
             // Extract position and calculate signed distance
             let pos_t = (self.extractor)(&y_t);
             dist = self.signed_distance(&pos_t);
-            
+
             // Check if we're close enough to the crossing
             if dist.abs() < tolerance {
                 return Some(t);
             }
-            
+
             // Calculate numerical derivative of the distance function
             let delta_t = (t_upper - t_lower) * T::from_f64(1e-6).unwrap();
             let t_plus = t + delta_t;
             let y_plus = solver.interpolate(t_plus).unwrap();
             let pos_plus = (self.extractor)(&y_plus);
             let dist_plus = self.signed_distance(&pos_plus);
-            
+
             let derivative = (dist_plus - dist) / delta_t;
-            
+
             // Avoid division by zero
             if derivative.abs() < T::default_epsilon() {
                 break;
             }
-            
+
             // Newton step
             let t_new = t - dist / derivative;
-            
+
             // Ensure we stay within bounds
             if t_new < t_lower || t_new > t_upper {
                 // Bisection fallback
@@ -320,12 +334,12 @@ where
                 t = t_new;
             }
         }
-        
+
         // If we didn't converge within max_iterations, check if we're close enough
         let y_t = solver.interpolate(t).unwrap();
         let pos_t = (self.extractor)(&y_t);
         dist = self.signed_distance(&pos_t);
-        
+
         if dist.abs() < tolerance * T::from_f64(10.0).unwrap() {
             Some(t)
         } else {

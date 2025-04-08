@@ -1,5 +1,5 @@
-use differential_equations::ode::*;
 use differential_equations::ode::solvers::RKF;
+use differential_equations::ode::*;
 use nalgebra::{SVector, vector};
 
 /// Damped Pendulum Model
@@ -59,10 +59,7 @@ fn main() {
     let t_out = vec![0.0, 1.0, 3.0, 4.5, 6.9, 10.0];
 
     // Solve the ode with even output at interval dt: 0.1
-    match pendulum_ivp
-        .t_eval(t_out)
-        .solve(&mut solver)
-    {
+    match pendulum_ivp.t_eval(t_out).solve(&mut solver) {
         Ok(solution) => {
             // Check if the solver stopped due to the event command
             if let SolverStatus::Interrupted(ref reason) = solution.status {

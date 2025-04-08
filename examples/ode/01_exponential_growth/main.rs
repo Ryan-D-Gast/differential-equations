@@ -34,7 +34,11 @@ fn main() {
     };
 
     // Print the solution using the fields of the Solution struct, which is returned by the solve method
-    println!("Solution: ({:?}, {:?})", solution.t.last().unwrap(), solution.y.last().unwrap());
+    println!(
+        "Solution: ({:?}, {:?})",
+        solution.t.last().unwrap(),
+        solution.y.last().unwrap()
+    );
     println!("Function evaluations: {}", solution.evals);
     println!("Steps: {}", solution.steps);
     println!("Rejected Steps: {}", solution.rejected_steps);

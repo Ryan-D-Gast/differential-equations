@@ -6,12 +6,12 @@
 use super::*;
 
 /// An output handler that evaluates the solution at specific user-defined time points.
-/// 
+///
 /// # Overview
 ///
-/// `TEvalSolout` provides the ability to evaluate the solution at a list of arbitrary 
-/// time points specified by the user. This is useful when you need the solution at 
-/// specific times that don't necessarily align with the solver's internal steps, 
+/// `TEvalSolout` provides the ability to evaluate the solution at a list of arbitrary
+/// time points specified by the user. This is useful when you need the solution at
+/// specific times that don't necessarily align with the solver's internal steps,
 /// such as for:
 ///
 /// - Comparison with experimental data at specific measurement times
@@ -76,23 +76,23 @@ pub struct TEvalSolout<T: Real> {
 }
 
 impl<T, const R: usize, const C: usize, E> Solout<T, R, C, E> for TEvalSolout<T>
-where 
+where
     T: Real,
-    E: EventData
+    E: EventData,
 {
     fn solout<SV, SI>(&mut self, solver: &mut SV, solution: &mut SI)
-    where 
+    where
         SV: Solver<T, R, C, E>,
-        SI: SolutionInterface<T, R, C, E>
+        SI: SolutionInterface<T, R, C, E>,
     {
         let t_prev = solver.t_prev();
         let t_curr = solver.t();
-        
+
         // Process evaluation points that fall within current step
         let mut idx = self.next_eval_idx;
         while idx < self.t_evals.len() {
             let t_eval = self.t_evals[idx];
-            
+
             // Check if this evaluation point is within the current step
             let in_range = if self.integration_direction > T::zero() {
                 (t_eval == t_prev && idx == 0) || (t_eval > t_prev && t_eval <= t_curr)
@@ -112,14 +112,15 @@ where
                 idx += 1;
             } else {
                 // If we've gone beyond the current step, stop processing
-                if (self.integration_direction > T::zero() && t_eval > t_curr) ||
-                   (self.integration_direction < T::zero() && t_eval < t_curr) {
+                if (self.integration_direction > T::zero() && t_eval > t_curr)
+                    || (self.integration_direction < T::zero() && t_eval < t_curr)
+                {
                     break;
                 }
                 idx += 1;
             }
         }
-        
+
         // Update next_eval_idx for the next call
         self.next_eval_idx = idx;
     }
@@ -153,7 +154,7 @@ impl<T: Real> TEvalSolout<T> {
         } else {
             sorted_t_evals.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
         }
-        
+
         TEvalSolout {
             t_evals: sorted_t_evals,
             next_eval_idx: 0,

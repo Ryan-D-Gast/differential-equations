@@ -8,7 +8,7 @@ adaptive_runge_kutta_method!(
     /// solution, with an embedded fourth-order method for error estimation.
     /// The RKF45 method is one of the most widely used adaptive step size methods due to
     /// its excellent balance of efficiency and accuracy.
-    /// 
+    ///
     /// The Butcher Tableau is as follows:
     /// ```text
     /// 0      |
@@ -21,7 +21,7 @@ adaptive_runge_kutta_method!(
     ///        | 16/135       0           6656/12825  28561/56430 -9/50       2/55    (5th order)
     ///        | 25/216       0           1408/2565   2197/4104   -1/5        0       (4th order)
     /// ```
-    /// 
+    ///
     /// Reference: [Wikipedia](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta%E2%80%93Fehlberg_method#CITEREFFehlberg1969)
     name: RKF,
     a: [
@@ -47,7 +47,7 @@ adaptive_runge_kutta_method!(
     /// solution, with an embedded fourth-order method for error estimation.
     /// The Cash-Karp method is a variant of the Runge-Kutta-Fehlberg method that uses
     /// different coefficients to achieve a more efficient and accurate solution.
-    /// 
+    ///
     /// The Butcher Tableau is as follows:
     /// ```text
     /// 0      |
@@ -60,7 +60,7 @@ adaptive_runge_kutta_method!(
     ///        | 37/378       0           250/621     125/594     0           512/1771  (5th order)
     ///        | 2825/27648   0           18575/48384 13525/55296 277/14336   1/4       (4th order)
     /// ```
-    /// 
+    ///
     /// Reference: [Wikipedia](https://en.wikipedia.org/wiki/Cash%E2%80%93Karp_method)
     name: CashKarp,
     a: [
@@ -80,12 +80,11 @@ adaptive_runge_kutta_method!(
     stages: 6
 );
 
-
 /// Macro to create an adaptive Runge-Kutta solver with embedded error estimation
 /// and interpolation vs cubic Hermite interpolation.
 ///
 /// # Arguments
-/// 
+///
 /// * `name`: Name of the solver struct to create
 /// * `a`: Matrix of coefficients for intermediate stages
 /// * `b`: 2D array where first row is higher order weights, second row is lower order weights
@@ -94,10 +93,10 @@ adaptive_runge_kutta_method!(
 /// * `stages`: Number of stages in the method
 ///
 /// # Example
-/// 
+///
 /// ```
 /// use differential_equations::adaptive_runge_kutta_method;
-/// 
+///
 /// // Define RKF45 method
 /// adaptive_runge_kutta_method!(
 ///     /// Runge-Kutta-Fehlberg 4(5) adaptive step size method
@@ -119,9 +118,9 @@ adaptive_runge_kutta_method!(
 ///     stages: 6
 /// );
 /// ```
-/// 
+///
 /// # Note on Butcher Tableaus
-/// 
+///
 /// The `a` matrix is typically a lower triangular matrix with zeros on the diagonal.
 /// when creating the `a` matrix for implementation simplicity it is generated as a
 /// 2D array with zeros in the upper triangular portion of the matrix. The array size
@@ -129,10 +128,10 @@ adaptive_runge_kutta_method!(
 /// When computing the Runge-Kutta stages only the elements in the lower triangular portion
 /// of the matrix and unnessary multiplication by zero is avoided. The Rust compiler is also
 /// likely to optimize the array out instead of memory addresses directly.
-/// 
+///
 /// The `b` matrix is a 2D array where the first row is the higher order weights and the
 /// second row is the lower order weights. This is used for embedded error estimation.
-/// 
+///
 #[macro_export]
 macro_rules! adaptive_runge_kutta_method {
     (
@@ -184,7 +183,7 @@ macro_rules! adaptive_runge_kutta_method {
             pub safety_factor: T,
             pub min_scale: T,
             pub max_scale: T,
-            
+
             // Iteration tracking
             reject: bool,
             n_stiff: usize,
@@ -201,11 +200,11 @@ macro_rules! adaptive_runge_kutta_method {
 
                 // Convert Butcher tableau values to type T
                 let a_t: [[T; $stages]; $stages] = $a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
-                
+
                 // Handle the 2D array for b, where first row is higher order and second row is lower order
                 let b_higher: [T; $stages] = $b[0].map(|x| T::from_f64(x).unwrap());
                 let b_lower: [T; $stages] = $b[1].map(|x| T::from_f64(x).unwrap());
-                
+
                 let c_t: [T; $stages] = $c.map(|x| T::from_f64(x).unwrap());
 
                 $name {
@@ -289,36 +288,36 @@ macro_rules! adaptive_runge_kutta_method {
 
                 // Compute stages
                 ode.diff(self.t, &self.y, &mut self.k[0]);
-                
+
                 for i in 1..$stages {
                     let mut y_stage = self.y;
-                    
+
                     for j in 0..i {
                         y_stage += self.k[j] * (self.a[i][j] * self.h);
                     }
-                    
+
                     ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
                 }
-                
+
                 // Compute higher order solution
                 let mut y_high = self.y;
                 for i in 0..$stages {
                     y_high += self.k[i] * (self.b_higher[i] * self.h);
                 }
-                
+
                 // Compute lower order solution for error estimation
                 let mut y_low = self.y;
                 for i in 0..$stages {
                     y_low += self.k[i] * (self.b_lower[i] * self.h);
                 }
-                
+
                 // Compute error estimate
                 let err = y_high - y_low;
-                
+
                 // Calculate error norm
                 // Using WRMS (weighted root mean square) norm
                 let mut err_norm: T = T::zero();
-                
+
                 // Iterate through matrix elements
                 for r in 0..R {
                     for c in 0..C {
@@ -326,9 +325,9 @@ macro_rules! adaptive_runge_kutta_method {
                         err_norm = err_norm.max((err[(r, c)] / tol).abs());
                     }
                 }
-                
+
                 let mut evals = 0;
-                
+
                 // Determine if step is accepted
                 if err_norm <= T::one() {
                     // Log previous state
@@ -342,7 +341,7 @@ macro_rules! adaptive_runge_kutta_method {
                         self.reject = false;
                         self.status = $crate::ode::SolverStatus::Solving;
                     }
-                    
+
                     // Update state with the higher-order solution
                     self.t += self.h;
                     self.y = y_high;
@@ -357,27 +356,27 @@ macro_rules! adaptive_runge_kutta_method {
                     evals += $stages;
                     self.status = $crate::ode::SolverStatus::RejectedStep;
                     self.n_stiff += 1;
-                    
+
                     // Check for stiffness
                     if self.n_stiff >= self.max_rejects {
                         self.status = $crate::ode::SolverStatus::Error($crate::ode::SolverError::Stiffness(self.t, self.y.clone()));
                         return Err($crate::ode::SolverError::Stiffness(self.t, self.y.clone()));
                     }
                 }
-                
+
                 // Calculate new step size
                 let order = T::from_usize($order).unwrap();
                 let err_order = T::one() / order;
-                
+
                 // Standard step size controller formula
                 let scale = self.safety_factor * err_norm.powf(-err_order);
-                
+
                 // Apply constraints to step size changes
                 let scale = scale.max(self.min_scale).min(self.max_scale);
-                
+
                 // Update step size
                 self.h *= scale;
-                
+
                 // Ensure step size is within bounds
                 self.h = $crate::ode::solvers::utils::constrain_step_size(self.h, self.h_min, self.h_max);
                 Ok(evals)
@@ -437,61 +436,61 @@ macro_rules! adaptive_runge_kutta_method {
                     ..Default::default()
                 }
             }
-            
+
             /// Set the relative tolerance for error control
             pub fn rtol(mut self, rtol: T) -> Self {
                 self.rtol = rtol;
                 self
             }
-            
+
             /// Set the absolute tolerance for error control
             pub fn atol(mut self, atol: T) -> Self {
                 self.atol = atol;
                 self
             }
-            
+
             /// Set the minimum allowed step size
             pub fn h_min(mut self, h_min: T) -> Self {
                 self.h_min = h_min;
                 self
             }
-            
+
             /// Set the maximum allowed step size
             pub fn h_max(mut self, h_max: T) -> Self {
                 self.h_max = h_max;
                 self
             }
-            
+
             /// Set the maximum number of steps allowed
             pub fn max_steps(mut self, max_steps: usize) -> Self {
                 self.max_steps = max_steps;
                 self
             }
-            
+
             /// Set the maximum number of consecutive rejected steps before declaring stiffness
             pub fn max_rejects(mut self, max_rejects: usize) -> Self {
                 self.max_rejects = max_rejects;
                 self
             }
-            
+
             /// Set the safety factor for step size control (default: 0.9)
             pub fn safety_factor(mut self, safety_factor: T) -> Self {
                 self.safety_factor = safety_factor;
                 self
             }
-            
+
             /// Set the minimum scale factor for step size changes (default: 0.2)
             pub fn min_scale(mut self, min_scale: T) -> Self {
                 self.min_scale = min_scale;
                 self
             }
-            
+
             /// Set the maximum scale factor for step size changes (default: 10.0)
             pub fn max_scale(mut self, max_scale: T) -> Self {
                 self.max_scale = max_scale;
                 self
             }
-            
+
             /// Get the order of the method
             pub fn order(&self) -> usize {
                 $order

@@ -3,7 +3,7 @@
 use nalgebra::RealField;
 
 /// Real Number Trait
-/// 
+///
 /// This trait specifies the acceptable types for real numbers.
 /// Currently implemented for:
 /// * `f32` - 32-bit floating point
@@ -11,7 +11,7 @@ use nalgebra::RealField;
 ///
 /// Provides additional functionality required for ODE solvers beyond
 /// what's provided by nalgebra's RealField trait.
-/// 
+///
 pub trait Real: Copy + RealField {
     fn infinity() -> Self;
     fn to_f64(self) -> f64;

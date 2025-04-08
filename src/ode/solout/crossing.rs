@@ -1,12 +1,12 @@
 //! Crossing detection solout for detecting when state components cross threshold values.
 //!
-//! This module provides functionality for detecting and recording when a specific state 
+//! This module provides functionality for detecting and recording when a specific state
 //! component crosses a defined threshold value during integration.
 
 use super::*;
 
 /// A solout that detects when a component crosses a specified threshold value.
-/// 
+///
 /// # Overview
 ///
 /// `CrossingSolout` monitors a specific component of the state vector and detects when
@@ -105,7 +105,7 @@ impl<T: Real> CrossingSolout<T> {
             direction: CrossingDirection::Both,
         }
     }
-    
+
     /// Set the direction of crossings to detect.
     ///
     /// # Arguments
@@ -132,7 +132,7 @@ impl<T: Real> CrossingSolout<T> {
         self.direction = direction;
         self
     }
-    
+
     /// Set to detect only positive crossings (from below to above threshold).
     ///
     /// A positive crossing occurs when the monitored component transitions from
@@ -153,7 +153,7 @@ impl<T: Real> CrossingSolout<T> {
         self.direction = CrossingDirection::Positive;
         self
     }
-    
+
     /// Set to detect only negative crossings (from above to below threshold).
     ///
     /// A negative crossing occurs when the monitored component transitions from
@@ -177,27 +177,27 @@ impl<T: Real> CrossingSolout<T> {
 }
 
 impl<T, const R: usize, const C: usize, E> Solout<T, R, C, E> for CrossingSolout<T>
-where 
+where
     T: Real,
-    E: EventData
+    E: EventData,
 {
     fn solout<SV, SI>(&mut self, solver: &mut SV, solution: &mut SI)
-    where 
+    where
         SV: Solver<T, R, C, E>,
-        SI: SolutionInterface<T, R, C, E> 
+        SI: SolutionInterface<T, R, C, E>,
     {
         let t_curr = solver.t();
         let y_curr = solver.y();
-        
+
         // Calculate the offset from threshold (to detect zero-crossing)
         let current_value = y_curr[self.component_idx];
         let offset_value = current_value - self.threshold;
-        
+
         // If we have a previous value, check for crossing
         if let Some(last_offset) = self.last_offset_value {
             let zero = T::zero();
             let is_crossing = last_offset.signum() != offset_value.signum();
-            
+
             if is_crossing {
                 // Check crossing direction if specified
                 let record_crossing = match self.direction {
@@ -205,21 +205,17 @@ where
                     CrossingDirection::Negative => last_offset > zero && offset_value <= zero,
                     CrossingDirection::Both => true, // any crossing
                 };
-                
+
                 if record_crossing {
                     let t_prev = solver.t_prev();
-                    
+
                     // Find crossing time using Newton's method
-                    if let Some(t_cross) = self.find_crossing_newton(
-                        solver, 
-                        t_prev, 
-                        t_curr, 
-                        last_offset, 
-                        offset_value
-                    ) {
+                    if let Some(t_cross) =
+                        self.find_crossing_newton(solver, t_prev, t_curr, last_offset, offset_value)
+                    {
                         // Use solver's interpolation for the full state vector at crossing time
                         let y_cross = solver.interpolate(t_cross).unwrap();
-                        
+
                         // Record the crossing time and value
                         solution.record(t_cross, y_cross);
                     } else {
@@ -227,14 +223,14 @@ where
                         let frac = -last_offset / (offset_value - last_offset);
                         let t_cross = t_prev + frac * (t_curr - t_prev);
                         let y_cross = solver.interpolate(t_cross).unwrap();
-                        
+
                         // Record the estimated crossing time and value
                         solution.record(t_cross, y_cross);
                     }
                 }
             }
         }
-        
+
         // Update last value for next comparison
         self.last_offset_value = Some(offset_value);
     }
@@ -248,12 +244,12 @@ where
 impl<T: Real> CrossingSolout<T> {
     /// Find the crossing time using Newton's method with solver interpolation
     fn find_crossing_newton<S, const R: usize, const C: usize, E>(
-        &self, 
-        solver: &mut S, 
-        t_lower: T, 
-        t_upper: T, 
-        offset_lower: T, 
-        offset_upper: T
+        &self,
+        solver: &mut S,
+        t_lower: T,
+        t_upper: T,
+        offset_lower: T,
+        offset_upper: T,
     ) -> Option<T>
     where
         S: Solver<T, R, C, E>,
@@ -261,41 +257,41 @@ impl<T: Real> CrossingSolout<T> {
     {
         // Start with linear interpolation as initial guess
         let mut t = t_lower - offset_lower * (t_upper - t_lower) / (offset_upper - offset_lower);
-        
+
         // Newton's method parameters
         let max_iterations = 10;
         let tolerance = T::default_epsilon() * T::from_f64(100.0).unwrap(); // Higher tolerance for numerical stability
         let mut offset;
-        
+
         // Newton's method iterations
         for _ in 0..max_iterations {
             // Get interpolated state at current time guess
             let y_t = solver.interpolate(t).unwrap();
-            
+
             // Calculate offset from threshold at this time point
             offset = y_t[self.component_idx] - self.threshold;
-            
+
             // Check if we're close enough to the crossing
             if offset.abs() < tolerance {
                 return Some(t);
             }
-            
+
             // Calculate numerical derivative of the offset function
             let delta_t = (t_upper - t_lower) * T::from_f64(1e-6).unwrap();
             let t_plus = t + delta_t;
             let y_plus = solver.interpolate(t_plus).unwrap();
             let offset_plus = y_plus[self.component_idx] - self.threshold;
-            
+
             let derivative = (offset_plus - offset) / delta_t;
-            
+
             // Avoid division by zero or very small derivatives
             if derivative.abs() < T::default_epsilon() * T::from_f64(10.0).unwrap() {
                 break;
             }
-            
+
             // Newton step
             let t_new = t - offset / derivative;
-            
+
             // Ensure we stay within bounds
             if t_new < t_lower || t_new > t_upper {
                 // Bisection fallback
@@ -311,11 +307,11 @@ impl<T: Real> CrossingSolout<T> {
                 t = t_new;
             }
         }
-        
+
         // Final check: Get interpolated value and see if we're close enough
         let y_t = solver.interpolate(t).unwrap();
         offset = y_t[self.component_idx] - self.threshold;
-        
+
         if offset.abs() < tolerance * T::from_f64(10.0).unwrap() {
             Some(t)
         } else {

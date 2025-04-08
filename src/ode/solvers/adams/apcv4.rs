@@ -4,28 +4,28 @@ use super::*;
 
 ///
 /// Adams-Predictor-Corrector 4th Order Variable Step Size Method.
-/// 
-/// The Adams-Predictor-Corrector method is an explicit method that 
+///
+/// The Adams-Predictor-Corrector method is an explicit method that
 /// uses the previous states to predict the next state. This implementation
 /// uses a variable step size to maintain a desired accuracy.
-/// It is recommended to start with a small step size so that tolerance 
+/// It is recommended to start with a small step size so that tolerance
 /// can be quickly met and the algorithm can adjust the step size accordingly.
-/// 
+///
 /// The First 3 steps are calculated using
 /// the Runge-Kutta method of order 4(5) and then the Adams-Predictor-Corrector
 /// method is used to calculate the remaining steps until the final time.
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// use differential_equations::ode::*;
 /// use differential_equations::ode::solvers::APCV4;
 /// use nalgebra::{SVector, vector};
-/// 
+///
 /// struct HarmonicOscillator {
 ///     k: f64,
 /// }
-/// 
+///
 /// impl ODE<f64, 2, 1> for HarmonicOscillator {
 ///     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
 ///         dydt[0] = y[1];
@@ -42,17 +42,17 @@ use super::*;
 /// assert!((results.y.last().unwrap()[0] - expected[0]).abs() < 1e-6);
 /// assert!((results.y.last().unwrap()[1] - expected[1]).abs() < 1e-6);
 /// ```
-/// 
+///
 /// # Settings
 /// * `tol` - Tolerance
 /// * `h_max` - Maximum step size
 /// * `max_steps` - Maximum number of steps
-/// 
+///
 /// ## Warning
-/// 
+///
 /// This method is not suitable for stiff problems and can results in
 /// extremely small step sizes and long computation times.
-/// 
+///
 pub struct APCV4<T: Real, const R: usize, const C: usize, E: EventData> {
     // Initial Step Size
     pub h0: T,
@@ -72,7 +72,7 @@ pub struct APCV4<T: Real, const R: usize, const C: usize, E: EventData> {
     t_prev: [T; 4],
     y_prev: [SMatrix<T, R, C>; 4],
 
-    // Previous step states 
+    // Previous step states
     t_old: T,
     y_old: SMatrix<T, R, C>,
     dydt_old: SMatrix<T, R, C>,
@@ -98,15 +98,24 @@ pub struct APCV4<T: Real, const R: usize, const C: usize, E: EventData> {
 }
 
 // Implement Solver Trait for APCV4
-impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> for APCV4<T, R, C, E> {
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>) -> Result<NumEvals, SolverError<T, R, C>>
+impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E>
+    for APCV4<T, R, C, E>
+{
+    fn init<F>(
+        &mut self,
+        ode: &F,
+        t0: T,
+        tf: T,
+        y0: &SMatrix<T, R, C>,
+    ) -> Result<NumEvals, SolverError<T, R, C>>
     where
         F: ODE<T, R, C, E>,
     {
         self.tf = tf;
 
         // Check that the initial step size is set
-        match validate_step_size_parameters::<T, R, C, E>(self.h0, T::zero(), T::infinity(), t0, tf) {
+        match validate_step_size_parameters::<T, R, C, E>(self.h0, T::zero(), T::infinity(), t0, tf)
+        {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
@@ -126,10 +135,18 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         let six = T::from_f64(6.0).unwrap();
         let mut evals = 0;
         for i in 1..=3 {
-            // Compute k1, k2, k3, k4 of Runge-Kutta 4 
+            // Compute k1, k2, k3, k4 of Runge-Kutta 4
             ode.diff(self.t, &self.y, &mut self.k1);
-            ode.diff(self.t + self.h / two, &(self.y + self.k1 * (self.h / two)), &mut self.k2);
-            ode.diff(self.t + self.h / two, &(self.y + self.k2 * (self.h / two)), &mut self.k3);
+            ode.diff(
+                self.t + self.h / two,
+                &(self.y + self.k1 * (self.h / two)),
+                &mut self.k2,
+            );
+            ode.diff(
+                self.t + self.h / two,
+                &(self.y + self.k2 * (self.h / two)),
+                &mut self.k3,
+            );
             ode.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
 
             // Update State
@@ -166,11 +183,19 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         if self.h != self.t_prev[0] - self.t_prev[1] && self.t + self.h == self.tf {
             let two = T::from_f64(2.0).unwrap();
             let six = T::from_f64(6.0).unwrap();
-            
+
             // Perform a Runge-Kutta 4 step to finish.
             ode.diff(self.t, &self.y, &mut self.k1);
-            ode.diff(self.t + self.h / two, &(self.y + self.k1 * (self.h / two)), &mut self.k2);
-            ode.diff(self.t + self.h / two, &(self.y + self.k2 * (self.h / two)), &mut self.k3);
+            ode.diff(
+                self.t + self.h / two,
+                &(self.y + self.k1 * (self.h / two)),
+                &mut self.k2,
+            );
+            ode.diff(
+                self.t + self.h / two,
+                &(self.y + self.k2 * (self.h / two)),
+                &mut self.k3,
+            );
             ode.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
             evals += 4; // 4 evaluations per Runge-Kutta step
 
@@ -186,28 +211,28 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         ode.diff(self.t_prev[1], &self.y_prev[1], &mut self.k3);
         ode.diff(self.t_prev[0], &self.y_prev[0], &mut self.k4);
 
-        let predictor = self.y_prev[3] + (
-            self.k1 * T::from_f64(55.0).unwrap() -
-            self.k2 * T::from_f64(59.0).unwrap() + 
-            self.k3 * T::from_f64(37.0).unwrap() - 
-            self.k4 * T::from_f64(9.0).unwrap()
-        ) * self.h / T::from_f64(24.0).unwrap();
+        let predictor = self.y_prev[3]
+            + (self.k1 * T::from_f64(55.0).unwrap() - self.k2 * T::from_f64(59.0).unwrap()
+                + self.k3 * T::from_f64(37.0).unwrap()
+                - self.k4 * T::from_f64(9.0).unwrap())
+                * self.h
+                / T::from_f64(24.0).unwrap();
 
         // Corrector step:
         ode.diff(self.t + self.h, &predictor, &mut self.k4);
-        let corrector = self.y_prev[3] + (
-            self.k4 * T::from_f64(9.0).unwrap() +
-            self.k1 * T::from_f64(19.0).unwrap() -
-            self.k2 * T::from_f64(5.0).unwrap() +
-            self.k3 * T::from_f64(1.0).unwrap()
-        ) * self.h / T::from_f64(24.0).unwrap();
+        let corrector = self.y_prev[3]
+            + (self.k4 * T::from_f64(9.0).unwrap() + self.k1 * T::from_f64(19.0).unwrap()
+                - self.k2 * T::from_f64(5.0).unwrap()
+                + self.k3 * T::from_f64(1.0).unwrap())
+                * self.h
+                / T::from_f64(24.0).unwrap();
 
         // Track number of evaluations
         evals += 5;
 
         // Calculate sigma for step size adjustment
-        let sigma = T::from_f64(19.0).unwrap() * (corrector - predictor).norm() / 
-                   (T::from_f64(270.0).unwrap() * self.h.abs());
+        let sigma = T::from_f64(19.0).unwrap() * (corrector - predictor).norm()
+            / (T::from_f64(270.0).unwrap() * self.h.abs());
 
         // Check if Step meets tolerance
         if sigma <= self.tol {
@@ -234,13 +259,13 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             // Bound Step Size
             let tf_t_abs = (self.tf - self.t).abs();
             let four_div = tf_t_abs / four;
-            let h_max_effective = if self.h_max < four_div { self.h_max } else { four_div };
-            
-            self.h = constrain_step_size(
-                self.h, 
-                self.h_min,
-                h_max_effective
-            );
+            let h_max_effective = if self.h_max < four_div {
+                self.h_max
+            } else {
+                four_div
+            };
+
+            self.h = constrain_step_size(self.h, self.h_min, h_max_effective);
 
             // Calculate Previous Steps with new step size
             self.t_prev[0] = self.t;
@@ -248,10 +273,18 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             let two = T::from_f64(2.0).unwrap();
             let six = T::from_f64(6.0).unwrap();
             for i in 1..=3 {
-                // Compute k1, k2, k3, k4 of Runge-Kutta 4 
+                // Compute k1, k2, k3, k4 of Runge-Kutta 4
                 ode.diff(self.t, &self.y, &mut self.k1);
-                ode.diff(self.t + self.h / two, &(self.y + self.k1 * (self.h / two)), &mut self.k2);
-                ode.diff(self.t + self.h / two, &(self.y + self.k2 * (self.h / two)), &mut self.k3);
+                ode.diff(
+                    self.t + self.h / two,
+                    &(self.y + self.k1 * (self.h / two)),
+                    &mut self.k2,
+                );
+                ode.diff(
+                    self.t + self.h / two,
+                    &(self.y + self.k2 * (self.h / two)),
+                    &mut self.k3,
+                );
                 ode.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
 
                 // Update State
@@ -273,7 +306,11 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             let two = T::from_f64(2.0).unwrap();
             let tenth = T::from_f64(0.1).unwrap();
             let q = (self.tol / (two * sigma)).powf(T::from_f64(0.25).unwrap());
-            self.h = if q < tenth { tenth * self.h } else { q * self.h };
+            self.h = if q < tenth {
+                tenth * self.h
+            } else {
+                q * self.h
+            };
 
             // Calculate Previous Steps with new step size
             self.t_prev[0] = self.t;
@@ -281,10 +318,18 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             let two = T::from_f64(2.0).unwrap();
             let six = T::from_f64(6.0).unwrap();
             for i in 1..=3 {
-                // Compute k1, k2, k3, k4 of Runge-Kutta 4 
+                // Compute k1, k2, k3, k4 of Runge-Kutta 4
                 ode.diff(self.t, &self.y, &mut self.k1);
-                ode.diff(self.t + self.h / two, &(self.y + self.k1 * (self.h / two)), &mut self.k2);
-                ode.diff(self.t + self.h / two, &(self.y + self.k2 * (self.h / two)), &mut self.k3);
+                ode.diff(
+                    self.t + self.h / two,
+                    &(self.y + self.k1 * (self.h / two)),
+                    &mut self.k2,
+                );
+                ode.diff(
+                    self.t + self.h / two,
+                    &(self.y + self.k2 * (self.h / two)),
+                    &mut self.k3,
+                );
                 ode.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
 
                 // Update State
@@ -298,14 +343,27 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         Ok(evals)
     }
 
-    fn interpolate(&mut self, t_interp: T) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
+    fn interpolate(
+        &mut self,
+        t_interp: T,
+    ) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
         // Check if t is within the range of the solver
         if t_interp < self.t_old || t_interp > self.t {
-            return Err(InterpolationError::OutOfBounds(t_interp, self.t_old, self.t));
+            return Err(InterpolationError::OutOfBounds(
+                t_interp, self.t_old, self.t,
+            ));
         }
 
         // Calculate the interpolated value using cubic Hermite interpolation
-        let y_interp = cubic_hermite_interpolate(self.t_old, self.t, &self.y_old, &self.y, &self.dydt_old, &self.dydt, t_interp);
+        let y_interp = cubic_hermite_interpolate(
+            self.t_old,
+            self.t,
+            &self.y_old,
+            &self.y,
+            &self.dydt_old,
+            &self.dydt,
+            t_interp,
+        );
 
         Ok(y_interp)
     }
@@ -359,7 +417,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> APCV4<T, R, C, E> {
         self.tol = tol;
         self
     }
-    
+
     pub fn h_min(mut self, h_min: T) -> Self {
         self.h_min = h_min;
         self
@@ -385,7 +443,12 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Default for APCV4<T,
             y: SMatrix::<T, R, C>::zeros(),
             dydt: SMatrix::<T, R, C>::zeros(),
             t_prev: [T::zero(); 4],
-            y_prev: [SMatrix::<T, R, C>::zeros(), SMatrix::<T, R, C>::zeros(), SMatrix::<T, R, C>::zeros(), SMatrix::<T, R, C>::zeros()],
+            y_prev: [
+                SMatrix::<T, R, C>::zeros(),
+                SMatrix::<T, R, C>::zeros(),
+                SMatrix::<T, R, C>::zeros(),
+                SMatrix::<T, R, C>::zeros(),
+            ],
             t_old: T::zero(),
             y_old: SMatrix::<T, R, C>::zeros(),
             dydt_old: SMatrix::<T, R, C>::zeros(),
@@ -403,5 +466,4 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Default for APCV4<T,
             max_steps: 1_000_000,
         }
     }
-
 }

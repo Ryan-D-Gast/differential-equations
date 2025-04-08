@@ -1,9 +1,11 @@
 //! Suite of test cases for Solvers error handling
 
-use differential_equations::ode::{SolverError, SolverStatus, IVP};
-use differential_equations::ode::solvers::{DOP853, DOPRI5, RK4, RKF, Euler, APCF4, APCV4, RKV65, RKV98};
 use differential_equations::ode::EventAction;
 use differential_equations::ode::ODE;
+use differential_equations::ode::solvers::{
+    APCF4, APCV4, DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98,
+};
+use differential_equations::ode::{IVP, SolverError, SolverStatus};
 use nalgebra::{SVector, vector};
 
 struct SimpleODE;
@@ -39,24 +41,24 @@ macro_rules! test_solver_error {
             let t0 = $t0;
             let tf = $tf;
             let y0 = $y0;
-            
+
             let ivp = IVP::new(system, t0, tf, y0);
             let mut solver = $solver;
-            
+
             // Solve the system
             let results = ivp.solve(&mut solver);
-            
+
             // Assert the result matches expected error
             match results {
                 Ok(r) => {
-                    panic!("Test {} {} failed: Expected error {:?} but got success with status {:?}", 
+                    panic!("Test {} {} failed: Expected error {:?} but got success with status {:?}",
                         stringify!($solver_name), stringify!($test_name), $expected_error, r.status);
                 },
                 Err(e) => {
-                    assert_eq!(e, $expected_error, 
-                        "Test {} {} failed: Expected: {:?}, Got: {:?}", 
+                    assert_eq!(e, $expected_error,
+                        "Test {} {} failed: Expected: {:?}, Got: {:?}",
                         stringify!($solver_name), stringify!($test_name), $expected_error, e);
-                    println!("{} {} passed with expected error: {:?}", 
+                    println!("{} {} passed with expected error: {:?}",
                         stringify!($solver_name), stringify!($test_name), e);
                 }
             }
@@ -81,25 +83,25 @@ macro_rules! test_solver_status {
             let t0 = $t0;
             let tf = $tf;
             let y0 = $y0;
-            
+
             let ivp = IVP::new(system, t0, tf, y0);
             let mut solver = $solver;
-            
+
             // Solve the system
             let results = ivp.solve(&mut solver);
-            
+
             // Assert the result matches expected status
             match results {
                 Ok(r) => {
                     let stat = r.status;
                     assert_eq!(stat, $expected_status,
-                        "Test {} {} failed: Expected status: {:?}, Got: {:?}", 
+                        "Test {} {} failed: Expected status: {:?}, Got: {:?}",
                         stringify!($solver_name), stringify!($test_name), $expected_status, stat);
-                    println!("{} {} passed with expected status: {:?}", 
+                    println!("{} {} passed with expected status: {:?}",
                         stringify!($solver_name), stringify!($test_name), stat);
                 },
                 Err(e) => {
-                    panic!("Test {} {} failed: Expected status {:?} but got error {:?}", 
+                    panic!("Test {} {} failed: Expected status {:?} but got error {:?}",
                         stringify!($solver_name), stringify!($test_name), $expected_status, e);
                 }
             }

@@ -6,7 +6,7 @@
 use super::*;
 
 /// An output handler that provides a dense set of interpolated points between solver steps.
-/// 
+///
 /// # Overview
 ///
 /// `DenseSolout` enhances the solution output by interpolating additional points
@@ -54,7 +54,7 @@ use super::*;
 ///
 /// The output will contain both the original solver steps and additional interpolated
 /// points between them. The interpolated points are evenly spaced within each step.
-/// 
+///
 /// For example, with n=5:
 /// - Original solver steps: t₀, t₁, t₂, ...
 /// - Dense output: t₀, t₀+h/5, t₀+2h/5, t₀+3h/5, t₀+4h/5, t₁, t₁+h/5, ...
@@ -64,25 +64,25 @@ use super::*;
 /// Increasing the number of interpolation points increases computational cost and
 /// memory usage. Choose a value that balances the need for smooth output with
 /// performance requirements.
-/// 
+///
 pub struct DenseSolout {
     /// Number of points between steps (including the endpoints)
     n: usize,
 }
 
 impl<T, const R: usize, const C: usize, E> Solout<T, R, C, E> for DenseSolout
-where 
+where
     T: Real,
-    E: EventData
+    E: EventData,
 {
     fn solout<SV, SI>(&mut self, solver: &mut SV, solution: &mut SI)
-    where 
+    where
         SV: Solver<T, R, C, E>,
-        SI: SolutionInterface<T, R, C, E> 
+        SI: SolutionInterface<T, R, C, E>,
     {
         let t_prev = solver.t_prev();
         let t_curr = solver.t();
-        
+
         // Interpolate between steps
         for i in 1..self.n {
             let h_old = t_curr - t_prev;
@@ -100,12 +100,12 @@ impl DenseSolout {
     /// Creates a new DenseSolout instance with the specified number of points per interval.
     ///
     /// # Arguments
-    /// * `n` - Number of points per interval, including endpoints. For example, n=5 will 
+    /// * `n` - Number of points per interval, including endpoints. For example, n=5 will
     ///         add 4 interpolated points between each solver step, plus the solver step itself.
     ///
     /// # Returns
     /// * A new `DenseSolout` instance
-    /// 
+    ///
     pub fn new(n: usize) -> Self {
         DenseSolout { n }
     }

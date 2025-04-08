@@ -3,7 +3,7 @@ use nalgebra::{SVector, vector};
 
 /// Damped Harmonic Oscillator ODE
 struct DampedOscillator {
-    damping: f64, // Damping coefficient
+    damping: f64,         // Damping coefficient
     spring_constant: f64, // Spring constant
 }
 
@@ -38,7 +38,8 @@ fn main() {
     // Solve the IVP
     match damped_oscillator_ivp
         .crossing(0, 0.0, CrossingDirection::Both)
-        .solve(&mut solver) {
+        .solve(&mut solver)
+    {
         Ok(solution) => {
             println!("Solution:");
             println!("Time, Position, Velocity");

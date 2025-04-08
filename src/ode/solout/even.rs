@@ -6,7 +6,7 @@
 use super::*;
 
 /// An output handler that provides solution points at evenly spaced time intervals.
-/// 
+///
 /// # Overview
 ///
 /// `EvenSolout` generates output points at strictly uniform time intervals, creating
@@ -74,21 +74,21 @@ pub struct EvenSolout<T: Real> {
 }
 
 impl<T, const R: usize, const C: usize, E> Solout<T, R, C, E> for EvenSolout<T>
-where 
+where
     T: Real,
-    E: EventData
+    E: EventData,
 {
     fn solout<SV, SI>(&mut self, solver: &mut SV, solution: &mut SI)
-    where 
+    where
         SV: Solver<T, R, C, E>,
-        SI: SolutionInterface<T, R, C, E>
+        SI: SolutionInterface<T, R, C, E>,
     {
         let t_curr = solver.t();
         let t_prev = solver.t_prev();
-        
+
         // Determine the alignment offset (remainder when divided by dt)
         let offset = self.t0 % self.dt;
-        
+
         // Start from the last output point if available, otherwise from t_prev
         let start_t = match self.last_output_t {
             Some(t) => t + self.dt * self.direction,
@@ -101,7 +101,7 @@ where
                 } else {
                     // Find the next aligned point after t_prev
                     let rem = (t_prev - offset) % self.dt;
-                    
+
                     if self.direction > T::zero() {
                         // For forward integration
                         if rem.abs() < T::default_epsilon() {
@@ -120,26 +120,30 @@ where
                 }
             }
         };
-        
+
         let mut ti = start_t;
-        
+
         // Interpolate between steps
-        while (self.direction > T::zero() && ti <= t_curr) || 
-              (self.direction < T::zero() && ti >= t_curr) {
+        while (self.direction > T::zero() && ti <= t_curr)
+            || (self.direction < T::zero() && ti >= t_curr)
+        {
             // Only output if the point falls within the current step
-            if (self.direction > T::zero() && ti >= t_prev && ti <= t_curr) ||
-               (self.direction < T::zero() && ti <= t_prev && ti >= t_curr) {
+            if (self.direction > T::zero() && ti >= t_prev && ti <= t_curr)
+                || (self.direction < T::zero() && ti <= t_prev && ti >= t_curr)
+            {
                 let yi = solver.interpolate(ti).unwrap();
                 solution.record(ti, yi);
                 self.last_output_t = Some(ti);
             }
-            
+
             // Move to the next point
             ti += self.dt * self.direction;
         }
-        
+
         // Include final point if this step reaches tf and we haven't added it yet
-        if t_curr == self.tf && (self.last_output_t.is_none() || self.last_output_t.unwrap() != self.tf) {
+        if t_curr == self.tf
+            && (self.last_output_t.is_none() || self.last_output_t.unwrap() != self.tf)
+        {
             solution.record(self.tf, *solver.y());
             self.last_output_t = Some(self.tf);
         }
@@ -162,9 +166,9 @@ impl<T: Real> EvenSolout<T> {
     /// * A new `EvenSolout` instance
     ///
     pub fn new(dt: T, t0: T, tf: T) -> Self {
-        EvenSolout { 
-            dt, 
-            t0, 
+        EvenSolout {
+            dt,
+            t0,
             tf,
             direction: (tf - t0).signum(),
             last_output_t: None,

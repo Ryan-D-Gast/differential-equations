@@ -1,14 +1,14 @@
-use differential_equations::ode::*;
 use differential_equations::ode::solvers::APCV4;
+use differential_equations::ode::*;
 use nalgebra::{SVector, vector};
 
 /// SIR (Susceptible, Infected, Recovered) Model
 ///
 /// This struct defines the parameters for the SIR model.
-/// 
+///
 struct SIRModel {
-    beta: f64,  // Transmission rate
-    gamma: f64, // Recovery rate
+    beta: f64,       // Transmission rate
+    gamma: f64,      // Recovery rate
     population: f64, // Total population
 }
 
@@ -37,9 +37,9 @@ impl ODE<f64, 3, 1, PopulationMonitor> for SIRModel {
         let i = y[1]; // Infected
         let _r = y[2]; // Recovered
 
-        dydt[0] = -self.beta * s * i / self.population;       // Susceptible
+        dydt[0] = -self.beta * s * i / self.population; // Susceptible
         dydt[1] = self.beta * s * i / self.population - self.gamma * i; // Infected
-        dydt[2] = self.gamma * i;                            // Recovered
+        dydt[2] = self.gamma * i; // Recovered
     }
 
     fn event(&self, _t: f64, y: &SVector<f64, 3>) -> EventAction<PopulationMonitor> {
@@ -73,10 +73,14 @@ fn main() {
     let tf = 100.0;
 
     // SIR model parameters
-    let beta = 1.42;  // Transmission rate
+    let beta = 1.42; // Transmission rate
     let gamma = 0.14; // Recovery rate
 
-    let ode = SIRModel { beta, gamma, population };
+    let ode = SIRModel {
+        beta,
+        gamma,
+        population,
+    };
     let sir_ivp = IVP::new(ode, t0, tf, y0);
 
     // Solve the ode with even output at interval dt: 1.0

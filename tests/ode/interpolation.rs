@@ -2,7 +2,9 @@
 
 use super::systems;
 use differential_equations::ode::IVP;
-use differential_equations::ode::solvers::{DOP853, DOPRI5, RK4, RKF, Euler, APCF4, APCV4, RKV65, RKV98};
+use differential_equations::ode::solvers::{
+    APCF4, APCV4, DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98,
+};
 use nalgebra::vector;
 use systems::ExponentialGrowth;
 

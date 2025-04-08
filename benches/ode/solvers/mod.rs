@@ -1,13 +1,9 @@
-use criterion::{black_box, criterion_group, Criterion, BenchmarkId};
-use nalgebra::vector;
-use differential_equations::ode::*;
+use crate::systems::{chaotic::*, linear::*, oscillators::*};
+use criterion::{BenchmarkId, Criterion, black_box, criterion_group};
 use differential_equations::ode::solvers::*;
-use crate::systems::{
-    linear::*,
-    oscillators::*,
-    chaotic::*,
-};
+use differential_equations::ode::*;
+use nalgebra::vector;
 
 //pub mod solutions;
-pub mod fixed_step;
 pub mod adaptive_step;
+pub mod fixed_step;

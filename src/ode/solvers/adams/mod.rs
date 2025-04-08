@@ -1,19 +1,19 @@
 //! Adams Methods
 
-use nalgebra::SMatrix;
-use crate::ode::{Solver, SolverStatus, SolverError, ODE, EventData};
+use crate::interpolate::{InterpolationError, cubic_hermite_interpolate};
 use crate::ode::solver::NumEvals;
-use crate::ode::solvers::utils::{validate_step_size_parameters, constrain_step_size};
+use crate::ode::solvers::utils::{constrain_step_size, validate_step_size_parameters};
+use crate::ode::{EventData, ODE, Solver, SolverError, SolverStatus};
 use crate::traits::Real;
-use crate::interpolate::{cubic_hermite_interpolate, InterpolationError};
+use nalgebra::SMatrix;
 
 mod apcf4;
 mod apcv4;
 
 pub use apcf4::{
-    APCF4,   // Adams-Predictor-Corrector 4th Order Fixed Step Size Method
+    APCF4, // Adams-Predictor-Corrector 4th Order Fixed Step Size Method
 };
 
 pub use apcv4::{
-    APCV4,   // Adams-Predictor-Corrector 4th Order Variable Step Size Method
+    APCV4, // Adams-Predictor-Corrector 4th Order Variable Step Size Method
 };

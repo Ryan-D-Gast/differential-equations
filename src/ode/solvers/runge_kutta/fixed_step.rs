@@ -4,16 +4,16 @@ use crate::runge_kutta_method;
 
 runge_kutta_method!(
     /// Euler's Method (1st Order Runge-Kutta) for solving ordinary differential equations.
-    /// 
+    ///
     /// Euler's method is the simplest form of Runge-Kutta methods, and is a first-order method also known as RK1.
-    /// 
+    ///
     /// The Butcher Tableau is as follows:
     /// ```text
     /// 0 | 0
     /// -----
     ///   | 1
     /// ```
-    /// 
+    ///
     /// Reference: [Wikipedia](https://en.wikipedia.org/wiki/Euler_method)
     name: Euler,
     a: [[0.0]],
@@ -25,7 +25,7 @@ runge_kutta_method!(
 
 runge_kutta_method!(
     /// Midpoint Method (2nd Order Runge-Kutta) for solving ordinary differential equations.
-    /// 
+    ///
     /// The Butcher Tableau is as follows:
     /// ```text
     /// 0   |
@@ -33,7 +33,7 @@ runge_kutta_method!(
     /// ------------
     ///     | 0   1
     /// ```
-    /// 
+    ///
     /// Reference: [Wikipedia](https://en.wikipedia.org/wiki/Midpoint_method)
     name: Midpoint,
     a: [[0.0, 0.0],
@@ -46,7 +46,7 @@ runge_kutta_method!(
 
 runge_kutta_method!(
     /// Heun's Method (2nd Order Runge-Kutta) for solving ordinary differential equations.
-    /// 
+    ///
     /// The Butcher Tableau is as follows:
     /// ```text
     /// 0   |
@@ -54,7 +54,7 @@ runge_kutta_method!(
     /// ------------
     ///     | 1/2 1/2
     /// ```
-    /// 
+    ///
     /// Reference: [Wikipedia](https://en.wikipedia.org/wiki/Heun%27s_method)
     name: Heun,
     a: [[0.0, 0.0],
@@ -67,7 +67,7 @@ runge_kutta_method!(
 
 runge_kutta_method!(
     /// Ralston's Method (2nd Order Runge-Kutta) for solving ordinary differential equations.
-    /// 
+    ///
     /// The Butcher Tableau is as follows:
     /// ```text
     /// 0   |
@@ -75,7 +75,7 @@ runge_kutta_method!(
     /// ------------
     ///     | 1/4 3/4
     /// ```
-    /// 
+    ///
     /// Reference: [Wikipedia](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods#Second-order_methods_with_two_stages)
     name: Ralston,
     a: [[0.0, 0.0],
@@ -88,7 +88,7 @@ runge_kutta_method!(
 
 runge_kutta_method!(
     /// Classic Runge-Kutta 4 method for solving ordinary differential equations.
-    /// 
+    ///
     /// The Butcher Tableau is as follows:
     /// ```text
     /// 0   |
@@ -98,7 +98,7 @@ runge_kutta_method!(
     /// ---------------------
     ///    | 1/6 1/3 1/3 1/6
     /// ```
-    /// 
+    ///
     /// Reference: [Wikipedia](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods#Examples)
     name: RK4,
     a: [[0.0, 0.0, 0.0, 0.0],
@@ -113,10 +113,10 @@ runge_kutta_method!(
 
 runge_kutta_method!(
     /// Three-Eighths Rule (4th Order Runge-Kutta) for solving ordinary differential equations.
-    /// The primary advantage this method has is that almost all of the error coefficients 
-    /// are smaller than in the popular method, but it requires slightly more FLOPs 
+    /// The primary advantage this method has is that almost all of the error coefficients
+    /// are smaller than in the popular method, but it requires slightly more FLOPs
     /// (floating-point operations) per time step.
-    /// 
+    ///
     /// The Butcher Tableau is as follows:
     /// ```text
     /// 0   |
@@ -126,9 +126,9 @@ runge_kutta_method!(
     /// ---------------------
     ///   | 1/8 3/8 3/8 1/8
     /// ```
-    /// 
+    ///
     /// Reference: [Wikipedia](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods#Examples)
-    /// 
+    ///
     name: ThreeEights,
     a: [[0.0, 0.0, 0.0, 0.0],
         [1.0/3.0, 0.0, 0.0, 0.0],
@@ -143,7 +143,7 @@ runge_kutta_method!(
 /// Macro to create a Runge-Kutta solver from a Butcher tableau with fixed-size arrays
 ///
 /// # Arguments
-/// 
+///
 /// * `name`: Name of the solver struct to create
 /// * `doc`: Documentation string for the solver
 /// * `a`: Matrix of coefficients for intermediate stages
@@ -153,10 +153,10 @@ runge_kutta_method!(
 /// * `stages`: Number of stages in the method
 ///
 /// # Example
-/// 
+///
 /// ```
 /// use differential_equations::runge_kutta_method;
-/// 
+///
 /// // Define classical RK4 method
 /// runge_kutta_method!(
 ///     /// Classical 4th Order Runge-Kutta Method
@@ -171,9 +171,9 @@ runge_kutta_method!(
 ///     stages: 4
 /// );
 /// ```
-/// 
+///
 /// # Note on Butcher Tableaus
-/// 
+///
 /// The `a` matrix is typically a lower triangular matrix with zeros on the diagonal.
 /// when creating the `a` matrix for implementation simplicity it is generated as a
 /// 2D array with zeros in the upper triangular portion of the matrix. The array size
@@ -181,7 +181,7 @@ runge_kutta_method!(
 /// When computing the Runge-Kutta stages only the elements in the lower triangular portion
 /// of the matrix and unnessary multiplication by zero is avoided. The Rust compiler is also
 /// likely to optimize the array out instead of memory addresses directly.
-/// 
+///
 #[macro_export]
 macro_rules! runge_kutta_method {
     (
@@ -195,7 +195,7 @@ macro_rules! runge_kutta_method {
         $(,)? // Optional trailing comma
     ) => {
 
-        
+
         $(#[$attr])*
         #[doc = "\n\n"]
         #[doc = "This solver was automatically generated using the `runge_kutta_method` macro."]
@@ -230,7 +230,7 @@ macro_rules! runge_kutta_method {
                 let a_t: [[T; $stages]; $stages] = $a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
                 let b_t: [T; $stages] = $b.map(|x| T::from_f64(x).unwrap());
                 let c_t: [T; $stages] = $c.map(|x| T::from_f64(x).unwrap());
-                
+
                 $name {
                     h: T::from_f64(0.1).unwrap(),
                     t: T::from_f64(0.0).unwrap(),
@@ -251,7 +251,7 @@ macro_rules! runge_kutta_method {
 
         impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> $crate::ode::Solver<T, R, C, E> for $name<T, R, C, E> {
             fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<usize, $crate::ode::SolverError<T, R, C>>
-            where 
+            where
                 F: $crate::ode::ODE<T, R, C, E>
             {
                 // Check Bounds
@@ -272,12 +272,12 @@ macro_rules! runge_kutta_method {
 
                 // Initialize Status
                 self.status = $crate::ode::SolverStatus::Initialized;
-            
+
                 Ok(1)
             }
 
             fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::ode::SolverError<T, R, C>>
-            where 
+            where
                 F: $crate::ode::ODE<T, R, C, E>
             {
                 // Log previous state
@@ -292,22 +292,22 @@ macro_rules! runge_kutta_method {
                 for i in 1..$stages {
                     // Start with the original y value
                     let mut stage_y = self.y;
-                    
+
                     // Add contribution from previous stages
                     for j in 0..i {
                         stage_y += self.k[j] * (self.a[i][j] * self.h);
                     }
-                    
+
                     // Compute k_i = f(t + c_i*h, stage_y)
                     ode.diff(self.t + self.c[i] * self.h, &stage_y, &mut self.k[i]);
                 }
-                
+
                 // Compute the final update
                 let mut delta_y = $crate::SMatrix::<T, R, C>::zeros();
                 for i in 0..$stages {
                     delta_y += self.k[i] * (self.b[i] * self.h);
                 }
-                
+
                 // Update state
                 self.y += delta_y;
                 self.t += self.h;
@@ -373,12 +373,12 @@ macro_rules! runge_kutta_method {
                     ..Default::default()
                 }
             }
-            
+
             /// Get the order of accuracy of this method
             pub fn order(&self) -> usize {
                 $order
             }
-            
+
             /// Get the number of stages in this method
             pub fn stages(&self) -> usize {
                 $stages
