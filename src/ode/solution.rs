@@ -159,7 +159,7 @@ where
     /// 
     #[cfg(not(feature = "polars"))]
     pub fn to_csv(&self, filename: &str) -> Result<(), Box<dyn std::error::Error>> {
-        use std::io::Write;
+        use std::io::{BufWriter, Write};
         
         // Create file and path if it does not exist
         let path = std::path::Path::new(filename);
@@ -168,8 +168,9 @@ where
                 std::fs::create_dir_all(parent)?;
             }
         }
-        let mut file = std::fs::File::create(filename)?;
-
+        let file = std::fs::File::create(filename)?;
+        let mut writer = BufWriter::new(file);
+    
         // Length of state vector
         let n = self.y[0].len();
         
@@ -178,7 +179,7 @@ where
         for i in 0..n {
             header.push_str(&format!(",y{}", i));
         }
-        writeln!(file, "{}", header)?;
+        writeln!(writer, "{}", header)?;
         
         // Write data
         for (t, y) in self.iter() {
@@ -186,8 +187,11 @@ where
             for i in 0..n {
                 row.push_str(&format!(",{:?}", y[i]));
             }
-            writeln!(file, "{}", row)?;
+            writeln!(writer, "{}", row)?;
         }
+        
+        // Ensure all data is flushed to disk
+        writer.flush()?;
         
         Ok(())
     }
