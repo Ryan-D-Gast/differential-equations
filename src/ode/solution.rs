@@ -50,6 +50,16 @@ where
 }
 
 // Current Solution of the ODE Solver
+impl<T, const R: usize, const C: usize, E> Default for Solution<T, R, C, E>
+where
+    T: Real,
+    E: EventData,
+ {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T, const R: usize, const C: usize, E> Solution<T, R, C, E>
 where
     T: Real,

@@ -196,8 +196,8 @@ where
     for r in 0..R {
         for c in 0..C {
             let sk = atol + rtol * y0[(r, c)].abs();
-            dnf = dnf + (f0[(r, c)] / sk).powi(2);
-            dny = dny + (y0[(r, c)] / sk).powi(2);
+            dnf += (f0[(r, c)] / sk).powi(2);
+            dny += (y0[(r, c)] / sk).powi(2);
         }
     }
 
@@ -211,7 +211,7 @@ where
 
     // Constrain by maximum step size
     h = h.min(h_max);
-    h = h * posneg;
+    h *= posneg;
 
     // Perform an explicit Euler step
     let y1 = y0 + f0 * h;
@@ -225,7 +225,7 @@ where
     for r in 0..R {
         for c in 0..C {
             let sk = atol + rtol * y0[(r, c)].abs();
-            der2 = der2 + ((f1[(r, c)] - f0[(r, c)]) / sk).powi(2);
+            der2 += ((f1[(r, c)] - f0[(r, c)]) / sk).powi(2);
         }
     }
     der2 = der2.sqrt() / h.abs();

@@ -84,7 +84,7 @@ impl Solout<f64, 2, 1> for PendulumSolout {
         let angle_crossed_zero = self.last_angle.signum() != current_angle.signum();
 
         if dt >= self.min_dt && (angle_crossed_zero || significant_change) {
-            solution.record(t, y.clone());
+            solution.record(t, *y);
 
             // Calculate and store energy
             self.energy_values.push(self.calculate_energy(y));
