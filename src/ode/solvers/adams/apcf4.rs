@@ -70,7 +70,7 @@ pub struct APCF4<T: Real, const R: usize, const C: usize, E: EventData> {
 
 // Implement Solver Trait for APCF4
 impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> for APCF4<T, R, C, E> {
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>) -> Result<(), SolverError<T, R, C>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>) -> Result<NumEvals, SolverError<T, R, C>>
     where
         F: ODE<T, R, C, E>,
     {
@@ -92,6 +92,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
         let two = T::from_f64(2.0).unwrap();
         let six = T::from_f64(6.0).unwrap();
+        let mut evals = 0;
         for i in 1..=3 {
             // Compute k1, k2, k3, k4 of Runge-Kutta 4 
             ode.diff(self.t, &self.y, &mut self.k1);
@@ -104,7 +105,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             self.t += self.h;
             self.t_prev[i] = self.t;
             self.y_prev[i] = self.y;
-            self.evals += 4; // 4 evaluations per Runge-Kutta step
+            evals += 4; // 4 evaluations per Runge-Kutta step
 
             if i == 1 {
                 self.dydt = self.k1;
@@ -113,10 +114,10 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         }
 
         self.status = SolverStatus::Initialized;
-        Ok(())
+        Ok(evals)
     }
 
-    fn step<F>(&mut self, ode: &F) -> Result<(), SolverError<T, R, C>>
+    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, SolverError<T, R, C>>
     where
         F: ODE<T, R, C, E>,
     {
@@ -148,14 +149,14 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         self.t += self.h;
         self.y = corrector;
         ode.diff(self.t, &self.y, &mut self.dydt);
-        self.evals += 6; // 6 evaluations for predictor-corrector step
+        let evals = 6; // 6 evaluations for predictor-corrector step
 
         // Shift history: drop the oldest and add the new state at the end.
         self.t_prev.copy_within(1..4, 0);
         self.y_prev.copy_within(1..4, 0);
         self.t_prev[3] = self.t;
         self.y_prev[3] = self.y;
-        Ok(())
+        Ok(evals)
     }
 
     fn interpolate(&mut self, t_interp: T) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
@@ -184,10 +185,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
     fn y_prev(&self) -> &SMatrix<T, R, C> {
         &self.y_old
-    }
-
-    fn evals(&self) -> usize {
-        self.evals
     }
 
     fn h(&self) -> T {

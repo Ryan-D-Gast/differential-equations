@@ -1,5 +1,6 @@
 //! DOPRI5 Solver for Ordinary Differential Equations.
 
+use crate::ode::solver::NumEvals;
 use crate::ode::{Solver, SolverStatus, ODE, EventData, SolverError};
 use crate::ode::solvers::utils::{constrain_step_size, validate_step_size_parameters};
 use crate::interpolate::InterpolationError;
@@ -99,7 +100,6 @@ pub struct DOPRI5<T: Real, const R: usize, const C: usize, E: EventData> {
 
     // Iteration Tracking
     status: SolverStatus<T, R, C, E>,
-    evals: usize, // Function Evaluations
     steps: usize, // Number of Steps
     n_accepted: usize, // Number of Accepted Steps
 
@@ -128,7 +128,7 @@ pub struct DOPRI5<T: Real, const R: usize, const C: usize, E: EventData> {
 }
 
 impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> for DOPRI5<T, R, C, E> {    
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>)  -> Result<(), SolverError<T, R, C>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>)  -> Result<NumEvals, SolverError<T, R, C>>
     where 
         F: ODE<T, R, C, E>,
     {
@@ -138,7 +138,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
         // Calculate derivative at t0
         ode.diff(t0, y0, &mut self.k[0]);
-        self.evals += 1; // Increment function evaluations for initial derivative calculation
+        let mut evals = 1; // Increment function evaluations for initial derivative calculation
 
         // Initialize Previous State
         self.t_old = self.t;
@@ -147,7 +147,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         // Calculate Initial Step
         if self.h0 == T::zero() {
             self.h_init(ode, t0, tf);
-            self.evals += 1; // Increment function evaluations for initial step size calculation
+            evals += 1; // Increment function evaluations for initial step size calculation
 
             // Adjust h0 to be within bounds
             let posneg = (tf - t0).signum();
@@ -172,10 +172,10 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         // Solver is ready to go
         self.status = SolverStatus::Initialized;
 
-        Ok(())
+        Ok(evals)
     }
 
-    fn step<F>(&mut self, ode: &F) -> Result<(), SolverError<T, R, C>>
+    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, SolverError<T, R, C>>
     where 
         F: ODE<T, R, C, E>,
     {
@@ -251,9 +251,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             err += (erri / sk).powi(2);
         }
         err = (err / T::from_usize(n).unwrap()).sqrt();
-
-        // Log evals
-        self.evals += 7; // Increment function evaluations for the 7 derivative calculations
         
         // Computation of h_new
         self.fac11 = err.powf(self.expo1);
@@ -342,7 +339,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
         // Step Complete
         self.h = constrain_step_size(h_new, self.h_min, self.h_max);
-        Ok(())
+        Ok(7)
     }
 
     fn interpolate(&mut self, t_interp: T) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
@@ -379,10 +376,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
     fn h(&self) -> T {
         self.h
-    }
-
-    fn evals(&self) -> usize {
-        self.evals
     }
 
     fn set_h(&mut self, h: T) {
@@ -598,7 +591,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Default for DOPRI5<T
             h_lamb: T::zero(),
             non_stiff_counter: 0,
             stiffness_counter: 0,
-            evals: 0,
             steps: 0,
             n_accepted: 0,
             

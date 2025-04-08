@@ -6,6 +6,8 @@ use crate::traits::Real;
 use nalgebra::SMatrix;
 use std::fmt::{Display, Debug};
 
+pub type NumEvals = usize; // Number of function evaluations
+
 /// Solver Trait for ODE Solvers
 /// 
 /// ODE Solvers implement this trait to solve ordinary differential equations.
@@ -29,7 +31,7 @@ where
     /// # Returns
     /// * Result<(), SolverStatus<T, R, C, E>> - Ok if initialization is successful,
     /// 
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &SMatrix<T, R, C>) -> Result<(), SolverError<T, R, C>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &SMatrix<T, R, C>) -> Result<NumEvals, SolverError<T, R, C>>
     where
         F: ODE<T, R, C, E>;
 
@@ -41,7 +43,7 @@ where
     /// # Returns
     /// * Result<usize, SolverStatus<T, R, C, E>> - Ok if step is successful with the number of function evaluations,
     /// 
-    fn step<F>(&mut self, ode: &F) -> Result<(), SolverError<T, R, C>>
+    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, SolverError<T, R, C>>
     where
         F: ODE<T, R, C, E>;
 
@@ -68,9 +70,6 @@ where
 
     /// Access solution of previous accepted step
     fn y_prev(&self) -> &SMatrix<T, R, C>;
-
-    /// Access the number of function evaluations
-    fn evals(&self) -> usize;
 
     /// Access step size of next step
     fn h(&self) -> T;

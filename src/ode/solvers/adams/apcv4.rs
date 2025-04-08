@@ -99,7 +99,7 @@ pub struct APCV4<T: Real, const R: usize, const C: usize, E: EventData> {
 
 // Implement Solver Trait for APCV4
 impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> for APCV4<T, R, C, E> {
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>) -> Result<(), SolverError<T, R, C>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &SMatrix<T, R, C>) -> Result<NumEvals, SolverError<T, R, C>>
     where
         F: ODE<T, R, C, E>,
     {
@@ -124,6 +124,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         // Perform the first 3 steps using Runge-Kutta 4 method
         let two = T::from_f64(2.0).unwrap();
         let six = T::from_f64(6.0).unwrap();
+        let mut evals = 0;
         for i in 1..=3 {
             // Compute k1, k2, k3, k4 of Runge-Kutta 4 
             ode.diff(self.t, &self.y, &mut self.k1);
@@ -136,7 +137,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             self.t += self.h;
             self.t_prev[i] = self.t;
             self.y_prev[i] = self.y;
-            self.evals += 4; // 4 evaluations per Runge-Kutta step
+            evals += 4; // 4 evaluations per Runge-Kutta step
 
             if i == 1 {
                 self.dydt = self.k1;
@@ -145,10 +146,10 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         }
 
         self.status = SolverStatus::Initialized;
-        Ok(())
+        Ok(evals)
     }
 
-    fn step<F>(&mut self, ode: &F) -> Result<(), SolverError<T, R, C>>
+    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, SolverError<T, R, C>>
     where
         F: ODE<T, R, C, E>,
     {
@@ -158,6 +159,8 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             return Err(SolverError::MaxSteps(self.t, self.y));
         }
         self.steps += 1;
+
+        let mut evals = 0;
 
         // If Step size changed and it takes us to the final time perform a Runge-Kutta 4 step to finish
         if self.h != self.t_prev[0] - self.t_prev[1] && self.t + self.h == self.tf {
@@ -169,11 +172,12 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
             ode.diff(self.t + self.h / two, &(self.y + self.k1 * (self.h / two)), &mut self.k2);
             ode.diff(self.t + self.h / two, &(self.y + self.k2 * (self.h / two)), &mut self.k3);
             ode.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
+            evals += 4; // 4 evaluations per Runge-Kutta step
 
             // Update State
             self.y += (self.k1 + self.k2 * two + self.k3 * two + self.k4) * (self.h / six);
             self.t += self.h;
-            return Ok(());
+            return Ok(evals);
         }
 
         // Compute derivatives for history
@@ -199,7 +203,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
         ) * self.h / T::from_f64(24.0).unwrap();
 
         // Track number of evaluations
-        self.evals += 5;
+        evals += 5;
 
         // Calculate sigma for step size adjustment
         let sigma = T::from_f64(19.0).unwrap() * (corrector - predictor).norm() / 
@@ -291,7 +295,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
                 self.evals += 4; // 4 evaluations per Runge-Kutta step
             }
         }
-        Ok(())
+        Ok(evals)
     }
 
     fn interpolate(&mut self, t_interp: T) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
@@ -320,10 +324,6 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E> f
 
     fn y_prev(&self) -> &SMatrix<T, R, C> {
         &self.y_old
-    }
-
-    fn evals(&self) -> usize {
-        self.evals
     }
 
     fn h(&self) -> T {

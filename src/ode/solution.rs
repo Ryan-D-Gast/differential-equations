@@ -263,6 +263,9 @@ where
     /// Return the current step number.
     fn step(&self) -> usize;
 
+    /// Return the number of function evaluations.
+    fn evals(&self) -> usize;
+
     /// Return accepted steps.
     fn accepted_steps(&self) -> usize;
 
@@ -281,6 +284,10 @@ where
 
     fn step(&self) -> usize {
         self.steps
+    }
+
+    fn evals(&self) -> usize {
+        self.evals
     }
 
     fn accepted_steps(&self) -> usize {

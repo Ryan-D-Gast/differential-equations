@@ -2,6 +2,7 @@
 
 use nalgebra::SMatrix;
 use crate::ode::{Solver, SolverStatus, SolverError, ODE, EventData};
+use crate::ode::solver::NumEvals;
 use crate::ode::solvers::utils::{validate_step_size_parameters, constrain_step_size};
 use crate::traits::Real;
 use crate::interpolate::{cubic_hermite_interpolate, InterpolationError};
