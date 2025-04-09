@@ -151,7 +151,7 @@ where
     match solout.solout(solver, &mut solution) {
         ControlFlag::Continue => {}
         ControlFlag::Terminate(reason) => {
-            solution.status = SolverStatus::Interrupted(reason.clone());
+            solution.status = SolverStatus::Interrupted(reason);
             solution.timer.complete();
             return Ok(solution);
         }
@@ -165,7 +165,7 @@ where
     match ode.event(t0, y0) {
         ControlFlag::Continue => {}
         ControlFlag::Terminate(reason) => {
-            solution.status = SolverStatus::Interrupted(reason.clone());
+            solution.status = SolverStatus::Interrupted(reason);
             solution.timer.complete();
             return Ok(solution);
         }
@@ -214,7 +214,7 @@ where
         match solout.solout(solver, &mut solution) {
             ControlFlag::Continue => {}
             ControlFlag::Terminate(reason) => {
-                solution.status = SolverStatus::Interrupted(reason.clone());
+                solution.status = SolverStatus::Interrupted(reason);
                 solution.timer.complete();
                 return Ok(solution);
             }
