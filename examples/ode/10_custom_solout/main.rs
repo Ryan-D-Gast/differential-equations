@@ -59,7 +59,7 @@ impl PendulumSolout {
 }
 
 impl Solout<f64, 2, 1> for PendulumSolout {
-    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<f64, 2, 1, String>)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<f64, 2, 1, String>) -> ControlFlag<String>
     where
         S: Solver<f64, 2, 1, String> 
     {
@@ -93,6 +93,9 @@ impl Solout<f64, 2, 1> for PendulumSolout {
         }
 
         self.last_angle = current_angle;
+
+        // Continue the integration
+        ControlFlag::Continue
     }
 }
 

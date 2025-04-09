@@ -102,7 +102,7 @@ The `ODE` trait defines the differential equation `dydt = f(t, y)` for the solve
 
 ### ODE Trait
 * `diff` - Differential Equation `dydt = f(t, y)` in the form `f(t, &y, &mut dydt)`.
-* `event` - Optional event function to interrupt the solver when a condition is met by returning `EventAction::Terminate(reason: EventData)`. The `event` function by default returns `EventAction::Continue` and thus is ignored. Note that `EventData` is by default a `String` but can be replaced with anything implementing `Clone + Debug`.
+* `event` - Optional event function to interrupt the solver when a condition is met by returning `ControlFlag::Terminate(reason: CallBackData)`. The `event` function by default returns `ControlFlag::Continue` and thus is ignored. Note that `CallBackData` is by default a `String` but can be replaced with anything implementing `Clone + Debug`.
 
 ### Solout Trait
 * `solout` - function to choose which points to save in the solution. This is useful when you want to save only points that meet certain criteria. Common implementations are included in the `solout` module. The `IVP` trait implements methods to use them easily without direct interaction as well e.g. `even`, `dense`, and `t_eval`.
@@ -124,11 +124,11 @@ impl ODE<f64, 1, 1> for LogisticGrowth {
         dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
     }
 
-    fn event(&self, t: f64, y: &SVector<f64, 1>) -> EventAction {
+    fn event(&self, t: f64, y: &SVector<f64, 1>) -> ControlFlag {
         if y[0] > 0.9 * self.m {
-            EventAction::Terminate("Reached 90% of carrying capacity".to_string())
+            ControlFlag::Terminate("Reached 90% of carrying capacity".to_string())
         } else {
-            EventAction::Continue
+            ControlFlag::Continue
         }
     }
 }

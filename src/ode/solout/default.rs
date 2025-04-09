@@ -64,17 +64,20 @@ use super::*;
 ///
 pub struct DefaultSolout {}
 
-impl<T, const R: usize, const C: usize, E> Solout<T, R, C, E> for DefaultSolout
+impl<T, const R: usize, const C: usize, D> Solout<T, R, C, D> for DefaultSolout
 where
     T: Real,
-    E: EventData,
+    D: CallBackData,
 {
-    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, D>) -> ControlFlag<D>
     where
-        S: Solver<T, R, C, E>
+        S: Solver<T, R, C, D>
     {
         // Output the current time and state to the vectors
         solution.push(solver.t(), *solver.y());
+
+        // Continue the integration
+        ControlFlag::Continue
     }
 }
 

@@ -176,14 +176,14 @@ impl<T: Real> CrossingSolout<T> {
     }
 }
 
-impl<T, const R: usize, const C: usize, E> Solout<T, R, C, E> for CrossingSolout<T>
+impl<T, const R: usize, const C: usize, D> Solout<T, R, C, D> for CrossingSolout<T>
 where
     T: Real,
-    E: EventData,
+    D: CallBackData,
 {
-    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, D>) -> ControlFlag<D>
     where
-        S: Solver<T, R, C, E> 
+        S: Solver<T, R, C, D> 
     {
         let t_curr = solver.t();
         let y_curr = solver.y();
@@ -232,13 +232,16 @@ where
 
         // Update last value for next comparison
         self.last_offset_value = Some(offset_value);
+
+        // Continue the integration
+        ControlFlag::Continue
     }
 }
 
 // Add the Newton's method implementation
 impl<T: Real> CrossingSolout<T> {
     /// Find the crossing time using Newton's method with solver interpolation
-    fn find_crossing_newton<S, const R: usize, const C: usize, E>(
+    fn find_crossing_newton<S, const R: usize, const C: usize, D>(
         &self,
         solver: &mut S,
         t_lower: T,
@@ -247,8 +250,8 @@ impl<T: Real> CrossingSolout<T> {
         offset_upper: T,
     ) -> Option<T>
     where
-        S: Solver<T, R, C, E>,
-        E: EventData,
+        S: Solver<T, R, C, D>,
+        D: CallBackData,
     {
         // Start with linear interpolation as initial guess
         let mut t = t_lower - offset_lower * (t_upper - t_lower) / (offset_upper - offset_lower);

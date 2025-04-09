@@ -1,4 +1,4 @@
-use crate::ode::{EventData, SolverError};
+use crate::ode::{CallBackData, SolverError};
 use crate::traits::Real;
 
 /// Validate the step size parameters.
@@ -26,7 +26,7 @@ use crate::traits::Real;
 /// # Returns
 /// * `Result<Real, SolverError>` - Ok if all checks pass, Err if any check fails.
 ///
-pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, E: EventData>(
+pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, D: CallBackData>(
     h0: T,
     h_min: T,
     h_max: T,
@@ -162,7 +162,7 @@ pub fn constrain_step_size<T: Real>(h: T, h_min: T, h_max: T) -> T {
 ///
 /// The estimated initial step size
 ///
-pub fn h_init<T, F, const R: usize, const C: usize, E>(
+pub fn h_init<T, F, const R: usize, const C: usize, D>(
     ode: &F,
     t0: T,
     tf: T,
@@ -175,8 +175,8 @@ pub fn h_init<T, F, const R: usize, const C: usize, E>(
 ) -> T
 where
     T: crate::traits::Real,
-    F: crate::ode::ODE<T, R, C, E>,
-    E: crate::ode::EventData,
+    F: crate::ode::ODE<T, R, C, D>,
+    D: crate::ode::CallBackData,
 {
     // Direction of integration
     let posneg = (tf - t0).signum();

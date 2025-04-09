@@ -21,15 +21,15 @@ impl ODE<f64, 2> for DampedPendulumModel {
         dydt[1] = -(self.b / self.m) * omega - (self.g / self.l) * theta.sin(); // domega/dt = -(b/m)*omega - (g/l)*sin(theta)
     }
 
-    fn event(&self, _t: f64, y: &SVector<f64, 2>) -> EventAction {
+    fn event(&self, _t: f64, y: &SVector<f64, 2>) -> ControlFlag {
         let theta = y[0];
         let omega = y[1];
 
         // Terminate the simulation when the pendulum is close to equilibrium (theta and omega are close to 0)
         if theta.abs() < 0.01 && omega.abs() < 0.01 {
-            EventAction::Terminate("Pendulum reached equilibrium".to_string())
+            ControlFlag::Terminate("Pendulum reached equilibrium".to_string())
         } else {
-            EventAction::Continue
+            ControlFlag::Continue
         }
     }
 }

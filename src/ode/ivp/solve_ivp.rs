@@ -1,7 +1,7 @@
 //! Solve IVP function
 
 use crate::ode::{
-    EventAction, EventData, ODE, Solout, Solution, Solver, SolverError, SolverStatus,
+    ControlFlag, CallBackData, ODE, Solout, Solution, Solver, SolverError, SolverStatus,
 };
 use crate::traits::Real;
 use nalgebra::SMatrix;
@@ -63,7 +63,7 @@ use nalgebra::SMatrix;
 /// # Event Handling
 ///
 /// The solver checks for events after each step using the `event` method of the system.
-/// If an event returns `EventAction::Terminate`, the integration stops and interpolates
+/// If an event returns `ControlFlag::Terminate`, the integration stops and interpolates
 /// to find the precise point where the event occurred, using a modified regula falsi method.
 ///
 /// # Examples
@@ -107,34 +107,26 @@ use nalgebra::SMatrix;
 /// * The `tf == t0` case is considered an error (no integration to perform).
 /// * The output points depend on the chosen `Solout` implementation.
 ///
-pub fn solve_ivp<T, const R: usize, const C: usize, E, S, F, O>(
+pub fn solve_ivp<T, const R: usize, const C: usize, D, S, F, O>(
     solver: &mut S,
     ode: &F,
     t0: T,
     tf: T,
     y0: &SMatrix<T, R, C>,
     solout: &mut O,
-) -> Result<Solution<T, R, C, E>, SolverError<T, R, C>>
+) -> Result<Solution<T, R, C, D>, SolverError<T, R, C>>
 where
     T: Real,
-    E: EventData,
-    F: ODE<T, R, C, E>,
-    S: Solver<T, R, C, E>,
-    O: Solout<T, R, C, E>,
+    D: CallBackData,
+    F: ODE<T, R, C, D>,
+    S: Solver<T, R, C, D>,
+    O: Solout<T, R, C, D>,
 {
     // Initialize the Solution object
     let mut solution = Solution::new();
 
     // Begin timing the solution process
     solution.timer.start();
-
-    // Add initial point to output if include_t0_tf is true
-    //if solout.include_t0_tf() {
-    //    solution.push(t0, *y0);
-    //}
-
-    // Call solout to initialize the output strategy
-    solout.solout(solver, &mut solution);
 
     // Determine integration direction and check that tf != t0
     let integration_direction = match (tf - t0).signum() {
@@ -155,14 +147,24 @@ where
         Err(e) => return Err(e),
     }
 
+    // Call solout to initialize the output strategy
+    match solout.solout(solver, &mut solution) {
+        ControlFlag::Continue => {}
+        ControlFlag::Terminate(reason) => {
+            solution.status = SolverStatus::Interrupted(reason.clone());
+            solution.timer.complete();
+            return Ok(solution);
+        }
+    }
+
     // For event
     let mut tc: T = t0;
     let mut ts: T;
 
     // Check Terminate before starting incase the initial conditions trigger it
     match ode.event(t0, y0) {
-        EventAction::Continue => {}
-        EventAction::Terminate(reason) => {
+        ControlFlag::Continue => {}
+        ControlFlag::Terminate(reason) => {
             solution.status = SolverStatus::Interrupted(reason.clone());
             solution.timer.complete();
             return Ok(solution);
@@ -209,15 +211,22 @@ where
         }
 
         // Record the result
-        solout.solout(solver, &mut solution);
+        match solout.solout(solver, &mut solution) {
+            ControlFlag::Continue => {}
+            ControlFlag::Terminate(reason) => {
+                solution.status = SolverStatus::Interrupted(reason.clone());
+                solution.timer.complete();
+                return Ok(solution);
+            }
+        }
 
         // Check event condition
         match ode.event(solver.t(), solver.y()) {
-            EventAction::Continue => {
+            ControlFlag::Continue => {
                 // Update last continue point
                 tc = solver.t();
             }
-            EventAction::Terminate(re) => {
+            ControlFlag::Terminate(re) => {
                 // For iteration to event point
                 let mut reason = re;
 
@@ -259,7 +268,7 @@ where
 
                     // Check event at guess point
                     match ode.event(t_guess, &y) {
-                        EventAction::Continue => {
+                        ControlFlag::Continue => {
                             tc = t_guess;
 
                             // Illinois adjustment to improve convergence
@@ -269,7 +278,7 @@ where
                                 side_count = 0;
                             }
                         }
-                        EventAction::Terminate(re) => {
+                        ControlFlag::Terminate(re) => {
                             reason = re;
                             ts = t_guess;
                             side_count = 0;

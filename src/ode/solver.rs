@@ -1,7 +1,7 @@
 //! Solver Trait for ODE Solvers
 
 use crate::interpolate::InterpolationError;
-use crate::ode::{EventData, ODE};
+use crate::ode::{CallBackData, ODE};
 use crate::traits::Real;
 use nalgebra::SMatrix;
 use std::fmt::{Debug, Display};
@@ -15,10 +15,10 @@ pub type NumEvals = usize; // Number of function evaluations
 /// By implementing this trait, different functions can use a user provided
 /// ODE solver to solve the ODE that fits their requirements.
 ///
-pub trait Solver<T, const R: usize, const C: usize, E = String>
+pub trait Solver<T, const R: usize, const C: usize, D = String>
 where
     T: Real,
-    E: EventData,
+    D: CallBackData,
 {
     /// Initialize Solver before solving ODE
     ///
@@ -29,7 +29,7 @@ where
     /// * `y`      - Initial state.
     ///
     /// # Returns
-    /// * Result<(), SolverStatus<T, R, C, E>> - Ok if initialization is successful,
+    /// * Result<(), SolverStatus<T, R, C, D>> - Ok if initialization is successful,
     ///
     fn init<F>(
         &mut self,
@@ -39,7 +39,7 @@ where
         y: &SMatrix<T, R, C>,
     ) -> Result<NumEvals, SolverError<T, R, C>>
     where
-        F: ODE<T, R, C, E>;
+        F: ODE<T, R, C, D>;
 
     /// Step through solving the ODE by one step
     ///
@@ -47,11 +47,11 @@ where
     /// * `system` - System of ODEs to solve.
     ///
     /// # Returns
-    /// * Result<usize, SolverStatus<T, R, C, E>> - Ok if step is successful with the number of function evaluations,
+    /// * Result<usize, SolverStatus<T, R, C, D>> - Ok if step is successful with the number of function evaluations,
     ///
     fn step<F>(&mut self, ode: &F) -> Result<NumEvals, SolverError<T, R, C>>
     where
-        F: ODE<T, R, C, E>;
+        F: ODE<T, R, C, D>;
 
     /// Interpolate solution between previous and current step
     ///
@@ -85,10 +85,10 @@ where
     fn set_h(&mut self, h: T);
 
     /// Status of solver
-    fn status(&self) -> &SolverStatus<T, R, C, E>;
+    fn status(&self) -> &SolverStatus<T, R, C, D>;
 
     /// Set status of solver
-    fn set_status(&mut self, status: SolverStatus<T, R, C, E>);
+    fn set_status(&mut self, status: SolverStatus<T, R, C, D>);
 }
 
 /// Solver Error for ODE Solvers
@@ -137,24 +137,24 @@ where
 /// * `Complete`      - Solver completed.
 ///
 #[derive(Debug, PartialEq, Clone)]
-pub enum SolverStatus<T, const R: usize, const C: usize, E>
+pub enum SolverStatus<T, const R: usize, const C: usize, D>
 where
     T: Real,
-    E: EventData,
+    D: CallBackData,
 {
     Uninitialized,               // Solvers default to this until solver.init is called
     Initialized,                 // After solver.init is called
     Error(SolverError<T, R, C>), // If the solver encounters an error, this status is set so solver status is indicated that an error.
     Solving,                     // While the ODE is being solved
     RejectedStep,                // If the solver rejects a step, in this case it will repeat with new smaller step size typically, will return to Solving once the step is accepted
-    Interrupted(E),              // If the solver is interrupted by event with reason
+    Interrupted(D),              // If the solver is interrupted by event with reason
     Complete,                    // If the solver is solving and has reached the final time of the IMatrix<T, R, C, S>P then Complete is returned to indicate such.
 }
 
-impl<T, const R: usize, const C: usize, E> Display for SolverStatus<T, R, C, E>
+impl<T, const R: usize, const C: usize, D> Display for SolverStatus<T, R, C, D>
 where
     T: Real + Display,
-    E: EventData + Display,
+    D: CallBackData + Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

@@ -3,7 +3,7 @@
 use crate::interpolate::InterpolationError;
 use crate::ode::solver::NumEvals;
 use crate::ode::solvers::utils::{constrain_step_size, validate_step_size_parameters};
-use crate::ode::{EventData, ODE, Solver, SolverError, SolverStatus};
+use crate::ode::{CallBackData, ODE, Solver, SolverError, SolverStatus};
 use crate::traits::Real;
 use nalgebra::SMatrix;
 
@@ -65,7 +65,7 @@ use nalgebra::SMatrix;
 /// * `fac2`   - 6.0
 /// * `beta`   - 0.0
 ///
-pub struct DOP853<T: Real, const R: usize, const C: usize, E: EventData> {
+pub struct DOP853<T: Real, const R: usize, const C: usize, D: CallBackData> {
     // Initial Conditions
     pub h0: T, // Initial Step Size
 
@@ -99,7 +99,7 @@ pub struct DOP853<T: Real, const R: usize, const C: usize, E: EventData> {
     fac: T,
 
     // Iteration Tracking
-    status: SolverStatus<T, R, C, E>,
+    status: SolverStatus<T, R, C, D>,
     steps: usize,      // Number of Steps
     n_accepted: usize, // Number of Accepted Steps
 
@@ -130,8 +130,8 @@ pub struct DOP853<T: Real, const R: usize, const C: usize, E: EventData> {
     cont: [SMatrix<T, R, C>; 8], // Interpolation coefficients
 }
 
-impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E>
-    for DOP853<T, R, C, E>
+impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D>
+    for DOP853<T, R, C, D>
 {
     fn init<F>(
         &mut self,
@@ -141,7 +141,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E>
         y0: &SMatrix<T, R, C>,
     ) -> Result<NumEvals, SolverError<T, R, C>>
     where
-        F: ODE<T, R, C, E>,
+        F: ODE<T, R, C, D>,
     {
         // Set Current State as Initial State
         self.t = t0;
@@ -170,7 +170,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E>
         }
 
         // Check if h0 is within bounds, and h_min and h_max are valid
-        match validate_step_size_parameters::<T, R, C, E>(self.h0, self.h_min, self.h_max, t0, tf) {
+        match validate_step_size_parameters::<T, R, C, D>(self.h0, self.h_min, self.h_max, t0, tf) {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
@@ -188,7 +188,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E>
 
     fn step<F>(&mut self, ode: &F) -> Result<NumEvals, SolverError<T, R, C>>
     where
-        F: ODE<T, R, C, E>,
+        F: ODE<T, R, C, D>,
     {
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
@@ -580,16 +580,16 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E>
         self.h = h;
     }
 
-    fn status(&self) -> &SolverStatus<T, R, C, E> {
+    fn status(&self) -> &SolverStatus<T, R, C, D> {
         &self.status
     }
 
-    fn set_status(&mut self, status: SolverStatus<T, R, C, E>) {
+    fn set_status(&mut self, status: SolverStatus<T, R, C, D>) {
         self.status = status;
     }
 }
 
-impl<T: Real, const R: usize, const C: usize, E: EventData> DOP853<T, R, C, E> {
+impl<T: Real, const R: usize, const C: usize, D: CallBackData> DOP853<T, R, C, D> {
     /// Creates a new DOP853 Solver.
     ///
     /// # Returns
@@ -618,7 +618,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> DOP853<T, R, C, E> {
     ///
     fn h_init<S>(&mut self, ode: &S, t0: T, tf: T)
     where
-        S: ODE<T, R, C, E>,
+        S: ODE<T, R, C, D>,
     {
         // Set the initial step size h0 to h, if its 0.0 then it will be calculated
         self.h = self.h0;
@@ -744,7 +744,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> DOP853<T, R, C, E> {
     }
 }
 
-impl<T: Real, const R: usize, const C: usize, E: EventData> Default for DOP853<T, R, C, E> {
+impl<T: Real, const R: usize, const C: usize, D: CallBackData> Default for DOP853<T, R, C, D> {
     fn default() -> Self {
         // Convert coefficient arrays from f64 to type T
         let a = DOP853_A.map(|row| row.map(|x| T::from_f64(x).unwrap()));

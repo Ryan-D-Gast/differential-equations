@@ -42,18 +42,18 @@ impl ODE<f64, 3, 1, PopulationMonitor> for SIRModel {
         dydt[2] = self.gamma * i; // Recovered
     }
 
-    fn event(&self, _t: f64, y: &SVector<f64, 3>) -> EventAction<PopulationMonitor> {
+    fn event(&self, _t: f64, y: &SVector<f64, 3>) -> ControlFlag<PopulationMonitor> {
         let i = y[1]; // Infected
 
         // Check the PopulationMonitor
 
         // Terminate the simulation when the number of infected individuals falls below 1
         if i < 1.0 {
-            EventAction::Terminate(PopulationMonitor::InfectedBelowOne)
+            ControlFlag::Terminate(PopulationMonitor::InfectedBelowOne)
         } else if y.iter().sum::<f64>() < 1.0 {
-            EventAction::Terminate(PopulationMonitor::PopulationDiedOut)
+            ControlFlag::Terminate(PopulationMonitor::PopulationDiedOut)
         } else {
-            EventAction::Continue
+            ControlFlag::Continue
         }
     }
 }

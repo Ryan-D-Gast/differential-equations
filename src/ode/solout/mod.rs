@@ -9,7 +9,7 @@
 //! * `HyperplaneCrossingSolout` for capturing points when crossing a hyperplane
 //!
 
-use crate::ode::{EventData, Solution, Solver};
+use crate::ode::{CallBackData, Solution, Solver, ControlFlag};
 use crate::traits::Real;
 use nalgebra::SMatrix;
 

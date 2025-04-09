@@ -53,7 +53,7 @@ use super::*;
 /// This method is not suitable for stiff problems and can results in
 /// extremely small step sizes and long computation times.
 ///
-pub struct APCV4<T: Real, const R: usize, const C: usize, E: EventData> {
+pub struct APCV4<T: Real, const R: usize, const C: usize, D: CallBackData> {
     // Initial Step Size
     pub h0: T,
 
@@ -88,7 +88,7 @@ pub struct APCV4<T: Real, const R: usize, const C: usize, E: EventData> {
     steps: usize,
 
     // Status
-    status: SolverStatus<T, R, C, E>,
+    status: SolverStatus<T, R, C, D>,
 
     // Settings
     pub tol: T,
@@ -98,8 +98,8 @@ pub struct APCV4<T: Real, const R: usize, const C: usize, E: EventData> {
 }
 
 // Implement Solver Trait for APCV4
-impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E>
-    for APCV4<T, R, C, E>
+impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D>
+    for APCV4<T, R, C, D>
 {
     fn init<F>(
         &mut self,
@@ -109,12 +109,12 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E>
         y0: &SMatrix<T, R, C>,
     ) -> Result<NumEvals, SolverError<T, R, C>>
     where
-        F: ODE<T, R, C, E>,
+        F: ODE<T, R, C, D>,
     {
         self.tf = tf;
 
         // Check that the initial step size is set
-        match validate_step_size_parameters::<T, R, C, E>(self.h0, T::zero(), T::infinity(), t0, tf)
+        match validate_step_size_parameters::<T, R, C, D>(self.h0, T::zero(), T::infinity(), t0, tf)
         {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
@@ -168,7 +168,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E>
 
     fn step<F>(&mut self, ode: &F) -> Result<NumEvals, SolverError<T, R, C>>
     where
-        F: ODE<T, R, C, E>,
+        F: ODE<T, R, C, D>,
     {
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
@@ -395,17 +395,17 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E>
         self.h = h;
     }
 
-    fn status(&self) -> &SolverStatus<T, R, C, E> {
+    fn status(&self) -> &SolverStatus<T, R, C, D> {
         &self.status
     }
 
-    fn set_status(&mut self, status: SolverStatus<T, R, C, E>) {
+    fn set_status(&mut self, status: SolverStatus<T, R, C, D>) {
         self.status = status;
     }
 }
 
 // Initialize APCV4 with default values and chainable settings
-impl<T: Real, const R: usize, const C: usize, E: EventData> APCV4<T, R, C, E> {
+impl<T: Real, const R: usize, const C: usize, D: CallBackData> APCV4<T, R, C, D> {
     pub fn new(h0: T) -> Self {
         APCV4 {
             h0,
@@ -434,7 +434,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> APCV4<T, R, C, E> {
     }
 }
 
-impl<T: Real, const R: usize, const C: usize, E: EventData> Default for APCV4<T, R, C, E> {
+impl<T: Real, const R: usize, const C: usize, D: CallBackData> Default for APCV4<T, R, C, D> {
     fn default() -> Self {
         APCV4 {
             h0: T::zero(),

@@ -104,9 +104,14 @@ pub use ivp::{
 // ODE Trait for Differential Equations
 mod system;
 pub use system::{
-    EventAction, // Command to the Solver for Returned in Terminate Function in ODE Trait
-    EventData,   // Data returned from the event function in the ODE Trait
-    ODE,         // ODE Trait for Differential Equations
+    ODE, // ODE Trait for Differential Equations
+};
+
+// Control Flow Return enum and Data trait
+mod control;
+pub use control::{
+    ControlFlag, // Control Flow Enum for the Solver
+    CallBackData,       // Event Enum for the Solver
 };
 
 // Solver Traits for ODE Solvers.

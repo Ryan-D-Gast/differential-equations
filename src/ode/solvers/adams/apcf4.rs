@@ -43,7 +43,7 @@ use super::*;
 /// # Settings
 /// * `h` - Step Size
 ///
-pub struct APCF4<T: Real, const R: usize, const C: usize, E: EventData> {
+pub struct APCF4<T: Real, const R: usize, const C: usize, D: CallBackData> {
     // Step Size
     pub h: T,
     // Current State
@@ -65,12 +65,12 @@ pub struct APCF4<T: Real, const R: usize, const C: usize, E: EventData> {
     // Number of evaluations
     pub evals: usize,
     // Status
-    status: SolverStatus<T, R, C, E>,
+    status: SolverStatus<T, R, C, D>,
 }
 
 // Implement Solver Trait for APCF4
-impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E>
-    for APCF4<T, R, C, E>
+impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D>
+    for APCF4<T, R, C, D>
 {
     fn init<F>(
         &mut self,
@@ -80,10 +80,10 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E>
         y0: &SMatrix<T, R, C>,
     ) -> Result<NumEvals, SolverError<T, R, C>>
     where
-        F: ODE<T, R, C, E>,
+        F: ODE<T, R, C, D>,
     {
         // Check Bounds
-        match validate_step_size_parameters::<T, R, C, E>(self.h, T::zero(), T::infinity(), t0, tf)
+        match validate_step_size_parameters::<T, R, C, D>(self.h, T::zero(), T::infinity(), t0, tf)
         {
             Ok(h) => self.h = h,
             Err(e) => return Err(e),
@@ -136,7 +136,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E>
 
     fn step<F>(&mut self, ode: &F) -> Result<NumEvals, SolverError<T, R, C>>
     where
-        F: ODE<T, R, C, E>,
+        F: ODE<T, R, C, D>,
     {
         // state for interpolation
         self.t_old = self.t;
@@ -229,16 +229,16 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> Solver<T, R, C, E>
         self.h = h;
     }
 
-    fn status(&self) -> &SolverStatus<T, R, C, E> {
+    fn status(&self) -> &SolverStatus<T, R, C, D> {
         &self.status
     }
 
-    fn set_status(&mut self, status: SolverStatus<T, R, C, E>) {
+    fn set_status(&mut self, status: SolverStatus<T, R, C, D>) {
         self.status = status;
     }
 }
 
-impl<T: Real, const R: usize, const C: usize, E: EventData> APCF4<T, R, C, E> {
+impl<T: Real, const R: usize, const C: usize, D: CallBackData> APCF4<T, R, C, D> {
     pub fn new(h: T) -> Self {
         APCF4 {
             h,
@@ -247,7 +247,7 @@ impl<T: Real, const R: usize, const C: usize, E: EventData> APCF4<T, R, C, E> {
     }
 }
 
-impl<T: Real, const R: usize, const C: usize, E: EventData> Default for APCF4<T, R, C, E> {
+impl<T: Real, const R: usize, const C: usize, D: CallBackData> Default for APCF4<T, R, C, D> {
     fn default() -> Self {
         APCF4 {
             h: T::zero(),

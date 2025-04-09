@@ -1,6 +1,6 @@
 //! Suite of test cases for Solvers error handling
 
-use differential_equations::ode::EventAction;
+use differential_equations::ode::ControlFlag;
 use differential_equations::ode::ODE;
 use differential_equations::ode::solvers::{
     APCF4, APCV4, DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98,
@@ -15,11 +15,11 @@ impl ODE<f64, 1, 1> for SimpleODE {
         dydt[0] = y[0];
     }
 
-    fn event(&self, t: f64, _y: &SVector<f64, 1>) -> EventAction {
+    fn event(&self, t: f64, _y: &SVector<f64, 1>) -> ControlFlag {
         if t == 10.0 {
-            EventAction::Terminate("Initial condition trigger".to_string())
+            ControlFlag::Terminate("Initial condition trigger".to_string())
         } else {
-            EventAction::Continue
+            ControlFlag::Continue
         }
     }
 }

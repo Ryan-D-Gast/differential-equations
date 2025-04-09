@@ -2,7 +2,7 @@
 
 use std::time::Instant;
 
-use crate::ode::{EventData, SolverStatus};
+use crate::ode::{CallBackData, SolverStatus};
 use crate::traits::Real;
 use nalgebra::SMatrix;
 
@@ -57,10 +57,10 @@ use polars::prelude::*;
 /// * `timer`          - Timer for tracking solution time.
 ///
 #[derive(Debug, Clone)]
-pub struct Solution<T, const R: usize, const C: usize, E>
+pub struct Solution<T, const R: usize, const C: usize, D>
 where
     T: Real,
-    E: EventData,
+    D: CallBackData,
 {
     /// Outputted independent variable points.
     pub t: Vec<T>,
@@ -69,7 +69,7 @@ where
     pub y: Vec<SMatrix<T, R, C>>,
 
     /// Status of the solver.
-    pub status: SolverStatus<T, R, C, E>,
+    pub status: SolverStatus<T, R, C, D>,
 
     /// Number of function evaluations.
     pub evals: usize,
@@ -88,10 +88,10 @@ where
 }
 
 // Initial methods for the solution
-impl<T, const R: usize, const C: usize, E> Solution<T, R, C, E>
+impl<T, const R: usize, const C: usize, D> Solution<T, R, C, D>
 where
     T: Real,
-    E: EventData,
+    D: CallBackData,
 {
     /// Creates a new Solution object.
     pub fn new() -> Self {
@@ -109,10 +109,10 @@ where
 }
 
 // Methods used during solving
-impl<T, const R: usize, const C: usize, E> Solution<T, R, C, E>
+impl<T, const R: usize, const C: usize, D> Solution<T, R, C, D>
 where
     T: Real,
-    E: EventData,
+    D: CallBackData,
 {
     /// Puhes a new point to the solution, e.g. t and y vecs.
     ///
@@ -151,10 +151,10 @@ where
 }
 
 // Post-processing methods for the solution
-impl<T, const R: usize, const C: usize, E> Solution<T, R, C, E>
+impl<T, const R: usize, const C: usize, D> Solution<T, R, C, D>
 where
     T: Real,
-    E: EventData,
+    D: CallBackData,
 {
     /// Simplifies the Solution into a tuple of vectors in form (t, y).
     /// By doing so, the Solution will be consumed and the status,

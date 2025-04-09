@@ -4,6 +4,7 @@
 //! given a condition or event.
 
 use crate::traits::Real;
+use crate::ode::{ControlFlag, CallBackData};
 use nalgebra::SMatrix;
 
 /// ODE Trait for Differential Equations
@@ -21,10 +22,10 @@ use nalgebra::SMatrix;
 /// in which can it will be set to return false by default.
 ///
 #[allow(unused_variables)]
-pub trait ODE<T = f64, const R: usize = 1, const C: usize = 1, E = String>
+pub trait ODE<T = f64, const R: usize = 1, const C: usize = 1, D = String>
 where
     T: Real,
-    E: EventData,
+    D: CallBackData,
 {
     /// Differential Equation dydt = f(t, y)
     ///
@@ -59,38 +60,9 @@ where
     /// * `dydt` - Current derivative point.
     ///
     /// # Returns
-    /// * `EventAction` - Command to continue or stop solver.
+    /// * `ControlFlag` - Command to continue or stop solver.
     ///
-    fn event(&self, t: T, y: &SMatrix<T, R, C>) -> EventAction<E> {
-        EventAction::Continue
+    fn event(&self, t: T, y: &SMatrix<T, R, C>) -> ControlFlag<D> {
+        ControlFlag::Continue
     }
 }
-
-/// Termination Condition for ODE Solver
-///
-/// EventAction is a command to the solver to continue or stop the integration.
-/// The solver will continue
-/// # Variants
-/// * `Continue`    - Continue to next step.
-/// * `Terminate`   - Terminate solver with reason.
-///
-pub enum EventAction<E = String>
-where
-    E: EventData,
-{
-    /// Continue to next step
-    Continue,
-    /// Terminate solver
-    Terminate(E),
-}
-
-/// Event data type for ODE implementations
-///
-/// This trait represents data that can be returned from event functions
-/// in ODE implementations. It's designed to be flexible while ensuring
-/// the minimal requirements needed for event handling.
-///
-pub trait EventData: Clone + std::fmt::Debug {}
-
-// Implement for any type that already satisfies the bounds
-impl<T: Clone + std::fmt::Debug> EventData for T {}

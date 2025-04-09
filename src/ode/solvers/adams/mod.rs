@@ -3,7 +3,7 @@
 use crate::interpolate::{InterpolationError, cubic_hermite_interpolate};
 use crate::ode::solver::NumEvals;
 use crate::ode::solvers::utils::{constrain_step_size, validate_step_size_parameters};
-use crate::ode::{EventData, ODE, Solver, SolverError, SolverStatus};
+use crate::ode::{CallBackData, ODE, Solver, SolverError, SolverStatus};
 use crate::traits::Real;
 use nalgebra::SMatrix;
 

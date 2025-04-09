@@ -147,7 +147,7 @@ macro_rules! adaptive_runge_kutta_method {
         $(#[$attr])*
         #[doc = "\n\n"]
         #[doc = "This adaptive solver was automatically generated using the `adaptive_runge_kutta_method` macro."]
-        pub struct $name<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> {
+        pub struct $name<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::ode::CallBackData> {
             // Initial Step Size
             pub h0: T,
 
@@ -190,10 +190,10 @@ macro_rules! adaptive_runge_kutta_method {
             steps: usize, // Number of steps taken
 
             // Status
-            status: $crate::ode::SolverStatus<T, R, C, E>,
+            status: $crate::ode::SolverStatus<T, R, C, D>,
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> Default for $name<T, R, C, E> {
+        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::ode::CallBackData> Default for $name<T, R, C, D> {
             fn default() -> Self {
                 // Initialize k vectors with zeros
                 let k: [$crate::SMatrix<T, R, C>; $stages] = [$crate::SMatrix::<T, R, C>::zeros(); $stages];
@@ -238,13 +238,13 @@ macro_rules! adaptive_runge_kutta_method {
             }
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> $crate::ode::Solver<T, R, C, E> for $name<T, R, C, E> {
+        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::ode::CallBackData> $crate::ode::Solver<T, R, C, D> for $name<T, R, C, D> {
             fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<usize, $crate::ode::SolverError<T, R, C>>
             where
-                F: $crate::ode::ODE<T, R, C, E>,
+                F: $crate::ode::ODE<T, R, C, D>,
             {
                 // Check bounds
-                match $crate::ode::solvers::utils::validate_step_size_parameters::<T, R, C, E>(self.h0, self.h_min, self.h_max, t0, tf) {
+                match $crate::ode::solvers::utils::validate_step_size_parameters::<T, R, C, D>(self.h0, self.h_min, self.h_max, t0, tf) {
                     Ok(h0) => self.h = h0,
                     Err(status) => return Err(status),
                 }
@@ -271,7 +271,7 @@ macro_rules! adaptive_runge_kutta_method {
 
             fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::ode::SolverError<T, R, C>>
             where
-                F: $crate::ode::ODE<T, R, C, E>,
+                F: $crate::ode::ODE<T, R, C, D>,
             {
                 // Make sure step size isn't too small
                 if self.h.abs() < T::default_epsilon() {
@@ -418,16 +418,16 @@ macro_rules! adaptive_runge_kutta_method {
                 self.h = h;
             }
 
-            fn status(&self) -> &$crate::ode::SolverStatus<T, R, C, E> {
+            fn status(&self) -> &$crate::ode::SolverStatus<T, R, C, D> {
                 &self.status
             }
 
-            fn set_status(&mut self, status: $crate::ode::SolverStatus<T, R, C, E>) {
+            fn set_status(&mut self, status: $crate::ode::SolverStatus<T, R, C, D>) {
                 self.status = status;
             }
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, E: $crate::ode::EventData> $name<T, R, C, E> {
+        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::ode::CallBackData> $name<T, R, C, D> {
             /// Create a new solver with the specified initial step size
             pub fn new(h0: T) -> Self {
                 Self {

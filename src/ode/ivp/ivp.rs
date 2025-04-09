@@ -2,7 +2,7 @@
 
 use super::solve_ivp;
 use crate::ode::solout::*;
-use crate::ode::{EventData, ODE, Solout, Solution, Solver, SolverError};
+use crate::ode::{CallBackData, ODE, Solout, Solution, Solver, SolverError};
 use crate::traits::Real;
 use nalgebra::SMatrix;
 
@@ -96,11 +96,11 @@ use nalgebra::SMatrix;
 /// let results = ivp.dense(4).solve(&mut solver).unwrap();
 /// ```
 #[derive(Clone, Debug)]
-pub struct IVP<T, const R: usize, const C: usize, E, F>
+pub struct IVP<T, const R: usize, const C: usize, D, F>
 where
     T: Real,
-    E: EventData,
-    F: ODE<T, R, C, E>,
+    D: CallBackData,
+    F: ODE<T, R, C, D>,
 {
     // Initial Value Problem Fields
     pub ode: F, // ODE containing the Differential Equation and Optional Terminate Function.
@@ -109,14 +109,14 @@ where
     pub y0: SMatrix<T, R, C>, // Initial State Vector.
 
     // Phantom Data for Users event output
-    _event_output_type: std::marker::PhantomData<E>,
+    _event_output_type: std::marker::PhantomData<D>,
 }
 
-impl<T, const R: usize, const C: usize, E, F> IVP<T, R, C, E, F>
+impl<T, const R: usize, const C: usize, D, F> IVP<T, R, C, D, F>
 where
     T: Real,
-    E: EventData,
-    F: ODE<T, R, C, E>,
+    D: CallBackData,
+    F: ODE<T, R, C, D>,
 {
     /// Create a new Initial Value Problem
     ///
@@ -142,11 +142,11 @@ where
     /// Solve the IVP using a default solout, e.g. outputting solutions at calculated steps.
     ///
     /// # Returns
-    /// * `Result<Solution<T, V, E>, SolverStatus<T, V, E>>` - `Ok(Solution)` if successful or interrupted by events, `Err(SolverStatus)` if an errors or issues such as stiffness are encountered.
+    /// * `Result<Solution<T, V, D>, SolverStatus<T, V, D>>` - `Ok(Solution)` if successful or interrupted by events, `Err(SolverStatus)` if an errors or issues such as stiffness are encountered.
     ///
-    pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, R, C, E>, SolverError<T, R, C>>
+    pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, R, C, D>, SolverError<T, R, C>>
     where
-        S: Solver<T, R, C, E>,
+        S: Solver<T, R, C, D>,
     {
         let mut default_solout = DefaultSolout::new(); // Default solout implementation
         solve_ivp(
@@ -164,10 +164,10 @@ where
     /// # Returns
     /// * IVP Solver with the provided solout function ready for .solve() method.
     ///
-    pub fn solout<'a, O: Solout<T, R, C, E>>(
+    pub fn solout<'a, O: Solout<T, R, C, D>>(
         &'a self,
         solout: &'a mut O,
-    ) -> IVPMutRefSoloutPair<'a, T, R, C, E, F, O> {
+    ) -> IVPMutRefSoloutPair<'a, T, R, C, D, F, O> {
         IVPMutRefSoloutPair::new(self, solout)
     }
 
@@ -180,7 +180,7 @@ where
     /// # Returns
     /// * IVP Solver with Even Solout function ready for .solve() method.
     ///
-    pub fn even(&self, dt: T) -> IVPSoloutPair<'_, T, R, C, E, F, EvenSolout<T>> {
+    pub fn even(&self, dt: T) -> IVPSoloutPair<'_, T, R, C, D, F, EvenSolout<T>> {
         let even_solout = EvenSolout::new(dt, self.t0, self.tf); // Even solout implementation
         IVPSoloutPair::new(self, even_solout)
     }
@@ -194,7 +194,7 @@ where
     /// # Returns
     /// * IVP Solver with Dense Output function ready for .solve() method.
     ///
-    pub fn dense(&self, n: usize) -> IVPSoloutPair<'_, T, R, C, E, F, DenseSolout> {
+    pub fn dense(&self, n: usize) -> IVPSoloutPair<'_, T, R, C, D, F, DenseSolout> {
         let dense_solout = DenseSolout::new(n); // Dense solout implementation
         IVPSoloutPair::new(self, dense_solout)
     }
@@ -208,7 +208,7 @@ where
     /// # Returns
     /// * IVP Solver with Custom Time Evaluation function ready for .solve() method.
     ///
-    pub fn t_eval(&self, points: Vec<T>) -> IVPSoloutPair<'_, T, R, C, E, F, TEvalSolout<T>> {
+    pub fn t_eval(&self, points: Vec<T>) -> IVPSoloutPair<'_, T, R, C, D, F, TEvalSolout<T>> {
         let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf); // Custom time evaluation solout implementation
         IVPSoloutPair::new(self, t_eval_solout)
     }
@@ -229,7 +229,7 @@ where
         component_idx: usize,
         threshhold: T,
         direction: CrossingDirection,
-    ) -> IVPSoloutPair<'_, T, R, C, E, F, CrossingSolout<T>> {
+    ) -> IVPSoloutPair<'_, T, R, C, D, F, CrossingSolout<T>> {
         let crossing_solout =
             CrossingSolout::new(component_idx, threshhold).with_direction(direction); // Crossing solout implementation
         IVPSoloutPair::new(self, crossing_solout)
@@ -253,7 +253,7 @@ where
         normal: SMatrix<T, R1, C1>,
         extractor: fn(&SMatrix<T, R, C>) -> SMatrix<T, R1, C1>,
         direction: CrossingDirection,
-    ) -> IVPSoloutPair<'_, T, R, C, E, F, HyperplaneCrossingSolout<T, R1, C1, R, C>> {
+    ) -> IVPSoloutPair<'_, T, R, C, D, F, HyperplaneCrossingSolout<T, R1, C1, R, C>> {
         let solout =
             HyperplaneCrossingSolout::new(point, normal, extractor).with_direction(direction);
 
@@ -262,30 +262,30 @@ where
 }
 
 /// IVPMutRefSoloutPair serves as a intermediate between the IVP struct and a custom solout provided by the user.
-pub struct IVPMutRefSoloutPair<'a, T, const R: usize, const C: usize, E, F, O>
+pub struct IVPMutRefSoloutPair<'a, T, const R: usize, const C: usize, D, F, O>
 where
     T: Real,
-    E: EventData,
-    F: ODE<T, R, C, E>,
-    O: Solout<T, R, C, E>,
+    D: CallBackData,
+    F: ODE<T, R, C, D>,
+    O: Solout<T, R, C, D>,
 {
-    pub ivp: &'a IVP<T, R, C, E, F>, // Reference to the IVP struct
+    pub ivp: &'a IVP<T, R, C, D, F>, // Reference to the IVP struct
     pub solout: &'a mut O,           // Reference to the solout implementation
 }
 
-impl<'a, T, const R: usize, const C: usize, E, F, O> IVPMutRefSoloutPair<'a, T, R, C, E, F, O>
+impl<'a, T, const R: usize, const C: usize, D, F, O> IVPMutRefSoloutPair<'a, T, R, C, D, F, O>
 where
     T: Real,
-    E: EventData,
-    F: ODE<T, R, C, E>,
-    O: Solout<T, R, C, E>,
+    D: CallBackData,
+    F: ODE<T, R, C, D>,
+    O: Solout<T, R, C, D>,
 {
     /// Create a new IVPMutRefSoloutPair
     ///
     /// # Arguments
     /// * `ivp` - Reference to the IVP struct
     ///
-    pub fn new(ivp: &'a IVP<T, R, C, E, F>, solout: &'a mut O) -> Self {
+    pub fn new(ivp: &'a IVP<T, R, C, D, F>, solout: &'a mut O) -> Self {
         IVPMutRefSoloutPair { ivp, solout }
     }
 
@@ -295,11 +295,11 @@ where
     /// * `solver` - Solver to use for solving the IVP
     ///
     /// # Returns
-    /// * `Result<Solution<T, R, C, E>, SolverError<T, R, C>>` - `Ok(Solution)` if successful or interrupted by events, `Err(SolverError)` if an errors or issues such as stiffness are encountered.
+    /// * `Result<Solution<T, R, C, D>, SolverError<T, R, C>>` - `Ok(Solution)` if successful or interrupted by events, `Err(SolverError)` if an errors or issues such as stiffness are encountered.
     ///
-    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, R, C, E>, SolverError<T, R, C>>
+    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, R, C, D>, SolverError<T, R, C>>
     where
-        S: Solver<T, R, C, E>,
+        S: Solver<T, R, C, D>,
     {
         solve_ivp(
             solver,
@@ -314,23 +314,23 @@ where
 
 /// IVPSoloutPair serves as a intermediate between the IVP struct and solve_ivp when a predefined solout is used.
 #[derive(Clone, Debug)]
-pub struct IVPSoloutPair<'a, T, const R: usize, const C: usize, E, F, O>
+pub struct IVPSoloutPair<'a, T, const R: usize, const C: usize, D, F, O>
 where
     T: Real,
-    E: EventData,
-    F: ODE<T, R, C, E>,
-    O: Solout<T, R, C, E>,
+    D: CallBackData,
+    F: ODE<T, R, C, D>,
+    O: Solout<T, R, C, D>,
 {
-    pub ivp: &'a IVP<T, R, C, E, F>, // Reference to the IVP struct
+    pub ivp: &'a IVP<T, R, C, D, F>, // Reference to the IVP struct
     pub solout: O,                   // Solout implementation
 }
 
-impl<'a, T, const R: usize, const C: usize, E, F, O> IVPSoloutPair<'a, T, R, C, E, F, O>
+impl<'a, T, const R: usize, const C: usize, D, F, O> IVPSoloutPair<'a, T, R, C, D, F, O>
 where
     T: Real,
-    E: EventData,
-    F: ODE<T, R, C, E>,
-    O: Solout<T, R, C, E>,
+    D: CallBackData,
+    F: ODE<T, R, C, D>,
+    O: Solout<T, R, C, D>,
 {
     /// Create a new IVPSoloutPair
     ///
@@ -338,7 +338,7 @@ where
     /// * `ivp` - Reference to the IVP struct
     /// * `solout` - Solout implementation
     ///
-    pub fn new(ivp: &'a IVP<T, R, C, E, F>, solout: O) -> Self {
+    pub fn new(ivp: &'a IVP<T, R, C, D, F>, solout: O) -> Self {
         IVPSoloutPair { ivp, solout }
     }
 
@@ -348,11 +348,11 @@ where
     /// * `solver` - Solver to use for solving the IVP
     ///
     /// # Returns
-    /// * `Result<Solution<T, R, C, E>, SolverError<T, R, C>>` - `Ok(Solution)` if successful or interrupted by events, `Err(SolverError)` if an errors or issues such as stiffness are encountered.
+    /// * `Result<Solution<T, R, C, D>, SolverError<T, R, C>>` - `Ok(Solution)` if successful or interrupted by events, `Err(SolverError)` if an errors or issues such as stiffness are encountered.
     ///
-    pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, R, C, E>, SolverError<T, R, C>>
+    pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, R, C, D>, SolverError<T, R, C>>
     where
-        S: Solver<T, R, C, E>,
+        S: Solver<T, R, C, D>,
     {
         solve_ivp(
             solver,

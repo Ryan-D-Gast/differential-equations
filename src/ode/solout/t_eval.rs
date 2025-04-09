@@ -75,14 +75,14 @@ pub struct TEvalSolout<T: Real> {
     integration_direction: T,
 }
 
-impl<T, const R: usize, const C: usize, E> Solout<T, R, C, E> for TEvalSolout<T>
+impl<T, const R: usize, const C: usize, D> Solout<T, R, C, D> for TEvalSolout<T>
 where
     T: Real,
-    E: EventData,
+    D: CallBackData,
 {
-    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, D>) -> ControlFlag<D>
     where
-        S: Solver<T, R, C, E>,
+        S: Solver<T, R, C, D>,
     {
         let t_prev = solver.t_prev();
         let t_curr = solver.t();
@@ -122,6 +122,9 @@ where
 
         // Update next_eval_idx for the next call
         self.next_eval_idx = idx;
+
+        // Continue the integration
+        ControlFlag::Continue
     }
 }
 

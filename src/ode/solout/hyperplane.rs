@@ -201,15 +201,15 @@ where
     }
 }
 
-impl<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize, E: EventData>
-    Solout<T, R2, C2, E> for HyperplaneCrossingSolout<T, R1, C1, R2, C2>
+impl<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize, D: CallBackData>
+    Solout<T, R2, C2, D> for HyperplaneCrossingSolout<T, R1, C1, R2, C2>
 where
     T: Real,
-    E: EventData,
+    D: CallBackData,
 {
-    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R2, C2, E>)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R2, C2, D>) -> ControlFlag<D>
     where
-        S: Solver<T, R2, C2, E> 
+        S: Solver<T, R2, C2, D> 
     {
         let t_curr = solver.t();
         let y_curr = solver.y();
@@ -261,6 +261,9 @@ where
 
         // Update last distance for next comparison
         self.last_distance = Some(distance);
+
+        // Continue the integration
+        ControlFlag::Continue
     }
 }
 
@@ -270,7 +273,7 @@ where
     T: Real,
 {
     /// Find the crossing time using Newton's method with solver interpolation
-    fn find_crossing_newton<S, E>(
+    fn find_crossing_newton<S, D>(
         &self,
         solver: &mut S,
         t_lower: T,
@@ -279,8 +282,8 @@ where
         dist_upper: T,
     ) -> Option<T>
     where
-        S: Solver<T, R2, C2, E>,
-        E: EventData,
+        S: Solver<T, R2, C2, D>,
+        D: CallBackData,
     {
         // Start with linear interpolation as initial guess
         let mut t = t_lower - dist_lower * (t_upper - t_lower) / (dist_upper - dist_lower);

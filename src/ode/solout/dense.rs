@@ -70,14 +70,14 @@ pub struct DenseSolout {
     n: usize,
 }
 
-impl<T, const R: usize, const C: usize, E> Solout<T, R, C, E> for DenseSolout
+impl<T, const R: usize, const C: usize, D> Solout<T, R, C, D> for DenseSolout
 where
     T: Real,
-    E: EventData,
+    D: CallBackData,
 {
-    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, D>) -> ControlFlag<D>
     where
-        S: Solver<T, R, C, E> 
+        S: Solver<T, R, C, D> 
     {
         let t_prev = solver.t_prev();
         let t_curr = solver.t();
@@ -94,6 +94,9 @@ where
 
         // Save actual calculated step as well
         solution.push(t_curr, *solver.y());
+
+        // Continue the integration
+        ControlFlag::Continue
     }
 }
 
