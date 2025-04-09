@@ -13,10 +13,9 @@ where
     /// * `solver` - Reference to the solver to use for solving the IVP.
     /// * `solution` - Immutable reference to the solution struct to avoid ownership issues.
     ///
-    fn solout<SV, SI>(&mut self, solver: &mut SV, solution: &mut SI)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
     where
-        SV: Solver<T, R, C, E>,
-        SI: SolutionInterface<T, R, C, E>;
+        S: Solver<T, R, C, E>;
 
     /// Tells solver if to include t0 and tf by appending them to the output vectors.
     ///

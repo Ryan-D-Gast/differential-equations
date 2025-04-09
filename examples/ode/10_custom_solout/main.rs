@@ -59,10 +59,9 @@ impl PendulumSolout {
 }
 
 impl Solout<f64, 2, 1> for PendulumSolout {
-    fn solout<SV, SI>(&mut self, solver: &mut SV, solution: &mut SI)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<f64, 2, 1, String>)
     where
-        SV: Solver<f64, 2, 1, String>,
-        SI: SolutionInterface<f64, 2, 1, String>,
+        S: Solver<f64, 2, 1, String> 
     {
         let t = solver.t();
         let y = solver.y();
@@ -84,7 +83,7 @@ impl Solout<f64, 2, 1> for PendulumSolout {
         let angle_crossed_zero = self.last_angle.signum() != current_angle.signum();
 
         if dt >= self.min_dt && (angle_crossed_zero || significant_change) {
-            solution.record(t, *y);
+            solution.push(t, *y);
 
             // Calculate and store energy
             self.energy_values.push(self.calculate_energy(y));

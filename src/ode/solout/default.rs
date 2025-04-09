@@ -69,13 +69,12 @@ where
     T: Real,
     E: EventData,
 {
-    fn solout<SV, SI>(&mut self, solver: &mut SV, solution: &mut SI)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
     where
-        SV: Solver<T, R, C, E>,
-        SI: SolutionInterface<T, R, C, E>,
+        S: Solver<T, R, C, E>
     {
         // Output the current time and state to the vectors
-        solution.record(solver.t(), *solver.y());
+        solution.push(solver.t(), *solver.y());
     }
 }
 

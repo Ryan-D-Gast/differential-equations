@@ -127,7 +127,7 @@ pub use solout::{
 
 // Solution of a solved IVP Problem
 mod solution;
-pub use solution::{Solution, SolutionInterface};
+pub use solution::{Solution, Timer};
 
 // Solver for ODEs
 pub mod solvers;

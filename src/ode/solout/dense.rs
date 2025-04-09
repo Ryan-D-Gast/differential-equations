@@ -75,10 +75,9 @@ where
     T: Real,
     E: EventData,
 {
-    fn solout<SV, SI>(&mut self, solver: &mut SV, solution: &mut SI)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
     where
-        SV: Solver<T, R, C, E>,
-        SI: SolutionInterface<T, R, C, E>,
+        S: Solver<T, R, C, E> 
     {
         let t_prev = solver.t_prev();
         let t_curr = solver.t();
@@ -88,11 +87,11 @@ where
             let h_old = t_curr - t_prev;
             let ti = t_prev + T::from_usize(i).unwrap() * h_old / T::from_usize(self.n).unwrap();
             let yi = solver.interpolate(ti).unwrap();
-            solution.record(ti, yi);
+            solution.push(ti, yi);
         }
 
         // Save actual calculated step as well
-        solution.record(t_curr, *solver.y());
+        solution.push(t_curr, *solver.y());
     }
 }
 

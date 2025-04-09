@@ -78,10 +78,9 @@ where
     T: Real,
     E: EventData,
 {
-    fn solout<SV, SI>(&mut self, solver: &mut SV, solution: &mut SI)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
     where
-        SV: Solver<T, R, C, E>,
-        SI: SolutionInterface<T, R, C, E>,
+        S: Solver<T, R, C, E> 
     {
         let t_curr = solver.t();
         let t_prev = solver.t_prev();
@@ -95,7 +94,7 @@ where
             None => {
                 // First time through, we need to include t0
                 if (t_prev - self.t0).abs() < T::default_epsilon() {
-                    solution.record(self.t0, *solver.y_prev());
+                    solution.push(self.t0, *solver.y_prev());
                     self.last_output_t = Some(self.t0);
                     self.t0 + self.dt * self.direction
                 } else {
@@ -132,7 +131,7 @@ where
                 || (self.direction < T::zero() && ti <= t_prev && ti >= t_curr)
             {
                 let yi = solver.interpolate(ti).unwrap();
-                solution.record(ti, yi);
+                solution.push(ti, yi);
                 self.last_output_t = Some(ti);
             }
 
@@ -144,7 +143,7 @@ where
         if t_curr == self.tf
             && (self.last_output_t.is_none() || self.last_output_t.unwrap() != self.tf)
         {
-            solution.record(self.tf, *solver.y());
+            solution.push(self.tf, *solver.y());
             self.last_output_t = Some(self.tf);
         }
     }

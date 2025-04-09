@@ -5,7 +5,6 @@ use crate::ode::{
 };
 use crate::traits::Real;
 use nalgebra::SMatrix;
-use std::time::Instant;
 
 /// Solves an Initial Value Problem (IVP) for a system of ordinary differential equations.
 ///
@@ -123,11 +122,11 @@ where
     S: Solver<T, R, C, E>,
     O: Solout<T, R, C, E>,
 {
-    // Timer for measuring solve time
-    let start = Instant::now();
-
     // Initialize the Solution object
     let mut solution = Solution::new();
+
+    // Begin timing the solution process
+    solution.timer.start();
 
     // Add initial point to output if include_t0_tf is true
     if solout.include_t0_tf() {
@@ -162,13 +161,14 @@ where
         EventAction::Continue => {}
         EventAction::Terminate(reason) => {
             solution.status = SolverStatus::Interrupted(reason.clone());
-            solution.solve_time = T::from_f64(start.elapsed().as_secs_f64()).unwrap();
+            solution.timer.complete();
             return Ok(solution);
         }
     }
 
     // Set Solver to Solving
     solver.set_status(SolverStatus::Solving);
+    solution.status = SolverStatus::Solving;
 
     // Main Loop
     let mut solving = true;
@@ -298,7 +298,7 @@ where
 
                 // Set solution parameters
                 solution.status = SolverStatus::Interrupted(reason.clone());
-                solution.solve_time = T::from_f64(start.elapsed().as_secs_f64()).unwrap();
+                solution.timer.complete();
 
                 return Ok(solution);
             }
@@ -317,7 +317,7 @@ where
 
             // Set solution parameters
             solution.status = SolverStatus::Complete;
-            solution.solve_time = T::from_f64(start.elapsed().as_secs_f64()).unwrap();
+            solution.timer.complete();
 
             Ok(solution)
         }

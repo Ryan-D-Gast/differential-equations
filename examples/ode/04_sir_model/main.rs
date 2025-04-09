@@ -110,6 +110,7 @@ fn main() {
             println!("Steps: {}", solution.steps);
             println!("Rejected Steps: {}", solution.rejected_steps);
             println!("Accepted Steps: {}", solution.accepted_steps);
+            println!("Solve time: {:?} seconds", solution.timer.elapsed());
         }
         Err(e) => panic!("Error: {:?}", e),
     };

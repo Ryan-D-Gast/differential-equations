@@ -181,10 +181,9 @@ where
     T: Real,
     E: EventData,
 {
-    fn solout<SV, SI>(&mut self, solver: &mut SV, solution: &mut SI)
+    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
     where
-        SV: Solver<T, R, C, E>,
-        SI: SolutionInterface<T, R, C, E>,
+        S: Solver<T, R, C, E> 
     {
         let t_curr = solver.t();
         let y_curr = solver.y();
@@ -216,16 +215,16 @@ where
                         // Use solver's interpolation for the full state vector at crossing time
                         let y_cross = solver.interpolate(t_cross).unwrap();
 
-                        // Record the crossing time and value
-                        solution.record(t_cross, y_cross);
+                        // push the crossing time and value
+                        solution.push(t_cross, y_cross);
                     } else {
                         // Fallback to linear interpolation if Newton's method fails
                         let frac = -last_offset / (offset_value - last_offset);
                         let t_cross = t_prev + frac * (t_curr - t_prev);
                         let y_cross = solver.interpolate(t_cross).unwrap();
 
-                        // Record the estimated crossing time and value
-                        solution.record(t_cross, y_cross);
+                        // push the estimated crossing time and value
+                        solution.push(t_cross, y_cross);
                     }
                 }
             }

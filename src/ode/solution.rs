@@ -1,8 +1,45 @@
 //! Solution of IVP Problem returned by IVP::solve
 
+use std::time::Instant;
+
 use crate::ode::{EventData, SolverStatus};
 use crate::traits::Real;
 use nalgebra::SMatrix;
+
+/// Timer for tracking solution time
+#[derive(Debug, Clone)]
+pub enum Timer<T: Real> {
+    Off,
+    Running(Instant),
+    Completed(T),
+}
+
+impl<T: Real> Timer<T> {
+    /// Starts the timer
+    pub fn start(&mut self) {
+        *self = Timer::Running(Instant::now());
+    }
+
+    /// Returns the elapsed time in seconds
+    pub fn elapsed(&self) -> T {
+        match self {
+            Timer::Off => T::zero(),
+            Timer::Running(start_time) => T::from_f64(start_time.elapsed().as_secs_f64()).unwrap(),
+            Timer::Completed(t) => *t,
+        }
+    }
+
+    /// Complete the running timer and convert it to a completed state
+    pub fn complete(&mut self) {
+        match self {
+            Timer::Off => {}
+            Timer::Running(start_time) => {
+                *self = Timer::Completed(T::from_f64(start_time.elapsed().as_secs_f64()).unwrap());
+            }
+            Timer::Completed(_) => {}
+        }
+    }
+}
 
 #[cfg(feature = "polars")]
 use polars::prelude::*;
@@ -12,11 +49,12 @@ use polars::prelude::*;
 /// # Fields
 /// * `y`              - Outputted dependent variable points.
 /// * `t`              - Outputted independent variable points.
-/// * `h`              - Predicted step size of last accepted step.
+/// * `status`         - Status of the solver.
 /// * `evals`          - Number of function evaluations.
 /// * `steps`          - Number of steps.
 /// * `rejected_steps` - Number of rejected steps.
 /// * `accepted_steps` - Number of accepted steps.
+/// * `timer`          - Timer for tracking solution time.
 ///
 #[derive(Debug, Clone)]
 pub struct Solution<T, const R: usize, const C: usize, E>
@@ -45,31 +83,17 @@ where
     /// Number of accepted steps where the solution moved closer to tf.
     pub accepted_steps: usize,
 
-    /// Time taken to solve the ODE in seconds.
-    pub solve_time: T,
+    /// Timer for tracking solution time - Running during solving, Completed after finalization
+    pub timer: Timer<T>,
 }
 
-// Current Solution of the ODE Solver
-impl<T, const R: usize, const C: usize, E> Default for Solution<T, R, C, E>
-where
-    T: Real,
-    E: EventData,
- {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
+// Initial methods for the solution
 impl<T, const R: usize, const C: usize, E> Solution<T, R, C, E>
 where
     T: Real,
     E: EventData,
 {
     /// Creates a new Solution object.
-    ///
-    /// # Arguments
-    /// * `solout` - The solution output object.
-    ///
     pub fn new() -> Self {
         Solution {
             t: Vec::with_capacity(100),
@@ -79,10 +103,17 @@ where
             steps: 0,
             rejected_steps: 0,
             accepted_steps: 0,
-            solve_time: T::zero(),
+            timer: Timer::Off,
         }
     }
+}
 
+// Methods used during solving
+impl<T, const R: usize, const C: usize, E> Solution<T, R, C, E>
+where
+    T: Real,
+    E: EventData,
+{
     /// Puhes a new point to the solution, e.g. t and y vecs.
     ///
     /// # Arguments
@@ -266,53 +297,5 @@ where
         }
 
         DataFrame::new(columns)
-    }
-}
-
-/// Interface for the solution to be used with the solout trait.
-pub trait SolutionInterface<T, const R: usize, const C: usize, E>
-where
-    T: Real,
-    E: EventData,
-{
-    /// Record the given point in the solution.
-    fn record(&mut self, t: T, y: SMatrix<T, R, C>);
-
-    /// Return the current step number.
-    fn step(&self) -> usize;
-
-    /// Return the number of function evaluations.
-    fn evals(&self) -> usize;
-
-    /// Return accepted steps.
-    fn accepted_steps(&self) -> usize;
-
-    /// Return rejected steps.
-    fn rejected_steps(&self) -> usize;
-}
-
-impl<T, const R: usize, const C: usize, E> SolutionInterface<T, R, C, E> for Solution<T, R, C, E>
-where
-    T: Real,
-    E: EventData,
-{
-    fn record(&mut self, t: T, y: SMatrix<T, R, C>) {
-        self.push(t, y);
-    }
-
-    fn step(&self) -> usize {
-        self.steps
-    }
-
-    fn evals(&self) -> usize {
-        self.evals
-    }
-
-    fn accepted_steps(&self) -> usize {
-        self.accepted_steps
-    }
-
-    fn rejected_steps(&self) -> usize {
-        self.rejected_steps
     }
 }
