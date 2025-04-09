@@ -16,13 +16,4 @@ where
     fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, E>)
     where
         S: Solver<T, R, C, E>;
-
-    /// Tells solver if to include t0 and tf by appending them to the output vectors.
-    ///
-    /// By default, this returns true as typically we want to include t0 and tf in the output.
-    /// Thus the user can usually ignore implementing this function unless they want to exclude t0 and tf.
-    ///
-    fn include_t0_tf(&self) -> bool {
-        true
-    }
 }

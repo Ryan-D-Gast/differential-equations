@@ -123,10 +123,6 @@ where
         // Update next_eval_idx for the next call
         self.next_eval_idx = idx;
     }
-
-    fn include_t0_tf(&self) -> bool {
-        false // Do not include t0 and tf in the output
-    }
 }
 
 impl<T: Real> TEvalSolout<T> {

@@ -233,10 +233,6 @@ where
         // Update last value for next comparison
         self.last_offset_value = Some(offset_value);
     }
-
-    fn include_t0_tf(&self) -> bool {
-        false // Do not include t0 and tf in the output
-    }
 }
 
 // Add the Newton's method implementation

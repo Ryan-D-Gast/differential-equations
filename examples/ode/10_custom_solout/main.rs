@@ -94,16 +94,6 @@ impl Solout<f64, 2, 1> for PendulumSolout {
 
         self.last_angle = current_angle;
     }
-
-    // Do not include t0 and tf in output
-    //
-    // Note that for t0 solout is NOT called untill a single step has been completed so that t != t_prev and cause any NaN issues.
-    // In addition because the Solout doesn't log every step it is almost certain that tf will not have a energy value calculated.
-    // Because of this to make sure lenght of the energy values is same as the solution points we return false.
-    // Of course this is optional and user can choose to include t0 and tf if they want. This demonstrates how to do it and why it might be desired.
-    fn include_t0_tf(&self) -> bool {
-        false
-    }
 }
 
 fn main() {

@@ -129,9 +129,12 @@ where
     solution.timer.start();
 
     // Add initial point to output if include_t0_tf is true
-    if solout.include_t0_tf() {
-        solution.push(t0, *y0);
-    }
+    //if solout.include_t0_tf() {
+    //    solution.push(t0, *y0);
+    //}
+
+    // Call solout to initialize the output strategy
+    solout.solout(solver, &mut solution);
 
     // Determine integration direction and check that tf != t0
     let integration_direction = match (tf - t0).signum() {
@@ -309,11 +312,6 @@ where
     match solver.status() {
         SolverStatus::Solving => {
             solver.set_status(SolverStatus::Complete);
-
-            // Add final point to output if include_t0_tf is true
-            if solout.include_t0_tf() && solution.t.last().copied() != Some(tf) {
-                solution.push(tf, *solver.y());
-            }
 
             // Set solution parameters
             solution.status = SolverStatus::Complete;

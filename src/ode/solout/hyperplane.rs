@@ -262,10 +262,6 @@ where
         // Update last distance for next comparison
         self.last_distance = Some(distance);
     }
-
-    fn include_t0_tf(&self) -> bool {
-        false // Do not include t0 and tf in the output unless they are crossings
-    }
 }
 
 impl<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize>

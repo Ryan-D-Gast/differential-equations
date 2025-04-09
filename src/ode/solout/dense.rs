@@ -83,11 +83,13 @@ where
         let t_curr = solver.t();
 
         // Interpolate between steps
-        for i in 1..self.n {
-            let h_old = t_curr - t_prev;
-            let ti = t_prev + T::from_usize(i).unwrap() * h_old / T::from_usize(self.n).unwrap();
-            let yi = solver.interpolate(ti).unwrap();
-            solution.push(ti, yi);
+        if t_prev != t_curr {
+            for i in 1..self.n {
+                let h_old = t_curr - t_prev;
+                let ti = t_prev + T::from_usize(i).unwrap() * h_old / T::from_usize(self.n).unwrap();
+                let yi = solver.interpolate(ti).unwrap();
+                solution.push(ti, yi);
+            }
         }
 
         // Save actual calculated step as well
