@@ -2,7 +2,8 @@
 
 use std::time::Instant;
 
-use crate::ode::{CallBackData, SolverStatus};
+use crate::ode::SolverStatus;
+use crate::control::CallBackData;
 use crate::traits::Real;
 use nalgebra::SMatrix;
 

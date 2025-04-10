@@ -1,4 +1,5 @@
-use crate::ode::{CallBackData, SolverError};
+use crate::ode::{ODE, SolverError};
+use crate::control::CallBackData;
 use crate::traits::Real;
 
 /// Validate the step size parameters.
@@ -184,7 +185,7 @@ pub fn h_init<T, F, const R: usize, const C: usize, D>(
     ode: &F,
     t0: T,
     tf: T,
-    y0: &crate::SMatrix<T, R, C>,
+    y0: &nalgebra::SMatrix<T, R, C>,
     order: usize,
     rtol: T,
     atol: T,
@@ -192,16 +193,16 @@ pub fn h_init<T, F, const R: usize, const C: usize, D>(
     h_max: T,
 ) -> T
 where
-    T: crate::traits::Real,
-    F: crate::ode::ODE<T, R, C, D>,
-    D: crate::ode::CallBackData,
+    T: Real,
+    F: ODE<T, R, C, D>,
+    D: CallBackData,
 {
     // Direction of integration
     let posneg = (tf - t0).signum();
 
     // Storage for derivatives
-    let mut f0 = crate::SMatrix::<T, R, C>::zeros();
-    let mut f1 = crate::SMatrix::<T, R, C>::zeros();
+    let mut f0 = nalgebra::SMatrix::<T, R, C>::zeros();
+    let mut f1 = nalgebra::SMatrix::<T, R, C>::zeros();
 
     // Compute initial derivative f(t0, y0)
     ode.diff(t0, y0, &mut f0);

@@ -4,7 +4,7 @@
 //! given a condition or event.
 
 use crate::traits::Real;
-use crate::ode::{ControlFlag, CallBackData};
+use crate::control::{ControlFlag, CallBackData};
 use nalgebra::SMatrix;
 
 /// ODE Trait for Differential Equations

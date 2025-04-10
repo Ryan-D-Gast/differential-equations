@@ -1,7 +1,8 @@
 //! Solver Trait for ODE Solvers
 
 use crate::interpolate::InterpolationError;
-use crate::ode::{CallBackData, ODE};
+use crate::ode::ODE;
+use crate::control::CallBackData;
 use crate::traits::Real;
 use nalgebra::SMatrix;
 use std::fmt::{Debug, Display};

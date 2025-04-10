@@ -1,8 +1,10 @@
 //! Initial Value Problem Struct and Constructors
 
 use super::solve_ivp;
+use crate::solution::Solution;
 use crate::ode::solout::*;
-use crate::ode::{CallBackData, ODE, Solout, Solution, Solver, SolverError};
+use crate::ode::{ODE, Solout, Solver, SolverError};
+use crate::control::CallBackData;
 use crate::traits::Real;
 use nalgebra::SMatrix;
 

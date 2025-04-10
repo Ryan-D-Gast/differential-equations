@@ -101,17 +101,10 @@ pub use ivp::{
     solve_ivp, // Function to solve the IVP, used internally in IVP Struct
 };
 
-// ODE Trait for Differential Equations
-mod system;
-pub use system::{
+// ODE Trait for Ordinary Differential Equations
+mod ode;
+pub use ode::{
     ODE, // ODE Trait for Differential Equations
-};
-
-// Control Flow Return enum and Data trait
-mod control;
-pub use control::{
-    ControlFlag, // Control Flow Enum for the Solver
-    CallBackData,       // Event Enum for the Solver
 };
 
 // Solver Traits for ODE Solvers.
@@ -130,17 +123,18 @@ pub use solout::{
     Solout,
 };
 
-// Solution of a solved IVP Problem
-mod solution;
-pub use solution::{Solution, Timer};
-
 // Solver for ODEs
 pub mod solvers;
 pub use solvers::{
+    // Re-exporting popular solvers to ode module for quick access
+    RK4,    // Fixed Step Runge-Kutta 4th Order Solver
     DOP853, // Adaptive Step Dormand-Prince 8(5,3) Solver with dense output of order 7
     DOPRI5, // Adaptive Step Dormand-Prince 5(4) Solver
-    // Re-exporting popular solvers to ode module for quick access
-    RK4,   // Fixed Step Runge-Kutta 4th Order Solver
-    RKV65, // Verner 6(5) adaptive method with dense output of order 5
-    RKV98, // Verner 9(8) adaptive method with dense output of order 9
+    RKV65,  // Verner 6(5) adaptive method with dense output of order 5
+    RKV98,  // Verner 9(8) adaptive method with dense output of order 9
 };
+
+// Re-exports to allow users to only import necessary components
+// via `use differential_equations::ode::*;`
+pub use crate::control::{ControlFlag, CallBackData};
+pub use crate::solution::Solution;

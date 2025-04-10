@@ -1,8 +1,8 @@
 //! Solve IVP function
 
-use crate::ode::{
-    ControlFlag, CallBackData, ODE, Solout, Solution, Solver, SolverError, SolverStatus,
-};
+use crate::solution::Solution;
+use crate::ode::{ODE, Solout, Solver, SolverError, SolverStatus};
+use crate::control::{CallBackData, ControlFlag};
 use crate::traits::Real;
 use nalgebra::SMatrix;
 

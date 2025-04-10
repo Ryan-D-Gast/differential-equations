@@ -147,7 +147,7 @@ macro_rules! adaptive_runge_kutta_method {
         $(#[$attr])*
         #[doc = "\n\n"]
         #[doc = "This adaptive solver was automatically generated using the `adaptive_runge_kutta_method` macro."]
-        pub struct $name<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::ode::CallBackData> {
+        pub struct $name<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::control::CallBackData> {
             // Initial Step Size
             pub h0: T,
 
@@ -156,16 +156,16 @@ macro_rules! adaptive_runge_kutta_method {
 
             // Current State
             t: T,
-            y: $crate::SMatrix<T, R, C>,
-            dydt: $crate::SMatrix<T, R, C>,
+            y: nalgebra::SMatrix<T, R, C>,
+            dydt: nalgebra::SMatrix<T, R, C>,
 
             // Previous State
             t_prev: T,
-            y_prev: $crate::SMatrix<T, R, C>,
-            dydt_prev: $crate::SMatrix<T, R, C>,
+            y_prev: nalgebra::SMatrix<T, R, C>,
+            dydt_prev: nalgebra::SMatrix<T, R, C>,
 
             // Stage values (fixed size array of Vs)
-            k: [$crate::SMatrix<T, R, C>; $stages],
+            k: [nalgebra::SMatrix<T, R, C>; $stages],
 
             // Constants from Butcher tableau (fixed size arrays)
             a: [[T; $stages]; $stages],
@@ -193,10 +193,10 @@ macro_rules! adaptive_runge_kutta_method {
             status: $crate::ode::SolverStatus<T, R, C, D>,
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::ode::CallBackData> Default for $name<T, R, C, D> {
+        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::control::CallBackData> Default for $name<T, R, C, D> {
             fn default() -> Self {
                 // Initialize k vectors with zeros
-                let k: [$crate::SMatrix<T, R, C>; $stages] = [$crate::SMatrix::<T, R, C>::zeros(); $stages];
+                let k: [nalgebra::SMatrix<T, R, C>; $stages] = [nalgebra::SMatrix::<T, R, C>::zeros(); $stages];
 
                 // Convert Butcher tableau values to type T
                 let a_t: [[T; $stages]; $stages] = $a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
@@ -211,11 +211,11 @@ macro_rules! adaptive_runge_kutta_method {
                     h0: T::from_f64(0.1).unwrap(),
                     h: T::from_f64(0.1).unwrap(),
                     t: T::from_f64(0.0).unwrap(),
-                    y: $crate::SMatrix::<T, R, C>::zeros(),
-                    dydt: $crate::SMatrix::<T, R, C>::zeros(),
+                    y: nalgebra::SMatrix::<T, R, C>::zeros(),
+                    dydt: nalgebra::SMatrix::<T, R, C>::zeros(),
                     t_prev: T::from_f64(0.0).unwrap(),
-                    y_prev: $crate::SMatrix::<T, R, C>::zeros(),
-                    dydt_prev: $crate::SMatrix::<T, R, C>::zeros(),
+                    y_prev: nalgebra::SMatrix::<T, R, C>::zeros(),
+                    dydt_prev: nalgebra::SMatrix::<T, R, C>::zeros(),
                     k,
                     a: a_t,
                     b_higher, // Higher order (b)
@@ -238,8 +238,8 @@ macro_rules! adaptive_runge_kutta_method {
             }
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::ode::CallBackData> $crate::ode::Solver<T, R, C, D> for $name<T, R, C, D> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &$crate::SMatrix<T, R, C>) -> Result<usize, $crate::ode::SolverError<T, R, C>>
+        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::control::CallBackData> $crate::ode::Solver<T, R, C, D> for $name<T, R, C, D> {
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &nalgebra::SMatrix<T, R, C>) -> Result<usize, $crate::ode::SolverError<T, R, C>>
             where
                 F: $crate::ode::ODE<T, R, C, D>,
             {
@@ -398,7 +398,7 @@ macro_rules! adaptive_runge_kutta_method {
                 Ok(evals)
             }
 
-            fn interpolate(&mut self, t_interp: T) -> Result<$crate::SMatrix<T, R, C>, $crate::interpolate::InterpolationError<T, R, C>> {
+            fn interpolate(&mut self, t_interp: T) -> Result<nalgebra::SMatrix<T, R, C>, $crate::interpolate::InterpolationError<T, R, C>> {
                 // Check if t is within bounds
                 if t_interp < self.t_prev || t_interp > self.t {
                     return Err($crate::interpolate::InterpolationError::OutOfBounds {
@@ -418,7 +418,7 @@ macro_rules! adaptive_runge_kutta_method {
                 self.t
             }
 
-            fn y(&self) -> &$crate::SMatrix<T, R, C> {
+            fn y(&self) -> &nalgebra::SMatrix<T, R, C> {
                 &self.y
             }
 
@@ -426,7 +426,7 @@ macro_rules! adaptive_runge_kutta_method {
                 self.t_prev
             }
 
-            fn y_prev(&self) -> &$crate::SMatrix<T, R, C> {
+            fn y_prev(&self) -> &nalgebra::SMatrix<T, R, C> {
                 &self.y_prev
             }
 
@@ -447,7 +447,7 @@ macro_rules! adaptive_runge_kutta_method {
             }
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::ode::CallBackData> $name<T, R, C, D> {
+        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::control::CallBackData> $name<T, R, C, D> {
             /// Create a new solver with the specified initial step size
             pub fn new(h0: T) -> Self {
                 Self {

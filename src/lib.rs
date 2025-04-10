@@ -72,8 +72,15 @@
 //! limitations under the License.
 //! ```
 
-// Re-export of nalgebra types for macros and convenience
-pub use nalgebra::{SMatrix, SVector, matrix, vector};
+// -- Types of Differential Equations --
+
+// Ordinary Differential Equations (ODE) Module
+pub mod ode;
+
+// -- Shared modules not specific to ODEs --
+
+// Solution of a solved differential equation
+pub mod solution;
 
 // Traits for Floating Point Types
 pub mod traits;
@@ -81,5 +88,5 @@ pub mod traits;
 // Interpolation Functions
 pub mod interpolate;
 
-// Ordinary Differential Equations (ODE) Module
-pub mod ode;
+// Control Flow 
+pub mod control;
