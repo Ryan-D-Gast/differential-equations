@@ -172,8 +172,14 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
     {
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
-            self.status = SolverStatus::Error(SolverError::MaxSteps(self.t, self.y));
-            return Err(SolverError::MaxSteps(self.t, self.y));
+            self.status = SolverStatus::Error(SolverError::MaxSteps {
+                t: self.t, 
+                y: self.y
+            });
+            return Err(SolverError::MaxSteps {
+                t: self.t, 
+                y: self.y
+            });
         }
         self.steps += 1;
 
@@ -349,9 +355,11 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
     ) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
         // Check if t is within the range of the solver
         if t_interp < self.t_old || t_interp > self.t {
-            return Err(InterpolationError::OutOfBounds(
-                t_interp, self.t_old, self.t,
-            ));
+            return Err(InterpolationError::OutOfBounds {
+                t_interp, 
+                t_prev: self.t_old, 
+                t_curr: self.t,
+            });
         }
 
         // Calculate the interpolated value using cubic Hermite interpolation

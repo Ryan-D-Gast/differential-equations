@@ -3,6 +3,7 @@
 use crate::traits::Real;
 use nalgebra::SMatrix;
 use std::fmt::{Debug, Display};
+use std::error::Error;
 
 /// Cubic Hermite Interpolation
 ///
@@ -47,7 +48,11 @@ where
     T: Real,
 {
     /// Given t is not within the previous and current step
-    OutOfBounds(T, T, T), // t is not within the previous and current step returns the t, t_prev, t_curr
+    OutOfBounds {
+        t_interp: T,
+        t_prev: T,
+        t_curr: T,
+    }
 }
 
 impl<T, const R: usize, const C: usize> Display for InterpolationError<T, R, C>
@@ -56,11 +61,11 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            InterpolationError::OutOfBounds(t, t_prev, t_curr) => {
+            InterpolationError::OutOfBounds { t_interp, t_prev, t_curr } => {
                 write!(
                     f,
-                    "Interpolation Error: t {} is not within the previous and current step: t_prev {}, t_curr {}",
-                    t, t_prev, t_curr
+                    "Interpolation Error: t_interp {} is not within the previous and current step: t_prev {}, t_curr {}",
+                    t_interp, t_prev, t_curr
                 )
             }
         }
@@ -73,13 +78,18 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            InterpolationError::OutOfBounds(t, t_prev, t_curr) => {
+            InterpolationError::OutOfBounds { t_interp, t_prev, t_curr } => {
                 write!(
                     f,
-                    "Interpolation Error: t {} is not within the previous and current step: t_prev {}, t_curr {}",
-                    t, t_prev, t_curr
+                    "Interpolation Error: t_interp {} is not within the previous and current step: t_prev {}, t_curr {}",
+                    t_interp, t_prev, t_curr
                 )
             }
         }
     }
 }
+
+impl<T, const R: usize, const C: usize> Error for InterpolationError<T, R, C>
+where
+    T: Real,
+{}

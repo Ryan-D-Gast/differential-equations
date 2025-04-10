@@ -133,9 +133,9 @@ where
         x if x == T::one() => T::one(),
         x if x == T::from_f64(-1.0).unwrap() => T::from_f64(-1.0).unwrap(),
         _ => {
-            return Err(SolverError::BadInput(
-                "Final time tf must be different from initial time t0.".to_string(),
-            ));
+            return Err(SolverError::BadInput {
+                msg: "Final time tf must be different from initial time t0.".to_string(),
+            });
         }
     };
 

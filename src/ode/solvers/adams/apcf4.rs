@@ -184,11 +184,11 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
     ) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
         // Check if t is within bounds
         if t_interp < self.t_prev[0] || t_interp > self.t {
-            return Err(InterpolationError::OutOfBounds(
+            return Err(InterpolationError::OutOfBounds {
                 t_interp,
-                self.t_prev[0],
-                self.t,
-            ));
+                t_prev: self.t_prev[0],
+                t_curr: self.t,
+            });
         }
 
         // Calculate the interpolation using cubic hermite interpolation

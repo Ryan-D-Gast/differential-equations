@@ -318,7 +318,10 @@ macro_rules! runge_kutta_method {
             fn interpolate(&mut self, t_interp: T) -> Result<$crate::SMatrix<T, R, C>, $crate::interpolate::InterpolationError<T, R, C>> {
                 // Check if t is within the bounds of the current step
                 if t_interp < self.t_prev || t_interp > self.t {
-                    return Err($crate::interpolate::InterpolationError::OutOfBounds(t_interp, self.t_prev, self.t));
+                    return Err($crate::interpolate::InterpolationError::OutOfBounds { 
+                        t_interp: t_interp, 
+                        t_prev: self.t_prev, 
+                        t_curr: self.t });
                 }
 
                 let y_interp = $crate::interpolate::cubic_hermite_interpolate(self.t_prev, self.t, &self.y_prev, &self.y, &self.dydt_prev, &self.k[0], t_interp);

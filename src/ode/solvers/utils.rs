@@ -35,10 +35,12 @@ pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, D:
 ) -> Result<T, SolverError<T, R, C>> {
     // Check if tf == t0
     if tf == t0 {
-        return Err(SolverError::BadInput(format!(
-            "Invalid input: tf ({:?}) cannot be equal to t0 ({:?})",
-            tf, t0
-        )));
+        return Err(SolverError::BadInput {
+            msg: format!(
+                "Invalid input: tf ({:?}) cannot be equal to t0 ({:?})",
+                tf, t0
+            ),
+        });
     }
 
     // Determine direction of the step size
@@ -46,64 +48,80 @@ pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, D:
 
     // Check h0 has same sign as tf - t0
     if h0.signum() != sign {
-        return Err(SolverError::BadInput(format!(
-            "Invalid input: Initial step size ({:?}) must have the same sign as the integration direction (sign of tf - t0 = {:?})",
-            h0,
-            tf - t0
-        )));
+        return Err(SolverError::BadInput {
+            msg: format!(
+                "Invalid input: Initial step size ({:?}) must have the same sign as the integration direction (sign of tf - t0 = {:?})",
+                h0,
+                tf - t0
+            ),
+        });
     }
 
     // Check h_min and h_max bounds
     if h_min < T::zero() {
-        return Err(SolverError::BadInput(format!(
-            "Invalid input: Minimum step size ({:?}) must be non-negative",
-            h_min
-        )));
+        return Err(SolverError::BadInput {
+            msg: format!(
+                "Invalid input: Minimum step size ({:?}) must be non-negative",
+                h_min
+            ),
+        });
     }
     if h_max < T::zero() {
-        return Err(SolverError::BadInput(format!(
-            "Invalid input: Maximum step size ({:?}) must be non-negative",
-            h_max
-        )));
+        return Err(SolverError::BadInput {
+            msg: format!(
+                "Invalid input: Maximum step size ({:?}) must be non-negative",
+                h_max
+            ),
+        });
     }
     if h_min > h_max {
-        return Err(SolverError::BadInput(format!(
-            "Invalid input: Minimum step size ({:?}) must be less than or equal to maximum step size ({:?})",
-            h_min, h_max
-        )));
+        return Err(SolverError::BadInput {
+            msg: format!(
+                "Invalid input: Minimum step size ({:?}) must be less than or equal to maximum step size ({:?})",
+                h_min, h_max
+            ),
+        });
     }
 
     // Check h0 bounds
     if h0.abs() < h_min {
-        return Err(SolverError::BadInput(format!(
-            "Invalid input: Absolute value of initial step size ({:?}) must be greater than or equal to minimum step size ({:?})",
-            h0.abs(),
-            h_min
-        )));
+        return Err(SolverError::BadInput {
+            msg: format!(
+                "Invalid input: Absolute value of initial step size ({:?}) must be greater than or equal to minimum step size ({:?})",
+                h0.abs(),
+                h_min
+            ),
+        });
     }
     if h0.abs() > h_max {
-        return Err(SolverError::BadInput(format!(
-            "Invalid input: Absolute value of initial step size ({:?}) must be less than or equal to maximum step size ({:?})",
-            h0.abs(),
-            h_max
-        )));
+        return Err(SolverError::BadInput {
+            msg: format!(
+                "Invalid input: Absolute value of initial step size ({:?}) must be less than or equal to maximum step size ({:?})",
+                h0.abs(),
+                h_max
+            ),
+        });
     }
 
     // Check h0 is not larger then integration interval
     if h0.abs() > (tf - t0).abs() {
-        return Err(SolverError::BadInput(format!(
-            "Invalid input: Absolute value of initial step size ({:?}) must be less than or equal to the absolute value of the integration interval (tf - t0 = {:?})",
-            h0.abs(),
-            (tf - t0).abs()
-        )));
+        return Err(SolverError::BadInput {
+            msg: format!(
+                "Invalid input: Absolute value of initial step size ({:?}) must be less than or equal to the absolute value of the integration interval (tf - t0 = {:?})",
+                h0.abs(),
+                (tf - t0).abs()
+            ),
+        });
     }
 
     // Check h0 is not zero
     if h0 == T::zero() {
-        return Err(SolverError::BadInput(format!(
-            "Invalid input: Initial step size ({:?}) cannot be zero",
-            h0
-        )));
+        return Err(SolverError::BadInput {
+            msg: format!(
+                "Invalid input: Initial step size ({:?}) cannot be zero",
+                h0
+            ),
+        });
     }
 
     // Return Ok if all bounds are valid return the step size

@@ -5,6 +5,7 @@ use crate::ode::{CallBackData, ODE};
 use crate::traits::Real;
 use nalgebra::SMatrix;
 use std::fmt::{Debug, Display};
+use std::error::Error;
 
 pub type NumEvals = usize; // Number of function evaluations
 
@@ -99,16 +100,27 @@ where
 /// * `StepSize` - Solver terminated due to step size converging too small of a value.
 /// * `Stiffness` - Solver terminated due to stiffness.
 ///
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub enum SolverError<T, const R: usize, const C: usize>
 where
     T: Real,
 {
     /// Solver input was bad
-    BadInput(String), // During solver.init, if input is bad, return this with reason
-    MaxSteps(T, SMatrix<T, R, C>), // If the solver reaches the maximum number of steps
-    StepSize(T, SMatrix<T, R, C>), // If the solver step size converges to zero and/or becomes smaller then machine epsilon
-    Stiffness(T, SMatrix<T, R, C>), // If the solver detects stiffness e.g. step size converging and/or repeated rejected steps unable to progress
+    BadInput {
+        msg: String,        // During solver.init, if input is bad, return this with reason
+    },
+    MaxSteps {              // If the solver reaches the maximum number of steps
+        t: T,               // Time at which the solver reached maximum steps
+        y: SMatrix<T, R, C>,// Solution at time t
+    }, 
+    StepSize {
+        t: T,               // Time at which step size became too small
+        y: SMatrix<T, R, C>,// Solution at time t
+    },
+    Stiffness {
+        t: T,               // Time at which stiffness was detected
+        y: SMatrix<T, R, C>,// Solution at time t
+    },
 }
 
 impl<T, const R: usize, const C: usize> Display for SolverError<T, R, C>
@@ -117,13 +129,32 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::BadInput(msg) => write!(f, "Bad Input: {}", msg),
-            Self::MaxSteps(t, y) => write!(f, "Maximum steps reached at (t, y) = ({}, {})", t, y),
-            Self::StepSize(t, y) => write!(f, "Step size too small at (t, y) = ({}, {})", t, y),
-            Self::Stiffness(t, y) => write!(f, "Stiffness detected at (t, y) = ({}, {})", t, y),
+            Self::BadInput { msg } => write!(f, "Bad Input: {}", msg),
+            Self::MaxSteps { t, y } => write!(f, "Maximum steps reached at (t, y) = ({}, {})", t, y),
+            Self::StepSize { t, y } => write!(f, "Step size too small at (t, y) = ({}, {})", t, y),
+            Self::Stiffness { t, y } => write!(f, "Stiffness detected at (t, y) = ({}, {})", t, y),
         }
     }
 }
+
+impl<T, const R: usize, const C: usize> Debug for SolverError<T, R, C>
+where
+    T: Real + Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::BadInput { msg } => write!(f, "Bad Input: {}", msg),
+            Self::MaxSteps { t, y } => write!(f, "Maximum steps reached at (t, y) = ({}, {})", t, y),
+            Self::StepSize { t, y } => write!(f, "Step size too small at (t, y) = ({}, {})", t, y),
+            Self::Stiffness { t, y } => write!(f, "Stiffness detected at (t, y) = ({}, {})", t, y),
+        }
+    }
+}
+
+impl<T, const R: usize, const C: usize> Error for SolverError<T, R, C>
+where
+    T: Real + Debug,
+{}
 
 /// Solver Status for ODE Solvers
 ///
