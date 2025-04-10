@@ -186,28 +186,26 @@ where
         }
 
         // Perform a step
+        solution.steps += 1;
         match solver.step(ode) {
             Ok(evals) => {
                 // Update function evaluations
                 solution.evals += evals;
+
+                // Check for a RejectedStep
+                if let SolverStatus::RejectedStep = solver.status() {
+                    // Update rejected steps and re-do the step
+                    solution.rejected_steps += 1;
+                    continue;
+                } else {
+                    // Update accepted steps and continue to processing
+                    solution.accepted_steps += 1;
+                }
             }
             Err(e) => {
                 // Set solver status to error and return error
                 return Err(e);
             }
-        }
-        solution.steps += 1;
-
-        // Check for rejected step
-        match solver.status() {
-            SolverStatus::Solving => {
-                solution.accepted_steps += 1;
-            }
-            SolverStatus::RejectedStep => {
-                solution.rejected_steps += 1;
-                continue;
-            }
-            _ => break,
         }
 
         // Record the result
@@ -317,20 +315,12 @@ where
         }
     }
 
-    // Check for problems in Solver Status
-    match solver.status() {
-        SolverStatus::Solving => {
-            solver.set_status(SolverStatus::Complete);
+    // Solution completed successfully
+    solver.set_status(SolverStatus::Complete);
 
-            // Set solution parameters
-            solution.status = SolverStatus::Complete;
-            solution.timer.complete();
+    // Finalize the solution
+    solution.status = SolverStatus::Complete;
+    solution.timer.complete();
 
-            Ok(solution)
-        }
-        // Everything below should be unreachable.
-        _ => {
-            unreachable!()
-        }
-    }
+    Ok(solution)
 }
