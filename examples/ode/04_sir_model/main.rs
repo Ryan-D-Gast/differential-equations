@@ -27,8 +27,8 @@ impl std::fmt::Display for PopulationMonitor {
     }
 }
 
-// Unlike other examples where ODE defaults to have the 2nd generic type as String.
-// Here, the ODE trait is implemented with the 2nd generic type as PopulationMonitor.
+// Unlike other examples where ODE defaults to have the final generic type as String.
+// Here, the ODE trait is implemented with the final generic type as PopulationMonitor.
 // Custom types that implement Clone and Debug can be used and passed through back
 // to user when a termination event occurs.
 impl ODE<f64, 3, 1, PopulationMonitor> for SIRModel {
