@@ -307,7 +307,7 @@ where
                 solution.push(ts, y_final);
 
                 // Set solution parameters
-                solution.status = SolverStatus::Interrupted(reason.clone());
+                solution.status = SolverStatus::Interrupted(reason);
                 solution.timer.complete();
 
                 return Ok(solution);

@@ -145,7 +145,7 @@ impl<T: Real> TEvalSolout<T> {
     pub fn new(t_evals: Vec<T>, t0: T, tf: T) -> Self {
         // Sort evaluation points according to integration direction
         let integration_direction = (tf - t0).signum();
-        let mut sorted_t_evals = t_evals.clone();
+        let mut sorted_t_evals = t_evals;
 
         if integration_direction > T::zero() {
             sorted_t_evals.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
