@@ -3,7 +3,6 @@
 use crate::traits::Real;
 use nalgebra::SMatrix;
 use std::fmt::{Debug, Display};
-use std::error::Error;
 
 /// Cubic Hermite Interpolation
 ///
@@ -37,7 +36,7 @@ pub fn cubic_hermite_interpolate<T: Real, const R: usize, const C: usize>(
     y0 * h00 + k0 * h10 * h + y1 * h01 + k1 * h11 * h
 }
 
-/// Interpolation Error for ODE Solvers
+/// Interpolation Error for ODE NumericalMethods
 ///
 /// # Variants
 /// * `OutOfBounds` - Given t is not within the previous and current step.
@@ -89,7 +88,7 @@ where
     }
 }
 
-impl<T, const R: usize, const C: usize> Error for InterpolationError<T, R, C>
+impl<T, const R: usize, const C: usize> std::error::Error for InterpolationError<T, R, C>
 where
     T: Real,
 {}

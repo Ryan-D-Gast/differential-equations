@@ -1,4 +1,4 @@
-use differential_equations::ode::solvers::RKF;
+use differential_equations::ode::method::RKF;
 use differential_equations::ode::*;
 use nalgebra::{SVector, vector};
 
@@ -35,8 +35,8 @@ impl ODE<f64, 2> for DampedPendulumModel {
 }
 
 fn main() {
-    // Solver with relative and absolute tolerances
-    let mut solver = RKF::new(0.01);
+    // Initialize method with relative and absolute tolerances
+    let mut method = RKF::new(0.01);
 
     // Initial conditions
     let initial_angle = 1.0; // Initial angle (radians)
@@ -59,12 +59,12 @@ fn main() {
     let t_out = vec![0.0, 1.0, 3.0, 4.5, 6.9, 10.0];
 
     // Solve the ode with even output at interval dt: 0.1
-    match pendulum_ivp.t_eval(t_out).solve(&mut solver) {
+    match pendulum_ivp.t_eval(t_out).solve(&mut method) {
         Ok(solution) => {
             // Check if the solver stopped due to the event command
-            if let SolverStatus::Interrupted(ref reason) = solution.status {
+            if let Status::Interrupted(ref reason) = solution.status {
                 // State the reason why the solver stopped
-                println!("Solver stopped: {:?}", reason);
+                println!("NumericalMethod stopped: {:?}", reason);
             }
 
             // Print the solution

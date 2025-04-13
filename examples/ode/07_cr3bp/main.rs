@@ -35,8 +35,8 @@ impl ODE<f64, 6> for Cr3bp {
 }
 
 fn main() {
-    // Solver with relative and absolute tolerances
-    let mut solver = DOP853::new().rtol(1e-12).atol(1e-12); // DOP853 is one of the most accurate and efficient solvers and highly favored for Orbital Mechanics
+    // Initialize method with relative and absolute tolerances
+    let mut method = DOP853::new().rtol(1e-12).atol(1e-12); // DOP853 is one of the most accurate and efficient solvers and highly favored for Orbital Mechanics
 
     // Initialialize the CR3BP ode
     let ode = Cr3bp {
@@ -65,7 +65,7 @@ fn main() {
     // Solve the ode with even output at interval dt: 1.0
     match cr3bp_ivp
         .hyperplane_crossing(vector![1.0, 0.0, 0.0], vector![0.5, 0.5, 0.0], extractor, CrossingDirection::Both)
-        .solve(&mut solver) // Solve the ode and return the solution
+        .solve(&mut method) // Solve the ode and return the solution
     {
         Ok(solution) => {
             // Print the solution

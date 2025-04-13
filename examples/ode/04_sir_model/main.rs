@@ -1,4 +1,4 @@
-use differential_equations::ode::solvers::APCV4;
+use differential_equations::ode::method::APCV4;
 use differential_equations::ode::*;
 use nalgebra::{SVector, vector};
 
@@ -59,8 +59,8 @@ impl ODE<f64, 3, 1, PopulationMonitor> for SIRModel {
 }
 
 fn main() {
-    // Solver with relative and absolute tolerances
-    let mut solver = APCV4::new(0.01);
+    // method with relative and absolute tolerances
+    let mut method = APCV4::new(0.01);
 
     // Initial conditions
     let initial_susceptible = 990.0;
@@ -86,13 +86,13 @@ fn main() {
     // Solve the ode with even output at interval dt: 1.0
     match sir_ivp
         .even(1.0)  // sets t-out at interval dt: 1.0
-        .solve(&mut solver) // Solve the ode and return the solution
+        .solve(&mut method) // Solve the ode and return the solution
     {
         Ok(solution) => {
             // Check if the solver stopped due to the event command
-            if let SolverStatus::Interrupted(ref reason) = solution.status {
+            if let Status::Interrupted(ref reason) = solution.status {
                 // State the reason why the solver stopped
-                println!("Solver stopped: {}", reason);
+                println!("solver stopped: {}", reason);
             }
 
             // Print the solution

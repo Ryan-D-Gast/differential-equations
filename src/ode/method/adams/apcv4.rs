@@ -19,7 +19,7 @@ use super::*;
 ///
 /// ```
 /// use differential_equations::ode::*;
-/// use differential_equations::ode::solvers::APCV4;
+/// use differential_equations::ode::method::APCV4;
 /// use nalgebra::{SVector, vector};
 ///
 /// struct HarmonicOscillator {
@@ -88,7 +88,7 @@ pub struct APCV4<T: Real, const R: usize, const C: usize, D: CallBackData> {
     steps: usize,
 
     // Status
-    status: SolverStatus<T, R, C, D>,
+    status: Status<T, R, C, D>,
 
     // Settings
     pub tol: T,
@@ -97,8 +97,8 @@ pub struct APCV4<T: Real, const R: usize, const C: usize, D: CallBackData> {
     pub max_steps: usize,
 }
 
-// Implement Solver Trait for APCV4
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D>
+// Implement NumericalMethod Trait for APCV4
+impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T, R, C, D>
     for APCV4<T, R, C, D>
 {
     fn init<F>(
@@ -107,7 +107,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
         t0: T,
         tf: T,
         y0: &SMatrix<T, R, C>,
-    ) -> Result<NumEvals, SolverError<T, R, C>>
+    ) -> Result<NumEvals, Error<T, R, C>>
     where
         F: ODE<T, R, C, D>,
     {
@@ -162,21 +162,21 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
             }
         }
 
-        self.status = SolverStatus::Initialized;
+        self.status = Status::Initialized;
         Ok(evals)
     }
 
-    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, SolverError<T, R, C>>
+    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, R, C>>
     where
         F: ODE<T, R, C, D>,
     {
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
-            self.status = SolverStatus::Error(SolverError::MaxSteps {
+            self.status = Status::Error(Error::MaxSteps {
                 t: self.t, 
                 y: self.y
             });
-            return Err(SolverError::MaxSteps {
+            return Err(Error::MaxSteps {
                 t: self.t, 
                 y: self.y
             });
@@ -252,8 +252,8 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
             self.y = corrector;
 
             // Check if previous step rejected
-            if let SolverStatus::RejectedStep = self.status {
-                self.status = SolverStatus::Solving;
+            if let Status::RejectedStep = self.status {
+                self.status = Status::Solving;
             }
 
             // Adjust Step Size if needed
@@ -306,7 +306,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
             }
         } else {
             // Step Rejected
-            self.status = SolverStatus::RejectedStep;
+            self.status = Status::RejectedStep;
 
             // Adjust Step Size
             let two = T::from_f64(2.0).unwrap();
@@ -393,7 +393,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
     }
 
     fn h(&self) -> T {
-        // Solver repeats step size 4 times for each step
+        // NumericalMethod repeats step size 4 times for each step
         // so the IVP inquiring is looking for what the next
         // state will be thus the step size is multiplied by 4
         self.h * T::from_f64(4.0).unwrap()
@@ -403,11 +403,11 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
         self.h = h;
     }
 
-    fn status(&self) -> &SolverStatus<T, R, C, D> {
+    fn status(&self) -> &Status<T, R, C, D> {
         &self.status
     }
 
-    fn set_status(&mut self, status: SolverStatus<T, R, C, D>) {
+    fn set_status(&mut self, status: Status<T, R, C, D>) {
         self.status = status;
     }
 }
@@ -467,7 +467,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Default for APCV4
             tf: T::zero(),
             evals: 0,
             steps: 0,
-            status: SolverStatus::Uninitialized,
+            status: Status::Uninitialized,
             tol: T::from_f64(1.0e-6).unwrap(),
             h_max: T::infinity(),
             h_min: T::zero(),

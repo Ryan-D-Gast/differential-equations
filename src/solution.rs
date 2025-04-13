@@ -1,11 +1,11 @@
-//! Solution of IVP Problem returned by IVP::solve
+//! Solution of differential equations
 
-use std::time::Instant;
-
-use crate::ode::SolverStatus;
-use crate::control::CallBackData;
-use crate::traits::Real;
+use crate::{
+    Status,
+    traits::{Real, CallBackData},
+};
 use nalgebra::SMatrix;
+use std::time::Instant;
 
 /// Timer for tracking solution time
 #[derive(Debug, Clone)]
@@ -45,7 +45,7 @@ impl<T: Real> Timer<T> {
 #[cfg(feature = "polars")]
 use polars::prelude::*;
 
-/// Solution of IVP Problem returned by ODE Solvers
+/// Solution of returned by differential equation solvers
 ///
 /// # Fields
 /// * `y`              - Outputted dependent variable points.
@@ -70,7 +70,7 @@ where
     pub y: Vec<SMatrix<T, R, C>>,
 
     /// Status of the solver.
-    pub status: SolverStatus<T, R, C, D>,
+    pub status: Status<T, R, C, D>,
 
     /// Number of function evaluations.
     pub evals: usize,
@@ -99,7 +99,7 @@ where
         Solution {
             t: Vec::with_capacity(100),
             y: Vec::with_capacity(100),
-            status: SolverStatus::Uninitialized,
+            status: Status::Uninitialized,
             evals: 0,
             steps: 0,
             rejected_steps: 0,

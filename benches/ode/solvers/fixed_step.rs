@@ -1,4 +1,4 @@
-//! Fixed Step Solver Benchmarks
+//! Fixed Step NumericalMethod Benchmarks
 
 use super::*;
 

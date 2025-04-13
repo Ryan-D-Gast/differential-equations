@@ -1,11 +1,14 @@
-//! DOPRI5 Solver for Ordinary Differential Equations.
+//! DOPRI5 NumericalMethod for Ordinary Differential Equations.
 
-use crate::interpolate::InterpolationError;
-use crate::ode::solver::NumEvals;
-use crate::ode::solvers::utils::{constrain_step_size, validate_step_size_parameters};
-use crate::ode::{ODE, Solver, SolverError, SolverStatus};
-use crate::control::CallBackData;
-use crate::traits::Real;
+use crate::{
+    Error, Status,
+    interpolate::InterpolationError,
+    traits::{Real, CallBackData},
+    ode::{
+        ODE, NumericalMethod, NumEvals,
+        method::utils::{constrain_step_size, validate_step_size_parameters},
+    },
+};
 use nalgebra::SMatrix;
 
 /// Dormand Prince 5(4) Method for solving ordinary differential equations.
@@ -100,7 +103,7 @@ pub struct DOPRI5<T: Real, const R: usize, const C: usize, D: CallBackData> {
     fac: T,
 
     // Iteration Tracking
-    status: SolverStatus<T, R, C, D>,
+    status: Status<T, R, C, D>,
     steps: usize,      // Number of Steps
     n_accepted: usize, // Number of Accepted Steps
 
@@ -128,7 +131,7 @@ pub struct DOPRI5<T: Real, const R: usize, const C: usize, D: CallBackData> {
     cont: [SMatrix<T, R, C>; 5], // Interpolation coefficients
 }
 
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D>
+impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T, R, C, D>
     for DOPRI5<T, R, C, D>
 {
     fn init<F>(
@@ -137,7 +140,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
         t0: T,
         tf: T,
         y0: &SMatrix<T, R, C>,
-    ) -> Result<NumEvals, SolverError<T, R, C>>
+    ) -> Result<NumEvals, Error<T, R, C>>
     where
         F: ODE<T, R, C, D>,
     {
@@ -178,23 +181,23 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
         self.non_stiff_counter = 0;
         self.stiffness_counter = 0;
 
-        // Solver is ready to go
-        self.status = SolverStatus::Initialized;
+        // NumericalMethod is ready to go
+        self.status = Status::Initialized;
 
         Ok(evals)
     }
 
-    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, SolverError<T, R, C>>
+    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, R, C>>
     where
         F: ODE<T, R, C, D>,
     {
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
-            self.status = SolverStatus::Error(SolverError::MaxSteps {
+            self.status = Status::Error(Error::MaxSteps {
                 t: self.t, 
                 y: self.y
             });
-            return Err(SolverError::MaxSteps {
+            return Err(Error::MaxSteps {
                 t: self.t, 
                 y: self.y
             });
@@ -202,11 +205,11 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
 
         // Check if Step Size is too smaller then machine default_epsilon
         if self.h.abs() < T::default_epsilon() {
-            self.status = SolverStatus::Error(SolverError::StepSize {
+            self.status = Status::Error(Error::StepSize {
                 t: self.t, 
                 y: self.y
             });
-            return Err(SolverError::StepSize {
+            return Err(Error::StepSize {
                 t: self.t,
                 y: self.y
             });
@@ -323,11 +326,11 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
                     self.stiffness_counter += 1;
                     if self.stiffness_counter == 15 {
                         // Early Exit Stiffness Detected
-                        self.status = SolverStatus::Error(SolverError::Stiffness {
+                        self.status = Status::Error(Error::Stiffness {
                             t: self.t, 
                             y: self.y
                         });
-                        return Err(SolverError::Stiffness {
+                        return Err(Error::Stiffness {
                             t: self.t,
                             y: self.y,
                         });
@@ -370,14 +373,14 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
             self.t = t_new;
 
             // Check if previous step rejected
-            if let SolverStatus::RejectedStep = self.status {
+            if let Status::RejectedStep = self.status {
                 h_new = self.h.min(h_new);
-                self.status = SolverStatus::Solving;
+                self.status = Status::Solving;
             }
         } else {
             // Step Rejected
             h_new = self.h / self.facc1.min(self.fac11 / self.safe);
-            self.status = SolverStatus::RejectedStep;
+            self.status = Status::RejectedStep;
         }
 
         // Step Complete
@@ -433,17 +436,17 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
         self.h = h;
     }
 
-    fn status(&self) -> &SolverStatus<T, R, C, D> {
+    fn status(&self) -> &Status<T, R, C, D> {
         &self.status
     }
 
-    fn set_status(&mut self, status: SolverStatus<T, R, C, D>) {
+    fn set_status(&mut self, status: Status<T, R, C, D>) {
         self.status = status;
     }
 }
 
 impl<T: Real, const R: usize, const C: usize, D: CallBackData> DOPRI5<T, R, C, D> {
-    /// Creates a new DOPRI5 Solver.
+    /// Creates a new DOPRI5 NumericalMethod.
     ///
     /// # Returns
     /// * DOPRI5 Struct ready to go for solving.
@@ -639,7 +642,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Default for DOPRI
             d,
 
             // Status and Counters
-            status: SolverStatus::Uninitialized,
+            status: Status::Uninitialized,
             h_lamb: T::zero(),
             non_stiff_counter: 0,
             stiffness_counter: 0,

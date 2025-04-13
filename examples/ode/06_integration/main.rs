@@ -1,4 +1,4 @@
-use differential_equations::ode::solvers::RKF;
+use differential_equations::ode::method::RKF;
 use differential_equations::ode::*;
 use nalgebra::{SVector, vector};
 
@@ -22,11 +22,11 @@ fn main() {
 
     let ivp = IVP::new(ode, t0, tf, y0);
 
-    // Create a solver (RKF in this case).
-    let mut solver = RKF::new(0.01);
+    // Create a method (RKF in this case).
+    let mut method = RKF::new(0.01);
 
     // Solve the IVP.
-    let solution = ivp.solve(&mut solver).unwrap();
+    let solution = ivp.solve(&mut method).unwrap();
 
     // Print the results.
     println!("Numerical Integration Example:");

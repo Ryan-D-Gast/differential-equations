@@ -183,7 +183,7 @@ where
 {
     fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, D>) -> ControlFlag<D>
     where
-        S: Solver<T, R, C, D> 
+        S: NumericalMethod<T, R, C, D> 
     {
         let t_curr = solver.t();
         let y_curr = solver.y();
@@ -250,7 +250,7 @@ impl<T: Real> CrossingSolout<T> {
         offset_upper: T,
     ) -> Option<T>
     where
-        S: Solver<T, R, C, D>,
+        S: NumericalMethod<T, R, C, D>,
         D: CallBackData,
     {
         // Start with linear interpolation as initial guess

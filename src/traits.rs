@@ -1,4 +1,4 @@
-//! Defines Generics for the library. Includes generics for the floating point numbers and state vectors.
+//! Defines Generics for the library. Includes generics for the floating point numbers.
 
 use nalgebra::RealField;
 
@@ -36,3 +36,17 @@ impl Real for f64 {
         self
     }
 }
+
+/// Callback data trait
+///
+/// This trait represents data that can be returned from functions
+/// that are used to control the solver's execution flow. The
+/// Clone and Debug traits are required for internal use but anything
+/// that implements this trait can be used as callback data.
+/// For example, this can be a string, a number, or any other type
+/// that implements the Clone and Debug traits.
+///
+pub trait CallBackData: Clone + std::fmt::Debug {}
+
+// Implement for any type that already satisfies the bounds
+impl<T: Clone + std::fmt::Debug> CallBackData for T {}

@@ -1,4 +1,4 @@
-//! Solvers for Ordinary Differential Equations (ODEs).
+//! NumericalMethods for Ordinary Differential Equations (ODEs).
 
 // Adams Methods for solving ordinary differential equations.
 pub mod adams;

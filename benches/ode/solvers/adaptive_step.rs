@@ -1,8 +1,8 @@
-//! Adaptive Step Solver Benchmarks
+//! Adaptive Step NumericalMethod Benchmarks
 
 use super::*;
 
-/// Adaptive Step Solver Benchmarking Macro
+/// Adaptive Step NumericalMethod Benchmarking Macro
 macro_rules! bench_adaptive_step {
     ($name:ident, $solver:ident, $system:expr, $y0:expr, $t0:expr, $t1:expr, $h0:expr, $rtol:expr, $atol:expr) => {
         pub fn $name(c: &mut Criterion) {
@@ -24,7 +24,7 @@ macro_rules! bench_adaptive_step {
     };
 }
 
-/// Dormand-Prince Solver Benchmarking Macro - compatible with DOP853 and DOPRI5
+/// Dormand-Prince NumericalMethod Benchmarking Macro - compatible with DOP853 and DOPRI5
 macro_rules! bench_dormand_prince {
     ($name:ident, $solver:ident, $system:expr, $y0:expr, $t0:expr, $t1:expr, $h0:expr, $rtol:expr, $atol:expr) => {
         pub fn $name(c: &mut Criterion) {

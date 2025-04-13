@@ -77,10 +77,23 @@
 // Ordinary Differential Equations (ODE) Module
 pub mod ode;
 
-// -- Shared modules not specific to ODEs --
+// -- Shared items not specific to a Differential Equation Type --
+
+// Error for Differential Equations NumericalMethods
+mod error;
+pub use error::Error;
+
+// Status of Differential Equations NumericalMethods
+mod status;
+pub use status::Status;
 
 // Solution of a solved differential equation
-pub mod solution;
+mod solution;
+pub use solution::Solution;
+
+// Control Flow 
+mod control;
+pub use control::ControlFlag;
 
 // Traits for Floating Point Types
 pub mod traits;
@@ -88,5 +101,10 @@ pub mod traits;
 // Interpolation Functions
 pub mod interpolate;
 
-// Control Flow 
-pub mod control;
+// -- Shared items for re-exporting to differential equation type modules --
+mod shared {
+    pub use crate::error::Error;
+    pub use crate::status::Status;
+    pub use crate::control::ControlFlag;
+    pub use crate::solution::Solution;
+}

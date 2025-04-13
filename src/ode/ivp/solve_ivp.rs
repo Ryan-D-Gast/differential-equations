@@ -1,9 +1,14 @@
 //! Solve IVP function
 
-use crate::solution::Solution;
-use crate::ode::{ODE, Solout, Solver, SolverError, SolverStatus};
-use crate::control::{CallBackData, ControlFlag};
-use crate::traits::Real;
+use crate::{
+    Solution, Error, Status, ControlFlag,
+    traits::{Real, CallBackData},
+    ode::{
+        numerical_method::NumericalMethod,
+        solout::*,
+        ODE,
+    },
+};
 use nalgebra::SMatrix;
 
 /// Solves an Initial Value Problem (IVP) for a system of ordinary differential equations.
@@ -44,7 +49,7 @@ use nalgebra::SMatrix;
 /// # Returns
 ///
 /// * `Ok(Solution)` - If integration completes successfully or is terminated by an event
-/// * `Err(SolverStatus)` - If an error occurs (e.g., excessive stiffness, maximum steps reached)
+/// * `Err(Status)` - If an error occurs (e.g., excessive stiffness, maximum steps reached)
 ///
 /// # Solution Object
 ///
@@ -114,12 +119,12 @@ pub fn solve_ivp<T, const R: usize, const C: usize, D, S, F, O>(
     tf: T,
     y0: &SMatrix<T, R, C>,
     solout: &mut O,
-) -> Result<Solution<T, R, C, D>, SolverError<T, R, C>>
+) -> Result<Solution<T, R, C, D>, Error<T, R, C>>
 where
     T: Real,
     D: CallBackData,
     F: ODE<T, R, C, D>,
-    S: Solver<T, R, C, D>,
+    S: NumericalMethod<T, R, C, D>,
     O: Solout<T, R, C, D>,
 {
     // Initialize the Solution object
@@ -133,7 +138,7 @@ where
         x if x == T::one() => T::one(),
         x if x == T::from_f64(-1.0).unwrap() => T::from_f64(-1.0).unwrap(),
         _ => {
-            return Err(SolverError::BadInput {
+            return Err(Error::BadInput {
                 msg: "Final time tf must be different from initial time t0.".to_string(),
             });
         }
@@ -151,7 +156,7 @@ where
     match solout.solout(solver, &mut solution) {
         ControlFlag::Continue => {}
         ControlFlag::Terminate(reason) => {
-            solution.status = SolverStatus::Interrupted(reason);
+            solution.status = Status::Interrupted(reason);
             solution.timer.complete();
             return Ok(solution);
         }
@@ -165,15 +170,15 @@ where
     match ode.event(t0, y0) {
         ControlFlag::Continue => {}
         ControlFlag::Terminate(reason) => {
-            solution.status = SolverStatus::Interrupted(reason);
+            solution.status = Status::Interrupted(reason);
             solution.timer.complete();
             return Ok(solution);
         }
     }
 
-    // Set Solver to Solving
-    solver.set_status(SolverStatus::Solving);
-    solution.status = SolverStatus::Solving;
+    // Set NumericalMethod to Solving
+    solver.set_status(Status::Solving);
+    solution.status = Status::Solving;
 
     // Main Loop
     let mut solving = true;
@@ -193,7 +198,7 @@ where
                 solution.evals += evals;
 
                 // Check for a RejectedStep
-                if let SolverStatus::RejectedStep = solver.status() {
+                if let Status::RejectedStep = solver.status() {
                     // Update rejected steps and re-do the step
                     solution.rejected_steps += 1;
                     continue;
@@ -212,7 +217,7 @@ where
         match solout.solout(solver, &mut solution) {
             ControlFlag::Continue => {}
             ControlFlag::Terminate(reason) => {
-                solution.status = SolverStatus::Interrupted(reason);
+                solution.status = Status::Interrupted(reason);
                 solution.timer.complete();
                 return Ok(solution);
             }
@@ -307,7 +312,7 @@ where
                 solution.push(ts, y_final);
 
                 // Set solution parameters
-                solution.status = SolverStatus::Interrupted(reason);
+                solution.status = Status::Interrupted(reason);
                 solution.timer.complete();
 
                 return Ok(solution);
@@ -316,10 +321,10 @@ where
     }
 
     // Solution completed successfully
-    solver.set_status(SolverStatus::Complete);
+    solver.set_status(Status::Complete);
 
     // Finalize the solution
-    solution.status = SolverStatus::Complete;
+    solution.status = Status::Complete;
     solution.timer.complete();
 
     Ok(solution)

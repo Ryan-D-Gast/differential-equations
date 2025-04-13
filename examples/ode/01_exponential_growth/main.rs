@@ -15,8 +15,8 @@ impl ODE for ExponentialGrowth {
 }
 
 fn main() {
-    // Initialize the solver
-    let mut solver = DOP853::new() // Normal refers to default with t-out being all t-steps e.g. no interpolation
+    // Initialize the method
+    let mut method = DOP853::new() // Normal refers to default with t-out being all t-steps e.g. no interpolation
         .rtol(1e-12) // Set the relative tolerance, Default is 1e-3 for DOP853
         .atol(1e-12); // Set the absolute tolerance, Default is 1e-6 for DOP853
 
@@ -28,7 +28,7 @@ fn main() {
     let exponential_growth_ivp = IVP::new(ode, t0, tf, y0);
 
     // Solve the initial value problem
-    let solution = match exponential_growth_ivp.solve(&mut solver) {
+    let solution = match exponential_growth_ivp.solve(&mut method) {
         Ok(solution) => solution,
         Err(e) => panic!("Error: {:?}", e),
     };

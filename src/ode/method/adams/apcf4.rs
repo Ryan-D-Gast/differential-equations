@@ -16,7 +16,7 @@ use super::*;
 ///
 /// ```
 /// use differential_equations::ode::*;
-/// use differential_equations::ode::solvers::APCF4;
+/// use differential_equations::ode::method::APCF4;
 /// use nalgebra::{SVector, vector};
 ///
 /// struct HarmonicOscillator {
@@ -65,11 +65,11 @@ pub struct APCF4<T: Real, const R: usize, const C: usize, D: CallBackData> {
     // Number of evaluations
     pub evals: usize,
     // Status
-    status: SolverStatus<T, R, C, D>,
+    status: Status<T, R, C, D>,
 }
 
-// Implement Solver Trait for APCF4
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D>
+// Implement NumericalMethod Trait for APCF4
+impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T, R, C, D>
     for APCF4<T, R, C, D>
 {
     fn init<F>(
@@ -78,7 +78,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
         t0: T,
         tf: T,
         y0: &SMatrix<T, R, C>,
-    ) -> Result<NumEvals, SolverError<T, R, C>>
+    ) -> Result<NumEvals, Error<T, R, C>>
     where
         F: ODE<T, R, C, D>,
     {
@@ -130,11 +130,11 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
             }
         }
 
-        self.status = SolverStatus::Initialized;
+        self.status = Status::Initialized;
         Ok(evals)
     }
 
-    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, SolverError<T, R, C>>
+    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, R, C>>
     where
         F: ODE<T, R, C, D>,
     {
@@ -229,11 +229,11 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Solver<T, R, C, D
         self.h = h;
     }
 
-    fn status(&self) -> &SolverStatus<T, R, C, D> {
+    fn status(&self) -> &Status<T, R, C, D> {
         &self.status
     }
 
-    fn set_status(&mut self, status: SolverStatus<T, R, C, D>) {
+    fn set_status(&mut self, status: Status<T, R, C, D>) {
         self.status = status;
     }
 }
@@ -269,7 +269,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Default for APCF4
             k3: SMatrix::<T, R, C>::zeros(),
             k4: SMatrix::<T, R, C>::zeros(),
             evals: 0,
-            status: SolverStatus::Uninitialized,
+            status: Status::Uninitialized,
         }
     }
 }

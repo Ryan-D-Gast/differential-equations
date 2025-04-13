@@ -1,14 +1,18 @@
 //! Initial Value Problem Struct and Constructors
 
-use super::solve_ivp;
-use crate::solution::Solution;
-use crate::ode::solout::*;
-use crate::ode::{ODE, Solout, Solver, SolverError};
-use crate::control::CallBackData;
-use crate::traits::Real;
+use crate::{
+    Solution, Error,
+    traits::{Real, CallBackData},
+    ode::{
+        ivp::solve_ivp,
+        numerical_method::NumericalMethod,
+        solout::*,
+        ODE,
+    },
+};
 use nalgebra::SMatrix;
 
-/// Initial Value Problem Differential Equation Solver
+/// Initial Value Problem Differential Equation NumericalMethod
 ///
 /// An Initial Value Problem (IVP) takes the form:
 /// y' = f(t, y), a <= t <= b, y(a) = alpha
@@ -144,11 +148,11 @@ where
     /// Solve the IVP using a default solout, e.g. outputting solutions at calculated steps.
     ///
     /// # Returns
-    /// * `Result<Solution<T, V, D>, SolverStatus<T, V, D>>` - `Ok(Solution)` if successful or interrupted by events, `Err(SolverStatus)` if an errors or issues such as stiffness are encountered.
+    /// * `Result<Solution<T, V, D>, Status<T, V, D>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Status)` if an errors or issues such as stiffness are encountered.
     ///
-    pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, R, C, D>, SolverError<T, R, C>>
+    pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, R, C, D>, Error<T, R, C>>
     where
-        S: Solver<T, R, C, D>,
+        S: NumericalMethod<T, R, C, D>,
     {
         let mut default_solout = DefaultSolout::new(); // Default solout implementation
         solve_ivp(
@@ -161,10 +165,10 @@ where
         )
     }
 
-    /// Returns an IVP Solver with the provided solout function for outputting points.
+    /// Returns an IVP NumericalMethod with the provided solout function for outputting points.
     ///
     /// # Returns
-    /// * IVP Solver with the provided solout function ready for .solve() method.
+    /// * IVP NumericalMethod with the provided solout function ready for .solve() method.
     ///
     pub fn solout<'a, O: Solout<T, R, C, D>>(
         &'a self,
@@ -180,7 +184,7 @@ where
     /// * `dt` - Interval between each output point.
     ///
     /// # Returns
-    /// * IVP Solver with Even Solout function ready for .solve() method.
+    /// * IVP NumericalMethod with Even Solout function ready for .solve() method.
     ///
     pub fn even(&self, dt: T) -> IVPSoloutPair<'_, T, R, C, D, F, EvenSolout<T>> {
         let even_solout = EvenSolout::new(dt, self.t0, self.tf); // Even solout implementation
@@ -194,7 +198,7 @@ where
     /// * `n` - Number of interpolation points between each step.
     ///
     /// # Returns
-    /// * IVP Solver with Dense Output function ready for .solve() method.
+    /// * IVP NumericalMethod with Dense Output function ready for .solve() method.
     ///
     pub fn dense(&self, n: usize) -> IVPSoloutPair<'_, T, R, C, D, F, DenseSolout> {
         let dense_solout = DenseSolout::new(n); // Dense solout implementation
@@ -208,7 +212,7 @@ where
     /// * `points` - Custom output points.
     ///
     /// # Returns
-    /// * IVP Solver with Custom Time Evaluation function ready for .solve() method.
+    /// * IVP NumericalMethod with Custom Time Evaluation function ready for .solve() method.
     ///
     pub fn t_eval(&self, points: Vec<T>) -> IVPSoloutPair<'_, T, R, C, D, F, TEvalSolout<T>> {
         let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf); // Custom time evaluation solout implementation
@@ -224,7 +228,7 @@ where
     /// * `direction` - Direction of crossing (positive or negative).
     ///
     /// # Returns
-    /// * IVP Solver with CrossingSolout function ready for .solve() method.
+    /// * IVP NumericalMethod with CrossingSolout function ready for .solve() method.
     ///
     pub fn crossing(
         &self,
@@ -247,7 +251,7 @@ where
     /// * `direction` - Direction of crossing (positive or negative).
     ///
     /// # Returns
-    /// * IVP Solver with HyperplaneCrossingSolout function ready for .solve() method.
+    /// * IVP NumericalMethod with HyperplaneCrossingSolout function ready for .solve() method.
     ///
     pub fn hyperplane_crossing<const R1: usize, const C1: usize>(
         &self,
@@ -294,14 +298,14 @@ where
     /// Solve the IVP using the provided solout
     ///
     /// # Arguments
-    /// * `solver` - Solver to use for solving the IVP
+    /// * `solver` - NumericalMethod to use for solving the IVP
     ///
     /// # Returns
-    /// * `Result<Solution<T, R, C, D>, SolverError<T, R, C>>` - `Ok(Solution)` if successful or interrupted by events, `Err(SolverError)` if an errors or issues such as stiffness are encountered.
+    /// * `Result<Solution<T, R, C, D>, Error<T, R, C>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if an errors or issues such as stiffness are encountered.
     ///
-    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, R, C, D>, SolverError<T, R, C>>
+    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, R, C, D>, Error<T, R, C>>
     where
-        S: Solver<T, R, C, D>,
+        S: NumericalMethod<T, R, C, D>,
     {
         solve_ivp(
             solver,
@@ -347,14 +351,14 @@ where
     /// Solve the IVP using the provided solout
     ///
     /// # Arguments
-    /// * `solver` - Solver to use for solving the IVP
+    /// * `solver` - NumericalMethod to use for solving the IVP
     ///
     /// # Returns
-    /// * `Result<Solution<T, R, C, D>, SolverError<T, R, C>>` - `Ok(Solution)` if successful or interrupted by events, `Err(SolverError)` if an errors or issues such as stiffness are encountered.
+    /// * `Result<Solution<T, R, C, D>, Error<T, R, C>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if an errors or issues such as stiffness are encountered.
     ///
-    pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, R, C, D>, SolverError<T, R, C>>
+    pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, R, C, D>, Error<T, R, C>>
     where
-        S: Solver<T, R, C, D>,
+        S: NumericalMethod<T, R, C, D>,
     {
         solve_ivp(
             solver,

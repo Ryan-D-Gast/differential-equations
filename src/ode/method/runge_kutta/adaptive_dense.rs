@@ -206,7 +206,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
         $(#[$attr])*
         #[doc = "\n\n"]
         #[doc = "This adaptive solver with dense output was automatically generated using the `adaptive_dense_runge_kutta_method` macro."]
-        pub struct $name<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::control::CallBackData> {
+        pub struct $name<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> {
             // Initial Step Size
             pub h0: T,
 
@@ -255,10 +255,10 @@ macro_rules! adaptive_dense_runge_kutta_method {
             steps: usize, // Number of steps taken
 
             // Status
-            status: $crate::ode::SolverStatus<T, R, C, D>,
+            status: $crate::ode::Status<T, R, C, D>,
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::control::CallBackData> Default for $name<T, R, C, D> {
+        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> Default for $name<T, R, C, D> {
             fn default() -> Self {
                 // Initialize k vectors with zeros
                 let k: [nalgebra::SMatrix<T, R, C>; $stages + $extra_stages] = [nalgebra::SMatrix::<T, R, C>::zeros(); $stages + $extra_stages];
@@ -311,13 +311,13 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     reject: false,
                     n_stiff: 0,
                     steps: 0,
-                    status: $crate::ode::SolverStatus::Uninitialized,
+                    status: $crate::ode::Status::Uninitialized,
                 }
             }
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::control::CallBackData> $crate::ode::Solver<T, R, C, D> for $name<T, R, C, D> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &nalgebra::SMatrix<T, R, C>) -> Result<usize, $crate::ode::SolverError<T, R, C>>
+        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> $crate::ode::NumericalMethod<T, R, C, D> for $name<T, R, C, D> {
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &nalgebra::SMatrix<T, R, C>) -> Result<usize, $crate::ode::Error<T, R, C>>
             where
                 F: $crate::ode::ODE<T, R, C, D>,
             {
@@ -326,12 +326,12 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 // If h0 is zero, calculate initial step size using the utility function
                 if self.h0 == T::zero() {
                     // Call standalone hinit function with order parameter
-                    self.h0 = $crate::ode::solvers::utils::h_init(ode, t0, tf, y, $order, self.rtol, self.atol, self.h_min, self.h_max);
+                    self.h0 = $crate::ode::method::utils::h_init(ode, t0, tf, y, $order, self.rtol, self.atol, self.h_min, self.h_max);
                     evals += 2; // hinit uses 2 evaluation
                 }
 
                 // Check bounds
-                match $crate::ode::solvers::utils::validate_step_size_parameters::<T, R, C, D>(self.h0, self.h_min, self.h_max, t0, tf) {
+                match $crate::ode::method::utils::validate_step_size_parameters::<T, R, C, D>(self.h0, self.h_min, self.h_max, t0, tf) {
                     Ok(h0) => self.h = h0,
                     Err(status) => return Err(status),
                 }
@@ -351,21 +351,21 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 self.y_prev = y.clone();
 
                 // Initialize Status
-                self.status = $crate::ode::SolverStatus::Initialized;
+                self.status = $crate::ode::Status::Initialized;
 
                 Ok(evals)
             }
 
-            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::ode::SolverError<T, R, C>>
+            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::ode::Error<T, R, C>>
             where
                 F: $crate::ode::ODE<T, R, C, D>,
             {
                 // Make sure step size isn't too small
                 if self.h.abs() < T::default_epsilon() {
-                    self.status = $crate::ode::SolverStatus::Error($crate::ode::SolverError::StepSize {
+                    self.status = $crate::ode::Status::Error($crate::ode::Error::StepSize {
                         t: self.t, y: self.y
                     });
-                    return Err($crate::ode::SolverError::StepSize {
+                    return Err($crate::ode::Error::StepSize {
                         t: self.t, 
                         y: self.y
                     });
@@ -373,11 +373,11 @@ macro_rules! adaptive_dense_runge_kutta_method {
 
                 // Check if max steps has been reached
                 if self.steps >= self.max_steps {
-                    self.status = $crate::ode::SolverStatus::Error($crate::ode::SolverError::MaxSteps {
+                    self.status = $crate::ode::Status::Error($crate::ode::Error::MaxSteps {
                         t: self.t, 
                         y: self.y
                     });
-                    return Err($crate::ode::SolverError::MaxSteps {
+                    return Err($crate::ode::Error::MaxSteps {
                         t: self.t, 
                         y: self.y
                     });
@@ -436,7 +436,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                         // Not rejected this time
                         self.n_stiff = 0;
                         self.reject = false;
-                        self.status = $crate::ode::SolverStatus::Solving;
+                        self.status = $crate::ode::Status::Solving;
                     }
 
                     // Compute extra stages for dense / continious output via interpolation
@@ -459,16 +459,16 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 } else {
                     // Step rejected
                     self.reject = true;
-                    self.status = $crate::ode::SolverStatus::RejectedStep;
+                    self.status = $crate::ode::Status::RejectedStep;
                     self.n_stiff += 1;
 
                     // Check for stiffness
                     if self.n_stiff >= self.max_rejects {
-                        self.status = $crate::ode::SolverStatus::Error($crate::ode::SolverError::Stiffness {
+                        self.status = $crate::ode::Status::Error($crate::ode::Error::Stiffness {
                             t: self.t, 
                             y: self.y
                         });
-                        return Err($crate::ode::SolverError::Stiffness {
+                        return Err($crate::ode::Error::Stiffness {
                             t: self.t, 
                             y: self.y
                         });
@@ -489,7 +489,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 self.h *= scale;
 
                 // Ensure step size is within bounds
-                self.h = $crate::ode::solvers::utils::constrain_step_size(self.h, self.h_min, self.h_max);
+                self.h = $crate::ode::method::utils::constrain_step_size(self.h, self.h_min, self.h_max);
                 Ok(evals)
             }
 
@@ -553,16 +553,16 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 self.h = h;
             }
 
-            fn status(&self) -> &$crate::ode::SolverStatus<T, R, C, D> {
+            fn status(&self) -> &$crate::ode::Status<T, R, C, D> {
                 &self.status
             }
 
-            fn set_status(&mut self, status: $crate::ode::SolverStatus<T, R, C, D>) {
+            fn set_status(&mut self, status: $crate::ode::Status<T, R, C, D>) {
                 self.status = status;
             }
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::control::CallBackData> $name<T, R, C, D> {
+        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> $name<T, R, C, D> {
             /// Create a new solver with the specified initial step size
             pub fn new() -> Self {
                 Self {

@@ -16,8 +16,8 @@ impl ODE<f64, 2> for DampedOscillator {
 }
 
 fn main() {
-    // Initialize the solver
-    let mut solver = DOPRI5::new().rtol(1e-8).atol(1e-8);
+    // Initialize the method
+    let mut method = DOPRI5::new().rtol(1e-8).atol(1e-8);
 
     // Define the ode parameters
     let damping = 0.5;
@@ -38,7 +38,7 @@ fn main() {
     // Solve the IVP
     match damped_oscillator_ivp
         .crossing(0, 0.0, CrossingDirection::Both)
-        .solve(&mut solver)
+        .solve(&mut method)
     {
         Ok(solution) => {
             println!("Solution:");

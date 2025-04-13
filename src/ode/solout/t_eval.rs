@@ -82,7 +82,7 @@ where
 {
     fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, D>) -> ControlFlag<D>
     where
-        S: Solver<T, R, C, D>,
+        S: NumericalMethod<T, R, C, D>,
     {
         let t_prev = solver.t_prev();
         let t_curr = solver.t();

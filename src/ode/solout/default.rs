@@ -71,7 +71,7 @@ where
 {
     fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, D>) -> ControlFlag<D>
     where
-        S: Solver<T, R, C, D>
+        S: NumericalMethod<T, R, C, D>
     {
         // Output the current time and state to the vectors
         solution.push(solver.t(), *solver.y());

@@ -1,6 +1,8 @@
-use crate::ode::{ODE, SolverError};
-use crate::control::CallBackData;
-use crate::traits::Real;
+use crate::{
+    Error,
+    ode::ODE,
+    traits::{Real, CallBackData},
+};
 use nalgebra::SMatrix;
 
 /// Validate the step size parameters.
@@ -15,7 +17,7 @@ use nalgebra::SMatrix;
 /// * `|h0|` is less than or equal to `|tf - t0|`.
 /// * `h0` is not zero.
 ///
-/// If any of the checks fail, returns `Err(SolverError::BadInput)` with a descriptive message.
+/// If any of the checks fail, returns `Err(Error::BadInput)` with a descriptive message.
 /// Else returns `Ok(h0)` indicating the step size is valid.
 ///
 /// # Arguments
@@ -26,7 +28,7 @@ use nalgebra::SMatrix;
 /// * `tf` - Final time.
 ///
 /// # Returns
-/// * `Result<Real, SolverError>` - Ok if all checks pass, Err if any check fails.
+/// * `Result<Real, Error>` - Ok if all checks pass, Err if any check fails.
 ///
 pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, D: CallBackData>(
     h0: T,
@@ -34,10 +36,10 @@ pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, D:
     h_max: T,
     t0: T,
     tf: T,
-) -> Result<T, SolverError<T, R, C>> {
+) -> Result<T, Error<T, R, C>> {
     // Check if tf == t0
     if tf == t0 {
-        return Err(SolverError::BadInput {
+        return Err(Error::BadInput {
             msg: format!(
                 "Invalid input: tf ({:?}) cannot be equal to t0 ({:?})",
                 tf, t0
@@ -50,7 +52,7 @@ pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, D:
 
     // Check h0 has same sign as tf - t0
     if h0.signum() != sign {
-        return Err(SolverError::BadInput {
+        return Err(Error::BadInput {
             msg: format!(
                 "Invalid input: Initial step size ({:?}) must have the same sign as the integration direction (sign of tf - t0 = {:?})",
                 h0,
@@ -61,7 +63,7 @@ pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, D:
 
     // Check h_min and h_max bounds
     if h_min < T::zero() {
-        return Err(SolverError::BadInput {
+        return Err(Error::BadInput {
             msg: format!(
                 "Invalid input: Minimum step size ({:?}) must be non-negative",
                 h_min
@@ -69,7 +71,7 @@ pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, D:
         });
     }
     if h_max < T::zero() {
-        return Err(SolverError::BadInput {
+        return Err(Error::BadInput {
             msg: format!(
                 "Invalid input: Maximum step size ({:?}) must be non-negative",
                 h_max
@@ -77,7 +79,7 @@ pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, D:
         });
     }
     if h_min > h_max {
-        return Err(SolverError::BadInput {
+        return Err(Error::BadInput {
             msg: format!(
                 "Invalid input: Minimum step size ({:?}) must be less than or equal to maximum step size ({:?})",
                 h_min, h_max
@@ -87,7 +89,7 @@ pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, D:
 
     // Check h0 bounds
     if h0.abs() < h_min {
-        return Err(SolverError::BadInput {
+        return Err(Error::BadInput {
             msg: format!(
                 "Invalid input: Absolute value of initial step size ({:?}) must be greater than or equal to minimum step size ({:?})",
                 h0.abs(),
@@ -96,7 +98,7 @@ pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, D:
         });
     }
     if h0.abs() > h_max {
-        return Err(SolverError::BadInput {
+        return Err(Error::BadInput {
             msg: format!(
                 "Invalid input: Absolute value of initial step size ({:?}) must be less than or equal to maximum step size ({:?})",
                 h0.abs(),
@@ -107,7 +109,7 @@ pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, D:
 
     // Check h0 is not larger then integration interval
     if h0.abs() > (tf - t0).abs() {
-        return Err(SolverError::BadInput {
+        return Err(Error::BadInput {
             msg: format!(
                 "Invalid input: Absolute value of initial step size ({:?}) must be less than or equal to the absolute value of the integration interval (tf - t0 = {:?})",
                 h0.abs(),
@@ -118,7 +120,7 @@ pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, D:
 
     // Check h0 is not zero
     if h0 == T::zero() {
-        return Err(SolverError::BadInput {
+        return Err(Error::BadInput {
             msg: format!(
                 "Invalid input: Initial step size ({:?}) cannot be zero",
                 h0

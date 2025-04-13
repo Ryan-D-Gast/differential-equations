@@ -1,11 +1,11 @@
-//! Suite of test cases for Solvers error handling
+//! Suite of test cases for NumericalMethods error handling
 
 use differential_equations::ode::ControlFlag;
 use differential_equations::ode::ODE;
-use differential_equations::ode::solvers::{
+use differential_equations::ode::method::{
     APCF4, APCV4, DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98,
 };
-use differential_equations::ode::{IVP, SolverError, SolverStatus};
+use differential_equations::ode::{IVP, Error, Status};
 use nalgebra::{SVector, vector};
 
 struct SimpleODE;
@@ -24,7 +24,7 @@ impl ODE<f64, 1, 1> for SimpleODE {
     }
 }
 
-/// Macro for testing cases where we expect a SolverError to be returned
+/// Macro for testing cases where we expect a Error to be returned
 macro_rules! test_solver_error {
     (
         test_name: $test_name:ident,
@@ -117,7 +117,7 @@ fn invalid_time_span() {
         t0: 0.0,
         tf: 0.0,
         y0: vector![1.0],
-        expected_error: SolverError::<f64, 1, 1>::BadInput { msg: "Invalid input: tf (0.0) cannot be equal to t0 (0.0)".to_string() },
+        expected_error: Error::<f64, 1, 1>::BadInput { msg: "Invalid input: tf (0.0) cannot be equal to t0 (0.0)".to_string() },
         solver_name: DOP853, solver: DOP853::new(),
         solver_name: DOPRI5, solver: DOPRI5::new(),
         solver_name: RKF, solver: RKF::new(0.1),
@@ -138,7 +138,7 @@ fn initial_step_size_too_big() {
         t0: 0.0,
         tf: 1.0,
         y0: vector![1.0],
-        expected_error: SolverError::<f64, 1, 1>::BadInput { msg: "Invalid input: Absolute value of initial step size (10.0) must be less than or equal to the absolute value of the integration interval (tf - t0 = 1.0)".to_string() },
+        expected_error: Error::<f64, 1, 1>::BadInput { msg: "Invalid input: Absolute value of initial step size (10.0) must be less than or equal to the absolute value of the integration interval (tf - t0 = 1.0)".to_string() },
         solver_name: DOP853, solver: DOP853::new().h0(10.0),
         solver_name: DOPRI5, solver: DOPRI5::new().h0(10.0),
         solver_name: RKF, solver: RKF::new(10.0),
@@ -159,7 +159,7 @@ fn terminate_initial_conditions_trigger() {
         t0: 10.0,
         tf: 20.0,
         y0: vector![1.0],
-        expected_status: SolverStatus::<f64, 1, 1, String>::Interrupted("Initial condition trigger".to_string()),
+        expected_status: Status::<f64, 1, 1, String>::Interrupted("Initial condition trigger".to_string()),
         solver_name: DOP853, solver: DOP853::new(),
         solver_name: DOPRI5, solver: DOPRI5::new(),
         solver_name: RKF, solver: RKF::new(0.1),

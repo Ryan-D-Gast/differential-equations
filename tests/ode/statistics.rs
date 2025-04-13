@@ -2,7 +2,7 @@
 
 use super::systems;
 use differential_equations::ode::IVP;
-use differential_equations::ode::solvers::{
+use differential_equations::ode::method::{
     APCF4, APCV4, DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98,
 };
 use nalgebra::SVector;
@@ -57,7 +57,7 @@ macro_rules! generate_solver_statistics_harmonic {
             fs::create_dir_all("target/tests/statistics/").expect("Failed to create directory");
             let path = Path::new("target/tests/statistics/solvers_harmonic.csv");
             let mut file = File::create(path).expect("Failed to create file");
-            writeln!(file, "Solver,Steps,Evals,Accepted,Rejected,Percent Error").unwrap();
+            writeln!(file, "NumericalMethod,Steps,Evals,Accepted,Rejected,Percent Error").unwrap();
 
             let comparision = statistics[0].yf.clone();
             for stats in statistics {
@@ -106,7 +106,7 @@ macro_rules! generate_solver_statistics_logistic {
             fs::create_dir_all("target/tests/statistics/").expect("Failed to create directory");
             let path = Path::new("target/tests/statistics/solvers_logistic.csv");
             let mut file = File::create(path).expect("Failed to create file");
-            writeln!(file, "Solver,Steps,Evals,Accepted,Rejected,Percent Error").unwrap();
+            writeln!(file, "NumericalMethod,Steps,Evals,Accepted,Rejected,Percent Error").unwrap();
 
             let comparision = statistics[0].yf.clone();
             for stats in statistics {

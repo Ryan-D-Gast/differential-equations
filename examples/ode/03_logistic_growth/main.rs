@@ -21,7 +21,7 @@ impl ODE<f64, 1, 1> for LogisticGrowth {
 }
 
 fn main() {
-    let mut solver = DOP853::new().rtol(1e-12).atol(1e-12);
+    let mut method = DOP853::new().rtol(1e-12).atol(1e-12);
     let y0 = vector![1.0];
     let t0 = 0.0;
     let tf = 10.0;
@@ -29,13 +29,13 @@ fn main() {
     let logistic_growth_ivp = IVP::new(ode, t0, tf, y0);
     match logistic_growth_ivp
         .even(2.0)  // sets t-out at interval dt: 2.0
-        .solve(&mut solver) // Solve the ode and return the solution
+        .solve(&mut method) // Solve the ode and return the solution
     {
         Ok(solution) => {
             // Check if the solver stopped due to the event command
-            if let SolverStatus::Interrupted(ref reason) = solution.status {
+            if let Status::Interrupted(ref reason) = solution.status {
                 // State the reason why the solver stopped
-                println!("Solver stopped: {}", reason);
+                println!("NumericalMethod stopped: {}", reason);
             }
 
             // Print the solution

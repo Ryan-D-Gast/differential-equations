@@ -1,10 +1,12 @@
 //! Defines system of differential equations for numerical solvers.
-//! The Solvers use this trait to take a input system from the user and solve
+//! The NumericalMethods use this trait to take a input system from the user and solve
 //! Includes a differential equation and optional solout function to interupt solver
 //! given a condition or event.
 
-use crate::traits::Real;
-use crate::control::{ControlFlag, CallBackData};
+use crate::{
+    ControlFlag,
+    traits::{Real, CallBackData},
+};
 use nalgebra::SMatrix;
 
 /// ODE Trait for Differential Equations

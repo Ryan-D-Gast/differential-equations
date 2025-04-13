@@ -25,8 +25,8 @@ impl ODE<f64, 2, 2> for MatrixODE {
 }
 
 fn main() {
-    // Create a solver
-    let mut solver = DOP853::new().rtol(1e-6).atol(1e-6);
+    // Create a method
+    let mut method = DOP853::new().rtol(1e-6).atol(1e-6);
 
     // Initial condition: rotation matrix at 45 degrees
     let angle = PI / 4.0;
@@ -39,7 +39,7 @@ fn main() {
 
     // Set up and solve the IVP
     let matrix_ivp = IVP::new(ode, t0, tf, y0);
-    let result = matrix_ivp.dense(100).solve(&mut solver);
+    let result = matrix_ivp.dense(100).solve(&mut method);
 
     match result {
         Ok(solution) => {

@@ -66,7 +66,7 @@
 //! - [`IVP`]: Set up an initial value problem with your system, time span, and initial conditions
 //! - [`Solution`]: After solving, analyze and process your solution data
 //!
-//! ## Available Solvers
+//! ## Available NumericalMethods
 //!
 //! The most popular solvers are available at the top level:
 //!
@@ -107,13 +107,9 @@ pub use ode::{
     ODE, // ODE Trait for Differential Equations
 };
 
-// Solver Traits for ODE Solvers.
-mod solver;
-pub use solver::{
-    Solver,       // Solver Trait for ODE Solvers
-    SolverError,  // Error returned from the Solver Trait
-    SolverStatus, // Status of the Solver for Control Flow and Error Handling
-};
+// NumericalMethod Traits for ODE NumericalMethods.
+mod numerical_method;
+pub use numerical_method::{NumericalMethod, NumEvals};
 
 // Solout Trait for controlling output of the solver
 pub mod solout; // Numerous implementations of the Solout trait are contained in this module
@@ -123,18 +119,16 @@ pub use solout::{
     Solout,
 };
 
-// Solver for ODEs
-pub mod solvers;
-pub use solvers::{
+// NumericalMethod for ODEs
+pub mod method;
+pub use method::{
     // Re-exporting popular solvers to ode module for quick access
-    RK4,    // Fixed Step Runge-Kutta 4th Order Solver
-    DOP853, // Adaptive Step Dormand-Prince 8(5,3) Solver with dense output of order 7
-    DOPRI5, // Adaptive Step Dormand-Prince 5(4) Solver
+    RK4,    // Fixed Step Runge-Kutta 4th Order NumericalMethod
+    DOP853, // Adaptive Step Dormand-Prince 8(5,3) NumericalMethod with dense output of order 7
+    DOPRI5, // Adaptive Step Dormand-Prince 5(4) NumericalMethod
     RKV65,  // Verner 6(5) adaptive method with dense output of order 5
     RKV98,  // Verner 9(8) adaptive method with dense output of order 9
 };
 
 // Re-exports to allow users to only import necessary components
-// via `use differential_equations::ode::*;`
-pub use crate::control::{ControlFlag, CallBackData};
-pub use crate::solution::Solution;
+pub use crate::shared::*;

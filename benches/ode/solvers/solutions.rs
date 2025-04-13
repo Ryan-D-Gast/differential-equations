@@ -42,7 +42,7 @@ pub fn generate_report() {
     println!("--- Solution Comparison Report ---");
     for (system, solutions) in &by_system {
         println!("\nODE: {}", system);
-        println!("{:<15} {:<10} {:<20} {:<20}", "Solver", "Time (t)", "Final State (y)", "Runtime (ms)");
+        println!("{:<15} {:<10} {:<20} {:<20}", "NumericalMethod", "Time (t)", "Final State (y)", "Runtime (ms)");
         
         for sol in solutions {
             println!("{:<15} {:<10.6} {:<20} {:<20.3}", 
