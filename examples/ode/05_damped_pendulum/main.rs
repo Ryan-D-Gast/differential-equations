@@ -1,4 +1,4 @@
-use differential_equations::ode::method::RKF;
+use differential_equations::ode::methods::RKF;
 use differential_equations::ode::*;
 use nalgebra::{SVector, vector};
 

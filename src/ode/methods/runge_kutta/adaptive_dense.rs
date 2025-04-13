@@ -326,12 +326,12 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 // If h0 is zero, calculate initial step size using the utility function
                 if self.h0 == T::zero() {
                     // Call standalone hinit function with order parameter
-                    self.h0 = $crate::ode::method::utils::h_init(ode, t0, tf, y, $order, self.rtol, self.atol, self.h_min, self.h_max);
+                    self.h0 = $crate::ode::methods::utils::h_init(ode, t0, tf, y, $order, self.rtol, self.atol, self.h_min, self.h_max);
                     evals += 2; // hinit uses 2 evaluation
                 }
 
                 // Check bounds
-                match $crate::ode::method::utils::validate_step_size_parameters::<T, R, C, D>(self.h0, self.h_min, self.h_max, t0, tf) {
+                match $crate::ode::methods::utils::validate_step_size_parameters::<T, R, C, D>(self.h0, self.h_min, self.h_max, t0, tf) {
                     Ok(h0) => self.h = h0,
                     Err(status) => return Err(status),
                 }
@@ -489,7 +489,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 self.h *= scale;
 
                 // Ensure step size is within bounds
-                self.h = $crate::ode::method::utils::constrain_step_size(self.h, self.h_min, self.h_max);
+                self.h = $crate::ode::methods::utils::constrain_step_size(self.h, self.h_min, self.h_max);
                 Ok(evals)
             }
 

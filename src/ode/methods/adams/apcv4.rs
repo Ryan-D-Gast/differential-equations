@@ -19,7 +19,7 @@ use super::*;
 ///
 /// ```
 /// use differential_equations::ode::*;
-/// use differential_equations::ode::method::APCV4;
+/// use differential_equations::ode::methods::APCV4;
 /// use nalgebra::{SVector, vector};
 ///
 /// struct HarmonicOscillator {

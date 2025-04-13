@@ -2,7 +2,7 @@
 
 use differential_equations::ode::ControlFlag;
 use differential_equations::ode::ODE;
-use differential_equations::ode::method::{
+use differential_equations::ode::methods::{
     APCF4, APCV4, DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98,
 };
 use differential_equations::ode::{IVP, Error, Status};

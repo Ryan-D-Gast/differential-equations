@@ -120,8 +120,8 @@ pub use solout::{
 };
 
 // NumericalMethod for ODEs
-pub mod method;
-pub use method::{
+pub mod methods;
+pub use methods::{
     // Re-exporting popular solvers to ode module for quick access
     RK4,    // Fixed Step Runge-Kutta 4th Order NumericalMethod
     DOP853, // Adaptive Step Dormand-Prince 8(5,3) NumericalMethod with dense output of order 7

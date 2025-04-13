@@ -255,7 +255,7 @@ macro_rules! runge_kutta_method {
                 F: $crate::ode::ODE<T, R, C, D>
             {
                 // Check Bounds
-                match $crate::ode::method::utils::validate_step_size_parameters::<T, R, C, D>(self.h, T::zero(), T::infinity(), t0, tf) {
+                match $crate::ode::methods::utils::validate_step_size_parameters::<T, R, C, D>(self.h, T::zero(), T::infinity(), t0, tf) {
                     Ok(_) => {},
                     Err(e) => return Err(e),
                 }

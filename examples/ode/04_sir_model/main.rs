@@ -1,4 +1,4 @@
-use differential_equations::ode::method::APCV4;
+use differential_equations::ode::methods::APCV4;
 use differential_equations::ode::*;
 use nalgebra::{SVector, vector};
 

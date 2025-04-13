@@ -6,7 +6,7 @@ use crate::{
     traits::{Real, CallBackData},
     ode::{
         ODE, NumericalMethod, NumEvals,
-        method::utils::{constrain_step_size, validate_step_size_parameters},
+        methods::utils::{constrain_step_size, validate_step_size_parameters},
     },
 };
 use nalgebra::SMatrix;
