@@ -88,11 +88,11 @@ use nalgebra::SMatrix;
 /// }
 ///
 /// // Solve from t=0 to t=1 with initial condition y=1
-/// let mut solver = DOP853::new().rtol(1e-8).atol(1e-10);
+/// let mut method = DOP853::new().rtol(1e-8).atol(1e-10);
 /// let mut solout = DefaultSolout::new();
 /// let system = ExponentialGrowth;
 /// let y0 = Vector1::new(1.0);
-/// let result = solve_ivp(&mut solver, &system, 0.0, 1.0, &y0, &mut solout);
+/// let result = solve_ivp(&mut method, &system, 0.0, 1.0, &y0, &mut solout);
 ///
 /// match result {
 ///     Ok(solution) => {

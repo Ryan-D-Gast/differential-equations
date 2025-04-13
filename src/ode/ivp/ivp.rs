@@ -92,11 +92,11 @@ use nalgebra::SMatrix;
 /// }
 ///
 /// let ode = HarmonicOscillator { k: 1.0 };
-/// let mut solver = DOP853::new().rtol(1e-12).atol(1e-12);
+/// let mut method = DOP853::new().rtol(1e-12).atol(1e-12);
 ///
 /// // Basic usage with default output points
 /// let ivp = IVP::new(ode, 0.0, 10.0, vector![1.0, 0.0]);
-/// let results = ivp.solve(&mut solver).unwrap();
+/// let results = ivp.solve(&mut method).unwrap();
 ///
 /// // Advanced: evenly spaced output with 0.1 time intervals
 /// let results = ivp.dense(4).solve(&mut solver).unwrap();
