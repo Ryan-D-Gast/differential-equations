@@ -1,6 +1,6 @@
 //! Defines system of differential equations for numerical solvers.
 //! The NumericalMethods use this trait to take a input system from the user and solve
-//! Includes a differential equation and optional solout function to interupt solver
+//! Includes a differential equation and optional event function to interupt solver
 //! given a condition or event.
 
 use crate::{
