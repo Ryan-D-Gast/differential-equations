@@ -6,8 +6,9 @@ pub mod adams;
 // Runge-Kutta methods for solving ordinary differential equations.
 pub mod runge_kutta;
 
-// Utilities for solvers to help standardize and reduce code duplication.
-pub mod utils;
+// Initial step size determination methods for ODEs.
+mod h_init;
+pub use h_init::h_init;
 
 pub use {
     // Adams Predictor Corrector Methods.

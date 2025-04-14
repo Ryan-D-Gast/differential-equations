@@ -244,7 +244,7 @@ macro_rules! adaptive_runge_kutta_method {
                 F: $crate::ode::ODE<T, R, C, D>,
             {
                 // Check bounds
-                match $crate::ode::methods::utils::validate_step_size_parameters::<T, R, C, D>(self.h0, self.h_min, self.h_max, t0, tf) {
+                match $crate::utils::validate_step_size_parameters::<T, R, C, D>(self.h0, self.h_min, self.h_max, t0, tf) {
                     Ok(h0) => self.h = h0,
                     Err(status) => return Err(status),
                 }
@@ -394,7 +394,7 @@ macro_rules! adaptive_runge_kutta_method {
                 self.h *= scale;
 
                 // Ensure step size is within bounds
-                self.h = $crate::ode::methods::utils::constrain_step_size(self.h, self.h_min, self.h_max);
+                self.h = $crate::utils::constrain_step_size(self.h, self.h_min, self.h_max);
                 Ok(evals)
             }
 

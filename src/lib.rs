@@ -110,6 +110,9 @@ pub mod traits;
 // Interpolation Functions
 pub mod interpolate;
 
+// Shared Utility Functions
+pub mod utils;
+
 // -- Shared items for re-exporting to differential equation type modules --
 mod shared {
     pub use crate::solout::CrossingDirection;

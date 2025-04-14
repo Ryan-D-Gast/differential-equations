@@ -4,9 +4,9 @@ use crate::{
     Error, Status,
     interpolate::{Interpolation, InterpolationError},
     traits::{Real, CallBackData},
+    utils::{constrain_step_size, validate_step_size_parameters},
     ode::{
         ODE, NumericalMethod, NumEvals,
-        methods::utils::{constrain_step_size, validate_step_size_parameters},
     },
 };
 use nalgebra::SMatrix;
