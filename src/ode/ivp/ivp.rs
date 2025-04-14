@@ -1,14 +1,11 @@
 //! Initial Value Problem Struct and Constructors
 
 use crate::{
-    Solution, Error,
-    traits::{Real, CallBackData},
-    ode::{
+    interpolate::Interpolation, ode::{
         ivp::solve_ivp,
         numerical_method::NumericalMethod,
-        solout::*,
         ODE,
-    },
+    }, solout::*, traits::{CallBackData, Real}, Error, Solution
 };
 use nalgebra::SMatrix;
 
@@ -99,7 +96,7 @@ use nalgebra::SMatrix;
 /// let results = ivp.solve(&mut method).unwrap();
 ///
 /// // Advanced: evenly spaced output with 0.1 time intervals
-/// let results = ivp.dense(4).solve(&mut solver).unwrap();
+/// let results = ivp.dense(4).solve(&mut method).unwrap();
 /// ```
 #[derive(Clone, Debug)]
 pub struct IVP<T, const R: usize, const C: usize, D, F>
@@ -152,7 +149,7 @@ where
     ///
     pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, R, C, D>, Error<T, R, C>>
     where
-        S: NumericalMethod<T, R, C, D>,
+        S: NumericalMethod<T, R, C, D> + Interpolation<T, R, C>,
     {
         let mut default_solout = DefaultSolout::new(); // Default solout implementation
         solve_ivp(
@@ -305,7 +302,7 @@ where
     ///
     pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, R, C, D>, Error<T, R, C>>
     where
-        S: NumericalMethod<T, R, C, D>,
+        S: NumericalMethod<T, R, C, D> + Interpolation<T, R, C>,
     {
         solve_ivp(
             solver,
@@ -358,7 +355,7 @@ where
     ///
     pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, R, C, D>, Error<T, R, C>>
     where
-        S: NumericalMethod<T, R, C, D>,
+        S: NumericalMethod<T, R, C, D> + Interpolation<T, R, C>,
     {
         solve_ivp(
             solver,

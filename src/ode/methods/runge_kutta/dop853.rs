@@ -2,7 +2,7 @@
 
 use crate::{
     Error, Status,
-    interpolate::InterpolationError,
+    interpolate::{Interpolation, InterpolationError},
     traits::{Real, CallBackData},
     ode::{
         ODE, NumericalMethod, NumEvals,
@@ -554,32 +554,6 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         Ok(evals)
     }
 
-    fn interpolate(
-        &mut self,
-        t_interp: T,
-    ) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
-        // Check if interpolation is out of bounds
-        if t_interp < self.t_old || t_interp > self.t {
-            return Err(InterpolationError::OutOfBounds {
-                t_interp, 
-                t_prev: self.t_old, 
-                t_curr: self.t,
-            });
-        }
-
-        // Evaluate the interpolation polynomial at the requested time
-        let s = (t_interp - self.t_old) / self.h_old;
-        let s1 = T::one() - s;
-
-        // Compute the interpolated value using nested polynomial evaluation
-        let conpar = self.cont[4] + (self.cont[5] + (self.cont[6] + self.cont[7] * s) * s1) * s;
-
-        let y_interp = self.cont[0]
-            + (self.cont[1] + (self.cont[2] + (self.cont[3] + conpar * s1) * s) * s1) * s;
-
-        Ok(y_interp)
-    }
-
     fn t(&self) -> T {
         self.t
     }
@@ -610,6 +584,34 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
 
     fn set_status(&mut self, status: Status<T, R, C, D>) {
         self.status = status;
+    }
+}
+
+impl<T: Real, const R: usize, const C: usize, D: CallBackData> Interpolation<T, R, C> for DOP853<T, R, C, D> {
+    fn interpolate(
+        &mut self,
+        t_interp: T,
+    ) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
+        // Check if interpolation is out of bounds
+        if t_interp < self.t_old || t_interp > self.t {
+            return Err(InterpolationError::OutOfBounds {
+                t_interp, 
+                t_prev: self.t_old, 
+                t_curr: self.t,
+            });
+        }
+
+        // Evaluate the interpolation polynomial at the requested time
+        let s = (t_interp - self.t_old) / self.h_old;
+        let s1 = T::one() - s;
+
+        // Compute the interpolated value using nested polynomial evaluation
+        let conpar = self.cont[4] + (self.cont[5] + (self.cont[6] + self.cont[7] * s) * s1) * s;
+
+        let y_interp = self.cont[0]
+            + (self.cont[1] + (self.cont[2] + (self.cont[3] + conpar * s1) * s) * s1) * s;
+
+        Ok(y_interp)
     }
 }
 

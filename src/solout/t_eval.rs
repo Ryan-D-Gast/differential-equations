@@ -25,7 +25,7 @@ use super::*;
 ///
 /// ```
 /// use differential_equations::ode::*;
-/// use differential_equations::ode::solout::TEvalSolout;
+/// use differential_equations::solout::TEvalSolout;
 /// use nalgebra::{Vector2, vector};
 ///
 /// // Simple harmonic oscillator
@@ -80,13 +80,18 @@ where
     T: Real,
     D: CallBackData,
 {
-    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, D>) -> ControlFlag<D>
-    where
-        S: NumericalMethod<T, R, C, D>,
+    fn solout<I>(
+            &mut self, 
+            t_curr: T,
+            t_prev: T,
+            y_curr: &SMatrix<T, R, C>,
+            _y_prev: &SMatrix<T, R, C>,
+            interpolator: &mut I,
+            solution: &mut Solution<T, R, C, D>
+        ) -> ControlFlag<D>
+        where
+            I: Interpolation<T, R, C> 
     {
-        let t_prev = solver.t_prev();
-        let t_curr = solver.t();
-
         // Process evaluation points that fall within current step
         let mut idx = self.next_eval_idx;
         while idx < self.t_evals.len() {
@@ -102,10 +107,10 @@ where
             if in_range {
                 // If the evaluation point is exactly at the current step, just use the solver's state
                 if t_eval == t_curr {
-                    solution.push(t_eval, *solver.y());
+                    solution.push(t_eval, *y_curr);
                 } else {
                     // Otherwise interpolate
-                    let y_eval = solver.interpolate(t_eval).unwrap();
+                    let y_eval = interpolator.interpolate(t_eval).unwrap();
                     solution.push(t_eval, y_eval);
                 }
                 idx += 1;

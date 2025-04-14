@@ -22,7 +22,7 @@ use super::*;
 ///
 /// ```
 /// use differential_equations::ode::*;
-/// use differential_equations::ode::solout::EvenSolout;
+/// use differential_equations::solout::EvenSolout;
 /// use nalgebra::{Vector2, vector};
 ///
 /// // Simple harmonic oscillator
@@ -78,13 +78,18 @@ where
     T: Real,
     D: CallBackData,
 {
-    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, D>) -> ControlFlag<D>
-    where
-        S: NumericalMethod<T, R, C, D> 
+    fn solout<I>(
+            &mut self, 
+            t_curr: T,
+            t_prev: T,
+            y_curr: &SMatrix<T, R, C>,
+            y_prev: &SMatrix<T, R, C>,
+            interpolator: &mut I,
+            solution: &mut Solution<T, R, C, D>
+        ) -> ControlFlag<D>
+        where
+            I: Interpolation<T, R, C> 
     {
-        let t_curr = solver.t();
-        let t_prev = solver.t_prev();
-
         // Determine the alignment offset (remainder when divided by dt)
         let offset = self.t0 % self.dt;
 
@@ -94,7 +99,7 @@ where
             None => {
                 // First time through, we need to include t0
                 if (t_prev - self.t0).abs() < T::default_epsilon() {
-                    solution.push(self.t0, *solver.y_prev());
+                    solution.push(self.t0, *y_prev);
                     self.last_output_t = Some(self.t0);
                     self.t0 + self.dt * self.direction
                 } else {
@@ -130,7 +135,7 @@ where
             if (self.direction > T::zero() && ti >= t_prev && ti <= t_curr)
                 || (self.direction < T::zero() && ti <= t_prev && ti >= t_curr)
             {
-                let yi = solver.interpolate(ti).unwrap();
+                let yi = interpolator.interpolate(ti).unwrap();
                 solution.push(ti, yi);
                 self.last_output_t = Some(ti);
             }
@@ -143,7 +148,7 @@ where
         if t_curr == self.tf
             && (self.last_output_t.is_none() || self.last_output_t.unwrap() != self.tf)
         {
-            solution.push(self.tf, *solver.y());
+            solution.push(self.tf, *y_curr);
             self.last_output_t = Some(self.tf);
         }
 

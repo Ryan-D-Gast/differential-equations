@@ -18,7 +18,7 @@ use super::*;
 ///
 /// ```
 /// use differential_equations::ode::*;
-/// use differential_equations::ode::solout::DenseSolout;
+/// use differential_equations::solout::DenseSolout;
 /// use nalgebra::{Vector2, vector};
 ///
 /// // Simple harmonic oscillator
@@ -75,25 +75,30 @@ where
     T: Real,
     D: CallBackData,
 {
-    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, D>) -> ControlFlag<D>
-    where
-        S: NumericalMethod<T, R, C, D> 
+    fn solout<I>(
+            &mut self, 
+            t_curr: T,
+            t_prev: T,
+            y_curr: &SMatrix<T, R, C>,
+            _y_prev: &SMatrix<T, R, C>,
+            interpolator: &mut I,
+            solution: &mut Solution<T, R, C, D>
+        ) -> ControlFlag<D>
+        where
+            I: Interpolation<T, R, C> 
     {
-        let t_prev = solver.t_prev();
-        let t_curr = solver.t();
-
         // Interpolate between steps
         if t_prev != t_curr {
             for i in 1..self.n {
                 let h_old = t_curr - t_prev;
                 let ti = t_prev + T::from_usize(i).unwrap() * h_old / T::from_usize(self.n).unwrap();
-                let yi = solver.interpolate(ti).unwrap();
+                let yi = interpolator.interpolate(ti).unwrap();
                 solution.push(ti, yi);
             }
         }
 
         // Save actual calculated step as well
-        solution.push(t_curr, *solver.y());
+        solution.push(t_curr, *y_curr);
 
         // Continue the integration
         ControlFlag::Continue

@@ -349,33 +349,6 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         Ok(evals)
     }
 
-    fn interpolate(
-        &mut self,
-        t_interp: T,
-    ) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
-        // Check if t is within the range of the solver
-        if t_interp < self.t_old || t_interp > self.t {
-            return Err(InterpolationError::OutOfBounds {
-                t_interp, 
-                t_prev: self.t_old, 
-                t_curr: self.t,
-            });
-        }
-
-        // Calculate the interpolated value using cubic Hermite interpolation
-        let y_interp = cubic_hermite_interpolate(
-            self.t_old,
-            self.t,
-            &self.y_old,
-            &self.y,
-            &self.dydt_old,
-            &self.dydt,
-            t_interp,
-        );
-
-        Ok(y_interp)
-    }
-
     fn t(&self) -> T {
         self.t
     }
@@ -409,6 +382,38 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
 
     fn set_status(&mut self, status: Status<T, R, C, D>) {
         self.status = status;
+    }
+}
+
+// Implement the Interpolation trait for APCV4
+impl<T: Real, const R: usize, const C: usize, D: CallBackData> Interpolation<T, R, C>
+    for APCV4<T, R, C, D>
+{
+    fn interpolate(
+        &mut self,
+        t_interp: T,
+    ) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
+        // Check if t is within the range of the solver
+        if t_interp < self.t_old || t_interp > self.t {
+            return Err(InterpolationError::OutOfBounds {
+                t_interp,
+                t_prev: self.t_old,
+                t_curr: self.t,
+            });
+        }
+
+        // Calculate the interpolated value using cubic Hermite interpolation
+        let y_interp = cubic_hermite_interpolate(
+            self.t_old,
+            self.t,
+            &self.y_old,
+            &self.y,
+            &self.dydt_old,
+            &self.dydt,
+            t_interp,
+        );
+
+        Ok(y_interp)
     }
 }
 

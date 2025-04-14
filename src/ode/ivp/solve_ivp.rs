@@ -1,13 +1,10 @@
 //! Solve IVP function
 
 use crate::{
-    Solution, Error, Status, ControlFlag,
-    traits::{Real, CallBackData},
-    ode::{
+    interpolate::Interpolation, ode::{
         numerical_method::NumericalMethod,
-        solout::*,
         ODE,
-    },
+    }, solout::*, traits::{CallBackData, Real}, ControlFlag, Error, Solution, Status
 };
 use nalgebra::SMatrix;
 
@@ -75,7 +72,7 @@ use nalgebra::SMatrix;
 ///
 /// ```
 /// use differential_equations::ode::*;
-/// use differential_equations::ode::solout::DefaultSolout;
+/// use differential_equations::solout::DefaultSolout;
 /// use nalgebra::Vector1;
 ///
 /// // Define a simple exponential growth ode: dy/dt = y
@@ -124,7 +121,7 @@ where
     T: Real,
     D: CallBackData,
     F: ODE<T, R, C, D>,
-    S: NumericalMethod<T, R, C, D>,
+    S: NumericalMethod<T, R, C, D> + Interpolation<T, R, C>,
     O: Solout<T, R, C, D>,
 {
     // Initialize the Solution object
@@ -153,7 +150,9 @@ where
     }
 
     // Call solout to initialize the output strategy
-    match solout.solout(solver, &mut solution) {
+    let mut y_curr = *solver.y();
+    let mut y_prev = *solver.y_prev();
+    match solout.solout(solver.t(), solver.t_prev(), &y_curr, &y_prev, solver, &mut solution) {
         ControlFlag::Continue => {}
         ControlFlag::Terminate(reason) => {
             solution.status = Status::Interrupted(reason);
@@ -214,7 +213,9 @@ where
         }
 
         // Record the result
-        match solout.solout(solver, &mut solution) {
+        y_curr = *solver.y();
+        y_prev = *solver.y_prev();
+        match solout.solout(solver.t(), solver.t_prev(), &y_curr, &y_prev, solver, &mut solution) {
             ControlFlag::Continue => {}
             ControlFlag::Terminate(reason) => {
                 solution.status = Status::Interrupted(reason);

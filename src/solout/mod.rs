@@ -12,7 +12,7 @@
 use crate::{
     Solution, ControlFlag,
     traits::{Real, CallBackData},
-    ode::numerical_method::NumericalMethod,
+    interpolate::Interpolation,
 };
 use nalgebra::SMatrix;
 

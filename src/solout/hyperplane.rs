@@ -207,13 +207,18 @@ where
     T: Real,
     D: CallBackData,
 {
-    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R2, C2, D>) -> ControlFlag<D>
-    where
-        S: NumericalMethod<T, R2, C2, D> 
+    fn solout<I>(
+            &mut self, 
+            t_curr: T,
+            t_prev: T,
+            y_curr: &SMatrix<T, R2, C2>,
+            _y_prev: &SMatrix<T, R2, C2>,
+            interpolator: &mut I,
+            solution: &mut Solution<T, R2, C2, D>
+        ) -> ControlFlag<D>
+        where
+            I: Interpolation<T, R2, C2> 
     {
-        let t_curr = solver.t();
-        let y_curr = solver.y();
-
         // Extract position from current state and calculate distance
         let pos_curr = (self.extractor)(y_curr);
         let distance = self.signed_distance(&pos_curr);
@@ -235,14 +240,12 @@ where
                 };
 
                 if record_crossing {
-                    let t_prev = solver.t_prev();
-
                     // Find the crossing time using Newton's method
                     if let Some(t_cross) =
-                        self.find_crossing_newton(solver, t_prev, t_curr, last_distance, distance)
+                        self.find_crossing_newton(interpolator, t_prev, t_curr, last_distance, distance)
                     {
-                        // Use solver's interpolation for the full state vector at crossing time
-                        let y_cross = solver.interpolate(t_cross).unwrap();
+                        // Use interpolator's interpolation for the full state vector at crossing time
+                        let y_cross = interpolator.interpolate(t_cross).unwrap();
 
                         // Record the crossing time and value
                         solution.push(t_cross, y_cross);
@@ -250,7 +253,7 @@ where
                         // Fallback to linear interpolation if Newton's method fails
                         let frac = -last_distance / (distance - last_distance);
                         let t_cross = t_prev + frac * (t_curr - t_prev);
-                        let y_cross = solver.interpolate(t_cross).unwrap();
+                        let y_cross = interpolator.interpolate(t_cross).unwrap();
 
                         // push estimated crossing time and value
                         solution.push(t_cross, y_cross);
@@ -272,18 +275,17 @@ impl<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize>
 where
     T: Real,
 {
-    /// Find the crossing time using Newton's method with solver interpolation
-    fn find_crossing_newton<S, D>(
+    /// Find the crossing time using Newton's method with interpolator interpolation
+    fn find_crossing_newton<I>(
         &self,
-        solver: &mut S,
+        interpolator: &mut I,
         t_lower: T,
         t_upper: T,
         dist_lower: T,
         dist_upper: T,
     ) -> Option<T>
     where
-        S: NumericalMethod<T, R2, C2, D>,
-        D: CallBackData,
+        I: Interpolation<T, R2, C2>,
     {
         // Start with linear interpolation as initial guess
         let mut t = t_lower - dist_lower * (t_upper - t_lower) / (dist_upper - dist_lower);
@@ -296,7 +298,7 @@ where
         // Newton's method iterations
         for _ in 0..max_iterations {
             // Get interpolated state at current time guess
-            let y_t = solver.interpolate(t).unwrap();
+            let y_t = interpolator.interpolate(t).unwrap();
 
             // Extract position and calculate signed distance
             let pos_t = (self.extractor)(&y_t);
@@ -310,7 +312,7 @@ where
             // Calculate numerical derivative of the distance function
             let delta_t = (t_upper - t_lower) * T::from_f64(1e-6).unwrap();
             let t_plus = t + delta_t;
-            let y_plus = solver.interpolate(t_plus).unwrap();
+            let y_plus = interpolator.interpolate(t_plus).unwrap();
             let pos_plus = (self.extractor)(&y_plus);
             let dist_plus = self.signed_distance(&pos_plus);
 
@@ -334,7 +336,7 @@ where
         }
 
         // If we didn't converge within max_iterations, check if we're close enough
-        let y_t = solver.interpolate(t).unwrap();
+        let y_t = interpolator.interpolate(t).unwrap();
         let pos_t = (self.extractor)(&y_t);
         dist = self.signed_distance(&pos_t);
 

@@ -398,22 +398,6 @@ macro_rules! adaptive_runge_kutta_method {
                 Ok(evals)
             }
 
-            fn interpolate(&mut self, t_interp: T) -> Result<nalgebra::SMatrix<T, R, C>, $crate::interpolate::InterpolationError<T, R, C>> {
-                // Check if t is within bounds
-                if t_interp < self.t_prev || t_interp > self.t {
-                    return Err($crate::interpolate::InterpolationError::OutOfBounds {
-                        t_interp, 
-                        t_prev: self.t_prev, 
-                        t_curr: self.t
-                    });
-                }
-
-                // Compute the interpolated value using cubic Hermite interpolation
-                let y_interp = $crate::interpolate::cubic_hermite_interpolate(self.t_prev, self.t, &self.y_prev, &self.y, &self.dydt_prev, &self.dydt, t_interp);
-
-                Ok(y_interp)
-            }
-
             fn t(&self) -> T {
                 self.t
             }
@@ -444,6 +428,24 @@ macro_rules! adaptive_runge_kutta_method {
 
             fn set_status(&mut self, status: $crate::ode::Status<T, R, C, D>) {
                 self.status = status;
+            }
+        }
+
+        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> $crate::interpolate::Interpolation<T, R, C> for $name<T, R, C, D> {
+            fn interpolate(&mut self, t_interp: T) -> Result<nalgebra::SMatrix<T, R, C>, $crate::interpolate::InterpolationError<T, R, C>> {
+                // Check if t is within bounds
+                if t_interp < self.t_prev || t_interp > self.t {
+                    return Err($crate::interpolate::InterpolationError::OutOfBounds {
+                        t_interp, 
+                        t_prev: self.t_prev, 
+                        t_curr: self.t
+                    });
+                }
+
+                // Compute the interpolated value using cubic Hermite interpolation
+                let y_interp = $crate::interpolate::cubic_hermite_interpolate(self.t_prev, self.t, &self.y_prev, &self.y, &self.dydt_prev, &self.dydt, t_interp);
+
+                Ok(y_interp)
             }
         }
 

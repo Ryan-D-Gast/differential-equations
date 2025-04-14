@@ -493,6 +493,40 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 Ok(evals)
             }
 
+            fn t(&self) -> T {
+                self.t
+            }
+
+            fn y(&self) -> &nalgebra::SMatrix<T, R, C> {
+                &self.y
+            }
+
+            fn t_prev(&self) -> T {
+                self.t_prev
+            }
+
+            fn y_prev(&self) -> &nalgebra::SMatrix<T, R, C> {
+                &self.y_prev
+            }
+
+            fn h(&self) -> T {
+                self.h
+            }
+
+            fn set_h(&mut self, h: T) {
+                self.h = h;
+            }
+
+            fn status(&self) -> &$crate::ode::Status<T, R, C, D> {
+                &self.status
+            }
+
+            fn set_status(&mut self, status: $crate::ode::Status<T, R, C, D>) {
+                self.status = status;
+            }
+        }
+
+        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> $crate::interpolate::Interpolation<T, R, C> for $name<T, R, C, D> {
             fn interpolate(&mut self, t_interp: T) -> Result<nalgebra::SMatrix<T, R, C>, $crate::interpolate::InterpolationError<T, R, C>> {
                 // Check if t is within bounds
                 if t_interp < self.t_prev || t_interp > self.t {
@@ -527,38 +561,6 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 }
 
                 Ok(y_interp)
-            }
-
-            fn t(&self) -> T {
-                self.t
-            }
-
-            fn y(&self) -> &nalgebra::SMatrix<T, R, C> {
-                &self.y
-            }
-
-            fn t_prev(&self) -> T {
-                self.t_prev
-            }
-
-            fn y_prev(&self) -> &nalgebra::SMatrix<T, R, C> {
-                &self.y_prev
-            }
-
-            fn h(&self) -> T {
-                self.h
-            }
-
-            fn set_h(&mut self, h: T) {
-                self.h = h;
-            }
-
-            fn status(&self) -> &$crate::ode::Status<T, R, C, D> {
-                &self.status
-            }
-
-            fn set_status(&mut self, status: $crate::ode::Status<T, R, C, D>) {
-                self.status = status;
             }
         }
 

@@ -77,6 +77,15 @@
 // Ordinary Differential Equations (ODE) Module
 pub mod ode;
 
+// -- Solution Output Control --
+
+// Numerous implementations of the Solout trait are contained in this module
+pub mod solout;
+pub use solout::{
+    // Solout Trait for controlling output of the solver
+    Solout,
+};
+
 // -- Shared items not specific to a Differential Equation Type --
 
 // Error for Differential Equations NumericalMethods
@@ -103,6 +112,7 @@ pub mod interpolate;
 
 // -- Shared items for re-exporting to differential equation type modules --
 mod shared {
+    pub use crate::solout::CrossingDirection;
     pub use crate::error::Error;
     pub use crate::status::Status;
     pub use crate::control::ControlFlag;

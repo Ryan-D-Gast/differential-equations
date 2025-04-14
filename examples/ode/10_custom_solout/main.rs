@@ -1,4 +1,5 @@
 use differential_equations::ode::*;
+use differential_equations::Solout;
 use nalgebra::{SVector, vector};
 use std::f64::consts::PI;
 
@@ -59,15 +60,20 @@ impl PendulumSolout {
 }
 
 impl Solout<f64, 2, 1> for PendulumSolout {
-    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<f64, 2, 1, String>) -> ControlFlag<String>
-    where
-        S: NumericalMethod<f64, 2, 1, String> 
+    fn solout<I>(
+            &mut self, 
+            t_curr: f64,
+            _t_prev: f64,
+            y_curr: &nalgebra::SMatrix<f64, 2, 1>,
+            _y_prev: &nalgebra::SMatrix<f64, 2, 1>,
+            _interpolator: &mut I,
+            solution: &mut Solution<f64, 2, 1, String>
+        ) -> ControlFlag<String>
+        where
+            I: methods::adams::Interpolation<f64, 2, 1> 
     {
-        let t = solver.t();
-        let y = solver.y();
-
-        let current_angle = y[0];
-        let dt = t - self.last_output_time;
+        let current_angle = y_curr[0];
+        let dt = t_curr - self.last_output_time;
 
         // Detect zero crossings (oscillation count)
         if self.last_angle.signum() != current_angle.signum() && current_angle.signum() != 0.0 {
@@ -83,13 +89,13 @@ impl Solout<f64, 2, 1> for PendulumSolout {
         let angle_crossed_zero = self.last_angle.signum() != current_angle.signum();
 
         if dt >= self.min_dt && (angle_crossed_zero || significant_change) {
-            solution.push(t, *y);
+            solution.push(t_curr, *y_curr);
 
             // Calculate and store energy
-            self.energy_values.push(self.calculate_energy(y));
+            self.energy_values.push(self.calculate_energy(y_curr));
 
             // Update tracking variables
-            self.last_output_time = t;
+            self.last_output_time = t_curr;
         }
 
         self.last_angle = current_angle;

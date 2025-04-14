@@ -3,7 +3,6 @@
 use crate::{
     Error, Status,
     ode::ODE,
-    interpolate::InterpolationError,
     traits::{Real, CallBackData},
 };
 use nalgebra::SMatrix;
@@ -55,17 +54,6 @@ where
     fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, R, C>>
     where
         F: ODE<T, R, C, D>;
-
-    /// Interpolate solution between previous and current step
-    ///
-    /// # Arguments
-    /// * `t_interp` - Time to interpolate to.
-    ///
-    /// # Returns
-    /// * Interpolated state vector at t_interp.
-    ///
-    fn interpolate(&mut self, t_interp: T)
-    -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>>;
 
     // Access fields of the solver
 

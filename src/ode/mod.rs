@@ -111,14 +111,6 @@ pub use ode::{
 mod numerical_method;
 pub use numerical_method::{NumericalMethod, NumEvals};
 
-// Solout Trait for controlling output of the solver
-pub mod solout; // Numerous implementations of the Solout trait are contained in this module
-pub use solout::{
-    CrossingDirection,
-    // Solout Trait for controlling output of the solver
-    Solout,
-};
-
 // NumericalMethod for ODEs
 pub mod methods;
 pub use methods::{

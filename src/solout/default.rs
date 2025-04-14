@@ -24,7 +24,7 @@ use super::*;
 ///
 /// ```
 /// use differential_equations::ode::*;
-/// use differential_equations::ode::solout::DefaultSolout;
+/// use differential_equations::solout::DefaultSolout;
 /// use nalgebra::{Vector1, vector};
 ///
 /// // Simple exponential growth
@@ -69,12 +69,20 @@ where
     T: Real,
     D: CallBackData,
 {
-    fn solout<S>(&mut self, solver: &mut S, solution: &mut Solution<T, R, C, D>) -> ControlFlag<D>
-    where
-        S: NumericalMethod<T, R, C, D>
+    fn solout<I>(
+            &mut self, 
+            t_curr: T,
+            _t_prev: T,
+            y_curr: &SMatrix<T, R, C>,
+            _y_prev: &SMatrix<T, R, C>,
+            _interpolator: &mut I,
+            solution: &mut Solution<T, R, C, D>
+        ) -> ControlFlag<D>
+        where
+            I: Interpolation<T, R, C> 
     {
         // Output the current time and state to the vectors
-        solution.push(solver.t(), *solver.y());
+        solution.push(t_curr, *y_curr);
 
         // Continue the integration
         ControlFlag::Continue
