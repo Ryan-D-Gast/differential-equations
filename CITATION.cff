@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+title: differential-equations
+message: >-
+  If you use this software in scientific
+  publications, please consider citing it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Ryan
+    family-names: Gast
+repository-code: 'https://github.com/Ryan-D-Gast/differential-equations'
+abstract: A high-performance library for numerically solving differential equations in Rust
+license: Apache-2.0
+version: latest
+year: 2025
+url: 'https://github.com/Ryan-D-Gast/differential-equations'
+repository: 'https://github.com/Ryan-D-Gast/differential-equations'
+repository-artifact: 'https://crates.io/crates/differential-equations'
