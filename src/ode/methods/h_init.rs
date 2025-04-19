@@ -2,9 +2,8 @@
 
 use crate::{
     ode::ODE,
-    traits::{Real, CallBackData},
+    traits::{Real, State, CallBackData},
 };
-use nalgebra::SMatrix;
 
 /// Automatically compute an initial step size based on the ODE dynamics
 ///
@@ -31,11 +30,11 @@ use nalgebra::SMatrix;
 ///
 /// The estimated initial step size
 ///
-pub fn h_init<T, F, const R: usize, const C: usize, D>(
+pub fn h_init<T, F, V, D>(
     ode: &F,
     t0: T,
     tf: T,
-    y0: &SMatrix<T, R, C>,
+    y0: &V,
     order: usize,
     rtol: T,
     atol: T,
@@ -44,15 +43,16 @@ pub fn h_init<T, F, const R: usize, const C: usize, D>(
 ) -> T
 where
     T: Real,
-    F: ODE<T, R, C, D>,
+    V: State<T>,
+    F: ODE<T, V, D>,
     D: CallBackData,
 {
     // Direction of integration
     let posneg = (tf - t0).signum();
 
     // Storage for derivatives
-    let mut f0 = SMatrix::<T, R, C>::zeros();
-    let mut f1 = SMatrix::<T, R, C>::zeros();
+    let mut f0 = V::zeros();
+    let mut f1 = V::zeros();
 
     // Compute initial derivative f(t0, y0)
     ode.diff(t0, y0, &mut f0);
@@ -62,12 +62,10 @@ where
     let mut dny = T::zero();
 
     // Loop through all elements to compute weighted norms
-    for r in 0..R {
-        for c in 0..C {
-            let sk = atol + rtol * y0[(r, c)].abs();
-            dnf += (f0[(r, c)] / sk).powi(2);
-            dny += (y0[(r, c)] / sk).powi(2);
-        }
+    for n in 0..y0.len() {
+        let sk = atol + rtol * y0.get(n).abs();
+        dnf += (f0.get(n) / sk).powi(2);
+        dny += (y0.get(n) / sk).powi(2);
     }
 
     // Initial step size guess
@@ -83,7 +81,7 @@ where
     h *= posneg;
 
     // Perform an explicit Euler step
-    let y1 = y0 + f0 * h;
+    let y1 = *y0 + f0 * h;
 
     // Evaluate derivative at new point
     ode.diff(t0 + h, &y1, &mut f1);
@@ -91,11 +89,9 @@ where
     // Estimate the second derivative
     let mut der2 = T::zero();
 
-    for r in 0..R {
-        for c in 0..C {
-            let sk = atol + rtol * y0[(r, c)].abs();
-            der2 += ((f1[(r, c)] - f0[(r, c)]) / sk).powi(2);
-        }
+    for n in 0..y0.len() {
+        let sk = atol + rtol * y0.get(n).abs();
+        der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
     }
     der2 = der2.sqrt() / h.abs();
 

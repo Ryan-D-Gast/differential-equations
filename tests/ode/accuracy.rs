@@ -74,7 +74,7 @@ fn accuracy() {
         tolerance: 1e1,
 
         solver_name: RKF,
-        solver: RKF::new(0.01),
+        solver: RKF::new(),
         tolerance: 1e3,
 
         solver_name: RK4,
@@ -90,7 +90,7 @@ fn accuracy() {
         tolerance: 1e3,
 
         solver_name: APCV4,
-        solver: APCV4::new(0.01),
+        solver: APCV4::new(),
         tolerance: 1e3,
 
         solver_name: RKV65,
@@ -119,7 +119,7 @@ fn accuracy() {
         tolerance: 1e-2,
 
         solver_name: RKF,
-        solver: RKF::new(-0.01),
+        solver: RKF::new(),
         tolerance: 1e-2,
 
         solver_name: RK4,
@@ -135,7 +135,7 @@ fn accuracy() {
         tolerance: 1e-1,
 
         solver_name: APCV4,
-        solver: APCV4::new(-0.01),
+        solver: APCV4::new(),
         tolerance: 1e-1,
 
         solver_name: RKV65,
@@ -164,7 +164,7 @@ fn accuracy() {
         tolerance: 1e1,
 
         solver_name: RKF,
-        solver: RKF::new(0.01),
+        solver: RKF::new(),
         tolerance: 1e3,
 
         solver_name: RK4,
@@ -180,7 +180,7 @@ fn accuracy() {
         tolerance: 1e4,
 
         solver_name: APCV4,
-        solver: APCV4::new(0.01),
+        solver: APCV4::new(),
         tolerance: 1e4,
 
         solver_name: RKV65,
@@ -209,7 +209,7 @@ fn accuracy() {
         tolerance: 1e-2,
 
         solver_name: RKF,
-        solver: RKF::new(0.01),
+        solver: RKF::new(),
         tolerance: 1e-3,
 
         solver_name: RK4,
@@ -225,7 +225,7 @@ fn accuracy() {
         tolerance: 1e-1,
 
         solver_name: APCV4,
-        solver: APCV4::new(0.01),
+        solver: APCV4::new(),
         tolerance: 1e-1,
 
         solver_name: RKV65,
@@ -254,7 +254,7 @@ fn accuracy() {
         tolerance: 1e-3,
 
         solver_name: RKF,
-        solver: RKF::new(0.01),
+        solver: RKF::new(),
         tolerance: 1e-2,
 
         solver_name: RK4,
@@ -270,7 +270,7 @@ fn accuracy() {
         tolerance: 1e-2,
 
         solver_name: APCV4,
-        solver: APCV4::new(0.01),
+        solver: APCV4::new(),
         tolerance: 1e-2,
 
         solver_name: RKV65,

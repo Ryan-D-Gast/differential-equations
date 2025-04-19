@@ -1,13 +1,13 @@
 //! Interpolation Methods for the IVP struct when solving the system.
 
-use crate::traits::Real;
-use nalgebra::SMatrix;
+use crate::traits::{Real, State};
 use std::fmt::{Debug, Display};
 
 /// Interpolation trait implemented by Solvers to allow Solout to access interpolated values between t_prev and t_curr
-pub trait Interpolation<T, const R: usize, const C: usize> 
+pub trait Interpolation<T, V> 
 where 
     T: Real,
+    V: State<T>,
 {
     /// Interpolate between previous and current step
     /// 
@@ -24,7 +24,7 @@ where
     fn interpolate(
         &mut self,
         t_interp: T,
-    ) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>>;
+    ) -> Result<V, InterpolationError<T>>;
 }
 
 /// Interpolation Error for ODE NumericalMethods
@@ -33,7 +33,7 @@ where
 /// * `OutOfBounds` - Given t is not within the previous and current step.
 ///
 #[derive(PartialEq, Clone)]
-pub enum InterpolationError<T, const R: usize, const C: usize>
+pub enum InterpolationError<T>
 where
     T: Real,
 {
@@ -45,7 +45,7 @@ where
     }
 }
 
-impl<T, const R: usize, const C: usize> Display for InterpolationError<T, R, C>
+impl<T> Display for InterpolationError<T>
 where
     T: Real,
 {
@@ -62,7 +62,7 @@ where
     }
 }
 
-impl<T, const R: usize, const C: usize> Debug for InterpolationError<T, R, C>
+impl<T> Debug for InterpolationError<T>
 where
     T: Real,
 {
@@ -79,7 +79,7 @@ where
     }
 }
 
-impl<T, const R: usize, const C: usize> std::error::Error for InterpolationError<T, R, C>
+impl<T> std::error::Error for InterpolationError<T>
 where
     T: Real,
 {}
@@ -96,15 +96,15 @@ where
 /// # Returns
 /// * Interpolated State Vector.
 ///
-pub fn cubic_hermite_interpolate<T: Real, const R: usize, const C: usize>(
+pub fn cubic_hermite_interpolate<T: Real, V: State<T>>(
     t0: T,
     t1: T,
-    y0: &SMatrix<T, R, C>,
-    y1: &SMatrix<T, R, C>,
-    k0: &SMatrix<T, R, C>,
-    k1: &SMatrix<T, R, C>,
+    y0: &V,
+    y1: &V,
+    k0: &V,
+    k1: &V,
     t: T,
-) -> SMatrix<T, R, C> {
+) -> V {
     let two = T::from_f64(2.0).unwrap();
     let three = T::from_f64(3.0).unwrap();
     let h = t1 - t0;
@@ -113,5 +113,5 @@ pub fn cubic_hermite_interpolate<T: Real, const R: usize, const C: usize>(
     let h10 = s.powi(3) - two * s.powi(2) + s;
     let h01 = -two * s.powi(3) + three * s.powi(2);
     let h11 = s.powi(3) - s.powi(2);
-    y0 * h00 + k0 * h10 * h + y1 * h01 + k1 * h11 * h
+    *y0 * h00 + *k0 * h10 * h + *y1 * h01 + *k1 * h11 * h
 }

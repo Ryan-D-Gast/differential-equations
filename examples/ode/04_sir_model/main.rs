@@ -1,6 +1,6 @@
 use differential_equations::ode::methods::APCV4;
 use differential_equations::ode::*;
-use nalgebra::{SVector, vector};
+use nalgebra::{vector, Vector3};
 
 /// SIR (Susceptible, Infected, Recovered) Model
 ///
@@ -31,8 +31,8 @@ impl std::fmt::Display for PopulationMonitor {
 // Here, the ODE trait is implemented with the final generic type as PopulationMonitor.
 // Custom types that implement Clone and Debug can be used and passed through back
 // to user when a termination event occurs.
-impl ODE<f64, 3, 1, PopulationMonitor> for SIRModel {
-    fn diff(&self, _t: f64, y: &SVector<f64, 3>, dydt: &mut SVector<f64, 3>) {
+impl ODE<f64, Vector3<f64>, PopulationMonitor> for SIRModel {
+    fn diff(&self, _t: f64, y: &Vector3<f64>, dydt: &mut Vector3<f64>) {
         let s = y[0]; // Susceptible
         let i = y[1]; // Infected
         let _r = y[2]; // Recovered
@@ -42,7 +42,7 @@ impl ODE<f64, 3, 1, PopulationMonitor> for SIRModel {
         dydt[2] = self.gamma * i; // Recovered
     }
 
-    fn event(&self, _t: f64, y: &SVector<f64, 3>) -> ControlFlag<PopulationMonitor> {
+    fn event(&self, _t: f64, y: &Vector3<f64>) -> ControlFlag<PopulationMonitor> {
         let i = y[1]; // Infected
 
         // Check the PopulationMonitor
@@ -60,7 +60,7 @@ impl ODE<f64, 3, 1, PopulationMonitor> for SIRModel {
 
 fn main() {
     // method with relative and absolute tolerances
-    let mut method = APCV4::new(0.01);
+    let mut method = APCV4::new().tol(1e-6);
 
     // Initial conditions
     let initial_susceptible = 990.0;

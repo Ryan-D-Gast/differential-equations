@@ -1,6 +1,7 @@
 //! Defines Generics for the library. Includes generics for the floating point numbers.
 
-use nalgebra::RealField;
+use std::ops::{Add, AddAssign, Div, Mul, Sub};
+use nalgebra::{SMatrix, RealField};
 
 /// Real Number Trait
 ///
@@ -35,6 +36,93 @@ impl Real for f64 {
     fn to_f64(self) -> f64 {
         self
     }
+}
+
+/// State vector trait
+pub trait State<T>:
+    Clone +
+    Copy +
+    Add<Output = Self> +
+    Sub<Output = Self> +
+    AddAssign +
+    Mul<T, Output = Self> +
+    Div<T, Output = Self> +
+{
+    fn len(&self) -> usize;
+
+    fn get(&self, i: usize) -> T; 
+
+    fn zeros() -> Self;
+}
+
+impl<T: Real> State<T> for T
+{
+    fn len(&self) -> usize {
+        1
+    }
+
+    fn get(&self, i: usize) -> T {
+        if i == 0 {
+            *self
+        } else {
+            panic!("Index out of bounds")
+        }
+    }
+
+    fn zeros() -> Self {
+        T::zero()
+    }
+}
+
+impl<T, const R: usize, const C: usize> State<T> for SMatrix<T, R, C>
+where
+    T: Real,
+{
+    fn len(&self) -> usize {
+        R * C
+    }
+
+    fn get(&self, i: usize) -> T {
+        if i < self.len() {
+            self[(i / C, i % C)]
+        } else {
+            panic!("Index out of bounds")
+        }
+    }
+
+    fn zeros() -> Self {
+        SMatrix::<T, R, C>::zeros()
+    }
+}
+
+// Linear Algebra helper function for trait
+pub(crate) fn dot<T, V>(
+    a: &V,
+    b: &V,
+) -> T
+where
+    T: Real,
+    V: State<T>,
+{
+    let mut sum = T::zero();
+    for i in 0..a.len() {
+        sum += a.get(i) * b.get(i);
+    }
+    sum
+}
+
+pub(crate) fn norm<T, V>(
+    a: V,
+) -> T
+where
+    T: Real,
+    V: State<T>,
+{
+    let mut sum = T::zero();
+    for i in 0..a.len() {
+        sum += a.get(i) * a.get(i);
+    }
+    sum.sqrt()
 }
 
 /// Callback data trait

@@ -147,7 +147,7 @@ macro_rules! adaptive_runge_kutta_method {
         $(#[$attr])*
         #[doc = "\n\n"]
         #[doc = "This adaptive solver was automatically generated using the `adaptive_runge_kutta_method` macro."]
-        pub struct $name<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> {
+        pub struct $name<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> {
             // Initial Step Size
             pub h0: T,
 
@@ -156,16 +156,16 @@ macro_rules! adaptive_runge_kutta_method {
 
             // Current State
             t: T,
-            y: nalgebra::SMatrix<T, R, C>,
-            dydt: nalgebra::SMatrix<T, R, C>,
+            y: V,
+            dydt: V,
 
             // Previous State
             t_prev: T,
-            y_prev: nalgebra::SMatrix<T, R, C>,
-            dydt_prev: nalgebra::SMatrix<T, R, C>,
+            y_prev: V,
+            dydt_prev: V,
 
             // Stage values (fixed size array of Vs)
-            k: [nalgebra::SMatrix<T, R, C>; $stages],
+            k: [V; $stages],
 
             // Constants from Butcher tableau (fixed size arrays)
             a: [[T; $stages]; $stages],
@@ -190,13 +190,13 @@ macro_rules! adaptive_runge_kutta_method {
             steps: usize, // Number of steps taken
 
             // Status
-            status: $crate::ode::Status<T, R, C, D>,
+            status: $crate::ode::Status<T, V, D>,
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> Default for $name<T, R, C, D> {
+        impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> Default for $name<T, V, D> {
             fn default() -> Self {
                 // Initialize k vectors with zeros
-                let k: [nalgebra::SMatrix<T, R, C>; $stages] = [nalgebra::SMatrix::<T, R, C>::zeros(); $stages];
+                let k: [V; $stages] = [V::zeros(); $stages];
 
                 // Convert Butcher tableau values to type T
                 let a_t: [[T; $stages]; $stages] = $a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
@@ -208,14 +208,14 @@ macro_rules! adaptive_runge_kutta_method {
                 let c_t: [T; $stages] = $c.map(|x| T::from_f64(x).unwrap());
 
                 $name {
-                    h0: T::from_f64(0.1).unwrap(),
-                    h: T::from_f64(0.1).unwrap(),
+                    h0: T::from_f64(0.0).unwrap(),
+                    h: T::from_f64(0.0).unwrap(),
                     t: T::from_f64(0.0).unwrap(),
-                    y: nalgebra::SMatrix::<T, R, C>::zeros(),
-                    dydt: nalgebra::SMatrix::<T, R, C>::zeros(),
+                    y: V::zeros(),
+                    dydt: V::zeros(),
                     t_prev: T::from_f64(0.0).unwrap(),
-                    y_prev: nalgebra::SMatrix::<T, R, C>::zeros(),
-                    dydt_prev: nalgebra::SMatrix::<T, R, C>::zeros(),
+                    y_prev: V::zeros(),
+                    dydt_prev: V::zeros(),
                     k,
                     a: a_t,
                     b_higher, // Higher order (b)
@@ -238,13 +238,18 @@ macro_rules! adaptive_runge_kutta_method {
             }
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> $crate::ode::NumericalMethod<T, R, C, D> for $name<T, R, C, D> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &nalgebra::SMatrix<T, R, C>) -> Result<usize, $crate::ode::Error<T, R, C>>
+        impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> $crate::ode::NumericalMethod<T, V, D> for $name<T, V, D> {
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<usize, $crate::ode::Error<T, V>>
             where
-                F: $crate::ode::ODE<T, R, C, D>,
+                F: $crate::ode::ODE<T, V, D>,
             {
+                // If h0 is zero calculate h0
+                if self.h0 == T::zero() {
+                    self.h0 = $crate::ode::methods::h_init(ode, t0, tf, y, $order, self.rtol, self.atol, self.h_min, self.h_max);
+                }
+
                 // Check bounds
-                match $crate::utils::validate_step_size_parameters::<T, R, C, D>(self.h0, self.h_min, self.h_max, t0, tf) {
+                match $crate::utils::validate_step_size_parameters::<T, V, D>(self.h0, self.h_min, self.h_max, t0, tf) {
                     Ok(h0) => self.h = h0,
                     Err(status) => return Err(status),
                 }
@@ -269,9 +274,9 @@ macro_rules! adaptive_runge_kutta_method {
                 Ok(1)
             }
 
-            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::ode::Error<T, R, C>>
+            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::ode::Error<T, V>>
             where
-                F: $crate::ode::ODE<T, R, C, D>,
+                F: $crate::ode::ODE<T, V, D>,
             {
                 // Make sure step size isn't too small
                 if self.h.abs() < T::default_epsilon() {
@@ -330,13 +335,11 @@ macro_rules! adaptive_runge_kutta_method {
                 // Using WRMS (weighted root mean square) norm
                 let mut err_norm: T = T::zero();
 
-                // Iterate through matrix elements
-                for r in 0..R {
-                    for c in 0..C {
-                        let tol = self.atol + self.rtol * self.y[(r, c)].abs().max(y_high[(r, c)].abs());
-                        err_norm = err_norm.max((err[(r, c)] / tol).abs());
-                    }
-                }
+                // Iterate through state elements
+                for n in 0..self.y.len() {
+                    let tol = self.atol + self.rtol * self.y.get(n).abs().max(y_high.get(n).abs());
+                    err_norm = err_norm.max((err.get(n) / tol).abs());
+                };
 
                 let mut evals = 0;
 
@@ -402,7 +405,7 @@ macro_rules! adaptive_runge_kutta_method {
                 self.t
             }
 
-            fn y(&self) -> &nalgebra::SMatrix<T, R, C> {
+            fn y(&self) -> &V {
                 &self.y
             }
 
@@ -410,7 +413,7 @@ macro_rules! adaptive_runge_kutta_method {
                 self.t_prev
             }
 
-            fn y_prev(&self) -> &nalgebra::SMatrix<T, R, C> {
+            fn y_prev(&self) -> &V {
                 &self.y_prev
             }
 
@@ -422,17 +425,17 @@ macro_rules! adaptive_runge_kutta_method {
                 self.h = h;
             }
 
-            fn status(&self) -> &$crate::ode::Status<T, R, C, D> {
+            fn status(&self) -> &$crate::ode::Status<T, V, D> {
                 &self.status
             }
 
-            fn set_status(&mut self, status: $crate::ode::Status<T, R, C, D>) {
+            fn set_status(&mut self, status: $crate::ode::Status<T, V, D>) {
                 self.status = status;
             }
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> $crate::interpolate::Interpolation<T, R, C> for $name<T, R, C, D> {
-            fn interpolate(&mut self, t_interp: T) -> Result<nalgebra::SMatrix<T, R, C>, $crate::interpolate::InterpolationError<T, R, C>> {
+        impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> $crate::interpolate::Interpolation<T, V> for $name<T, V, D> {
+            fn interpolate(&mut self, t_interp: T) -> Result<V, $crate::interpolate::InterpolationError<T>> {
                 // Check if t is within bounds
                 if t_interp < self.t_prev || t_interp > self.t {
                     return Err($crate::interpolate::InterpolationError::OutOfBounds {
@@ -449,14 +452,18 @@ macro_rules! adaptive_runge_kutta_method {
             }
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> $name<T, R, C, D> {
+        impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> $name<T, V, D> {
             /// Create a new solver with the specified initial step size
-            pub fn new(h0: T) -> Self {
+            pub fn new() -> Self {
                 Self {
-                    h0,
-                    h: h0,
                     ..Default::default()
                 }
+            }
+
+            /// Set initial step size
+            pub fn h0(mut self, h0: T) -> Self {
+                self.h0 = h0;
+                self
             }
 
             /// Set the relative tolerance for error control

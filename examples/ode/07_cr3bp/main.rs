@@ -6,7 +6,7 @@ pub struct Cr3bp {
     pub mu: f64, // CR3BP mass ratio
 }
 
-impl ODE<f64, 6> for Cr3bp {
+impl ODE<f64, Vector6<f64>> for Cr3bp {
     /// Differential equation for the initial value Circular Restricted Three
     /// Body Problem (CR3BP).
     /// All parameters are in non-dimensional form.

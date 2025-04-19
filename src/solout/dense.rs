@@ -24,7 +24,7 @@ use super::*;
 /// // Simple harmonic oscillator
 /// struct HarmonicOscillator;
 ///
-/// impl ODE<f64, 2, 1> for HarmonicOscillator {
+/// impl ODE<f64, Vector2<f64>> for HarmonicOscillator {
 ///     fn diff(&self, _t: f64, y: &Vector2<f64>, dydt: &mut Vector2<f64>) {
 ///         // y[0] = position, y[1] = velocity
 ///         dydt[0] = y[1];
@@ -70,22 +70,23 @@ pub struct DenseSolout {
     n: usize,
 }
 
-impl<T, const R: usize, const C: usize, D> Solout<T, R, C, D> for DenseSolout
+impl<T, V, D> Solout<T, V, D> for DenseSolout
 where
     T: Real,
+    V: State<T>,
     D: CallBackData,
 {
     fn solout<I>(
             &mut self, 
             t_curr: T,
             t_prev: T,
-            y_curr: &SMatrix<T, R, C>,
-            _y_prev: &SMatrix<T, R, C>,
+            y_curr: &V,
+            _y_prev: &V,
             interpolator: &mut I,
-            solution: &mut Solution<T, R, C, D>
+            solution: &mut Solution<T, V, D>
         ) -> ControlFlag<D>
         where
-            I: Interpolation<T, R, C> 
+            I: Interpolation<T, V> 
     {
         // Interpolate between steps
         if t_prev != t_curr {

@@ -1,18 +1,17 @@
 use differential_equations::ode::*;
-use nalgebra::{SVector, vector};
 
 struct LogisticGrowth {
     k: f64,
     m: f64,
 }
 
-impl ODE<f64, 1, 1> for LogisticGrowth {
-    fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
-        dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
+impl ODE for LogisticGrowth {
+    fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
+        *dydt = self.k * y * (1.0 - y / self.m);
     }
 
-    fn event(&self, _t: f64, y: &SVector<f64, 1>) -> ControlFlag {
-        if y[0] > 0.9 * self.m {
+    fn event(&self, _t: f64, y: &f64) -> ControlFlag {
+        if *y > 0.9 * self.m {
             ControlFlag::Terminate("Reached 90% of carrying capacity".to_string())
         } else {
             ControlFlag::Continue
@@ -22,7 +21,7 @@ impl ODE<f64, 1, 1> for LogisticGrowth {
 
 fn main() {
     let mut method = DOP853::new().rtol(1e-12).atol(1e-12);
-    let y0 = vector![1.0];
+    let y0 = 1.0;
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
@@ -41,7 +40,7 @@ fn main() {
             // Print the solution
             println!("Solution:");
             for (t, y) in solution.iter() {
-                println!("({:.4}, {:.4})", t, y[0]);
+                println!("({:.4}, {:.4})", t, y);
             }
 
             // Print the statistics

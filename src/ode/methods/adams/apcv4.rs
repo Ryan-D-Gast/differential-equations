@@ -1,6 +1,10 @@
 //! Adams-Predictor-Corrector 4th Order Variable Step Size Method
 
 use super::*;
+use crate::{
+    traits::norm,
+    ode::methods::h_init,
+};
 
 ///
 /// Adams-Predictor-Corrector 4th Order Variable Step Size Method.
@@ -26,13 +30,13 @@ use super::*;
 ///     k: f64,
 /// }
 ///
-/// impl ODE<f64, 2, 1> for HarmonicOscillator {
+/// impl ODE<f64, SVector<f64, 2>> for HarmonicOscillator {
 ///     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
 ///         dydt[0] = y[1];
 ///         dydt[1] = -self.k * y[0];
 ///     }
 /// }
-/// let mut apcv4 = APCV4::new(0.01);
+/// let mut apcv4 = APCV4::new();
 /// let t0 = 0.0;
 /// let tf = 10.0;
 /// let y0 = vector![1.0, 0.0];
@@ -53,7 +57,7 @@ use super::*;
 /// This method is not suitable for stiff problems and can results in
 /// extremely small step sizes and long computation times.
 ///
-pub struct APCV4<T: Real, const R: usize, const C: usize, D: CallBackData> {
+pub struct APCV4<T: Real, V: State<T>, D: CallBackData> {
     // Initial Step Size
     pub h0: T,
 
@@ -62,33 +66,33 @@ pub struct APCV4<T: Real, const R: usize, const C: usize, D: CallBackData> {
 
     // Current State
     t: T,
-    y: SMatrix<T, R, C>,
-    dydt: SMatrix<T, R, C>,
+    y: V,
+    dydt: V,
 
     // Final Time
     tf: T,
 
     // Previous States
     t_prev: [T; 4],
-    y_prev: [SMatrix<T, R, C>; 4],
+    y_prev: [V; 4],
 
     // Previous step states
     t_old: T,
-    y_old: SMatrix<T, R, C>,
-    dydt_old: SMatrix<T, R, C>,
+    y_old: V,
+    dydt_old: V,
 
     // Predictor Correct Derivatives
-    k1: SMatrix<T, R, C>,
-    k2: SMatrix<T, R, C>,
-    k3: SMatrix<T, R, C>,
-    k4: SMatrix<T, R, C>,
+    k1: V,
+    k2: V,
+    k3: V,
+    k4: V,
 
     // Statistic Tracking
     evals: usize,
     steps: usize,
 
     // Status
-    status: Status<T, R, C, D>,
+    status: Status<T, V, D>,
 
     // Settings
     pub tol: T,
@@ -98,23 +102,28 @@ pub struct APCV4<T: Real, const R: usize, const C: usize, D: CallBackData> {
 }
 
 // Implement NumericalMethod Trait for APCV4
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T, R, C, D>
-    for APCV4<T, R, C, D>
+impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D>
+    for APCV4<T, V, D>
 {
     fn init<F>(
         &mut self,
         ode: &F,
         t0: T,
         tf: T,
-        y0: &SMatrix<T, R, C>,
-    ) -> Result<NumEvals, Error<T, R, C>>
+        y0: &V,
+    ) -> Result<NumEvals, Error<T, V>>
     where
-        F: ODE<T, R, C, D>,
+        F: ODE<T, V, D>,
     {
         self.tf = tf;
 
+        // Initialize initial step size if it is zero
+        if self.h0 == T::zero() {
+            self.h0 = h_init(ode, t0, tf, y0, 4, self.tol, self.tol, self.h_min, self.h_max);
+        }
+
         // Check that the initial step size is set
-        match validate_step_size_parameters::<T, R, C, D>(self.h0, T::zero(), T::infinity(), t0, tf)
+        match validate_step_size_parameters::<T, V, D>(self.h0, T::zero(), T::infinity(), t0, tf)
         {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
@@ -166,9 +175,9 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         Ok(evals)
     }
 
-    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, R, C>>
+    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, V>>
     where
-        F: ODE<T, R, C, D>,
+        F: ODE<T, V, D>,
     {
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
@@ -237,7 +246,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         evals += 5;
 
         // Calculate sigma for step size adjustment
-        let sigma = T::from_f64(19.0).unwrap() * (corrector - predictor).norm()
+        let sigma = T::from_f64(19.0).unwrap() * norm(corrector - predictor)
             / (T::from_f64(270.0).unwrap() * self.h.abs());
 
         // Check if Step meets tolerance
@@ -353,7 +362,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         self.t
     }
 
-    fn y(&self) -> &SMatrix<T, R, C> {
+    fn y(&self) -> &V {
         &self.y
     }
 
@@ -361,7 +370,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         self.t_old
     }
 
-    fn y_prev(&self) -> &SMatrix<T, R, C> {
+    fn y_prev(&self) -> &V {
         &self.y_old
     }
 
@@ -376,23 +385,23 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         self.h = h;
     }
 
-    fn status(&self) -> &Status<T, R, C, D> {
+    fn status(&self) -> &Status<T, V, D> {
         &self.status
     }
 
-    fn set_status(&mut self, status: Status<T, R, C, D>) {
+    fn set_status(&mut self, status: Status<T, V, D>) {
         self.status = status;
     }
 }
 
 // Implement the Interpolation trait for APCV4
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> Interpolation<T, R, C>
-    for APCV4<T, R, C, D>
+impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V>
+    for APCV4<T, V, D>
 {
     fn interpolate(
         &mut self,
         t_interp: T,
-    ) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
+    ) -> Result<V, InterpolationError<T>> {
         // Check if t is within the range of the solver
         if t_interp < self.t_old || t_interp > self.t {
             return Err(InterpolationError::OutOfBounds {
@@ -418,12 +427,16 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Interpolation<T, 
 }
 
 // Initialize APCV4 with default values and chainable settings
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> APCV4<T, R, C, D> {
-    pub fn new(h0: T) -> Self {
+impl<T: Real, V: State<T>, D: CallBackData> APCV4<T, V, D> {
+    pub fn new() -> Self {
         APCV4 {
-            h0,
             ..Default::default()
         }
+    }
+
+    pub fn h0(mut self, h0: T) -> Self {
+        self.h0 = h0;
+        self
     }
 
     pub fn tol(mut self, tol: T) -> Self {
@@ -447,28 +460,28 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> APCV4<T, R, C, D>
     }
 }
 
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> Default for APCV4<T, R, C, D> {
+impl<T: Real, V: State<T>, D: CallBackData> Default for APCV4<T, V, D> {
     fn default() -> Self {
         APCV4 {
             h0: T::zero(),
             h: T::zero(),
             t: T::zero(),
-            y: SMatrix::<T, R, C>::zeros(),
-            dydt: SMatrix::<T, R, C>::zeros(),
+            y: V::zeros(),
+            dydt: V::zeros(),
             t_prev: [T::zero(); 4],
             y_prev: [
-                SMatrix::<T, R, C>::zeros(),
-                SMatrix::<T, R, C>::zeros(),
-                SMatrix::<T, R, C>::zeros(),
-                SMatrix::<T, R, C>::zeros(),
+                V::zeros(),
+                V::zeros(),
+                V::zeros(),
+                V::zeros(),
             ],
             t_old: T::zero(),
-            y_old: SMatrix::<T, R, C>::zeros(),
-            dydt_old: SMatrix::<T, R, C>::zeros(),
-            k1: SMatrix::<T, R, C>::zeros(),
-            k2: SMatrix::<T, R, C>::zeros(),
-            k3: SMatrix::<T, R, C>::zeros(),
-            k4: SMatrix::<T, R, C>::zeros(),
+            y_old: V::zeros(),
+            dydt_old: V::zeros(),
+            k1: V::zeros(),
+            k2: V::zeros(),
+            k3: V::zeros(),
+            k4: V::zeros(),
             tf: T::zero(),
             evals: 0,
             steps: 0,

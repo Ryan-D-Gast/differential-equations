@@ -5,9 +5,8 @@
 
 use crate::{
     ControlFlag,
-    traits::{Real, CallBackData},
+    traits::{Real, State, CallBackData},
 };
-use nalgebra::SMatrix;
 
 /// ODE Trait for Differential Equations
 ///
@@ -24,9 +23,10 @@ use nalgebra::SMatrix;
 /// in which can it will be set to return false by default.
 ///
 #[allow(unused_variables)]
-pub trait ODE<T = f64, const R: usize = 1, const C: usize = 1, D = String>
+pub trait ODE<T = f64, V = f64, D = String>
 where
     T: Real,
+    V: State<T>,
     D: CallBackData,
 {
     /// Differential Equation dydt = f(t, y)
@@ -48,7 +48,7 @@ where
     /// * `y`    - Dependent variable point.
     /// * `dydt` - Derivative point.
     ///
-    fn diff(&self, t: T, y: &SMatrix<T, R, C>, dydt: &mut SMatrix<T, R, C>);
+    fn diff(&self, t: T, y: &V, dydt: &mut V);
 
     /// Event function to detect significant conditions during integration.
     ///
@@ -64,7 +64,7 @@ where
     /// # Returns
     /// * `ControlFlag` - Command to continue or stop solver.
     ///
-    fn event(&self, t: T, y: &SMatrix<T, R, C>) -> ControlFlag<D> {
+    fn event(&self, t: T, y: &V) -> ControlFlag<D> {
         ControlFlag::Continue
     }
 }

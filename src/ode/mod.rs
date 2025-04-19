@@ -17,18 +17,18 @@
 //!
 //! ```rust
 //! use differential_equations::ode::*;
-//! use nalgebra::{SVector, vector};
 //!
 //! pub struct LinearEquation {
 //!     pub a: f64,
 //!     pub b: f64,
 //! }
 //!
-//! // f64: Time Type, 1: Column Dimension, 1: Row Dimension,
-//! // defaults to <f64, 1, 1> so can be omitted in this case
-//! impl ODE<f64, 1, 1> for LinearEquation {
-//!     fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
-//!         dydt[0] = self.a + self.b * y[0];
+//! // defaults to <Type = f64, State = f64> so can be omitted in this case
+//! // Note that the State can be a nalgebra vector of any size, 
+//! // e.g. SVector<f64, 2> for 2D systems
+//! impl ODE for LinearEquation {
+//!     fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
+//!         *dydt = self.a + self.b * y;
 //!     }
 //! }
 //!
@@ -37,7 +37,7 @@
 //!     let system = LinearEquation { a: 1.0, b: 2.0 };
 //!     let t0 = 0.0;
 //!     let tf = 1.0;
-//!     let y0 = vector![1.0];
+//!     let y0 = 1.0;
 //!
 //!     // Create an IVP instance
 //!     let ivp = IVP::new(system, t0, tf, y0);
@@ -55,7 +55,7 @@
 //!
 //!     // Print the solution
 //!     for (t, y) in solution.iter() {
-//!       println!("t: {:.4}, y: {:.4}", t, y[0]);
+//!       println!("t: {:.4}, y: {:.4}", t, y);
 //!     }
 //! }
 //! ```

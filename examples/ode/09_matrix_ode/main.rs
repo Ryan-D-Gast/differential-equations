@@ -8,7 +8,7 @@ struct MatrixODE {
     omega: f64,
 }
 
-impl ODE<f64, 2, 2> for MatrixODE {
+impl ODE<f64, SMatrix<f64, 2, 2>> for MatrixODE {
     fn diff(&self, _t: f64, y: &SMatrix<f64, 2, 2>, dydt: &mut SMatrix<f64, 2, 2>) {
         // Create the rotation generator matrix
         let a = SMatrix::<f64, 2, 2>::new(

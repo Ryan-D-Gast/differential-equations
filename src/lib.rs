@@ -30,7 +30,7 @@
 //!     pub b: f64,
 //! }
 //!
-//! impl ODE<f64, 1, 1> for LinearEquation {
+//! impl ODE<f64, SVector<f64, 1>> for LinearEquation {
 //!     fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
 //!         dydt[0] = self.a + self.b * y[0];
 //!     }

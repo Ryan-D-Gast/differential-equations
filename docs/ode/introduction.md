@@ -119,7 +119,7 @@ struct LogisticGrowth {
     m: f64,
 }
 
-impl ODE<f64, 1, 1> for LogisticGrowth {
+impl ODE<f64, SVector<f64, 1>> for LogisticGrowth {
     fn diff(&self, t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
         dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
     }
@@ -134,7 +134,7 @@ impl ODE<f64, 1, 1> for LogisticGrowth {
 }
 ```
 
-Note that for clarity, the `ODE` is defined with generics `<T, R, C>` where `T` is the float type and `R, C` is the dimension of the system of ordinary differential equations. By default the generics are `f64, 1, 1` and thus can be omitted if the system is a single ODE with a `f64` type.
+Note that for clarity, the `ODE` is defined with generics `<T, V>` where `T` is the float type (e.g. `f64` or `f32`) and `V` is the state vector of the system of ordinary differential equations. By default the generics are `f64, f64` and thus can be omitted if the system is a single ODE with a `f64` type and a single state variable `f64`. Here a `SVector` is used despite `f64` being usable here for clarity. For example a system with multiple ODEs of size N then `SVector<f64, N>` can be used.
 
 ## Solving an Initial Value Problem (IVP)
 

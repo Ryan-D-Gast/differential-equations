@@ -13,7 +13,7 @@ macro_rules! bench_adaptive_step {
                 &(),
                 |b, _| {
                     b.iter(|| {
-                        let mut solver = $solver::new($h0).rtol($rtol).atol($atol);
+                        let mut solver = $solver::new().rtol($rtol).atol($atol);
                         let ivp = IVP::new($system, $t0, $t1, $y0.clone());
                         black_box(ivp.solve(&mut solver).unwrap());
                     });

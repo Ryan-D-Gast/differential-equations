@@ -11,10 +11,9 @@
 
 use crate::{
     Solution, ControlFlag,
-    traits::{Real, CallBackData},
+    traits::{Real, State, CallBackData},
     interpolate::Interpolation,
 };
-use nalgebra::SMatrix;
 
 // Solout Trait for controlling output of the solver
 mod solout;

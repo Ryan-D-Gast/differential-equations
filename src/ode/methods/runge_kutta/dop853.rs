@@ -3,13 +3,13 @@
 use crate::{
     Error, Status,
     interpolate::{Interpolation, InterpolationError},
-    traits::{Real, CallBackData},
+    traits::{Real, State, CallBackData},
     utils::{constrain_step_size, validate_step_size_parameters},
     ode::{
         ODE, NumericalMethod, NumEvals,
+        methods::h_init,
     },
 };
-use nalgebra::SMatrix;
 
 /// Dormand Prince 8(5, 3) Method for solving ordinary differential equations.
 /// 8th order Dormand Prince method with embedded 5th order error estimation and 3rd order interpolation.
@@ -32,7 +32,7 @@ use nalgebra::SMatrix;
 /// let tf = 10.0;
 /// let y0 = vector![1.0, 0.0];
 /// struct Example;
-/// impl ODE<f64, 2, 1> for Example {
+/// impl ODE<f64, SVector<f64, 2>> for Example {
 ///    fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
 ///       dydt[0] = y[1];
 ///       dydt[1] = -y[0];
@@ -69,13 +69,13 @@ use nalgebra::SMatrix;
 /// * `fac2`   - 6.0
 /// * `beta`   - 0.0
 ///
-pub struct DOP853<T: Real, const R: usize, const C: usize, D: CallBackData> {
+pub struct DOP853<T: Real, V: State<T>, D: CallBackData> {
     // Initial Conditions
     pub h0: T, // Initial Step Size
 
     // Current iteration
     t: T,
-    y: SMatrix<T, R, C>,
+    y: V,
     h: T,
 
     // Tolerances
@@ -103,7 +103,7 @@ pub struct DOP853<T: Real, const R: usize, const C: usize, D: CallBackData> {
     fac: T,
 
     // Iteration Tracking
-    status: Status<T, R, C, D>,
+    status: Status<T, V, D>,
     steps: usize,      // Number of Steps
     n_accepted: usize, // Number of Accepted Steps
 
@@ -125,27 +125,25 @@ pub struct DOP853<T: Real, const R: usize, const C: usize, D: CallBackData> {
     b_dense: [[T; 16]; 4],
 
     // Derivatives - using array instead of individually numbered variables
-    k: [SMatrix<T, R, C>; 12], // k[0] is derivative at t, others are stage derivatives
+    k: [V; 12], // k[0] is derivative at t, others are stage derivatives
 
     // For Interpolation - using array instead of individually numbered variables
-    y_old: SMatrix<T, R, C>,     // State at Previous Step
+    y_old: V,     // State at Previous Step
     t_old: T,                    // Time of Previous Step
     h_old: T,                    // Step Size of Previous Step
-    cont: [SMatrix<T, R, C>; 8], // Interpolation coefficients
+    cont: [V; 8], // Interpolation coefficients
 }
 
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T, R, C, D>
-    for DOP853<T, R, C, D>
-{
+impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOP853<T, V, D> {
     fn init<F>(
         &mut self,
         ode: &F,
         t0: T,
         tf: T,
-        y0: &SMatrix<T, R, C>,
-    ) -> Result<NumEvals, Error<T, R, C>>
+        y0: &V,
+    ) -> Result<NumEvals, Error<T, V>>
     where
-        F: ODE<T, R, C, D>,
+        F: ODE<T, V, D>,
     {
         // Set Current State as Initial State
         self.t = t0;
@@ -161,7 +159,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
 
         // Calculate Initial Step
         if self.h0 == T::zero() {
-            self.h_init(ode, t0, tf);
+            self.h0 = h_init(ode, t0, tf, y0, 8, self.rtol, self.atol, self.h_min, self.h_max);
             evals += 1; // Increment function evaluations for initial step size calculation
 
             // Adjust h0 to be within bounds
@@ -174,7 +172,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         }
 
         // Check if h0 is within bounds, and h_min and h_max are valid
-        match validate_step_size_parameters::<T, R, C, D>(self.h0, self.h_min, self.h_max, t0, tf) {
+        match validate_step_size_parameters::<T, V, D>(self.h0, self.h_min, self.h_max, t0, tf) {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
@@ -190,9 +188,9 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         Ok(evals)
     }
 
-    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, R, C>>
+    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, V>>
     where
-        F: ODE<T, R, C, D>,
+        F: ODE<T, V, D>,
     {
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
@@ -336,20 +334,20 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
 
         let n = self.y.len();
         for i in 0..n {
-            let sk = self.atol + self.rtol * self.y[i].abs().max(self.k[4][i].abs());
-            let erri = self.k[3][i]
-                - self.bhh[0] * self.k[0][i]
-                - self.bhh[1] * self.k[8][i]
-                - self.bhh[2] * self.k[2][i];
+            let sk = self.atol + self.rtol * self.y.get(i).abs().max(self.k[4].get(i).abs());
+            let erri = self.k[3].get(i)
+                - self.bhh[0] * self.k[0].get(i)
+                - self.bhh[1] * self.k[8].get(i)
+                - self.bhh[2] * self.k[2].get(i);
             err2 += (erri / sk).powi(2);
-            let erri = self.er[0] * self.k[0][i]
-                + self.er[5] * self.k[5][i]
-                + self.er[6] * self.k[6][i]
-                + self.er[7] * self.k[7][i]
-                + self.er[8] * self.k[8][i]
-                + self.er[9] * self.k[9][i]
-                + self.er[10] * self.k[1][i]
-                + self.er[11] * self.k[2][i];
+            let erri = self.er[0] * self.k[0].get(i)
+                + self.er[5] * self.k[5].get(i)
+                + self.er[6] * self.k[6].get(i)
+                + self.er[7] * self.k[7].get(i)
+                + self.er[8] * self.k[8].get(i)
+                + self.er[9] * self.k[9].get(i)
+                + self.er[10] * self.k[1].get(i)
+                + self.er[11] * self.k[2].get(i);
             err += (erri / sk).powi(2);
         }
         let mut deno = err + T::from_f64(0.01).unwrap() * err2;
@@ -378,9 +376,13 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
                 let mut stdnum = T::zero();
                 let mut stden = T::zero();
                 let sqr = self.k[3] - self.k[2];
-                stdnum += sqr.component_mul(&sqr).sum();
+                for i in 0..sqr.len() {
+                    stdnum += sqr.get(i).powi(2);
+                }
                 let sqr = self.k[4] - yy1;
-                stden += sqr.component_mul(&sqr).sum();
+                for i in 0..sqr.len() {
+                    stden += sqr.get(i).powi(2);
+                }
 
                 if stden > T::zero() {
                     self.h_lamb = self.h * (stdnum / stden).sqrt();
@@ -558,7 +560,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         self.t
     }
 
-    fn y(&self) -> &SMatrix<T, R, C> {
+    fn y(&self) -> &V {
         &self.y
     }
 
@@ -566,7 +568,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         self.t_old
     }
 
-    fn y_prev(&self) -> &SMatrix<T, R, C> {
+    fn y_prev(&self) -> &V {
         &self.y_old
     }
 
@@ -578,20 +580,20 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         self.h = h;
     }
 
-    fn status(&self) -> &Status<T, R, C, D> {
+    fn status(&self) -> &Status<T, V, D> {
         &self.status
     }
 
-    fn set_status(&mut self, status: Status<T, R, C, D>) {
+    fn set_status(&mut self, status: Status<T, V, D>) {
         self.status = status;
     }
 }
 
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> Interpolation<T, R, C> for DOP853<T, R, C, D> {
+impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for DOP853<T, V, D> {
     fn interpolate(
         &mut self,
         t_interp: T,
-    ) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
+    ) -> Result<V, InterpolationError<T>> {
         // Check if interpolation is out of bounds
         if t_interp < self.t_old || t_interp > self.t {
             return Err(InterpolationError::OutOfBounds {
@@ -615,7 +617,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Interpolation<T, 
     }
 }
 
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> DOP853<T, R, C, D> {
+impl<T: Real, V: State<T>, D: CallBackData> DOP853<T, V, D> {
     /// Creates a new DOP853 NumericalMethod.
     ///
     /// # Returns
@@ -627,75 +629,6 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> DOP853<T, R, C, D
         DOP853 {
             ..Default::default()
         }
-    }
-
-    /// Initializes the initial step size for the solver.
-    /// The initial step size is computed such that h**8 * f0.norm().max(der2.norm()) = 0.01
-    ///
-    /// This function is called internally by the init function if non initial step size, h, is not provided.
-    /// This function also dependents on derived settings and the initial derivative vector.
-    /// Thus it is private and should not be called directly by users.
-    ///
-    /// # Arguments
-    /// * `ode` - Function that defines the ordinary differential equation dy/dt = f(t, y).
-    ///
-    /// # Returns
-    /// * Updates self.h with the initial step size.
-    ///
-    fn h_init<S>(&mut self, ode: &S, t0: T, tf: T)
-    where
-        S: ODE<T, R, C, D>,
-    {
-        // Set the initial step size h0 to h, if its 0.0 then it will be calculated
-        self.h = self.h0;
-
-        let posneg = (tf - t0).signum();
-
-        let sk = (self.y.abs() * self.rtol).add_scalar(self.atol);
-        let sqr = self.k[0].component_div(&sk);
-        let dnf = sqr.component_mul(&sqr).sum();
-        let sqr = self.y.component_div(&sk);
-        let dny = sqr.component_mul(&sqr).sum();
-
-        self.h = if (dnf <= T::from_f64(1.0e-10).unwrap()) || (dny <= T::from_f64(1.0e-10).unwrap())
-        {
-            T::from_f64(1.0e-6).unwrap()
-        } else {
-            (dny / dnf).sqrt() * T::from_f64(0.01).unwrap()
-        };
-
-        self.h = self.h.min(self.h_max);
-        self.h = if posneg < T::zero() {
-            -self.h.abs()
-        } else {
-            self.h.abs()
-        };
-
-        // perform an explicit Euler step
-        ode.diff(
-            self.t + self.h,
-            &(self.y + (self.k[0] * self.h)),
-            &mut self.k[1],
-        );
-
-        // estimate the second derivative of the solution
-        let sk = (self.y.abs() * self.rtol).add_scalar(self.atol);
-        let sqr = (self.k[1] - self.k[0]).component_div(&sk);
-        let der2 = (sqr.component_mul(&sqr)).sum().sqrt() / self.h;
-
-        // step size is computed such that h**8 * f0.norm().max(der2.norm()) = 0.01
-        let der12 = der2.abs().max(dnf.sqrt());
-        let h1 = if der12 <= T::from_f64(1.0e-15).unwrap() {
-            (self.h.abs() * T::from_f64(1.0e-3).unwrap()).max(T::from_f64(1.0e-6).unwrap())
-        } else {
-            (T::from_f64(0.01).unwrap() / der12).powf(T::one() / T::from_f64(8.0).unwrap())
-        };
-
-        self.h = (T::from_f64(100.0).unwrap() * posneg * self.h).min(h1.min(self.h_max));
-
-        // Make sure step is going in the right direction
-        self.h = self.h.abs() * posneg;
-        self.h0 = self.h;
     }
 
     // Builder Functions
@@ -770,7 +703,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> DOP853<T, R, C, D
     }
 }
 
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> Default for DOP853<T, R, C, D> {
+impl<T: Real, V: State<T>, D: CallBackData> Default for DOP853<T, V, D> {
     fn default() -> Self {
         // Convert coefficient arrays from f64 to type T
         let a = DOP853_A.map(|row| row.map(|x| T::from_f64(x).unwrap()));
@@ -784,13 +717,13 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Default for DOP85
         let b_dense = DOP853_DENSE.map(|row| row.map(|x| T::from_f64(x).unwrap()));
 
         // Create arrays of zeros for k and cont matrices
-        let k_zeros = [SMatrix::zeros(); 12];
-        let cont_zeros = [SMatrix::zeros(); 8];
+        let k_zeros = [V::zeros(); 12];
+        let cont_zeros = [V::zeros(); 8];
 
         DOP853 {
             // State Variables
             t: T::zero(),
-            y: SMatrix::zeros(),
+            y: V::zeros(),
             h: T::zero(),
 
             // Settings
@@ -832,7 +765,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Default for DOP85
 
             // Coefficents and temporary storage
             k: k_zeros,
-            y_old: SMatrix::zeros(),
+            y_old: V::zeros(),
             t_old: T::zero(),
             h_old: T::zero(),
             cont: cont_zeros,

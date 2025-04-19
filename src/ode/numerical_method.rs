@@ -3,9 +3,8 @@
 use crate::{
     Error, Status,
     ode::ODE,
-    traits::{Real, CallBackData},
+    traits::{Real, State, CallBackData},
 };
-use nalgebra::SMatrix;
 
 /// Type alias for the number of function evaluations
 pub type NumEvals = usize;
@@ -17,9 +16,10 @@ pub type NumEvals = usize;
 /// By implementing this trait, different functions can use a user provided
 /// ODE solver to solve the ODE that fits their requirements.
 ///
-pub trait NumericalMethod<T, const R: usize, const C: usize, D = String>
+pub trait NumericalMethod<T, V, D = String>
 where
     T: Real,
+    V: State<T>,
     D: CallBackData,
 {
     /// Initialize NumericalMethod before solving ODE
@@ -31,17 +31,17 @@ where
     /// * `y`      - Initial state.
     ///
     /// # Returns
-    /// * Result<(), Status<T, R, C, D>> - Ok if initialization is successful,
+    /// * Result<(), Status<T, V, D>> - Ok if initialization is successful,
     ///
     fn init<F>(
         &mut self,
         ode: &F,
         t0: T,
         tf: T,
-        y: &SMatrix<T, R, C>,
-    ) -> Result<NumEvals, Error<T, R, C>>
+        y: &V,
+    ) -> Result<NumEvals, Error<T, V>>
     where
-        F: ODE<T, R, C, D>;
+        F: ODE<T, V, D>;
 
     /// Step through solving the ODE by one step
     ///
@@ -49,11 +49,11 @@ where
     /// * `system` - System of ODEs to solve.
     ///
     /// # Returns
-    /// * Result<usize, Status<T, R, C, D>> - Ok if step is successful with the number of function evaluations,
+    /// * Result<usize, Status<T, V, D>> - Ok if step is successful with the number of function evaluations,
     ///
-    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, R, C>>
+    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, V>>
     where
-        F: ODE<T, R, C, D>;
+        F: ODE<T, V, D>;
 
     // Access fields of the solver
 
@@ -61,13 +61,13 @@ where
     fn t(&self) -> T;
 
     /// Access solution of last accepted step
-    fn y(&self) -> &SMatrix<T, R, C>;
+    fn y(&self) -> &V;
 
     /// Access time of previous accepted step
     fn t_prev(&self) -> T;
 
     /// Access solution of previous accepted step
-    fn y_prev(&self) -> &SMatrix<T, R, C>;
+    fn y_prev(&self) -> &V;
 
     /// Access step size of next step
     fn h(&self) -> T;
@@ -76,8 +76,8 @@ where
     fn set_h(&mut self, h: T);
 
     /// Status of solver
-    fn status(&self) -> &Status<T, R, C, D>;
+    fn status(&self) -> &Status<T, V, D>;
 
     /// Set status of solver
-    fn set_status(&mut self, status: Status<T, R, C, D>);
+    fn set_status(&mut self, status: Status<T, V, D>);
 }

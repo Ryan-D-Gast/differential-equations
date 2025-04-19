@@ -4,9 +4,8 @@ use crate::{
     interpolate::Interpolation, ode::{
         numerical_method::NumericalMethod,
         ODE,
-    }, solout::*, traits::{CallBackData, Real}, ControlFlag, Error, Solution, Status
+    }, solout::*, traits::{CallBackData, Real, State}, ControlFlag, Error, Solution, Status
 };
-use nalgebra::SMatrix;
 
 /// Solves an Initial Value Problem (IVP) for a system of ordinary differential equations.
 ///
@@ -78,9 +77,9 @@ use nalgebra::SMatrix;
 /// // Define a simple exponential growth ode: dy/dt = y
 /// struct ExponentialGrowth;
 ///
-/// impl ODE<f64, 1, 1> for ExponentialGrowth {
-///     fn diff(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
-///         dydt[0] = y[0];
+/// impl ODE for ExponentialGrowth {
+///     fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
+///         *dydt = *y;
 ///     }
 /// }
 ///
@@ -88,12 +87,12 @@ use nalgebra::SMatrix;
 /// let mut method = DOP853::new().rtol(1e-8).atol(1e-10);
 /// let mut solout = DefaultSolout::new();
 /// let system = ExponentialGrowth;
-/// let y0 = Vector1::new(1.0);
+/// let y0 = 1.0;
 /// let result = solve_ivp(&mut method, &system, 0.0, 1.0, &y0, &mut solout);
 ///
 /// match result {
 ///     Ok(solution) => {
-///         println!("Final value: {}", solution.y.last().unwrap()[0]);
+///         println!("Final value: {}", solution.y.last().unwrap());
 ///         println!("Number of steps: {}", solution.steps);
 ///     },
 ///     Err(status) => {
@@ -109,20 +108,21 @@ use nalgebra::SMatrix;
 /// * The `tf == t0` case is considered an error (no integration to perform).
 /// * The output points depend on the chosen `Solout` implementation.
 ///
-pub fn solve_ivp<T, const R: usize, const C: usize, D, S, F, O>(
+pub fn solve_ivp<T, V, D, S, F, O>(
     solver: &mut S,
     ode: &F,
     t0: T,
     tf: T,
-    y0: &SMatrix<T, R, C>,
+    y0: &V,
     solout: &mut O,
-) -> Result<Solution<T, R, C, D>, Error<T, R, C>>
+) -> Result<Solution<T, V, D>, Error<T, V>>
 where
     T: Real,
+    V: State<T>,
     D: CallBackData,
-    F: ODE<T, R, C, D>,
-    S: NumericalMethod<T, R, C, D> + Interpolation<T, R, C>,
-    O: Solout<T, R, C, D>,
+    F: ODE<T, V, D>,
+    S: NumericalMethod<T, V, D> + Interpolation<T, V>,
+    O: Solout<T, V, D>,
 {
     // Initialize the Solution object
     let mut solution = Solution::new();

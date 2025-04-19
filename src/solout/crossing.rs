@@ -30,7 +30,7 @@ use super::*;
 /// // Simple harmonic oscillator - position will cross zero periodically
 /// struct HarmonicOscillator;
 ///
-/// impl ODE<f64, 2, 1> for HarmonicOscillator {
+/// impl ODE<f64, Vector2<f64>> for HarmonicOscillator {
 ///     fn diff(&self, _t: f64, y: &Vector2<f64>, dydt: &mut Vector2<f64>) {
 ///         // y[0] = position, y[1] = velocity
 ///         dydt[0] = y[1];
@@ -176,25 +176,26 @@ impl<T: Real> CrossingSolout<T> {
     }
 }
 
-impl<T, const R: usize, const C: usize, D> Solout<T, R, C, D> for CrossingSolout<T>
+impl<T, V, D> Solout<T, V, D> for CrossingSolout<T>
 where
     T: Real,
+    V: State<T>,
     D: CallBackData,
 {
     fn solout<I>(
             &mut self, 
             t_curr: T,
             t_prev: T,
-            y_curr: &SMatrix<T, R, C>,
-            _y_prev: &SMatrix<T, R, C>,
+            y_curr: &V,
+            _y_prev: &V,
             interpolator: &mut I,
-            solution: &mut Solution<T, R, C, D>
+            solution: &mut Solution<T, V, D>
         ) -> ControlFlag<D>
         where
-            I: Interpolation<T, R, C> 
+            I: Interpolation<T, V> 
     {
         // Calculate the offset from threshold (to detect zero-crossing)
-        let current_value = y_curr[self.component_idx];
+        let current_value = y_curr.get(self.component_idx);
         let offset_value = current_value - self.threshold;
 
         // If we have a previous value, check for crossing
@@ -244,7 +245,7 @@ where
 // Add the Newton's method implementation
 impl<T: Real> CrossingSolout<T> {
     /// Find the crossing time using Newton's method with interpolator interpolation
-    fn find_crossing_newton<I, const R: usize, const C: usize>(
+    fn find_crossing_newton<I, V>(
         &self,
         interpolator: &mut I,
         t_lower: T,
@@ -253,7 +254,8 @@ impl<T: Real> CrossingSolout<T> {
         offset_upper: T,
     ) -> Option<T>
     where
-        I: Interpolation<T, R, C>,
+        I: Interpolation<T, V>,
+        V: State<T>,
     {
         // Start with linear interpolation as initial guess
         let mut t = t_lower - offset_lower * (t_upper - t_lower) / (offset_upper - offset_lower);
@@ -269,7 +271,7 @@ impl<T: Real> CrossingSolout<T> {
             let y_t = interpolator.interpolate(t).unwrap();
 
             // Calculate offset from threshold at this time point
-            offset = y_t[self.component_idx] - self.threshold;
+            offset = y_t.get(self.component_idx) - self.threshold;
 
             // Check if we're close enough to the crossing
             if offset.abs() < tolerance {
@@ -280,7 +282,7 @@ impl<T: Real> CrossingSolout<T> {
             let delta_t = (t_upper - t_lower) * T::from_f64(1e-6).unwrap();
             let t_plus = t + delta_t;
             let y_plus = interpolator.interpolate(t_plus).unwrap();
-            let offset_plus = y_plus[self.component_idx] - self.threshold;
+            let offset_plus = y_plus.get(self.component_idx) - self.threshold;
 
             let derivative = (offset_plus - offset) / delta_t;
 
@@ -310,7 +312,7 @@ impl<T: Real> CrossingSolout<T> {
 
         // Final check: Get interpolated value and see if we're close enough
         let y_t = interpolator.interpolate(t).unwrap();
-        offset = y_t[self.component_idx] - self.threshold;
+        offset = y_t.get(self.component_idx) - self.threshold;
 
         if offset.abs() < tolerance * T::from_f64(10.0).unwrap() {
             Some(t)

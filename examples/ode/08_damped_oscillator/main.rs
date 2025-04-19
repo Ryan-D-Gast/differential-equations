@@ -7,7 +7,7 @@ struct DampedOscillator {
     spring_constant: f64, // Spring constant
 }
 
-impl ODE<f64, 2> for DampedOscillator {
+impl ODE<f64, SVector<f64, 2>> for DampedOscillator {
     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
         // Pure function, no state updates
         dydt[0] = y[1];

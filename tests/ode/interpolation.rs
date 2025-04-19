@@ -64,10 +64,10 @@ fn interpolation() {
         solver_name: RKV98, solver: RKV98::new(),
 
         // These methods use cubic Hermite interpolation
-        solver_name: RKF, solver: RKF::new(0.01),
+        solver_name: RKF, solver: RKF::new(),
         solver_name: RK4, solver: RK4::new(0.01),
         solver_name: APCF4, solver: APCF4::new(0.01),
-        solver_name: APCV4, solver: APCV4::new(0.01)
+        solver_name: APCV4, solver: APCV4::new().h0(0.01)
     }
 
     test_interpolation! {

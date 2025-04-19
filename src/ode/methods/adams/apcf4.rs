@@ -23,7 +23,7 @@ use super::*;
 ///     k: f64,
 /// }
 ///
-/// impl ODE<f64, 2, 1> for HarmonicOscillator {
+/// impl ODE<f64, SVector<f64, 2>> for HarmonicOscillator {
 ///     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
 ///         dydt[0] = y[1];
 ///         dydt[1] = -self.k * y[0];
@@ -43,47 +43,47 @@ use super::*;
 /// # Settings
 /// * `h` - Step Size
 ///
-pub struct APCF4<T: Real, const R: usize, const C: usize, D: CallBackData> {
+pub struct APCF4<T: Real, V: State<T>, D: CallBackData> {
     // Step Size
     pub h: T,
     // Current State
     t: T,
-    y: SMatrix<T, R, C>,
-    dydt: SMatrix<T, R, C>,
+    y: V,
+    dydt: V,
     // Previous State for Cubic Hermite Interpolation
     t_old: T,
-    y_old: SMatrix<T, R, C>,
-    dydt_old: SMatrix<T, R, C>,
+    y_old: V,
+    dydt_old: V,
     // Previous States for Predictor-Corrector
     t_prev: [T; 4],
-    y_prev: [SMatrix<T, R, C>; 4],
+    y_prev: [V; 4],
     // Predictor Correct Derivatives
-    k1: SMatrix<T, R, C>, // Also the current derivative
-    k2: SMatrix<T, R, C>,
-    k3: SMatrix<T, R, C>,
-    k4: SMatrix<T, R, C>,
+    k1: V, // Also the current derivative
+    k2: V,
+    k3: V,
+    k4: V,
     // Number of evaluations
     pub evals: usize,
     // Status
-    status: Status<T, R, C, D>,
+    status: Status<T, V, D>,
 }
 
 // Implement NumericalMethod Trait for APCF4
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T, R, C, D>
-    for APCF4<T, R, C, D>
+impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D>
+    for APCF4<T, V, D>
 {
     fn init<F>(
         &mut self,
         ode: &F,
         t0: T,
         tf: T,
-        y0: &SMatrix<T, R, C>,
-    ) -> Result<NumEvals, Error<T, R, C>>
+        y0: &V,
+    ) -> Result<NumEvals, Error<T, V>>
     where
-        F: ODE<T, R, C, D>,
+        F: ODE<T, V, D>,
     {
         // Check Bounds
-        match validate_step_size_parameters::<T, R, C, D>(self.h, T::zero(), T::infinity(), t0, tf)
+        match validate_step_size_parameters::<T, V, D>(self.h, T::zero(), T::infinity(), t0, tf)
         {
             Ok(h) => self.h = h,
             Err(e) => return Err(e),
@@ -134,9 +134,9 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         Ok(evals)
     }
 
-    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, R, C>>
+    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, V>>
     where
-        F: ODE<T, R, C, D>,
+        F: ODE<T, V, D>,
     {
         // state for interpolation
         self.t_old = self.t;
@@ -182,7 +182,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         self.t
     }
 
-    fn y(&self) -> &SMatrix<T, R, C> {
+    fn y(&self) -> &V {
         &self.y
     }
 
@@ -190,7 +190,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         self.t_old
     }
 
-    fn y_prev(&self) -> &SMatrix<T, R, C> {
+    fn y_prev(&self) -> &V {
         &self.y_old
     }
 
@@ -202,20 +202,20 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> NumericalMethod<T
         self.h = h;
     }
 
-    fn status(&self) -> &Status<T, R, C, D> {
+    fn status(&self) -> &Status<T, V, D> {
         &self.status
     }
 
-    fn set_status(&mut self, status: Status<T, R, C, D>) {
+    fn set_status(&mut self, status: Status<T, V, D>) {
         self.status = status;
     }
 }
 
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> Interpolation<T, R, C> for APCF4<T, R, C, D> {
+impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for APCF4<T, V, D> {
     fn interpolate(
         &mut self,
         t_interp: T,
-    ) -> Result<SMatrix<T, R, C>, InterpolationError<T, R, C>> {
+    ) -> Result<V, InterpolationError<T>> {
         // Check if t is within bounds
         if t_interp < self.t_prev[0] || t_interp > self.t {
             return Err(InterpolationError::OutOfBounds {
@@ -240,7 +240,7 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> Interpolation<T, 
     }
 }
 
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> APCF4<T, R, C, D> {
+impl<T: Real, V: State<T>, D: CallBackData> APCF4<T, V, D> {
     pub fn new(h: T) -> Self {
         APCF4 {
             h,
@@ -249,27 +249,27 @@ impl<T: Real, const R: usize, const C: usize, D: CallBackData> APCF4<T, R, C, D>
     }
 }
 
-impl<T: Real, const R: usize, const C: usize, D: CallBackData> Default for APCF4<T, R, C, D> {
+impl<T: Real, V: State<T>, D: CallBackData> Default for APCF4<T, V, D> {
     fn default() -> Self {
         APCF4 {
             h: T::zero(),
             t: T::zero(),
-            y: SMatrix::<T, R, C>::zeros(),
-            dydt: SMatrix::<T, R, C>::zeros(),
+            y: V::zeros(),
+            dydt: V::zeros(),
             t_prev: [T::zero(); 4],
             y_prev: [
-                SMatrix::<T, R, C>::zeros(),
-                SMatrix::<T, R, C>::zeros(),
-                SMatrix::<T, R, C>::zeros(),
-                SMatrix::<T, R, C>::zeros(),
+                V::zeros(),
+                V::zeros(),
+                V::zeros(),
+                V::zeros(),
             ],
             t_old: T::zero(),
-            y_old: SMatrix::<T, R, C>::zeros(),
-            dydt_old: SMatrix::<T, R, C>::zeros(),
-            k1: SMatrix::<T, R, C>::zeros(),
-            k2: SMatrix::<T, R, C>::zeros(),
-            k3: SMatrix::<T, R, C>::zeros(),
-            k4: SMatrix::<T, R, C>::zeros(),
+            y_old: V::zeros(),
+            dydt_old: V::zeros(),
+            k1: V::zeros(),
+            k2: V::zeros(),
+            k3: V::zeros(),
+            k4: V::zeros(),
             evals: 0,
             status: Status::Uninitialized,
         }

@@ -1,5 +1,4 @@
 use differential_equations::ode::*;
-use nalgebra::{SVector, vector};
 
 // Define the ode
 struct ExponentialGrowth {
@@ -9,8 +8,8 @@ struct ExponentialGrowth {
 // Implement the ODE trait for the ExponentialGrowth ode
 // Notice instead of ODE<f64, 1, 1> which matches the defaults for the generic parameters, we can just use ODE
 impl ODE for ExponentialGrowth {
-    fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
-        dydt[0] = self.k * y[0];
+    fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
+        *dydt = self.k * y;
     }
 }
 
@@ -21,7 +20,7 @@ fn main() {
         .atol(1e-12); // Set the absolute tolerance, Default is 1e-6 for DOP853
 
     // Initialize the initial value problem
-    let y0 = vector![1.0]; // vector! is a nalgebra macro to create a SVector; functions similarly to vec! but creates a static vector e.g. not dynamic and has a fixed size
+    let y0 = 1.0; // vector! is a nalgebra macro to create a SVector; functions similarly to vec! but creates a static vector e.g. not dynamic and has a fixed size
     let t0 = 0.0;
     let tf = 10.0;
     let ode = ExponentialGrowth { k: 1.0 };

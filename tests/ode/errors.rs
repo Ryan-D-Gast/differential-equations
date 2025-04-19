@@ -10,7 +10,7 @@ use nalgebra::{SVector, vector};
 
 struct SimpleODE;
 
-impl ODE<f64, 1, 1> for SimpleODE {
+impl ODE<f64, SVector<f64, 1>> for SimpleODE {
     fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
         dydt[0] = y[0];
     }
@@ -117,14 +117,14 @@ fn invalid_time_span() {
         t0: 0.0,
         tf: 0.0,
         y0: vector![1.0],
-        expected_error: Error::<f64, 1, 1>::BadInput { msg: "Invalid input: tf (0.0) cannot be equal to t0 (0.0)".to_string() },
+        expected_error: Error::<f64, SVector<f64, 1>>::BadInput { msg: "Invalid input: tf (0.0) cannot be equal to t0 (0.0)".to_string() },
         solver_name: DOP853, solver: DOP853::new(),
         solver_name: DOPRI5, solver: DOPRI5::new(),
-        solver_name: RKF, solver: RKF::new(0.1),
+        solver_name: RKF, solver: RKF::new().h0(0.1),
         solver_name: RK4, solver: RK4::new(0.1),
         solver_name: Euler, solver: Euler::new(0.1),
         solver_name: APCF4, solver: APCF4::new(0.1),
-        solver_name: APCV4, solver: APCV4::new(0.1),
+        solver_name: APCV4, solver: APCV4::new().h0(0.1),
         solver_name: RKV65, solver: RKV65::new().h0(0.1),
         solver_name: RKV98, solver: RKV98::new().h0(0.1)
     }
@@ -138,14 +138,14 @@ fn initial_step_size_too_big() {
         t0: 0.0,
         tf: 1.0,
         y0: vector![1.0],
-        expected_error: Error::<f64, 1, 1>::BadInput { msg: "Invalid input: Absolute value of initial step size (10.0) must be less than or equal to the absolute value of the integration interval (tf - t0 = 1.0)".to_string() },
+        expected_error: Error::<f64, SVector<f64, 1>>::BadInput { msg: "Invalid input: Absolute value of initial step size (10.0) must be less than or equal to the absolute value of the integration interval (tf - t0 = 1.0)".to_string() },
         solver_name: DOP853, solver: DOP853::new().h0(10.0),
         solver_name: DOPRI5, solver: DOPRI5::new().h0(10.0),
-        solver_name: RKF, solver: RKF::new(10.0),
+        solver_name: RKF, solver: RKF::new().h0(10.0),
         solver_name: RK4, solver: RK4::new(10.0),
         solver_name: Euler, solver: Euler::new(10.0),
         solver_name: APCF4, solver: APCF4::new(10.0),
-        solver_name: APCV4, solver: APCV4::new(10.0),
+        solver_name: APCV4, solver: APCV4::new().h0(10.0),
         solver_name: RKV65, solver: RKV65::new().h0(10.0),
         solver_name: RKV98, solver: RKV98::new().h0(10.0)
     }
@@ -159,14 +159,14 @@ fn terminate_initial_conditions_trigger() {
         t0: 10.0,
         tf: 20.0,
         y0: vector![1.0],
-        expected_status: Status::<f64, 1, 1, String>::Interrupted("Initial condition trigger".to_string()),
+        expected_status: Status::<f64, SVector<f64, 1>, String>::Interrupted("Initial condition trigger".to_string()),
         solver_name: DOP853, solver: DOP853::new(),
         solver_name: DOPRI5, solver: DOPRI5::new(),
-        solver_name: RKF, solver: RKF::new(0.1),
+        solver_name: RKF, solver: RKF::new().h0(0.1),
         solver_name: RK4, solver: RK4::new(0.1),
         solver_name: Euler, solver: Euler::new(0.1),
         solver_name: APCF4, solver: APCF4::new(0.1),
-        solver_name: APCV4, solver: APCV4::new(0.1),
+        solver_name: APCV4, solver: APCV4::new().h0(0.1),
         solver_name: RKV65, solver: RKV65::new().h0(0.1),
         solver_name: RKV98, solver: RKV98::new().h0(0.1)
     }

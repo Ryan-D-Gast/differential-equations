@@ -30,7 +30,7 @@ use super::*;
 /// // Simple exponential growth
 /// struct ExponentialGrowth;
 ///
-/// impl ODE<f64, 1, 1> for ExponentialGrowth {
+/// impl ODE<f64, Vector1<f64>> for ExponentialGrowth {
 ///     fn diff(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
 ///         dydt[0] = y[0]; // dy/dt = y
 ///     }
@@ -64,22 +64,23 @@ use super::*;
 ///
 pub struct DefaultSolout {}
 
-impl<T, const R: usize, const C: usize, D> Solout<T, R, C, D> for DefaultSolout
+impl<T, V, D> Solout<T, V, D> for DefaultSolout
 where
     T: Real,
+    V: State<T>,
     D: CallBackData,
 {
     fn solout<I>(
             &mut self, 
             t_curr: T,
             _t_prev: T,
-            y_curr: &SMatrix<T, R, C>,
-            _y_prev: &SMatrix<T, R, C>,
+            y_curr: &V,
+            _y_prev: &V,
             _interpolator: &mut I,
-            solution: &mut Solution<T, R, C, D>
+            solution: &mut Solution<T, V, D>
         ) -> ControlFlag<D>
         where
-            I: Interpolation<T, R, C> 
+            I: Interpolation<T, V> 
     {
         // Output the current time and state to the vectors
         solution.push(t_curr, *y_curr);

@@ -199,21 +199,21 @@ macro_rules! runge_kutta_method {
         $(#[$attr])*
         #[doc = "\n\n"]
         #[doc = "This solver was automatically generated using the `runge_kutta_method` macro."]
-        pub struct $name<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> {
+        pub struct $name<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> {
             // Step Size
             pub h: T,
 
             // Current State
             t: T,
-            y: nalgebra::SMatrix<T, R, C>,
+            y: V,
 
             // Previous State
             t_prev: T,
-            y_prev: nalgebra::SMatrix<T, R, C>,
-            dydt_prev: nalgebra::SMatrix<T, R, C>,
+            y_prev: V,
+            dydt_prev: V,
 
             // Stage values (fixed size arrays of Vectors)
-            k: [nalgebra::SMatrix<T, R, C>; $stages],
+            k: [V; $stages],
 
             // Constants from Butcher tableau (fixed size arrays)
             a: [[T; $stages]; $stages],
@@ -221,10 +221,10 @@ macro_rules! runge_kutta_method {
             c: [T; $stages],
 
             // Status
-            status: $crate::ode::Status<T, R, C, D>,
+            status: $crate::ode::Status<T, V, D>,
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> Default for $name<T, R, C, D> {
+        impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> Default for $name<T, V, D> {
             fn default() -> Self {
                 // Convert Butcher tableau values to type T
                 let a_t: [[T; $stages]; $stages] = $a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
@@ -234,12 +234,12 @@ macro_rules! runge_kutta_method {
                 $name {
                     h: T::from_f64(0.1).unwrap(),
                     t: T::from_f64(0.0).unwrap(),
-                    y: nalgebra::SMatrix::<T, R, C>::zeros(),
+                    y: V::zeros(),
                     t_prev: T::from_f64(0.0).unwrap(),
-                    y_prev: nalgebra::SMatrix::<T, R, C>::zeros(),
-                    dydt_prev: nalgebra::SMatrix::<T, R, C>::zeros(),
+                    y_prev: V::zeros(),
+                    dydt_prev: V::zeros(),
                     // Initialize k vectors with zeros
-                    k: [nalgebra::SMatrix::<T, R, C>::zeros(); $stages],
+                    k: [V::zeros(); $stages],
                     // Use the converted Butcher tableau
                     a: a_t,
                     b: b_t,
@@ -249,13 +249,13 @@ macro_rules! runge_kutta_method {
             }
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> $crate::ode::NumericalMethod<T, R, C, D> for $name<T, R, C, D> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &nalgebra::SMatrix<T, R, C>) -> Result<usize, $crate::ode::Error<T, R, C>>
+        impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> $crate::ode::NumericalMethod<T, V, D> for $name<T, V, D> {
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<usize, $crate::ode::Error<T, V>>
             where
-                F: $crate::ode::ODE<T, R, C, D>
+                F: $crate::ode::ODE<T, V, D>
             {
                 // Check Bounds
-                match $crate::utils::validate_step_size_parameters::<T, R, C, D>(self.h, T::zero(), T::infinity(), t0, tf) {
+                match $crate::utils::validate_step_size_parameters::<T, V, D>(self.h, T::zero(), T::infinity(), t0, tf) {
                     Ok(_) => {},
                     Err(e) => return Err(e),
                 }
@@ -276,9 +276,9 @@ macro_rules! runge_kutta_method {
                 Ok(1)
             }
 
-            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::ode::Error<T, R, C>>
+            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::ode::Error<T, V>>
             where
-                F: $crate::ode::ODE<T, R, C, D>
+                F: $crate::ode::ODE<T, V, D>
             {
                 // Log previous state
                 self.t_prev = self.t;
@@ -303,7 +303,7 @@ macro_rules! runge_kutta_method {
                 }
 
                 // Compute the final update
-                let mut delta_y = nalgebra::SMatrix::<T, R, C>::zeros();
+                let mut delta_y = V::zeros();
                 for i in 0..$stages {
                     delta_y += self.k[i] * (self.b[i] * self.h);
                 }
@@ -319,7 +319,7 @@ macro_rules! runge_kutta_method {
                 self.t
             }
 
-            fn y(&self) -> &nalgebra::SMatrix<T, R, C> {
+            fn y(&self) -> &V {
                 &self.y
             }
 
@@ -327,7 +327,7 @@ macro_rules! runge_kutta_method {
                 self.t_prev
             }
 
-            fn y_prev(&self) -> &nalgebra::SMatrix<T, R, C> {
+            fn y_prev(&self) -> &V {
                 &self.y_prev
             }
 
@@ -339,17 +339,17 @@ macro_rules! runge_kutta_method {
                 self.h = h;
             }
 
-            fn status(&self) -> &$crate::ode::Status<T, R, C, D> {
+            fn status(&self) -> &$crate::ode::Status<T, V, D> {
                 &self.status
             }
 
-            fn set_status(&mut self, status: $crate::ode::Status<T, R, C, D>) {
+            fn set_status(&mut self, status: $crate::ode::Status<T, V, D>) {
                 self.status = status;
             }
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> $crate::interpolate::Interpolation<T, R, C> for $name<T, R, C, D> {
-            fn interpolate(&mut self, t_interp: T) -> Result<nalgebra::SMatrix<T, R, C>, $crate::interpolate::InterpolationError<T, R, C>> {
+        impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> $crate::interpolate::Interpolation<T, V> for $name<T, V, D> {
+            fn interpolate(&mut self, t_interp: T) -> Result<V, $crate::interpolate::InterpolationError<T>> {
                 // Check if t is within the bounds of the current step
                 if t_interp < self.t_prev || t_interp > self.t {
                     return Err($crate::interpolate::InterpolationError::OutOfBounds { 
@@ -364,7 +364,7 @@ macro_rules! runge_kutta_method {
             }
         }
 
-        impl<T: $crate::traits::Real, const R: usize, const C: usize, D: $crate::traits::CallBackData> $name<T, R, C, D> {
+        impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> $name<T, V, D> {
             /// Create a new solver with the specified step size
             ///
             /// # Arguments

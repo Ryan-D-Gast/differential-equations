@@ -12,7 +12,7 @@ struct DampedPendulumModel {
     m: f64, // Mass of the pendulum bob (kg)
 }
 
-impl ODE<f64, 2> for DampedPendulumModel {
+impl ODE<f64, SVector<f64, 2>> for DampedPendulumModel {
     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
         let theta = y[0]; // Angle (radians)
         let omega = y[1]; // Angular velocity (radians/s)
@@ -36,7 +36,7 @@ impl ODE<f64, 2> for DampedPendulumModel {
 
 fn main() {
     // Initialize method with relative and absolute tolerances
-    let mut method = RKF::new(0.01);
+    let mut method = RKF::new();
 
     // Initial conditions
     let initial_angle = 1.0; // Initial angle (radians)

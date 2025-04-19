@@ -2,9 +2,10 @@
 
 use super::*;
 
-pub trait Solout<T, const R: usize, const C: usize, D = String>
+pub trait Solout<T, V, D = String>
 where
     T: Real,
+    V: State<T>,
     D: CallBackData,
 {
     /// Solout function to choose which points to output during the solving process.
@@ -21,11 +22,11 @@ where
         &mut self, 
         t_curr: T,
         t_prev: T,
-        y_curr: &SMatrix<T, R, C>,
-        y_prev: &SMatrix<T, R, C>,
+        y_curr: &V,
+        y_prev: &V,
         interpolator: &mut I,
-        solution: &mut Solution<T, R, C, D>
+        solution: &mut Solution<T, V, D>
     ) -> ControlFlag<D>
     where
-        I: Interpolation<T, R, C>;
+        I: Interpolation<T, V>;
 }

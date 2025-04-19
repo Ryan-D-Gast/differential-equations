@@ -4,6 +4,7 @@
 //! crosses a hyperplane in the state space.
 
 use super::*;
+use crate::traits::dot;
 
 /// Function type for extracting position components from state vector
 pub type ExtractorFn<V, P> = fn(&V) -> P;
@@ -34,7 +35,7 @@ pub type ExtractorFn<V, P> = fn(&V) -> P;
 /// // CR3BP system (simplified representation)
 /// struct CR3BP { mu: f64 }
 ///
-/// impl ODE<f64, 6, 1> for CR3BP {
+/// impl ODE<f64, Vector6<f64>> for CR3BP {
 ///     fn diff(&self, _t: f64, y: &Vector6<f64>, dydt: &mut Vector6<f64>) {
 ///     // Mass ratio
 ///     let mu = self.mu;
@@ -84,31 +85,32 @@ pub type ExtractorFn<V, P> = fn(&V) -> P;
 /// ```
 pub struct HyperplaneCrossingSolout<
     T,
-    const R1: usize,
-    const C1: usize,
-    const R2: usize,
-    const C2: usize,
+    V1,
+    V2,
 > where
     T: Real,
+    V1: State<T>,
+    V2: State<T>,
 {
     /// Point on the hyperplane
-    point: SMatrix<T, R1, C1>,
+    point: V1,
     /// Normal vector to the hyperplane (should be normalized)
-    normal: SMatrix<T, R1, C1>,
+    normal: V1,
     /// Function to extract position components from state vector
-    extractor: ExtractorFn<SMatrix<T, R2, C2>, SMatrix<T, R1, C1>>,
+    extractor: ExtractorFn<V2, V1>,
     /// Last observed signed distance (for detecting sign changes)
     last_distance: Option<T>,
     /// Direction of crossing to detect
     direction: CrossingDirection,
     /// Phantom data for state vector type
-    _phantom: std::marker::PhantomData<SMatrix<T, R2, C2>>,
+    _phantom: std::marker::PhantomData<V2>,
 }
 
-impl<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize>
-    HyperplaneCrossingSolout<T, R1, C1, R2, C2>
+impl<T, V1, V2> HyperplaneCrossingSolout<T, V1, V2>
 where
     T: Real,
+    V1: State<T>,
+    V2: State<T>,
 {
     /// Creates a new HyperplaneSolout to detect when the trajectory crosses the specified hyperplane.
     ///
@@ -123,12 +125,19 @@ where
     /// * A new `HyperplaneCrossingSolout` instance
     ///
     pub fn new(
-        point: SMatrix<T, R1, C1>,
-        mut normal: SMatrix<T, R1, C1>,
-        extractor: ExtractorFn<SMatrix<T, R2, C2>, SMatrix<T, R1, C1>>,
+        point: V1,
+        mut normal: V1,
+        extractor: ExtractorFn<V2, V1>,
     ) -> Self {
         // Normalize the normal vector
-        let norm = normal.norm();
+        let norm = |y: V1| {
+            let mut norm = T::zero();
+            for i in 0..y.len() {
+                norm += y.get(i).powi(2);
+            }
+            norm.sqrt()
+        };
+        let norm = norm(normal);
         if norm > T::default_epsilon() {
             normal = normal * T::one() / norm;
         }
@@ -192,32 +201,34 @@ where
     /// # Returns
     /// * Signed distance (positive if on same side as normal vector)
     ///
-    fn signed_distance(&self, pos: &SMatrix<T, R1, C1>) -> T {
+    fn signed_distance(&self, pos: &V1) -> T {
         // Calculate displacement vector from plane point to position
-        let displacement = pos - self.point;
+        let displacement = *pos - self.point;
 
         // Dot product with normal gives signed distance
-        displacement.dot(&self.normal)
+        dot(&displacement, &self.normal)
     }
 }
 
-impl<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize, D: CallBackData>
-    Solout<T, R2, C2, D> for HyperplaneCrossingSolout<T, R1, C1, R2, C2>
+impl<T, V1, V2, D: CallBackData>
+    Solout<T, V2, D> for HyperplaneCrossingSolout<T, V1, V2>
 where
     T: Real,
+    V1: State<T>,
+    V2: State<T>,
     D: CallBackData,
 {
     fn solout<I>(
             &mut self, 
             t_curr: T,
             t_prev: T,
-            y_curr: &SMatrix<T, R2, C2>,
-            _y_prev: &SMatrix<T, R2, C2>,
+            y_curr: &V2,
+            _y_prev: &V2,
             interpolator: &mut I,
-            solution: &mut Solution<T, R2, C2, D>
+            solution: &mut Solution<T, V2, D>
         ) -> ControlFlag<D>
         where
-            I: Interpolation<T, R2, C2> 
+            I: Interpolation<T, V2> 
     {
         // Extract position from current state and calculate distance
         let pos_curr = (self.extractor)(y_curr);
@@ -270,10 +281,11 @@ where
     }
 }
 
-impl<T, const R1: usize, const C1: usize, const R2: usize, const C2: usize>
-    HyperplaneCrossingSolout<T, R1, C1, R2, C2>
+impl<T, V1, V2> HyperplaneCrossingSolout<T, V1, V2>
 where
     T: Real,
+    V1: State<T>,
+    V2: State<T>,
 {
     /// Find the crossing time using Newton's method with interpolator interpolation
     fn find_crossing_newton<I>(
@@ -285,7 +297,7 @@ where
         dist_upper: T,
     ) -> Option<T>
     where
-        I: Interpolation<T, R2, C2>,
+        I: Interpolation<T, V2>,
     {
         // Start with linear interpolation as initial guess
         let mut t = t_lower - dist_lower * (t_upper - t_lower) / (dist_upper - dist_lower);

@@ -9,7 +9,7 @@ struct Pendulum {
     l: f64, // Length of pendulum
 }
 
-impl ODE<f64, 2> for Pendulum {
+impl ODE<f64, SVector<f64, 2>> for Pendulum {
     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
         // y[0] = theta (angle), y[1] = omega (angular velocity)
         dydt[0] = y[1];
@@ -59,18 +59,18 @@ impl PendulumSolout {
     }
 }
 
-impl Solout<f64, 2, 1> for PendulumSolout {
+impl Solout<f64, SVector<f64, 2>> for PendulumSolout {
     fn solout<I>(
             &mut self, 
             t_curr: f64,
             _t_prev: f64,
-            y_curr: &nalgebra::SMatrix<f64, 2, 1>,
-            _y_prev: &nalgebra::SMatrix<f64, 2, 1>,
+            y_curr: &SVector<f64, 2>,
+            _y_prev: &SVector<f64, 2>,
             _interpolator: &mut I,
-            solution: &mut Solution<f64, 2, 1, String>
+            solution: &mut Solution<f64, SVector<f64, 2>, String>
         ) -> ControlFlag<String>
         where
-            I: methods::adams::Interpolation<f64, 2, 1> 
+            I: methods::adams::Interpolation<f64, SVector<f64, 2>> 
     {
         let current_angle = y_curr[0];
         let dt = t_curr - self.last_output_time;

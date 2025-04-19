@@ -2,9 +2,8 @@
 
 use crate::{
     Status,
-    traits::{Real, CallBackData},
+    traits::{Real, State, CallBackData},
 };
-use nalgebra::SMatrix;
 use std::time::Instant;
 
 /// Timer for tracking solution time
@@ -58,19 +57,20 @@ use polars::prelude::*;
 /// * `timer`          - Timer for tracking solution time.
 ///
 #[derive(Debug, Clone)]
-pub struct Solution<T, const R: usize, const C: usize, D>
+pub struct Solution<T, V, D>
 where
     T: Real,
+    V: State<T>,
     D: CallBackData,
 {
     /// Outputted independent variable points.
     pub t: Vec<T>,
 
     /// Outputted dependent variable points.
-    pub y: Vec<SMatrix<T, R, C>>,
+    pub y: Vec<V>,
 
     /// Status of the solver.
-    pub status: Status<T, R, C, D>,
+    pub status: Status<T, V, D>,
 
     /// Number of function evaluations.
     pub evals: usize,
@@ -89,9 +89,10 @@ where
 }
 
 // Initial methods for the solution
-impl<T, const R: usize, const C: usize, D> Solution<T, R, C, D>
+impl<T, V, D> Solution<T, V, D>
 where
     T: Real,
+    V: State<T>,
     D: CallBackData,
 {
     /// Creates a new Solution object.
@@ -110,9 +111,10 @@ where
 }
 
 // Methods used during solving
-impl<T, const R: usize, const C: usize, D> Solution<T, R, C, D>
+impl<T, V, D> Solution<T, V, D>
 where
     T: Real,
+    V: State<T>,
     D: CallBackData,
 {
     /// Puhes a new point to the solution, e.g. t and y vecs.
@@ -121,7 +123,7 @@ where
     /// * `t` - The time point.
     /// * `y` - The state vector.
     ///
-    pub fn push(&mut self, t: T, y: SMatrix<T, R, C>) {
+    pub fn push(&mut self, t: T, y: V) {
         self.t.push(t);
         self.y.push(y);
     }
@@ -131,7 +133,7 @@ where
     /// # Returns
     /// * `Option<(T, SMatrix<T, R, C>)>` - The last point in the solution.
     ///
-    pub fn pop(&mut self) -> Option<(T, SMatrix<T, R, C>)> {
+    pub fn pop(&mut self) -> Option<(T, V)> {
         if self.t.is_empty() || self.y.is_empty() {
             return None;
         }
@@ -152,9 +154,10 @@ where
 }
 
 // Post-processing methods for the solution
-impl<T, const R: usize, const C: usize, D> Solution<T, R, C, D>
+impl<T, V, D> Solution<T, V, D>
 where
     T: Real,
+    V: State<T>,
     D: CallBackData,
 {
     /// Simplifies the Solution into a tuple of vectors in form (t, y).
@@ -164,7 +167,7 @@ where
     /// # Returns
     /// * `(Vec<T>, Vec<V)` - Tuple of time and state vectors.
     ///
-    pub fn into_tuple(self) -> (Vec<T>, Vec<SMatrix<T, R, C>>) {
+    pub fn into_tuple(self) -> (Vec<T>, Vec<V>) {
         (self.t, self.y)
     }
 
@@ -173,7 +176,7 @@ where
     /// # Returns
     /// * `Result<(T, V), Box<dyn std::error::Error>>` - Result of time and state vector.
     ///
-    pub fn last(&self) -> Result<(&T, &SMatrix<T, R, C>), Box<dyn std::error::Error>> {
+    pub fn last(&self) -> Result<(&T, &V), Box<dyn std::error::Error>> {
         let t = self.t.last().ok_or("No t steps available")?;
         let y = self.y.last().ok_or("No y vectors available")?;
         Ok((t, y))
@@ -187,7 +190,7 @@ where
     ///
     pub fn iter(
         &self,
-    ) -> std::iter::Zip<std::slice::Iter<'_, T>, std::slice::Iter<'_, SMatrix<T, R, C>>> {
+    ) -> std::iter::Zip<std::slice::Iter<'_, T>, std::slice::Iter<'_, V>> {
         self.t.iter().zip(self.y.iter())
     }
 
@@ -229,7 +232,7 @@ where
         for (t, y) in self.iter() {
             let mut row = format!("{:?}", t);
             for i in 0..n {
-                row.push_str(&format!(",{:?}", y[i]));
+                row.push_str(&format!(",{:?}", y.get(i)));
             }
             writeln!(writer, "{}", row)?;
         }
@@ -266,7 +269,7 @@ where
             let header = format!("y{}", i);
             columns.push(Column::new(
                 header.into(),
-                self.y.iter().map(|x| x[i].to_f64()).collect::<Vec<f64>>(),
+                self.y.iter().map(|x| x.get(i).to_f64()).collect::<Vec<f64>>(),
             ));
         }
         let mut df = DataFrame::new(columns)?;
@@ -293,7 +296,7 @@ where
             let header = format!("y{}", i);
             columns.push(Column::new(
                 header.into(),
-                self.y.iter().map(|x| x[i].to_f64()).collect::<Vec<f64>>(),
+                self.y.iter().map(|x| x.get(i).to_f64()).collect::<Vec<f64>>(),
             ));
         }
 

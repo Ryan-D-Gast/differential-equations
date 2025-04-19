@@ -1,6 +1,6 @@
 use crate::{
     Error,
-    traits::{Real, CallBackData},
+    traits::{Real, State, CallBackData},
 };
 
 /// Constrain the step size to be within the bounds of `h_min` and `h_max`.
@@ -56,13 +56,13 @@ pub fn constrain_step_size<T: Real>(h: T, h_min: T, h_max: T) -> T {
 /// # Returns
 /// * `Result<Real, Error>` - Ok if all checks pass, Err if any check fails.
 ///
-pub fn validate_step_size_parameters<T: Real, const R: usize, const C: usize, D: CallBackData>(
+pub fn validate_step_size_parameters<T: Real, V: State<T>, D: CallBackData>(
     h0: T,
     h_min: T,
     h_max: T,
     t0: T,
     tf: T,
-) -> Result<T, Error<T, R, C>> {
+) -> Result<T, Error<T, V>> {
     // Check if tf == t0
     if tf == t0 {
         return Err(Error::BadInput {

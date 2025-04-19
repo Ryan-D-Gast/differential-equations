@@ -2,7 +2,7 @@
 
 use crate::{
     Error,
-    traits::{Real, CallBackData},
+    traits::{Real, State, CallBackData},
 };
 use std::fmt::{Debug, Display};
 
@@ -18,23 +18,25 @@ use std::fmt::{Debug, Display};
 /// * `Complete`      - NumericalMethod completed.
 ///
 #[derive(Debug, PartialEq, Clone)]
-pub enum Status<T, const R: usize, const C: usize, D>
+pub enum Status<T, V, D>
 where
     T: Real,
+    V: State<T>,
     D: CallBackData,
 {
     Uninitialized,              // NumericalMethods default to this until solver.init is called
     Initialized,                // After solver.init is called
-    Error(Error<T, R, C>),      // If the solver encounters an error, this status is set so solver status is indicated that an error.
+    Error(Error<T, V>),      // If the solver encounters an error, this status is set so solver status is indicated that an error.
     Solving,                    // While the Differential Equation is being solved
     RejectedStep,               // If the solver rejects a step, in this case it will repeat with new smaller step size typically, will return to Solving once the step is accepted
     Interrupted(D),             // If the solver is interrupted by event with reason
     Complete,                   // If the solver is solving and has reached the final time of the IMatrix<T, R, C, S>P then Complete is returned to indicate such.
 }
 
-impl<T, const R: usize, const C: usize, D> Display for Status<T, R, C, D>
+impl<T, V, D> Display for Status<T, V, D>
 where
     T: Real + Display,
+    V: State<T> + Display,
     D: CallBackData + Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
