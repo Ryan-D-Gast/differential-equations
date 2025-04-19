@@ -3,8 +3,8 @@
 **Legend:** `.` Minor change · `-` Bug fix · `+` New feature · `^` Improvement · `!` Breaking change · `*` Refactor
 
 ## 2025-04-12 - `0.1.3`
-- `^` Refactored module imports in codebase with changes in a cleaner easier to read structure.
-- `!` `SolverError` and `SolverStatus` renamed to `Error` and `Status respectively. In addition moved to root of the crate as these are planed to be shared for all differential equation types.
+- `^` Refactored module imports in codebase with changes in a cleaner easier-to-read structure.
+- `!` `SolverError` and `SolverStatus` renamed to `Error` and `Status` respectively. In addition moved to root of the crate as these are planed to be shared for all differential equation types.
 - `!` Changed `Solver` trait to `NumericalMethod` as it is more descriptive and less vague.
 - `.` Took Error variants out of `SolverStatus` and put them in their own enum `SolverError`. If the user was previous handling specific errors, this is breaking change but otherwise no code changes are needed.
 - `!` Removed `SolutionInterface` trait and have Solout function take a mutable reference to the `Solution` struct instead. Methods which are dangerous to call during Solout have been removed or made only public to crate to prevent misuse.
