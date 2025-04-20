@@ -2,6 +2,12 @@
 
 **Legend:** `.` Minor change · `-` Bug fix · `+` New feature · `^` Improvement · `!` Breaking change · `*` Refactor
 
+## 2025-04-20 - `0.1.4`
+- `+` Added derive macro for `State` to allow for easy creation of `State` structs. This will allow for more ergonomic and self-documenting code on the users side. This proc macro is in the `differential-equations-derive` crate. It is included as a the feature `derive` and enabled by default.
+- `!` Made the `State` e.g. the dependent variable in a differential equation a generic type. This enables the use of primatives like `f64` or `f32` to be used as the state and vector/matrix types like `nalgebra::SVector` or `nalgebra::SMatrix`. In addition this will allow the addition of future types or users to implement their own structs to represent state.
+- `*` Moved the interpolation function implemented by `NumericalMethods` into a `Interpolation` trait in root. This shared trait in the future can be used for all differential equation types.
+- `*` Moved the `Solout` trait to root as it will be shared across all future differential equation types.
+
 ## 2025-04-12 - `0.1.3`
 - `^` Refactored module imports in codebase with changes in a cleaner easier-to-read structure.
 - `!` `SolverError` and `SolverStatus` renamed to `Error` and `Status` respectively. In addition moved to root of the crate as these are planed to be shared for all differential equation types.
