@@ -4,7 +4,10 @@ version = "0.1.0"
 edition = "2024"
 authors = ["Ryan D. Gast <ryan.d.gast@gmail.com>"]
 description = "Derive macros for differential equations crate"
-publish = false
+
+documentation = "https://docs.rs/differential-equations"
+homepage = "https://github.com/Ryan-D-Gast/differential-equations"
+repository = "https://github.com/Ryan-D-Gast/differential-equations"
 
 [lib]
 proc-macro = true
