@@ -1,37 +1,45 @@
 use differential_equations::ode::*;
-use nalgebra::{Vector3, Vector6, vector};
+use differential_equations::derive::State;
+use nalgebra::{Vector3, vector};
 
 /// Circular Restricted Three Body Problem (CR3BP)
 pub struct Cr3bp {
     pub mu: f64, // CR3BP mass ratio
 }
 
-impl ODE<f64, Vector6<f64>> for Cr3bp {
+impl ODE<f64, StateVector<f64>> for Cr3bp {
     /// Differential equation for the initial value Circular Restricted Three
     /// Body Problem (CR3BP).
     /// All parameters are in non-dimensional form.
-    fn diff(&self, _t: f64, y: &Vector6<f64>, dydt: &mut Vector6<f64>) {
+    fn diff(&self, _t: f64, sv: &StateVector<f64>, drdt: &mut StateVector<f64>) {
         // Mass ratio
         let mu = self.mu;
 
-        // Extracting states
-        let (rx, ry, rz, vx, vy, vz) = (y[0], y[1], y[2], y[3], y[4], y[5]);
-
         // Distance to primary body
-        let r13 = ((rx + mu).powi(2) + ry.powi(2) + rz.powi(2)).sqrt();
+        let r13 = ((sv.x + mu).powi(2) + sv.y.powi(2) + sv.z.powi(2)).sqrt();
         // Distance to secondary body
-        let r23 = ((rx - 1.0 + mu).powi(2) + ry.powi(2) + rz.powi(2)).sqrt();
+        let r23 = ((sv.x - 1.0 + mu).powi(2) + sv.y.powi(2) + sv.z.powi(2)).sqrt();
 
         // Computing three-body dynamics
-        dydt[0] = vx;
-        dydt[1] = vy;
-        dydt[2] = vz;
-        dydt[3] = rx + 2.0 * vy
-            - (1.0 - mu) * (rx + mu) / r13.powi(3)
-            - mu * (rx - 1.0 + mu) / r23.powi(3);
-        dydt[4] = ry - 2.0 * vx - (1.0 - mu) * ry / r13.powi(3) - mu * ry / r23.powi(3);
-        dydt[5] = -(1.0 - mu) * rz / r13.powi(3) - mu * rz / r23.powi(3);
+        drdt.x = sv.vx;
+        drdt.y = sv.vy;
+        drdt.z = sv.vz;
+        drdt.vx = sv.x + 2.0 * sv.vy
+            - (1.0 - mu) * (sv.x + mu) / r13.powi(3)
+            - mu * (sv.x - 1.0 + mu) / r23.powi(3);
+        drdt.vy = sv.y - 2.0 * sv.vx - (1.0 - mu) * sv.y / r13.powi(3) - mu * sv.y / r23.powi(3);
+        drdt.vz = -(1.0 - mu) * sv.z / r13.powi(3) - mu * sv.z / r23.powi(3);
     }
+}
+
+#[derive(State)]
+pub struct StateVector<T> {
+    pub x: T,
+    pub y: T,
+    pub z: T,
+    pub vx: T,
+    pub vy: T,
+    pub vz: T,
 }
 
 fn main() {
@@ -44,22 +52,21 @@ fn main() {
     }; // Earth-Moon ode
 
     // Initial conditions
-    let sv = vector![
-        // 9:2 L2 Southern NRHO orbit
-        1.021881345465263,
-        0.0,
-        -0.182000000000000, // Position
-        0.0,
-        -0.102950816739606,
-        0.0 // Velocity
-    ];
+    let sv = StateVector {
+        x: 1.021881345465263,
+        y: 0.0,
+        z: -0.182000000000000,
+        vx: 0.0,
+        vy: -0.102950816739606,
+        vz: 0.0
+    };
     let t0 = 0.0;
     let tf = 3.0 * 1.509263667286943; // Period of the orbit (sv(t0) ~= sv(tf / 3.0))
 
     let cr3bp_ivp = IVP::new(ode, t0, tf, sv);
 
-    fn extractor(y: &Vector6<f64>) -> Vector3<f64> {
-        vector![y[0], y[1], y[2]]
+    fn extractor(sv: &StateVector<f64>) -> Vector3<f64> {
+        vector![sv.x, sv.y, sv.z]
     }
 
     // Solve the ode with even output at interval dt: 1.0
@@ -71,10 +78,10 @@ fn main() {
             // Print the solution
             println!("Solution:");
             println!("t, [x, y, z]");
-            for (t, y) in solution.iter() {
+            for (t, sv) in solution.iter() {
                 println!(
                     "{:.4}, [{:.4}, {:.4}, {:.4}]",
-                    t, y[0], y[1], y[2]
+                    t, sv.x, sv.y, sv.z
                 );
             }
 
