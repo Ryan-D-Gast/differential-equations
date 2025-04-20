@@ -9,6 +9,8 @@ documentation = "https://docs.rs/differential-equations"
 homepage = "https://github.com/Ryan-D-Gast/differential-equations"
 repository = "https://github.com/Ryan-D-Gast/differential-equations"
 
+license = "Apache-2.0"
+
 [lib]
 proc-macro = true
 
