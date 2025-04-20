@@ -209,6 +209,7 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 | [Damped Oscillator](../../examples/ode/08_damped_oscillator/main.rs) | Demonstrates the use of the `crossing` method to use the CrossingSolout to log instances where a crossing occurs. In this case, the example saves points where the position is at zero. |
 | [Matrix ODE](../../examples/ode/09_matrix_ode/main.rs) | Solves a system of ODEs using a matrix system. Demonstrates how to define a system of equations using matrices. |
 | [Custom Solout](../../examples/ode/10_custom_solout/main.rs) | Demonstrates how to create a custom `Solout` implementation to save points based on a custom condition. In addition inside the Solout struct additional calculations are stored each step and accessible after solving is complete. |
+| [Schrodinger](../../examples/ode/11_schrodinger/main.rs) | Solves the time-dependent Schrödinger equation using the `DOP853` method. Demonstrates the use of complex numbers in the ODE system. |
 
 ## Benchmarks
 

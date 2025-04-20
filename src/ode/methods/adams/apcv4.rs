@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::{
-    traits::norm,
+    utils::norm,
     ode::methods::h_init,
 };
 

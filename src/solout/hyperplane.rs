@@ -4,7 +4,7 @@
 //! crosses a hyperplane in the state space.
 
 use super::*;
-use crate::traits::dot;
+use crate::utils::dot;
 
 /// Function type for extracting position components from state vector
 pub type ExtractorFn<V, P> = fn(&V) -> P;

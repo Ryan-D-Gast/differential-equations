@@ -28,15 +28,11 @@ include = [
 [features]
 default = []
 
-full = [
-    "polars"
-]
-
 polars = ["dep:polars"]
 
 [dependencies]
-# Linear algebra
-nalgebra = "0.33.2"
+nalgebra = "0.33.2" # Linear algebra vector and matrix types
+num-complex = "0.4.6" # Complex numbers
 
 # Optional features
 polars = { version = "0.46.0", optional = true }
@@ -85,6 +81,10 @@ path = "examples/ode/09_matrix_ode/main.rs"
 [[example]]
 name = "ode_10_custom_solout"
 path = "examples/ode/10_custom_solout/main.rs"
+
+[[example]]
+name = "ode_11_schrodinger"
+path = "examples/ode/11_schrodinger/main.rs"
 
 [[bench]]
 name = "ode_bench"

@@ -2,6 +2,7 @@
 
 use std::ops::{Add, AddAssign, Div, Mul, Sub};
 use nalgebra::{SMatrix, RealField};
+use num_complex::Complex;
 
 /// Real Number Trait
 ///
@@ -95,34 +96,27 @@ where
     }
 }
 
-// Linear Algebra helper function for trait
-pub(crate) fn dot<T, V>(
-    a: &V,
-    b: &V,
-) -> T
+impl<T> State<T> for Complex<T>
 where
     T: Real,
-    V: State<T>,
 {
-    let mut sum = T::zero();
-    for i in 0..a.len() {
-        sum += a.get(i) * b.get(i);
+    fn len(&self) -> usize {
+        2
     }
-    sum
-}
 
-pub(crate) fn norm<T, V>(
-    a: V,
-) -> T
-where
-    T: Real,
-    V: State<T>,
-{
-    let mut sum = T::zero();
-    for i in 0..a.len() {
-        sum += a.get(i) * a.get(i);
+    fn get(&self, i: usize) -> T {
+        if i == 0 {
+            self.re
+        } else if i == 1 {
+            self.im
+        } else {
+            panic!("Index out of bounds")
+        }
     }
-    sum.sqrt()
+
+    fn zeros() -> Self {
+        Complex::new(T::zero(), T::zero())
+    }
 }
 
 /// Callback data trait

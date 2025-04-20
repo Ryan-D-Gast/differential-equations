@@ -157,3 +157,33 @@ pub fn validate_step_size_parameters<T: Real, V: State<T>, D: CallBackData>(
     // Return Ok if all bounds are valid return the step size
     Ok(h0)
 }
+
+// Linear Algebra helper function for trait
+pub(crate) fn dot<T, V>(
+    a: &V,
+    b: &V,
+) -> T
+where
+    T: Real,
+    V: State<T>,
+{
+    let mut sum = T::zero();
+    for i in 0..a.len() {
+        sum += a.get(i) * b.get(i);
+    }
+    sum
+}
+
+pub(crate) fn norm<T, V>(
+    a: V,
+) -> T
+where
+    T: Real,
+    V: State<T>,
+{
+    let mut sum = T::zero();
+    for i in 0..a.len() {
+        sum += a.get(i) * a.get(i);
+    }
+    sum.sqrt()
+}
