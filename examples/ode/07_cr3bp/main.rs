@@ -11,7 +11,7 @@ impl ODE<f64, StateVector<f64>> for Cr3bp {
     /// Differential equation for the initial value Circular Restricted Three
     /// Body Problem (CR3BP).
     /// All parameters are in non-dimensional form.
-    fn diff(&self, _t: f64, sv: &StateVector<f64>, drdt: &mut StateVector<f64>) {
+    fn diff(&self, _t: f64, sv: &StateVector<f64>, dsdt: &mut StateVector<f64>) {
         // Mass ratio
         let mu = self.mu;
 
@@ -21,14 +21,14 @@ impl ODE<f64, StateVector<f64>> for Cr3bp {
         let r23 = ((sv.x - 1.0 + mu).powi(2) + sv.y.powi(2) + sv.z.powi(2)).sqrt();
 
         // Computing three-body dynamics
-        drdt.x = sv.vx;
-        drdt.y = sv.vy;
-        drdt.z = sv.vz;
-        drdt.vx = sv.x + 2.0 * sv.vy
+        dsdt.x = sv.vx;
+        dsdt.y = sv.vy;
+        dsdt.z = sv.vz;
+        dsdt.vx = sv.x + 2.0 * sv.vy
             - (1.0 - mu) * (sv.x + mu) / r13.powi(3)
             - mu * (sv.x - 1.0 + mu) / r23.powi(3);
-        drdt.vy = sv.y - 2.0 * sv.vx - (1.0 - mu) * sv.y / r13.powi(3) - mu * sv.y / r23.powi(3);
-        drdt.vz = -(1.0 - mu) * sv.z / r13.powi(3) - mu * sv.z / r23.powi(3);
+        dsdt.vy = sv.y - 2.0 * sv.vx - (1.0 - mu) * sv.y / r13.powi(3) - mu * sv.y / r23.powi(3);
+        dsdt.vz = -(1.0 - mu) * sv.z / r13.powi(3) - mu * sv.z / r23.powi(3);
     }
 }
 
