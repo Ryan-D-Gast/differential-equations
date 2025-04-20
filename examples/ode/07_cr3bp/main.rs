@@ -59,7 +59,7 @@ fn main() {
     let cr3bp_ivp = IVP::new(ode, t0, tf, sv);
 
     fn extractor(y: &Vector6<f64>) -> Vector3<f64> {
-        vector![y[3], y[4], y[5]]
+        vector![y[0], y[1], y[2]]
     }
 
     // Solve the ode with even output at interval dt: 1.0
