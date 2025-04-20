@@ -15,10 +15,15 @@ categories = ["science", "mathematics", "algorithms"]
 
 license = "Apache-2.0"
 
+exclude = [
+    "differential-equations-derive/",
+]
+
 include = [
     "src/**/*",
     "docs/**/*",
     "examples/**/*", 
+    "differential-equations-derive/**/*",
     "assets/*",
     "README.md",
     "CHANGELOG.md",
@@ -33,6 +38,9 @@ polars = ["dep:polars"]
 [dependencies]
 nalgebra = "0.33.2" # Linear algebra vector and matrix types
 num-complex = "0.4.6" # Complex numbers
+
+# Derive macros for differential equations crate
+differential-equations-derive = { path = "./differential-equations-derive" }
 
 # Optional features
 polars = { version = "0.46.0", optional = true }

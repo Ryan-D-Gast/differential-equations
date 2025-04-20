@@ -1,15 +1,47 @@
-use differential_equations::ode::methods::APCV4;
-use differential_equations::ode::*;
-use nalgebra::{vector, Vector3};
+use differential_equations::{
+    ode::{
+        *,
+        methods::APCV4,
+    },
+    derive::State,
+};
 
 /// SIR (Susceptible, Infected, Recovered) Model
-///
-/// This struct defines the parameters for the SIR model.
-///
 struct SIRModel {
     beta: f64,       // Transmission rate
     gamma: f64,      // Recovery rate
     population: f64, // Total population
+}
+
+// There are two major difference between this example and the previous one:
+// 1. Instead of having the ControlFlag contain a string, we have a custom enum PopulationMonitor that contains the reason for termination.
+// 2. Instead of a float type, or nalgabra matrix/vector type, we use the derive state macro to create our own struct
+//    that contains the state variables of the SIR model. This struct implements the State trait, which allows us to use it with the ODE solver.
+impl ODE<f64, SIRState<f64>, PopulationMonitor> for SIRModel {
+    fn diff(&self, _t: f64, y: &SIRState<f64>, dydt: &mut SIRState<f64>) {
+        let s = y.susceptible; // Susceptible
+        let i = y.infected; // Infected
+        let _r = y.recovered; // Recovered
+
+        dydt.susceptible = -self.beta * s * i / self.population; // Susceptible
+        dydt.infected = self.beta * s * i / self.population - self.gamma * i; // Infected
+        dydt.recovered = self.gamma * i; // Recovered
+    }
+
+    fn event(&self, _t: f64, y: &SIRState<f64>) -> ControlFlag<PopulationMonitor> {
+        let i = y.infected; // Infected
+
+        // Check the PopulationMonitor
+
+        // Terminate the simulation when the number of infected individuals falls below 1
+        if i < 1.0 {
+            ControlFlag::Terminate(PopulationMonitor::InfectedBelowOne)
+        } else if y.population() < 1.0 {
+            ControlFlag::Terminate(PopulationMonitor::PopulationDiedOut)
+        } else {
+            ControlFlag::Continue
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -27,34 +59,17 @@ impl std::fmt::Display for PopulationMonitor {
     }
 }
 
-// Unlike other examples where ODE defaults to have the final generic type as String.
-// Here, the ODE trait is implemented with the final generic type as PopulationMonitor.
-// Custom types that implement Clone and Debug can be used and passed through back
-// to user when a termination event occurs.
-impl ODE<f64, Vector3<f64>, PopulationMonitor> for SIRModel {
-    fn diff(&self, _t: f64, y: &Vector3<f64>, dydt: &mut Vector3<f64>) {
-        let s = y[0]; // Susceptible
-        let i = y[1]; // Infected
-        let _r = y[2]; // Recovered
+#[derive(State)]
+struct SIRState<T> {
+    susceptible: T,
+    infected: T,
+    recovered: T,
+}
 
-        dydt[0] = -self.beta * s * i / self.population; // Susceptible
-        dydt[1] = self.beta * s * i / self.population - self.gamma * i; // Infected
-        dydt[2] = self.gamma * i; // Recovered
-    }
-
-    fn event(&self, _t: f64, y: &Vector3<f64>) -> ControlFlag<PopulationMonitor> {
-        let i = y[1]; // Infected
-
-        // Check the PopulationMonitor
-
-        // Terminate the simulation when the number of infected individuals falls below 1
-        if i < 1.0 {
-            ControlFlag::Terminate(PopulationMonitor::InfectedBelowOne)
-        } else if y.iter().sum::<f64>() < 1.0 {
-            ControlFlag::Terminate(PopulationMonitor::PopulationDiedOut)
-        } else {
-            ControlFlag::Continue
-        }
+impl SIRState<f64> {
+    /// Returns the total population.
+    fn population(&self) -> f64 {
+        self.susceptible + self.infected + self.recovered
     }
 }
 
@@ -62,13 +77,15 @@ fn main() {
     // method with relative and absolute tolerances
     let mut method = APCV4::new().tol(1e-6);
 
-    // Initial conditions
-    let initial_susceptible = 990.0;
-    let initial_infected = 10.0;
-    let initial_recovered = 0.0;
-    let population = initial_susceptible + initial_infected + initial_recovered;
+    // Initial State
+    let y0 = SIRState {
+        susceptible: 990.0,
+        infected: 10.0,
+        recovered: 0.0,
+    };
+    let population = y0.population(); // Total population
 
-    let y0 = vector![initial_susceptible, initial_infected, initial_recovered];
+    // Simulation time
     let t0 = 0.0;
     let tf = 100.0;
 
@@ -101,7 +118,7 @@ fn main() {
             for (t, y) in solution.iter() {
                 println!(
                     "{:.4}, {:.4}, {:.4}, {:.4}",
-                    t, y[0], y[1], y[2]
+                    t, y.susceptible, y.infected, y.recovered
                 );
             }
 

@@ -113,6 +113,11 @@ pub mod interpolate;
 // Shared Utility Functions
 pub mod utils;
 
+// Derive Macros for Differential Equations
+pub mod derive {
+    pub use differential_equations_derive::State;
+}
+
 // -- Shared items for re-exporting to differential equation type modules --
 mod shared {
     pub use crate::solout::CrossingDirection;
