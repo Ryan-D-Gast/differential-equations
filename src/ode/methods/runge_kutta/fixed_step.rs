@@ -352,9 +352,9 @@ macro_rules! runge_kutta_method {
             fn interpolate(&mut self, t_interp: T) -> Result<V, $crate::interpolate::InterpolationError<T>> {
                 // Check if t is within the bounds of the current step
                 if t_interp < self.t_prev || t_interp > self.t {
-                    return Err($crate::interpolate::InterpolationError::OutOfBounds { 
-                        t_interp: t_interp, 
-                        t_prev: self.t_prev, 
+                    return Err($crate::interpolate::InterpolationError::OutOfBounds {
+                        t_interp,
+                        t_prev: self.t_prev,
                         t_curr: self.t });
                 }
 

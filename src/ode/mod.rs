@@ -24,7 +24,7 @@
 //! }
 //!
 //! // defaults to <Type = f64, State = f64> so can be omitted in this case
-//! // Note that the State can be a nalgebra vector of any size, 
+//! // Note that the State can be a nalgebra vector of any size,
 //! // e.g. SVector<f64, 2> for 2D systems
 //! impl ODE for LinearEquation {
 //!     fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
@@ -109,17 +109,17 @@ pub use ode::{
 
 // NumericalMethod Traits for ODE NumericalMethods.
 mod numerical_method;
-pub use numerical_method::{NumericalMethod, NumEvals};
+pub use numerical_method::{NumEvals, NumericalMethod};
 
 // NumericalMethod for ODEs
 pub mod methods;
 pub use methods::{
-    // Re-exporting popular solvers to ode module for quick access
-    RK4,    // Fixed Step Runge-Kutta 4th Order NumericalMethod
     DOP853, // Adaptive Step Dormand-Prince 8(5,3) NumericalMethod with dense output of order 7
     DOPRI5, // Adaptive Step Dormand-Prince 5(4) NumericalMethod
-    RKV65,  // Verner 6(5) adaptive method with dense output of order 5
-    RKV98,  // Verner 9(8) adaptive method with dense output of order 9
+    // Re-exporting popular solvers to ode module for quick access
+    RK4,   // Fixed Step Runge-Kutta 4th Order NumericalMethod
+    RKV65, // Verner 6(5) adaptive method with dense output of order 5
+    RKV98, // Verner 9(8) adaptive method with dense output of order 9
 };
 
 // Re-exports to allow users to only import necessary components

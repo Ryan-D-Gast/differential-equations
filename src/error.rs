@@ -19,19 +19,20 @@ where
 {
     /// NumericalMethod input was bad
     BadInput {
-        msg: String,        // if input is bad, return this with reason
+        msg: String, // if input is bad, return this with reason
     },
-    MaxSteps {              // If the solver reaches the maximum number of steps
-        t: T,               // Time at which the solver reached maximum steps
-        y: V,// Solution at time t
-    }, 
+    MaxSteps {
+        // If the solver reaches the maximum number of steps
+        t: T, // Time at which the solver reached maximum steps
+        y: V, // Solution at time t
+    },
     StepSize {
-        t: T,               // Time at which step size became too small
-        y: V,// Solution at time t
+        t: T, // Time at which step size became too small
+        y: V, // Solution at time t
     },
     Stiffness {
-        t: T,               // Time at which stiffness was detected
-        y: V,// Solution at time t
+        t: T, // Time at which stiffness was detected
+        y: V, // Solution at time t
     },
 }
 
@@ -43,7 +44,9 @@ where
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::BadInput { msg } => write!(f, "Bad Input: {}", msg),
-            Self::MaxSteps { t, y } => write!(f, "Maximum steps reached at (t, y) = ({}, {})", t, y),
+            Self::MaxSteps { t, y } => {
+                write!(f, "Maximum steps reached at (t, y) = ({}, {})", t, y)
+            }
             Self::StepSize { t, y } => write!(f, "Step size too small at (t, y) = ({}, {})", t, y),
             Self::Stiffness { t, y } => write!(f, "Stiffness detected at (t, y) = ({}, {})", t, y),
         }
@@ -58,9 +61,15 @@ where
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::BadInput { msg } => write!(f, "Bad Input: {}", msg),
-            Self::MaxSteps { t, y } => write!(f, "Maximum steps reached at (t, y) = ({:?}, {:?})", t, y),
-            Self::StepSize { t, y } => write!(f, "Step size too small at (t, y) = ({:?}, {:?})", t, y),
-            Self::Stiffness { t, y } => write!(f, "Stiffness detected at (t, y) = ({:?}, {:?})", t, y),
+            Self::MaxSteps { t, y } => {
+                write!(f, "Maximum steps reached at (t, y) = ({:?}, {:?})", t, y)
+            }
+            Self::StepSize { t, y } => {
+                write!(f, "Step size too small at (t, y) = ({:?}, {:?})", t, y)
+            }
+            Self::Stiffness { t, y } => {
+                write!(f, "Stiffness detected at (t, y) = ({:?}, {:?})", t, y)
+            }
         }
     }
 }
@@ -69,4 +78,5 @@ impl<T, V> std::error::Error for Error<T, V>
 where
     T: Real + Debug + Display,
     V: State<T> + Debug + Display,
-{}
+{
+}

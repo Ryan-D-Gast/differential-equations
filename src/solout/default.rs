@@ -71,16 +71,16 @@ where
     D: CallBackData,
 {
     fn solout<I>(
-            &mut self, 
-            t_curr: T,
-            _t_prev: T,
-            y_curr: &V,
-            _y_prev: &V,
-            _interpolator: &mut I,
-            solution: &mut Solution<T, V, D>
-        ) -> ControlFlag<D>
-        where
-            I: Interpolation<T, V> 
+        &mut self,
+        t_curr: T,
+        _t_prev: T,
+        y_curr: &V,
+        _y_prev: &V,
+        _interpolator: &mut I,
+        solution: &mut Solution<T, V, D>,
+    ) -> ControlFlag<D>
+    where
+        I: Interpolation<T, V>,
     {
         // Output the current time and state to the vectors
         solution.push(t_curr, *y_curr);

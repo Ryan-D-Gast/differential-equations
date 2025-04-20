@@ -2,7 +2,7 @@
 
 use crate::{
     Status,
-    traits::{Real, State, CallBackData},
+    traits::{CallBackData, Real, State},
 };
 use std::time::Instant;
 
@@ -89,6 +89,17 @@ where
 }
 
 // Initial methods for the solution
+impl<T, V, D> Default for Solution<T, V, D>
+where
+    T: Real,
+    V: State<T>,
+    D: CallBackData,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T, V, D> Solution<T, V, D>
 where
     T: Real,
@@ -188,9 +199,7 @@ where
     /// * `std::iter::Zip<std::slice::Iter<'_, T>, std::slice::Iter<'_, V>>` - An iterator
     ///   yielding (t, y) tuples.
     ///
-    pub fn iter(
-        &self,
-    ) -> std::iter::Zip<std::slice::Iter<'_, T>, std::slice::Iter<'_, V>> {
+    pub fn iter(&self) -> std::iter::Zip<std::slice::Iter<'_, T>, std::slice::Iter<'_, V>> {
         self.t.iter().zip(self.y.iter())
     }
 
@@ -269,7 +278,10 @@ where
             let header = format!("y{}", i);
             columns.push(Column::new(
                 header.into(),
-                self.y.iter().map(|x| x.get(i).to_f64()).collect::<Vec<f64>>(),
+                self.y
+                    .iter()
+                    .map(|x| x.get(i).to_f64())
+                    .collect::<Vec<f64>>(),
             ));
         }
         let mut df = DataFrame::new(columns)?;
@@ -296,7 +308,10 @@ where
             let header = format!("y{}", i);
             columns.push(Column::new(
                 header.into(),
-                self.y.iter().map(|x| x.get(i).to_f64()).collect::<Vec<f64>>(),
+                self.y
+                    .iter()
+                    .map(|x| x.get(i).to_f64())
+                    .collect::<Vec<f64>>(),
             ));
         }
 

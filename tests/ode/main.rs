@@ -1,5 +1,5 @@
 mod accuracy;
+mod comparison;
 mod errors;
 mod interpolation;
-mod comparison;
 mod systems;

@@ -1,8 +1,8 @@
 //! Defines Generics for the library. Includes generics for the floating point numbers.
 
-use std::ops::{Add, AddAssign, Div, Mul, Sub};
-use nalgebra::{SMatrix, RealField};
+use nalgebra::{RealField, SMatrix};
 use num_complex::Complex;
+use std::ops::{Add, AddAssign, Div, Mul, Sub};
 
 /// Real Number Trait
 ///
@@ -41,23 +41,22 @@ impl Real for f64 {
 
 /// State vector trait
 pub trait State<T>:
-    Clone +
-    Copy +
-    Add<Output = Self> +
-    Sub<Output = Self> +
-    AddAssign +
-    Mul<T, Output = Self> +
-    Div<T, Output = Self> +
+    Clone
+    + Copy
+    + Add<Output = Self>
+    + Sub<Output = Self>
+    + AddAssign
+    + Mul<T, Output = Self>
+    + Div<T, Output = Self>
 {
     fn len(&self) -> usize;
 
-    fn get(&self, i: usize) -> T; 
+    fn get(&self, i: usize) -> T;
 
     fn zeros() -> Self;
 }
 
-impl<T: Real> State<T> for T
-{
+impl<T: Real> State<T> for T {
     fn len(&self) -> usize {
         1
     }

@@ -3,12 +3,9 @@
 use crate::{
     Error, Status,
     interpolate::{Interpolation, InterpolationError},
-    traits::{Real, State, CallBackData},
+    ode::{NumEvals, NumericalMethod, ODE, methods::h_init},
+    traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
-    ode::{
-        ODE, NumericalMethod, NumEvals,
-        methods::h_init,
-    },
 };
 
 /// Dormand Prince 8(5, 3) Method for solving ordinary differential equations.
@@ -129,19 +126,13 @@ pub struct DOP853<T: Real, V: State<T>, D: CallBackData> {
 
     // For Interpolation - using array instead of individually numbered variables
     y_old: V,     // State at Previous Step
-    t_old: T,                    // Time of Previous Step
-    h_old: T,                    // Step Size of Previous Step
+    t_old: T,     // Time of Previous Step
+    h_old: T,     // Step Size of Previous Step
     cont: [V; 8], // Interpolation coefficients
 }
 
 impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOP853<T, V, D> {
-    fn init<F>(
-        &mut self,
-        ode: &F,
-        t0: T,
-        tf: T,
-        y0: &V,
-    ) -> Result<NumEvals, Error<T, V>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<NumEvals, Error<T, V>>
     where
         F: ODE<T, V, D>,
     {
@@ -159,7 +150,9 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOP853<
 
         // Calculate Initial Step
         if self.h0 == T::zero() {
-            self.h0 = h_init(ode, t0, tf, y0, 8, self.rtol, self.atol, self.h_min, self.h_max);
+            self.h0 = h_init(
+                ode, t0, tf, y0, 8, self.rtol, self.atol, self.h_min, self.h_max,
+            );
             evals += 1; // Increment function evaluations for initial step size calculation
 
             // Adjust h0 to be within bounds
@@ -195,24 +188,24 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOP853<
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
-                t: self.t, 
-                y: self.y
+                t: self.t,
+                y: self.y,
             });
             return Err(Error::MaxSteps {
-                t: self.t, 
-                y: self.y
+                t: self.t,
+                y: self.y,
             });
         }
 
         // Check if Step Size is too smaller then machine default_epsilon
         if self.h.abs() < T::default_epsilon() {
             self.status = Status::Error(Error::StepSize {
-                t: self.t, 
-                y: self.y
+                t: self.t,
+                y: self.y,
             });
             return Err(Error::StepSize {
-                t: self.t, 
-                y: self.y
+                t: self.t,
+                y: self.y,
             });
         }
 
@@ -393,12 +386,12 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOP853<
                     if self.stiffness_counter == 15 {
                         // Early Exit Stiffness Detected
                         self.status = Status::Error(Error::Stiffness {
-                            t: self.t, 
-                            y: self.y
+                            t: self.t,
+                            y: self.y,
                         });
                         return Err(Error::Stiffness {
-                            t: self.t, 
-                            y: self.y
+                            t: self.t,
+                            y: self.y,
                         });
                     }
                 } else {
@@ -590,15 +583,12 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOP853<
 }
 
 impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for DOP853<T, V, D> {
-    fn interpolate(
-        &mut self,
-        t_interp: T,
-    ) -> Result<V, InterpolationError<T>> {
+    fn interpolate(&mut self, t_interp: T) -> Result<V, InterpolationError<T>> {
         // Check if interpolation is out of bounds
         if t_interp < self.t_old || t_interp > self.t {
             return Err(InterpolationError::OutOfBounds {
-                t_interp, 
-                t_prev: self.t_old, 
+                t_interp,
+                t_prev: self.t_old,
                 t_curr: self.t,
             });
         }

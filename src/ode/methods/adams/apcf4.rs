@@ -69,22 +69,13 @@ pub struct APCF4<T: Real, V: State<T>, D: CallBackData> {
 }
 
 // Implement NumericalMethod Trait for APCF4
-impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D>
-    for APCF4<T, V, D>
-{
-    fn init<F>(
-        &mut self,
-        ode: &F,
-        t0: T,
-        tf: T,
-        y0: &V,
-    ) -> Result<NumEvals, Error<T, V>>
+impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCF4<T, V, D> {
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<NumEvals, Error<T, V>>
     where
         F: ODE<T, V, D>,
     {
         // Check Bounds
-        match validate_step_size_parameters::<T, V, D>(self.h, T::zero(), T::infinity(), t0, tf)
-        {
+        match validate_step_size_parameters::<T, V, D>(self.h, T::zero(), T::infinity(), t0, tf) {
             Ok(h) => self.h = h,
             Err(e) => return Err(e),
         }
@@ -212,10 +203,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D>
 }
 
 impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for APCF4<T, V, D> {
-    fn interpolate(
-        &mut self,
-        t_interp: T,
-    ) -> Result<V, InterpolationError<T>> {
+    fn interpolate(&mut self, t_interp: T) -> Result<V, InterpolationError<T>> {
         // Check if t is within bounds
         if t_interp < self.t_prev[0] || t_interp > self.t {
             return Err(InterpolationError::OutOfBounds {
@@ -257,12 +245,7 @@ impl<T: Real, V: State<T>, D: CallBackData> Default for APCF4<T, V, D> {
             y: V::zeros(),
             dydt: V::zeros(),
             t_prev: [T::zero(); 4],
-            y_prev: [
-                V::zeros(),
-                V::zeros(),
-                V::zeros(),
-                V::zeros(),
-            ],
+            y_prev: [V::zeros(), V::zeros(), V::zeros(), V::zeros()],
             t_old: T::zero(),
             y_old: V::zeros(),
             dydt_old: V::zeros(),

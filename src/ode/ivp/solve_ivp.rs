@@ -1,10 +1,11 @@
 //! Solve IVP function
 
 use crate::{
-    interpolate::Interpolation, ode::{
-        numerical_method::NumericalMethod,
-        ODE,
-    }, solout::*, traits::{CallBackData, Real, State}, ControlFlag, Error, Solution, Status
+    ControlFlag, Error, Solution, Status,
+    interpolate::Interpolation,
+    ode::{ODE, numerical_method::NumericalMethod},
+    solout::*,
+    traits::{CallBackData, Real, State},
 };
 
 /// Solves an Initial Value Problem (IVP) for a system of ordinary differential equations.
@@ -152,7 +153,14 @@ where
     // Call solout to initialize the output strategy
     let mut y_curr = *solver.y();
     let mut y_prev = *solver.y_prev();
-    match solout.solout(solver.t(), solver.t_prev(), &y_curr, &y_prev, solver, &mut solution) {
+    match solout.solout(
+        solver.t(),
+        solver.t_prev(),
+        &y_curr,
+        &y_prev,
+        solver,
+        &mut solution,
+    ) {
         ControlFlag::Continue => {}
         ControlFlag::Terminate(reason) => {
             solution.status = Status::Interrupted(reason);
@@ -215,7 +223,14 @@ where
         // Record the result
         y_curr = *solver.y();
         y_prev = *solver.y_prev();
-        match solout.solout(solver.t(), solver.t_prev(), &y_curr, &y_prev, solver, &mut solution) {
+        match solout.solout(
+            solver.t(),
+            solver.t_prev(),
+            &y_curr,
+            &y_prev,
+            solver,
+            &mut solution,
+        ) {
             ControlFlag::Continue => {}
             ControlFlag::Terminate(reason) => {
                 solution.status = Status::Interrupted(reason);

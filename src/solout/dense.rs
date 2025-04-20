@@ -77,22 +77,23 @@ where
     D: CallBackData,
 {
     fn solout<I>(
-            &mut self, 
-            t_curr: T,
-            t_prev: T,
-            y_curr: &V,
-            _y_prev: &V,
-            interpolator: &mut I,
-            solution: &mut Solution<T, V, D>
-        ) -> ControlFlag<D>
-        where
-            I: Interpolation<T, V> 
+        &mut self,
+        t_curr: T,
+        t_prev: T,
+        y_curr: &V,
+        _y_prev: &V,
+        interpolator: &mut I,
+        solution: &mut Solution<T, V, D>,
+    ) -> ControlFlag<D>
+    where
+        I: Interpolation<T, V>,
     {
         // Interpolate between steps
         if t_prev != t_curr {
             for i in 1..self.n {
                 let h_old = t_curr - t_prev;
-                let ti = t_prev + T::from_usize(i).unwrap() * h_old / T::from_usize(self.n).unwrap();
+                let ti =
+                    t_prev + T::from_usize(i).unwrap() * h_old / T::from_usize(self.n).unwrap();
                 let yi = interpolator.interpolate(ti).unwrap();
                 solution.push(ti, yi);
             }

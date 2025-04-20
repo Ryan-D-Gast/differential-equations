@@ -4,13 +4,13 @@ use crate::traits::{Real, State};
 use std::fmt::{Debug, Display};
 
 /// Interpolation trait implemented by Solvers to allow Solout to access interpolated values between t_prev and t_curr
-pub trait Interpolation<T, V> 
-where 
+pub trait Interpolation<T, V>
+where
     T: Real,
     V: State<T>,
 {
     /// Interpolate between previous and current step
-    /// 
+    ///
     /// Note that the range for interpolation is between t_prev and t_curr.
     /// If t_interp is outside this range, an error will be returned in the
     /// form of an InterpolationError::OutOfBounds.
@@ -21,10 +21,7 @@ where
     /// # Returns
     /// * Interpolated State Vector.
     ///
-    fn interpolate(
-        &mut self,
-        t_interp: T,
-    ) -> Result<V, InterpolationError<T>>;
+    fn interpolate(&mut self, t_interp: T) -> Result<V, InterpolationError<T>>;
 }
 
 /// Interpolation Error for ODE NumericalMethods
@@ -38,11 +35,7 @@ where
     T: Real,
 {
     /// Given t is not within the previous and current step
-    OutOfBounds {
-        t_interp: T,
-        t_prev: T,
-        t_curr: T,
-    }
+    OutOfBounds { t_interp: T, t_prev: T, t_curr: T },
 }
 
 impl<T> Display for InterpolationError<T>
@@ -51,7 +44,11 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            InterpolationError::OutOfBounds { t_interp, t_prev, t_curr } => {
+            InterpolationError::OutOfBounds {
+                t_interp,
+                t_prev,
+                t_curr,
+            } => {
                 write!(
                     f,
                     "Interpolation Error: t_interp {} is not within the previous and current step: t_prev {}, t_curr {}",
@@ -68,7 +65,11 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            InterpolationError::OutOfBounds { t_interp, t_prev, t_curr } => {
+            InterpolationError::OutOfBounds {
+                t_interp,
+                t_prev,
+                t_curr,
+            } => {
                 write!(
                     f,
                     "Interpolation Error: t_interp {} is not within the previous and current step: t_prev {}, t_curr {}",
@@ -79,10 +80,7 @@ where
     }
 }
 
-impl<T> std::error::Error for InterpolationError<T>
-where
-    T: Real,
-{}
+impl<T> std::error::Error for InterpolationError<T> where T: Real {}
 
 /// Cubic Hermite Interpolation
 ///

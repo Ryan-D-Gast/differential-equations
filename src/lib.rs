@@ -100,7 +100,7 @@ pub use status::Status;
 mod solution;
 pub use solution::Solution;
 
-// Control Flow 
+// Control Flow
 mod control;
 pub use control::ControlFlag;
 
@@ -120,9 +120,9 @@ pub mod derive {
 
 // -- Shared items for re-exporting to differential equation type modules --
 mod shared {
-    pub use crate::solout::CrossingDirection;
-    pub use crate::error::Error;
-    pub use crate::status::Status;
     pub use crate::control::ControlFlag;
+    pub use crate::error::Error;
+    pub use crate::solout::CrossingDirection;
     pub use crate::solution::Solution;
+    pub use crate::status::Status;
 }

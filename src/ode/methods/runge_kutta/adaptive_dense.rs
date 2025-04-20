@@ -366,7 +366,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                         t: self.t, y: self.y
                     });
                     return Err($crate::ode::Error::StepSize {
-                        t: self.t, 
+                        t: self.t,
                         y: self.y
                     });
                 }
@@ -374,11 +374,11 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 // Check if max steps has been reached
                 if self.steps >= self.max_steps {
                     self.status = $crate::ode::Status::Error($crate::ode::Error::MaxSteps {
-                        t: self.t, 
+                        t: self.t,
                         y: self.y
                     });
                     return Err($crate::ode::Error::MaxSteps {
-                        t: self.t, 
+                        t: self.t,
                         y: self.y
                     });
                 }
@@ -463,11 +463,11 @@ macro_rules! adaptive_dense_runge_kutta_method {
                     // Check for stiffness
                     if self.n_stiff >= self.max_rejects {
                         self.status = $crate::ode::Status::Error($crate::ode::Error::Stiffness {
-                            t: self.t, 
+                            t: self.t,
                             y: self.y
                         });
                         return Err($crate::ode::Error::Stiffness {
-                            t: self.t, 
+                            t: self.t,
                             y: self.y
                         });
                     }
@@ -529,8 +529,8 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 // Check if t is within bounds
                 if t_interp < self.t_prev || t_interp > self.t {
                     return Err($crate::interpolate::InterpolationError::OutOfBounds {
-                        t_interp, 
-                        t_prev: self.t_prev, 
+                        t_interp,
+                        t_prev: self.t_prev,
                         t_curr: self.t
                     });
                 }

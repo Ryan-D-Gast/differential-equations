@@ -281,7 +281,7 @@ macro_rules! adaptive_runge_kutta_method {
                 // Make sure step size isn't too small
                 if self.h.abs() < T::default_epsilon() {
                     self.status = $crate::ode::Status::Error($crate::ode::Error::StepSize {
-                        t: self.t, 
+                        t: self.t,
                         y: self.y
                     });
                     return Err($crate::ode::Error::StepSize {
@@ -293,7 +293,7 @@ macro_rules! adaptive_runge_kutta_method {
                 // Check if max steps has been reached
                 if self.steps >= self.max_steps {
                     self.status = $crate::ode::Status::Error($crate::ode::Error::MaxSteps {
-                        t: self.t, 
+                        t: self.t,
                         y: self.y
                     });
                     return Err($crate::ode::Error::MaxSteps {
@@ -439,8 +439,8 @@ macro_rules! adaptive_runge_kutta_method {
                 // Check if t is within bounds
                 if t_interp < self.t_prev || t_interp > self.t {
                     return Err($crate::interpolate::InterpolationError::OutOfBounds {
-                        t_interp, 
-                        t_prev: self.t_prev, 
+                        t_interp,
+                        t_prev: self.t_prev,
                         t_curr: self.t
                     });
                 }

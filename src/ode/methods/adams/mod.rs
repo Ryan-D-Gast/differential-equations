@@ -2,12 +2,10 @@
 
 pub use crate::{
     Error, Status,
-    traits::{Real, State, CallBackData},
     interpolate::{Interpolation, InterpolationError, cubic_hermite_interpolate},
+    ode::{NumEvals, NumericalMethod, ODE},
+    traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
-    ode::{
-        ODE, NumericalMethod, NumEvals,
-    },
 };
 
 mod apcf4;

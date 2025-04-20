@@ -5,7 +5,7 @@
 
 use crate::{
     ControlFlag,
-    traits::{Real, State, CallBackData},
+    traits::{CallBackData, Real, State},
 };
 
 /// ODE Trait for Differential Equations

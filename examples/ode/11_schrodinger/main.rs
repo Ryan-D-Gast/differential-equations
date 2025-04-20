@@ -38,21 +38,27 @@ fn main() {
     let schrodinger_ivp = IVP::new(ode, t0, tf, psi0);
 
     // Solve the IVP
-    match schrodinger_ivp
-        .even(0.5)
-        .solve(&mut method) 
-    {
+    match schrodinger_ivp.even(0.5).solve(&mut method) {
         Ok(solution) => {
             println!("Solution:");
             println!("Time, Re(ψ), Im(ψ), |ψ|²");
 
             for (t, psi) in solution.iter() {
-                println!("{:.4}, {:.6}, {:.6}, {:.6}", t, psi.re, psi.im, psi.norm_sqr());
+                println!(
+                    "{:.4}, {:.6}, {:.6}, {:.6}",
+                    t,
+                    psi.re,
+                    psi.im,
+                    psi.norm_sqr()
+                );
             }
 
             // For an energy eigenstate, the probability |ψ|² should remain constant
             // But the phase will rotate in time according to e^(-iEt/ħ)
-            println!("\nExpected behavior: probability constant, phase rotating at frequency {}/ħ", energy);
+            println!(
+                "\nExpected behavior: probability constant, phase rotating at frequency {}/ħ",
+                energy
+            );
 
             // Calculate the phase evolution between two time points
             if solution.t.len() >= 2 {
@@ -77,7 +83,10 @@ fn main() {
 
             // Verify that probability is conserved (should remain at 1.0)
             let final_psi = solution.y.last().unwrap();
-            println!("Final probability: {:.10} (should be 1.0)", final_psi.norm_sqr());
+            println!(
+                "Final probability: {:.10} (should be 1.0)",
+                final_psi.norm_sqr()
+            );
         }
         Err(e) => panic!("Error: {:?}", e),
     };

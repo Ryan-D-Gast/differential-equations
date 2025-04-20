@@ -82,16 +82,16 @@ where
     D: CallBackData,
 {
     fn solout<I>(
-            &mut self, 
-            t_curr: T,
-            t_prev: T,
-            y_curr: &V,
-            _y_prev: &V,
-            interpolator: &mut I,
-            solution: &mut Solution<T, V, D>
-        ) -> ControlFlag<D>
-        where
-            I: Interpolation<T, V> 
+        &mut self,
+        t_curr: T,
+        t_prev: T,
+        y_curr: &V,
+        _y_prev: &V,
+        interpolator: &mut I,
+        solution: &mut Solution<T, V, D>,
+    ) -> ControlFlag<D>
+    where
+        I: Interpolation<T, V>,
     {
         // Process evaluation points that fall within current step
         let mut idx = self.next_eval_idx;

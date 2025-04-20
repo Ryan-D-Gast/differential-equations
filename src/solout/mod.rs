@@ -10,9 +10,9 @@
 //!
 
 use crate::{
-    Solution, ControlFlag,
-    traits::{Real, State, CallBackData},
+    ControlFlag, Solution,
     interpolate::Interpolation,
+    traits::{CallBackData, Real, State},
 };
 
 // Solout Trait for controlling output of the solver

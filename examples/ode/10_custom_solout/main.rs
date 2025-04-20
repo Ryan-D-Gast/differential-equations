@@ -1,5 +1,5 @@
-use differential_equations::ode::*;
 use differential_equations::Solout;
+use differential_equations::ode::*;
 use nalgebra::{SVector, vector};
 use std::f64::consts::PI;
 
@@ -61,16 +61,16 @@ impl PendulumSolout {
 
 impl Solout<f64, SVector<f64, 2>> for PendulumSolout {
     fn solout<I>(
-            &mut self, 
-            t_curr: f64,
-            _t_prev: f64,
-            y_curr: &SVector<f64, 2>,
-            _y_prev: &SVector<f64, 2>,
-            _interpolator: &mut I,
-            solution: &mut Solution<f64, SVector<f64, 2>, String>
-        ) -> ControlFlag<String>
-        where
-            I: methods::adams::Interpolation<f64, SVector<f64, 2>> 
+        &mut self,
+        t_curr: f64,
+        _t_prev: f64,
+        y_curr: &SVector<f64, 2>,
+        _y_prev: &SVector<f64, 2>,
+        _interpolator: &mut I,
+        solution: &mut Solution<f64, SVector<f64, 2>, String>,
+    ) -> ControlFlag<String>
+    where
+        I: methods::adams::Interpolation<f64, SVector<f64, 2>>,
     {
         let current_angle = y_curr[0];
         let dt = t_curr - self.last_output_time;

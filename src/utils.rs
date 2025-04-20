@@ -1,6 +1,6 @@
 use crate::{
     Error,
-    traits::{Real, State, CallBackData},
+    traits::{CallBackData, Real, State},
 };
 
 /// Constrain the step size to be within the bounds of `h_min` and `h_max`.
@@ -29,7 +29,6 @@ pub fn constrain_step_size<T: Real>(h: T, h_min: T, h_max: T) -> T {
         h
     }
 }
-
 
 /// Validate the step size parameters.
 ///
@@ -147,10 +146,7 @@ pub fn validate_step_size_parameters<T: Real, V: State<T>, D: CallBackData>(
     // Check h0 is not zero
     if h0 == T::zero() {
         return Err(Error::BadInput {
-            msg: format!(
-                "Invalid input: Initial step size ({:?}) cannot be zero",
-                h0
-            ),
+            msg: format!("Invalid input: Initial step size ({:?}) cannot be zero", h0),
         });
     }
 
@@ -159,10 +155,7 @@ pub fn validate_step_size_parameters<T: Real, V: State<T>, D: CallBackData>(
 }
 
 // Linear Algebra helper function for trait
-pub(crate) fn dot<T, V>(
-    a: &V,
-    b: &V,
-) -> T
+pub(crate) fn dot<T, V>(a: &V, b: &V) -> T
 where
     T: Real,
     V: State<T>,
@@ -174,9 +167,7 @@ where
     sum
 }
 
-pub(crate) fn norm<T, V>(
-    a: V,
-) -> T
+pub(crate) fn norm<T, V>(a: V) -> T
 where
     T: Real,
     V: State<T>,

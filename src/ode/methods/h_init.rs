@@ -2,7 +2,7 @@
 
 use crate::{
     ode::ODE,
-    traits::{Real, State, CallBackData},
+    traits::{CallBackData, Real, State},
 };
 
 /// Automatically compute an initial step size based on the ODE dynamics

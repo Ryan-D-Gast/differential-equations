@@ -2,13 +2,10 @@
 
 use crate::{
     Error, Solution,
-    interpolate::Interpolation, ode::{
-        ivp::solve_ivp,
-        numerical_method::NumericalMethod,
-        ODE,
-    }, 
-    solout::*, 
-    traits::{CallBackData, Real, State}, 
+    interpolate::Interpolation,
+    ode::{ODE, ivp::solve_ivp, numerical_method::NumericalMethod},
+    solout::*,
+    traits::{CallBackData, Real, State},
 };
 
 /// Initial Value Problem Differential Equation NumericalMethod
@@ -111,7 +108,7 @@ where
     pub ode: F, // ODE containing the Differential Equation and Optional Terminate Function.
     pub t0: T,  // Initial Time.
     pub tf: T,  // Final Time.
-    pub y0: V, // Initial State Vector.
+    pub y0: V,  // Initial State Vector.
 
     // Phantom Data for Users event output
     _event_output_type: std::marker::PhantomData<D>,
@@ -259,9 +256,9 @@ where
         normal: V1,
         extractor: fn(&V) -> V1,
         direction: CrossingDirection,
-    ) -> IVPSoloutPair<'_, T, V, D, F, HyperplaneCrossingSolout<T, V1, V>> 
-    where 
-        V1: State<T>
+    ) -> IVPSoloutPair<'_, T, V, D, F, HyperplaneCrossingSolout<T, V1, V>>
+    where
+        V1: State<T>,
     {
         let solout =
             HyperplaneCrossingSolout::new(point, normal, extractor).with_direction(direction);
@@ -280,7 +277,7 @@ where
     O: Solout<T, V, D>,
 {
     pub ivp: &'a IVP<T, V, D, F>, // Reference to the IVP struct
-    pub solout: &'a mut O,           // Reference to the solout implementation
+    pub solout: &'a mut O,        // Reference to the solout implementation
 }
 
 impl<'a, T, V, D, F, O> IVPMutRefSoloutPair<'a, T, V, D, F, O>
@@ -334,7 +331,7 @@ where
     O: Solout<T, V, D>,
 {
     pub ivp: &'a IVP<T, V, D, F>, // Reference to the IVP struct
-    pub solout: O,                   // Solout implementation
+    pub solout: O,                // Solout implementation
 }
 
 impl<'a, T, V, D, F, O> IVPSoloutPair<'a, T, V, D, F, O>

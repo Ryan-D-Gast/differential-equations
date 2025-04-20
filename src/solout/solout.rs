@@ -19,13 +19,13 @@ where
     /// * `solution` - Immutable reference to the solution struct to avoid ownership issues.
     ///
     fn solout<I>(
-        &mut self, 
+        &mut self,
         t_curr: T,
         t_prev: T,
         y_curr: &V,
         y_prev: &V,
         interpolator: &mut I,
-        solution: &mut Solution<T, V, D>
+        solution: &mut Solution<T, V, D>,
     ) -> ControlFlag<D>
     where
         I: Interpolation<T, V>;

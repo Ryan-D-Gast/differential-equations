@@ -1,10 +1,7 @@
 //! Adams-Predictor-Corrector 4th Order Variable Step Size Method
 
 use super::*;
-use crate::{
-    utils::norm,
-    ode::methods::h_init,
-};
+use crate::{ode::methods::h_init, utils::norm};
 
 ///
 /// Adams-Predictor-Corrector 4th Order Variable Step Size Method.
@@ -102,16 +99,8 @@ pub struct APCV4<T: Real, V: State<T>, D: CallBackData> {
 }
 
 // Implement NumericalMethod Trait for APCV4
-impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D>
-    for APCV4<T, V, D>
-{
-    fn init<F>(
-        &mut self,
-        ode: &F,
-        t0: T,
-        tf: T,
-        y0: &V,
-    ) -> Result<NumEvals, Error<T, V>>
+impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCV4<T, V, D> {
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<NumEvals, Error<T, V>>
     where
         F: ODE<T, V, D>,
     {
@@ -119,12 +108,13 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D>
 
         // Initialize initial step size if it is zero
         if self.h0 == T::zero() {
-            self.h0 = h_init(ode, t0, tf, y0, 4, self.tol, self.tol, self.h_min, self.h_max);
+            self.h0 = h_init(
+                ode, t0, tf, y0, 4, self.tol, self.tol, self.h_min, self.h_max,
+            );
         }
 
         // Check that the initial step size is set
-        match validate_step_size_parameters::<T, V, D>(self.h0, T::zero(), T::infinity(), t0, tf)
-        {
+        match validate_step_size_parameters::<T, V, D>(self.h0, T::zero(), T::infinity(), t0, tf) {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
@@ -182,12 +172,12 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D>
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
-                t: self.t, 
-                y: self.y
+                t: self.t,
+                y: self.y,
             });
             return Err(Error::MaxSteps {
-                t: self.t, 
-                y: self.y
+                t: self.t,
+                y: self.y,
             });
         }
         self.steps += 1;
@@ -395,13 +385,8 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D>
 }
 
 // Implement the Interpolation trait for APCV4
-impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V>
-    for APCV4<T, V, D>
-{
-    fn interpolate(
-        &mut self,
-        t_interp: T,
-    ) -> Result<V, InterpolationError<T>> {
+impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for APCV4<T, V, D> {
+    fn interpolate(&mut self, t_interp: T) -> Result<V, InterpolationError<T>> {
         // Check if t is within the range of the solver
         if t_interp < self.t_old || t_interp > self.t {
             return Err(InterpolationError::OutOfBounds {
@@ -469,12 +454,7 @@ impl<T: Real, V: State<T>, D: CallBackData> Default for APCV4<T, V, D> {
             y: V::zeros(),
             dydt: V::zeros(),
             t_prev: [T::zero(); 4],
-            y_prev: [
-                V::zeros(),
-                V::zeros(),
-                V::zeros(),
-                V::zeros(),
-            ],
+            y_prev: [V::zeros(), V::zeros(), V::zeros(), V::zeros()],
             t_old: T::zero(),
             y_old: V::zeros(),
             dydt_old: V::zeros(),

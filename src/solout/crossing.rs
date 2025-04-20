@@ -183,16 +183,16 @@ where
     D: CallBackData,
 {
     fn solout<I>(
-            &mut self, 
-            t_curr: T,
-            t_prev: T,
-            y_curr: &V,
-            _y_prev: &V,
-            interpolator: &mut I,
-            solution: &mut Solution<T, V, D>
-        ) -> ControlFlag<D>
-        where
-            I: Interpolation<T, V> 
+        &mut self,
+        t_curr: T,
+        t_prev: T,
+        y_curr: &V,
+        _y_prev: &V,
+        interpolator: &mut I,
+        solution: &mut Solution<T, V, D>,
+    ) -> ControlFlag<D>
+    where
+        I: Interpolation<T, V>,
     {
         // Calculate the offset from threshold (to detect zero-crossing)
         let current_value = y_curr.get(self.component_idx);
@@ -213,9 +213,13 @@ where
 
                 if record_crossing {
                     // Find crossing time using Newton's method
-                    if let Some(t_cross) =
-                        self.find_crossing_newton(interpolator, t_prev, t_curr, last_offset, offset_value)
-                    {
+                    if let Some(t_cross) = self.find_crossing_newton(
+                        interpolator,
+                        t_prev,
+                        t_curr,
+                        last_offset,
+                        offset_value,
+                    ) {
                         // Use interpolator's interpolation for the full state vector at crossing time
                         let y_cross = interpolator.interpolate(t_cross).unwrap();
 

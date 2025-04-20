@@ -83,11 +83,8 @@ pub type ExtractorFn<V, P> = fn(&V) -> P;
 ///
 /// // solution now contains only the points where the trajectory crosses the z=0 plane
 /// ```
-pub struct HyperplaneCrossingSolout<
-    T,
-    V1,
-    V2,
-> where
+pub struct HyperplaneCrossingSolout<T, V1, V2>
+where
     T: Real,
     V1: State<T>,
     V2: State<T>,
@@ -124,11 +121,7 @@ where
     /// # Returns
     /// * A new `HyperplaneCrossingSolout` instance
     ///
-    pub fn new(
-        point: V1,
-        mut normal: V1,
-        extractor: ExtractorFn<V2, V1>,
-    ) -> Self {
+    pub fn new(point: V1, mut normal: V1, extractor: ExtractorFn<V2, V1>) -> Self {
         // Normalize the normal vector
         let norm = |y: V1| {
             let mut norm = T::zero();
@@ -210,8 +203,7 @@ where
     }
 }
 
-impl<T, V1, V2, D: CallBackData>
-    Solout<T, V2, D> for HyperplaneCrossingSolout<T, V1, V2>
+impl<T, V1, V2, D: CallBackData> Solout<T, V2, D> for HyperplaneCrossingSolout<T, V1, V2>
 where
     T: Real,
     V1: State<T>,
@@ -219,16 +211,16 @@ where
     D: CallBackData,
 {
     fn solout<I>(
-            &mut self, 
-            t_curr: T,
-            t_prev: T,
-            y_curr: &V2,
-            _y_prev: &V2,
-            interpolator: &mut I,
-            solution: &mut Solution<T, V2, D>
-        ) -> ControlFlag<D>
-        where
-            I: Interpolation<T, V2> 
+        &mut self,
+        t_curr: T,
+        t_prev: T,
+        y_curr: &V2,
+        _y_prev: &V2,
+        interpolator: &mut I,
+        solution: &mut Solution<T, V2, D>,
+    ) -> ControlFlag<D>
+    where
+        I: Interpolation<T, V2>,
     {
         // Extract position from current state and calculate distance
         let pos_curr = (self.extractor)(y_curr);
@@ -252,9 +244,13 @@ where
 
                 if record_crossing {
                     // Find the crossing time using Newton's method
-                    if let Some(t_cross) =
-                        self.find_crossing_newton(interpolator, t_prev, t_curr, last_distance, distance)
-                    {
+                    if let Some(t_cross) = self.find_crossing_newton(
+                        interpolator,
+                        t_prev,
+                        t_curr,
+                        last_distance,
+                        distance,
+                    ) {
                         // Use interpolator's interpolation for the full state vector at crossing time
                         let y_cross = interpolator.interpolate(t_cross).unwrap();
 
