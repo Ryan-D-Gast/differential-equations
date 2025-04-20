@@ -3,7 +3,7 @@ name = "differential-equations-derive"
 version = "0.1.0"
 edition = "2024"
 authors = ["Ryan D. Gast <ryan.d.gast@gmail.com>"]
-description = "Derive macros for differential equations crate"
+description = "Derives proc macros for the differential-equations crate"
 
 documentation = "https://docs.rs/differential-equations"
 homepage = "https://github.com/Ryan-D-Gast/differential-equations"
