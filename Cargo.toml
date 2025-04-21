@@ -92,11 +92,6 @@ path = "examples/ode/10_custom_solout/main.rs"
 name = "ode_11_schrodinger"
 path = "examples/ode/11_schrodinger/main.rs"
 
-[[bench]]
-name = "ode_bench"
-harness = false
-path = "benches/ode/main.rs"
-
 # Stochastic Differential Equation (SDE) examples
 [[example]]
 name = "sde_01_brownian_motion"
@@ -109,3 +104,9 @@ path = "examples/sde/02_heston_model/main.rs"
 [[example]]
 name = "sde_03_ornstein_uhlenbeck"
 path = "examples/sde/03_ornstein_uhlenbeck/main.rs"
+
+# Benchmarks
+[[bench]]
+name = "ode_bench"
+harness = false
+path = "benches/ode/main.rs"
