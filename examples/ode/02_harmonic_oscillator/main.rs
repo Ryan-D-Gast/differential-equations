@@ -1,3 +1,24 @@
+//! Example 02: Harmonic Oscillator
+//! 
+//! This example simulates a simple harmonic oscillator using the system:
+//! dx/dt = v
+//! dv/dt = -k*x
+//! 
+//! where:
+//! - x is the position
+//! - v is the velocity
+//! - k is the spring constant (normalized for unit mass)
+//! - t is time
+//!
+//! The harmonic oscillator is a fundamental model in physics, representing systems 
+//! that experience a restoring force proportional to displacement, such as springs,
+//! pendulums (for small angles), and simple electronic circuits.
+//!
+//! This example demonstrates:
+//! - Solving a system of first-order ODEs (written as a vector ODE)
+//! - Using the nalgebra library for vector state representation
+//! - Compact solution approach with minimal code
+
 use differential_equations::ode::*;
 use nalgebra::{SVector, vector};
 

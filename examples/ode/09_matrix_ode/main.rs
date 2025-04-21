@@ -1,3 +1,22 @@
+//! Example 09: Matrix Differential Equation
+//! 
+//! This example solves a matrix differential equation of the form:
+//! dM/dt = AM - MA
+//! 
+//! where:
+//! - M is a 2×2 matrix representing the state
+//! - A is a 2×2 matrix representing the system dynamics
+//! - The expression AM - MA is the matrix commutator [A,M]
+//!
+//! Matrix differential equations appear in quantum mechanics, rigid body dynamics,
+//! control theory, and many other fields where the evolution of matrix quantities
+//! (like rotation, stress tensors, or operators) is important.
+//!
+//! This example demonstrates:
+//! - Using matrix types (SMatrix from nalgebra) as ODE state
+//! - Solving higher-dimensional problems with matrix operations
+//! - Displaying selected solution points to manage output
+
 use differential_equations::ode::*;
 use nalgebra::{Matrix2, SMatrix};
 use std::f64::consts::PI;

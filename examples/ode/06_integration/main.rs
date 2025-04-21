@@ -1,3 +1,21 @@
+//! Example 06: Numerical Integration
+//! 
+//! This example shows how ODEs can be used for numerical integration by solving:
+//! dy/dt = f(t)
+//! 
+//! where:
+//! - f(t) is the function to be integrated
+//! - y(t) gives the integral of f(t) from t₀ to t
+//!
+//! In this example, we integrate f(t) = t, which has the analytical solution y(t) = t²/2 + C,
+//! where C is the integration constant (set by the initial condition).
+//!
+//! This demonstrates:
+//! - Using ODE solvers for numerical integration
+//! - Comparing numerical results with analytical solutions
+//! - Different output options: dense, even, and t-eval
+//! - Error assessment in numerical integration
+
 use differential_equations::ode::methods::RKF;
 use differential_equations::ode::*;
 

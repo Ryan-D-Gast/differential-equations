@@ -1,3 +1,26 @@
+//! Example 10: Custom Solution Output (Solout) for Pendulum
+//! 
+//! This example demonstrates a pendulum simulation with a custom Solout implementation
+//! that captures specific events and calculates derived quantities. The pendulum equations are:
+//! 
+//! dθ/dt = ω
+//! dω/dt = -(g/l)*sin(θ)
+//! 
+//! where:
+//! - θ (theta) is the angle from vertical
+//! - ω (omega) is the angular velocity
+//! - g is the acceleration due to gravity
+//! - l is the pendulum length
+//!
+//! The custom Solout tracks zero crossings (when the pendulum passes through vertical),
+//! calculates energy at each point, and ensures points are appropriately spaced in time.
+//!
+//! This example illustrates:
+//! - Creating and using a custom Solout implementation
+//! - Tracking derived quantities during integration
+//! - Event detection during solution output
+//! - Energy conservation monitoring with high-accuracy solvers
+
 use differential_equations::Solout;
 use differential_equations::ode::*;
 use nalgebra::{SVector, vector};

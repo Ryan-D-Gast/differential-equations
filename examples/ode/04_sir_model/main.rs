@@ -1,3 +1,27 @@
+//! Example 04: SIR Epidemiological Model
+//! 
+//! This example models the spread of an infectious disease using the SIR model with ODEs:
+//! dS/dt = -β * S * I / N
+//! dI/dt = β * S * I / N - γ * I
+//! dR/dt = γ * I
+//! 
+//! where:
+//! - S is the susceptible population
+//! - I is the infected population
+//! - R is the recovered population
+//! - β is the transmission rate
+//! - γ is the recovery rate
+//! - N is the total population
+//!
+//! The SIR model is a foundational compartmental model in epidemiology used to
+//! understand disease spread, predict outbreaks, and evaluate intervention strategies.
+//!
+//! This example demonstrates:
+//! - Using custom structs with the #[derive(State)] attribute
+//! - Implementing custom event detection with a custom enum type
+//! - Setting up even-interval output points
+//! - Working with solution status information
+
 use differential_equations::{
     derive::State,
     ode::{methods::APCV4, *},

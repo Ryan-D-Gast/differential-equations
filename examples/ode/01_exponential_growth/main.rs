@@ -1,3 +1,22 @@
+//! Example 01: Exponential Growth
+//! 
+//! This example demonstrates the solution of a simple exponential growth ODE:
+//! dy/dt = k*y
+//! 
+//! where:
+//! - y is the quantity that grows exponentially
+//! - k is the growth rate constant
+//! - t is time
+//!
+//! The analytical solution to this ODE is y(t) = y₀*e^(k*t) where y₀ is the initial value.
+//! Exponential growth models are used in various applications including population dynamics,
+//! financial growth, and chemical reactions.
+//!
+//! This example showcases:
+//! - Basic ODE definition and solution
+//! - Setting custom tolerances for high accuracy
+//! - Accessing solution statistics like step counts and evaluations
+
 use differential_equations::ode::*;
 
 // Define the ode

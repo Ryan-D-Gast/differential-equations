@@ -1,3 +1,26 @@
+//! Example 05: Damped Pendulum
+//! 
+//! This example simulates a damped pendulum using the system:
+//! dθ/dt = ω
+//! dω/dt = -(b/m)*ω - (g/l)*sin(θ)
+//! 
+//! where:
+//! - θ (theta) is the angle from vertical
+//! - ω (omega) is the angular velocity
+//! - b is the damping coefficient
+//! - m is the mass of the pendulum bob
+//! - g is the acceleration due to gravity
+//! - l is the length of the pendulum
+//!
+//! Damped pendulums demonstrate both oscillatory behavior and decay due to friction,
+//! eventually settling at the equilibrium position. This system appears in mechanical 
+//! engineering, clock design, and as a model of various control systems.
+//!
+//! This example demonstrates:
+//! - Event detection to terminate simulation at equilibrium
+//! - Evaluation at specific time points (t_eval)
+//! - Status checking with simulation results
+
 use differential_equations::ode::methods::RKF;
 use differential_equations::ode::*;
 use nalgebra::{SVector, vector};

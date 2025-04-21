@@ -1,3 +1,28 @@
+//! Example 11: Time-dependent Schrödinger Equation
+//! 
+//! This example solves the time-dependent Schrödinger equation for a single quantum state:
+//! iħ·d|ψ⟩/dt = H|ψ⟩
+//! 
+//! where:
+//! - |ψ⟩ is the quantum state (a complex-valued wavefunction)
+//! - H is the Hamiltonian operator
+//! - ħ is the reduced Planck constant (set to 1 for simplicity)
+//! - i is the imaginary unit
+//!
+//! For an energy eigenstate, H|ψ⟩ = E|ψ⟩, where E is the energy eigenvalue.
+//! This simplifies the equation to: d|ψ⟩/dt = -iE|ψ⟩/ħ
+//!
+//! The solution to this equation is |ψ(t)⟩ = |ψ(0)⟩·e^(-iEt/ħ), which has
+//! constant probability amplitude but a rotating phase, demonstrating the 
+//! time evolution of quantum states. This is a fundamental equation in quantum
+//! mechanics, governing how quantum systems evolve over time.
+//!
+//! This example demonstrates:
+//! - Using complex numbers as state variables
+//! - Conservation properties in quantum mechanical simulations
+//! - Phase evolution in quantum systems
+//! - Verifying numerical accuracy against analytical predictions
+
 use differential_equations::ode::*;
 use num_complex::Complex;
 

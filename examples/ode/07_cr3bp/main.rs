@@ -1,3 +1,26 @@
+//! Example 07: Circular Restricted Three-Body Problem (CR3BP)
+//! 
+//! This example simulates the motion of a massless particle under the gravitational influence
+//! of two massive bodies (such as Earth and Moon) using the CR3BP equations:
+//! 
+//! ẍ = x + 2ẏ - (1-μ)(x+μ)/r₁³ - μ(x-1+μ)/r₂³
+//! ÿ = y - 2ẋ - (1-μ)y/r₁³ - μy/r₂³
+//! z̈ = -(1-μ)z/r₁³ - μz/r₂³
+//! 
+//! where:
+//! - (x,y,z) is the position of the particle in the rotating frame
+//! - μ is the mass ratio of the secondary body to the total mass
+//! - r₁, r₂ are distances from the particle to the primary and secondary bodies
+//!
+//! The CR3BP is a fundamental model in astrodynamics used for studying satellite orbits, 
+//! space mission design, and understanding complex orbital dynamics around planetary systems.
+//!
+//! This example demonstrates:
+//! - Using the #[derive(State)] attribute for a complex state vector
+//! - Hyperplane crossing detection
+//! - High-precision integration with the DOP853 method
+//! - State extraction for specialized calculations
+
 use differential_equations::ode::*;
 use differential_equations::derive::State;
 use nalgebra::{Vector3, vector};

@@ -1,3 +1,20 @@
+//! # Example 3: Logistic Growth Model
+//! 
+//! This example demonstrates the solution of a logistic growth model ODE:
+//! dy/dt = k*y*(1 - y/m)
+//!
+//! where:
+//! - y is the population size
+//! - k is the growth rate constant
+//! - m is the carrying capacity of the environment
+//! - t is time
+//! The logistic growth model is used in ecology to describe how populations grow in an environment with limited resources.
+//! This example showcases:
+//! - Custom ODE implementation with event detection
+//! - Using the DOP853 method for high accuracy
+//! - Handling events during the solution process
+//! - Accessing solution statistics like step counts and evaluations
+
 use differential_equations::ode::*;
 
 struct LogisticGrowth {

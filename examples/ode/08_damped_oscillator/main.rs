@@ -1,3 +1,24 @@
+//! Example 08: Damped Oscillator
+//! 
+//! This example simulates a damped harmonic oscillator with the system:
+//! dx/dt = v
+//! dv/dt = -b*v - k*x
+//! 
+//! where:
+//! - x is position
+//! - v is velocity
+//! - b is the damping coefficient 
+//! - k is the spring constant
+//!
+//! Damped oscillators model real-world systems with energy dissipation, such as shock absorbers,
+//! RLC circuits, and building structures under damping. The system behavior depends on the 
+//! damping ratio, which can lead to overdamped, critically damped, or underdamped motion.
+//!
+//! This example showcases:
+//! - Zero-crossing detection with the crossing() method
+//! - Using high-precision DOPRI5 integration
+//! - Detailed solution statistics reporting
+
 use differential_equations::ode::*;
 use nalgebra::{SVector, vector};
 
