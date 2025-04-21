@@ -39,11 +39,13 @@ polars = ["dep:polars"]
 [dependencies]
 nalgebra = "0.33.2" # Linear algebra vector and matrix types
 num-complex = "0.4.6" # Complex numbers
-differential-equations-derive = { version = "0.1.0", path = "./derive", optional = true } # Derives State trait on structs
+differential-equations-derive = { version = "0.1.1", path = "./derive", optional = true } # Derives State trait on structs
 polars = { version = "0.46.0", optional = true } # DataFrame integration for the solution
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] } # Benchmarking library
+rand = "0.9.0" # Random number generation for SDE examples
+rand_distr = "0.5.1" # Random distributions for SDE examples
 
 # Ordinary Differential Equation (ODE) examples
 [[example]]
@@ -94,3 +96,16 @@ path = "examples/ode/11_schrodinger/main.rs"
 name = "ode_bench"
 harness = false
 path = "benches/ode/main.rs"
+
+# Stochastic Differential Equation (SDE) examples
+[[example]]
+name = "sde_01_brownian_motion"
+path = "examples/sde/01_brownian_motion/main.rs"
+
+[[example]]
+name = "sde_02_heston_model"
+path = "examples/sde/02_heston_model/main.rs"
+
+[[example]]
+name = "sde_03_ornstein_uhlenbeck"
+path = "examples/sde/03_ornstein_uhlenbeck/main.rs"

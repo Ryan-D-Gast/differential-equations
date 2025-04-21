@@ -9,7 +9,7 @@
 //!
 //! This library provides numerical solvers for different classes of differential equations:
 //!
-//! - **[Ordinary Differential Equations (ODE)](crate::ode)**: Stable
+//! - **[Ordinary Differential Equations (ODE)](crate::ode)**
 //!   - Initial value problems (IVP)
 //!   - Fixed and adaptive step methods
 //!   - Event detection
@@ -76,6 +76,9 @@
 
 // Ordinary Differential Equations (ODE) Module
 pub mod ode;
+
+// Stochastic Differential Equations (SDE) Module
+pub mod sde;
 
 // -- Solution Output Control --
 

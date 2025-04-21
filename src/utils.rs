@@ -154,7 +154,7 @@ pub fn validate_step_size_parameters<T: Real, V: State<T>, D: CallBackData>(
     Ok(h0)
 }
 
-// Linear Algebra helper function for trait
+// Linear Algebra helper function for traits
 pub(crate) fn dot<T, V>(a: &V, b: &V) -> T
 where
     T: Real,
@@ -177,4 +177,27 @@ where
         sum += a.get(i) * a.get(i);
     }
     sum.sqrt()
+}
+
+pub(crate) fn component_multiply<T, V>(a: &V, b: &V) -> V
+where
+    T: Real,
+    V: State<T>,
+{
+    let mut result = a.clone();
+    for i in 0..a.len() {
+        result.set(i, a.get(i) * b.get(i));
+    }
+    result
+}
+
+pub(crate) fn component_square<T: Real, V: State<T>>(v: &V) -> V {
+    let mut result = V::zeros();
+    
+    for i in 0..v.len() {
+        let val = v.get(i);
+        result.set(i, val * val);
+    }
+    
+    result
 }

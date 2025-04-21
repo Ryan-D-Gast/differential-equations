@@ -53,6 +53,8 @@ pub trait State<T>:
 
     fn get(&self, i: usize) -> T;
 
+    fn set(&mut self, i: usize, value: T);
+
     fn zeros() -> Self;
 }
 
@@ -64,6 +66,14 @@ impl<T: Real> State<T> for T {
     fn get(&self, i: usize) -> T {
         if i == 0 {
             *self
+        } else {
+            panic!("Index out of bounds")
+        }
+    }
+
+    fn set(&mut self, i: usize, value: T) {
+        if i == 0 {
+            *self = value;
         } else {
             panic!("Index out of bounds")
         }
@@ -90,6 +100,14 @@ where
         }
     }
 
+    fn set(&mut self, i: usize, value: T) {
+        if i < self.len() {
+            self[(i / C, i % C)] = value;
+        } else {
+            panic!("Index out of bounds")
+        }
+    }
+
     fn zeros() -> Self {
         SMatrix::<T, R, C>::zeros()
     }
@@ -108,6 +126,16 @@ where
             self.re
         } else if i == 1 {
             self.im
+        } else {
+            panic!("Index out of bounds")
+        }
+    }
+
+    fn set(&mut self, i: usize, value: T) {
+        if i == 0 {
+            self.re = value;
+        } else if i == 1 {
+            self.im = value;
         } else {
             panic!("Index out of bounds")
         }

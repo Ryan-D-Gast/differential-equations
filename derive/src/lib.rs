@@ -88,7 +88,30 @@ pub fn derive_state(input: TokenStream) -> TokenStream {
             }
         }
     }).collect::<Vec<_>>();
-    
+
+    // Generate field setters based on field type
+    let field_setters = fields.iter().enumerate().map(|(i, f)| {
+        match &f.ident {
+            Some(ident) => {
+                quote! {
+                    if i == #i {
+                        self.#ident = value;
+                        return;
+                    }
+                }
+            },
+            None => {
+                let index = syn::Index::from(i);
+                quote! {
+                    if i == #i {
+                        self.#index = value;
+                        return;
+                    }
+                }
+            }
+        }
+    }).collect::<Vec<_>>();
+
     // Generate zeros initialization based on field type
     let zeros_init = fields.iter().map(|f| {
         match &f.ident {
@@ -209,6 +232,11 @@ pub fn derive_state(input: TokenStream) -> TokenStream {
                 #(#field_accessors else)* {
                     panic!("Index out of bounds")
                 }
+            }
+            
+            fn set(&mut self, i: usize, value: T) {
+                #(#field_setters)*
+                panic!("Index out of bounds");
             }
             
             fn zeros() -> Self {
