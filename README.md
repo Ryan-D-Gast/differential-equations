@@ -40,6 +40,7 @@ A high-performance library for solving differential equations in Rust, including
     - **Initial Value Problems (IVPs)** - Solve problems with known initial conditions
 
 - **[Stochastic Differential Equations (SDEs)](./docs/sde/introduction.md)** - Includes solvers such as Euler-Maruyama, Milstein, and Runge-Kutta methods for stochastic differential equations.
+    - **Customizable Noise** - User implements a wide variety of noise in SDE implementation to allow for example diagonal, correlation, and multiplicative noise.
 
 ## Contributing
 
