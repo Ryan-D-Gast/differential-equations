@@ -5,6 +5,7 @@
 ## Available Modules
 
 - [Ordinary Differential Equations (ODE)](./ode/introduction.md) - Tools for solving initial value problems with various numerical methods
+- [Stochastic Differential Equations (SDE)](./sde/introduction.md) - Tools for solving stochastic differential equations using the Euler-Maruyama method
 
 ## Installation
 
