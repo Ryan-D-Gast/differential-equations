@@ -213,13 +213,16 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 
 ## Benchmarks
 
-Included in the [ode comparion folder](../../comparison/ode/README.md) which contains benchmarks comparing the speed of the `DOP853` solver implementation in `differential-equations` against implementations in other programming languages including Fortran.
+Test results from [differential-equations-comparison](https://github.com/Ryan-D-Gast/differential-equations-comparison) github repository which compares the performance of the `differential-equations` library with Fortran implementations of the DOP853 method.
 
-A sample result via `comparison/ode/...` is shown below:
+| Problem | Implementation | Mean [ms] | Min [ms] | Max [ms] | Relative |
+| :---: |:---:|---:|---:|---:|---:|
+| Van der Pol Osc. | Rust | 8.8 ± 0.3 | 8.2 | 10.3 | 1.00 |
+| Van der Pol Osc. | Fortran | 12.5 ± 2.9 | 11.5 | 75.1 | 1.41 ± 0.33 |
+| CR3BP | Rust | 7.0 ± 0.4 | 6.5 | 8.6 | 1.00 |
+| CR3BP | Fortran | 9.8 ± 1.8 | 9.1 | 46.0 | 1.40 ± 0.26 |
 
-[![Benchmark Results](./ode_benchmark.png)](../differential-equations-benchmarks "Averaged over 100 runs for each problem per solver implementation")
-
-Testing has shown that the `differential-equations` Rust implementation is about 10% faster than the Fortran implementations above. Take the result with a grain of salt as more testing by other users is needed to confirm the results.
+Testing has shown that the `differential-equations` Rust implementation is about 10% faster than the Fortran implementations of the DOP853 method.
 
 ## Notation
 
