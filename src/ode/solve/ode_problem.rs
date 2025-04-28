@@ -3,7 +3,7 @@
 use crate::{
     Error, Solution,
     interpolate::Interpolation,
-    ode::{ODE, solve::solve_problem, numerical_method::NumericalMethod},
+    ode::{ODE, solve::solve_ode, numerical_method::NumericalMethod},
     solout::*,
     traits::{CallBackData, Real, State},
 };
@@ -152,7 +152,7 @@ where
         S: NumericalMethod<T, V, D> + Interpolation<T, V>,
     {
         let mut default_solout = DefaultSolout::new(); // Default solout implementation
-        solve_problem(
+        solve_ode(
             solver,
             &self.ode,
             self.t0,
@@ -309,7 +309,7 @@ where
     where
         S: NumericalMethod<T, V, D> + Interpolation<T, V>,
     {
-        solve_problem(
+        solve_ode(
             solver,
             &self.problem.ode,
             self.problem.t0,
@@ -320,7 +320,7 @@ where
     }
 }
 
-/// ODEProblemSoloutPair serves as a intermediate between the ODEProblem struct and solve_problem when a predefined solout is used.
+/// ODEProblemSoloutPair serves as a intermediate between the ODEProblem struct and solve_ode when a predefined solout is used.
 #[derive(Clone, Debug)]
 pub struct ODEProblemSoloutPair<'a, T, V, D, F, O>
 where
@@ -364,7 +364,7 @@ where
     where
         S: NumericalMethod<T, V, D> + Interpolation<T, V>,
     {
-        solve_problem(
+        solve_ode(
             solver,
             &self.problem.ode,
             self.problem.t0,

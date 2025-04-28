@@ -89,7 +89,7 @@ use crate::{
 /// let mut solout = DefaultSolout::new();
 /// let system = ExponentialGrowth;
 /// let y0 = 1.0;
-/// let result = solve_problem(&mut method, &system, 0.0, 1.0, &y0, &mut solout);
+/// let result = solve_ode(&mut method, &system, 0.0, 1.0, &y0, &mut solout);
 ///
 /// match result {
 ///     Ok(solution) => {
@@ -109,7 +109,7 @@ use crate::{
 /// * The `tf == t0` case is considered an error (no integration to perform).
 /// * The output points depend on the chosen `Solout` implementation.
 ///
-pub fn solve_problem<T, V, D, S, F, O>(
+pub fn solve_ode<T, V, D, S, F, O>(
     solver: &mut S,
     ode: &F,
     t0: T,

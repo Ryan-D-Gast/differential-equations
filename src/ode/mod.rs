@@ -98,7 +98,7 @@
 mod solve;
 pub use solve::{
     ODEProblem,       // Initial Value Problem (ODEProblem) for the system of ODEs
-    solve_problem, // Function to solve the ODEProblem, used internally in ODEProblem Struct
+    solve_ode, // Function to solve the ODEProblem, used internally in ODEProblem Struct
 };
 
 // ODE Trait for Ordinary Differential Equations
