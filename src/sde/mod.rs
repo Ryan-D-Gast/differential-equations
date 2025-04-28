@@ -3,7 +3,7 @@
 mod sde;
 pub use sde::SDE;
 
-mod methods;
+pub mod methods;
 pub use methods::{
     EM,
     Milstein,
