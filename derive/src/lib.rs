@@ -25,8 +25,10 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput, Data, Fields};
 
-// TODO: Add support for structs with non -`T` fields
-// e.g. `struct MyState<T, U> { x: T, y: U }` where `T` multiplied by `U` is valid (and other operations).
+// TODO: Add support for structs with fields 
+// - [T; N]
+// - SMatrix<T, R, C>
+// - Complex<T>
 
 /// Derive macro for the `State` trait.
 /// 
