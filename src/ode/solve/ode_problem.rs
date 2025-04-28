@@ -3,19 +3,19 @@
 use crate::{
     Error, Solution,
     interpolate::Interpolation,
-    ode::{ODE, ivp::solve_ivp, numerical_method::NumericalMethod},
+    ode::{ODE, solve::solve_problem, numerical_method::NumericalMethod},
     solout::*,
     traits::{CallBackData, Real, State},
 };
 
-/// Initial Value Problem Differential Equation NumericalMethod
+/// Initial Value Problem for Ordinary Differential Equations (ODEs)
 ///
-/// An Initial Value Problem (IVP) takes the form:
+/// The Initial Value Problem takes the form:
 /// y' = f(t, y), a <= t <= b, y(a) = alpha
 ///
 /// # Overview
 ///
-/// The IVP struct provides a simple interface for solving differential equations:
+/// The ODEProblem struct provides a simple interface for solving differential equations:
 ///
 /// # Example
 ///
@@ -41,11 +41,11 @@ use crate::{
 /// let mut solver = DOP853::new().rtol(1e-8).atol(1e-6);
 ///
 /// // Basic usage:
-/// let ivp = IVP::new(ode, t0, tf, y0);
-/// let solution = ivp.solve(&mut solver).unwrap();
+/// let problem = ODEProblem::new(ode, t0, tf, y0);
+/// let solution = problem.solve(&mut solver).unwrap();
 ///
 /// // Advanced output control:
-/// let solution = ivp.even(0.1).solve(&mut solver).unwrap();
+/// let solution = problem.even(0.1).solve(&mut solver).unwrap();
 /// ```
 ///
 /// # Fields
@@ -57,7 +57,7 @@ use crate::{
 ///
 /// # Basic Usage
 ///
-/// * `new(ode, t0, tf, y0)` - Create a new IVP
+/// * `new(ode, t0, tf, y0)` - Create a new ODEProblem
 /// * `solve(&mut solver)` - Solve using default output (solver step points)
 ///
 /// # Output Control Methods
@@ -90,14 +90,14 @@ use crate::{
 /// let mut method = DOP853::new().rtol(1e-12).atol(1e-12);
 ///
 /// // Basic usage with default output points
-/// let ivp = IVP::new(ode, 0.0, 10.0, vector![1.0, 0.0]);
-/// let results = ivp.solve(&mut method).unwrap();
+/// let problem = ODEProblem::new(ode, 0.0, 10.0, vector![1.0, 0.0]);
+/// let results = problem.solve(&mut method).unwrap();
 ///
 /// // Advanced: evenly spaced output with 0.1 time intervals
-/// let results = ivp.dense(4).solve(&mut method).unwrap();
+/// let results = problem.dense(4).solve(&mut method).unwrap();
 /// ```
 #[derive(Clone, Debug)]
-pub struct IVP<T, V, D, F>
+pub struct ODEProblem<T, V, D, F>
 where
     T: Real,
     V: State<T>,
@@ -114,7 +114,7 @@ where
     _event_output_type: std::marker::PhantomData<D>,
 }
 
-impl<T, V, D, F> IVP<T, V, D, F>
+impl<T, V, D, F> ODEProblem<T, V, D, F>
 where
     T: Real,
     V: State<T>,
@@ -130,10 +130,10 @@ where
     /// * `y0`      - Initial State Vector.
     ///
     /// # Returns
-    /// * IVP Problem ready to be solved.
+    /// * ODEProblem Problem ready to be solved.
     ///
     pub fn new(ode: F, t0: T, tf: T, y0: V) -> Self {
-        IVP {
+        ODEProblem {
             ode,
             t0,
             tf,
@@ -142,7 +142,7 @@ where
         }
     }
 
-    /// Solve the IVP using a default solout, e.g. outputting solutions at calculated steps.
+    /// Solve the ODEProblem using a default solout, e.g. outputting solutions at calculated steps.
     ///
     /// # Returns
     /// * `Result<Solution<T, V, D>, Status<T, V, D>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Status)` if an errors or issues such as stiffness are encountered.
@@ -152,7 +152,7 @@ where
         S: NumericalMethod<T, V, D> + Interpolation<T, V>,
     {
         let mut default_solout = DefaultSolout::new(); // Default solout implementation
-        solve_ivp(
+        solve_problem(
             solver,
             &self.ode,
             self.t0,
@@ -162,16 +162,16 @@ where
         )
     }
 
-    /// Returns an IVP NumericalMethod with the provided solout function for outputting points.
+    /// Returns an ODEProblem NumericalMethod with the provided solout function for outputting points.
     ///
     /// # Returns
-    /// * IVP NumericalMethod with the provided solout function ready for .solve() method.
+    /// * ODEProblem NumericalMethod with the provided solout function ready for .solve() method.
     ///
     pub fn solout<'a, O: Solout<T, V, D>>(
         &'a self,
         solout: &'a mut O,
-    ) -> IVPMutRefSoloutPair<'a, T, V, D, F, O> {
-        IVPMutRefSoloutPair::new(self, solout)
+    ) -> ODEProblemMutRefSoloutPair<'a, T, V, D, F, O> {
+        ODEProblemMutRefSoloutPair::new(self, solout)
     }
 
     /// Uses the an Even Solout implementation to output evenly spaced points between the initial and final time.
@@ -181,11 +181,11 @@ where
     /// * `dt` - Interval between each output point.
     ///
     /// # Returns
-    /// * IVP NumericalMethod with Even Solout function ready for .solve() method.
+    /// * ODEProblem NumericalMethod with Even Solout function ready for .solve() method.
     ///
-    pub fn even(&self, dt: T) -> IVPSoloutPair<'_, T, V, D, F, EvenSolout<T>> {
+    pub fn even(&self, dt: T) -> ODEProblemSoloutPair<'_, T, V, D, F, EvenSolout<T>> {
         let even_solout = EvenSolout::new(dt, self.t0, self.tf); // Even solout implementation
-        IVPSoloutPair::new(self, even_solout)
+        ODEProblemSoloutPair::new(self, even_solout)
     }
 
     /// Uses the Dense Output method to output n number of interpolation points between each step.
@@ -195,11 +195,11 @@ where
     /// * `n` - Number of interpolation points between each step.
     ///
     /// # Returns
-    /// * IVP NumericalMethod with Dense Output function ready for .solve() method.
+    /// * ODEProblem NumericalMethod with Dense Output function ready for .solve() method.
     ///
-    pub fn dense(&self, n: usize) -> IVPSoloutPair<'_, T, V, D, F, DenseSolout> {
+    pub fn dense(&self, n: usize) -> ODEProblemSoloutPair<'_, T, V, D, F, DenseSolout> {
         let dense_solout = DenseSolout::new(n); // Dense solout implementation
-        IVPSoloutPair::new(self, dense_solout)
+        ODEProblemSoloutPair::new(self, dense_solout)
     }
 
     /// Uses the provided time points for evaluation instead of the default method.
@@ -209,11 +209,11 @@ where
     /// * `points` - Custom output points.
     ///
     /// # Returns
-    /// * IVP NumericalMethod with Custom Time Evaluation function ready for .solve() method.
+    /// * ODEProblem NumericalMethod with Custom Time Evaluation function ready for .solve() method.
     ///
-    pub fn t_eval(&self, points: Vec<T>) -> IVPSoloutPair<'_, T, V, D, F, TEvalSolout<T>> {
+    pub fn t_eval(&self, points: Vec<T>) -> ODEProblemSoloutPair<'_, T, V, D, F, TEvalSolout<T>> {
         let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf); // Custom time evaluation solout implementation
-        IVPSoloutPair::new(self, t_eval_solout)
+        ODEProblemSoloutPair::new(self, t_eval_solout)
     }
 
     /// Uses the CrossingSolout method to output points when a specific component crosses a threshold.
@@ -225,17 +225,17 @@ where
     /// * `direction` - Direction of crossing (positive or negative).
     ///
     /// # Returns
-    /// * IVP NumericalMethod with CrossingSolout function ready for .solve() method.
+    /// * ODEProblem NumericalMethod with CrossingSolout function ready for .solve() method.
     ///
     pub fn crossing(
         &self,
         component_idx: usize,
         threshhold: T,
         direction: CrossingDirection,
-    ) -> IVPSoloutPair<'_, T, V, D, F, CrossingSolout<T>> {
+    ) -> ODEProblemSoloutPair<'_, T, V, D, F, CrossingSolout<T>> {
         let crossing_solout =
             CrossingSolout::new(component_idx, threshhold).with_direction(direction); // Crossing solout implementation
-        IVPSoloutPair::new(self, crossing_solout)
+        ODEProblemSoloutPair::new(self, crossing_solout)
     }
 
     /// Uses the HyperplaneCrossingSolout method to output points when a specific hyperplane is crossed.
@@ -248,7 +248,7 @@ where
     /// * `direction` - Direction of crossing (positive or negative).
     ///
     /// # Returns
-    /// * IVP NumericalMethod with HyperplaneCrossingSolout function ready for .solve() method.
+    /// * ODEProblem NumericalMethod with HyperplaneCrossingSolout function ready for .solve() method.
     ///
     pub fn hyperplane_crossing<V1>(
         &self,
@@ -256,19 +256,19 @@ where
         normal: V1,
         extractor: fn(&V) -> V1,
         direction: CrossingDirection,
-    ) -> IVPSoloutPair<'_, T, V, D, F, HyperplaneCrossingSolout<T, V1, V>>
+    ) -> ODEProblemSoloutPair<'_, T, V, D, F, HyperplaneCrossingSolout<T, V1, V>>
     where
         V1: State<T>,
     {
         let solout =
             HyperplaneCrossingSolout::new(point, normal, extractor).with_direction(direction);
 
-        IVPSoloutPair::new(self, solout)
+        ODEProblemSoloutPair::new(self, solout)
     }
 }
 
-/// IVPMutRefSoloutPair serves as a intermediate between the IVP struct and a custom solout provided by the user.
-pub struct IVPMutRefSoloutPair<'a, T, V, D, F, O>
+/// ODEProblemMutRefSoloutPair serves as a intermediate between the ODEProblem struct and a custom solout provided by the user.
+pub struct ODEProblemMutRefSoloutPair<'a, T, V, D, F, O>
 where
     T: Real,
     V: State<T>,
@@ -276,11 +276,11 @@ where
     F: ODE<T, V, D>,
     O: Solout<T, V, D>,
 {
-    pub ivp: &'a IVP<T, V, D, F>, // Reference to the IVP struct
+    pub problem: &'a ODEProblem<T, V, D, F>, // Reference to the ODEProblem struct
     pub solout: &'a mut O,        // Reference to the solout implementation
 }
 
-impl<'a, T, V, D, F, O> IVPMutRefSoloutPair<'a, T, V, D, F, O>
+impl<'a, T, V, D, F, O> ODEProblemMutRefSoloutPair<'a, T, V, D, F, O>
 where
     T: Real,
     V: State<T>,
@@ -288,19 +288,19 @@ where
     F: ODE<T, V, D>,
     O: Solout<T, V, D>,
 {
-    /// Create a new IVPMutRefSoloutPair
+    /// Create a new ODEProblemMutRefSoloutPair
     ///
     /// # Arguments
-    /// * `ivp` - Reference to the IVP struct
+    /// * `problem` - Reference to the ODEProblem struct
     ///
-    pub fn new(ivp: &'a IVP<T, V, D, F>, solout: &'a mut O) -> Self {
-        IVPMutRefSoloutPair { ivp, solout }
+    pub fn new(problem: &'a ODEProblem<T, V, D, F>, solout: &'a mut O) -> Self {
+        ODEProblemMutRefSoloutPair { problem, solout }
     }
 
-    /// Solve the IVP using the provided solout
+    /// Solve the ODEProblem using the provided solout
     ///
     /// # Arguments
-    /// * `solver` - NumericalMethod to use for solving the IVP
+    /// * `solver` - NumericalMethod to use for solving the ODEProblem
     ///
     /// # Returns
     /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if an errors or issues such as stiffness are encountered.
@@ -309,20 +309,20 @@ where
     where
         S: NumericalMethod<T, V, D> + Interpolation<T, V>,
     {
-        solve_ivp(
+        solve_problem(
             solver,
-            &self.ivp.ode,
-            self.ivp.t0,
-            self.ivp.tf,
-            &self.ivp.y0,
+            &self.problem.ode,
+            self.problem.t0,
+            self.problem.tf,
+            &self.problem.y0,
             self.solout,
         )
     }
 }
 
-/// IVPSoloutPair serves as a intermediate between the IVP struct and solve_ivp when a predefined solout is used.
+/// ODEProblemSoloutPair serves as a intermediate between the ODEProblem struct and solve_problem when a predefined solout is used.
 #[derive(Clone, Debug)]
-pub struct IVPSoloutPair<'a, T, V, D, F, O>
+pub struct ODEProblemSoloutPair<'a, T, V, D, F, O>
 where
     T: Real,
     V: State<T>,
@@ -330,11 +330,11 @@ where
     F: ODE<T, V, D>,
     O: Solout<T, V, D>,
 {
-    pub ivp: &'a IVP<T, V, D, F>, // Reference to the IVP struct
+    pub problem: &'a ODEProblem<T, V, D, F>, // Reference to the ODEProblem struct
     pub solout: O,                // Solout implementation
 }
 
-impl<'a, T, V, D, F, O> IVPSoloutPair<'a, T, V, D, F, O>
+impl<'a, T, V, D, F, O> ODEProblemSoloutPair<'a, T, V, D, F, O>
 where
     T: Real,
     V: State<T>,
@@ -342,20 +342,20 @@ where
     F: ODE<T, V, D>,
     O: Solout<T, V, D>,
 {
-    /// Create a new IVPSoloutPair
+    /// Create a new ODEProblemSoloutPair
     ///
     /// # Arguments
-    /// * `ivp` - Reference to the IVP struct
+    /// * `problem` - Reference to the ODEProblem struct
     /// * `solout` - Solout implementation
     ///
-    pub fn new(ivp: &'a IVP<T, V, D, F>, solout: O) -> Self {
-        IVPSoloutPair { ivp, solout }
+    pub fn new(problem: &'a ODEProblem<T, V, D, F>, solout: O) -> Self {
+        ODEProblemSoloutPair { problem, solout }
     }
 
-    /// Solve the IVP using the provided solout
+    /// Solve the ODEProblem using the provided solout
     ///
     /// # Arguments
-    /// * `solver` - NumericalMethod to use for solving the IVP
+    /// * `solver` - NumericalMethod to use for solving the ODEProblem
     ///
     /// # Returns
     /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if an errors or issues such as stiffness are encountered.
@@ -364,12 +364,12 @@ where
     where
         S: NumericalMethod<T, V, D> + Interpolation<T, V>,
     {
-        solve_ivp(
+        solve_problem(
             solver,
-            &self.ivp.ode,
-            self.ivp.t0,
-            self.ivp.tf,
-            &self.ivp.y0,
+            &self.problem.ode,
+            self.problem.t0,
+            self.problem.tf,
+            &self.problem.y0,
             &mut self.solout,
         )
     }

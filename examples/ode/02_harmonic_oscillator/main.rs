@@ -34,8 +34,8 @@ impl ODE<f32, SVector<f32, 2>> for HarmonicOscillator {
 }
 
 fn main() {
-    // Note how unlike 01_exponential_growth/main.rs, no intermediate variables are used and the IVP is setup and solved in one step.
-    let solution = match IVP::new(HarmonicOscillator { k: 1.0 }, 0.0, 10.0, vector![1.0, 0.0])
+    // Note how unlike 01_exponential_growth/main.rs, no intermediate variables are used and the ODEProblem is setup and solved in one step.
+    let solution = match ODEProblem::new(HarmonicOscillator { k: 1.0 }, 0.0, 10.0, vector![1.0, 0.0])
         .solve(&mut RK4::new(0.01))
     {
         Ok(solution) => solution,

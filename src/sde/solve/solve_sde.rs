@@ -74,42 +74,50 @@ use crate::{
 /// # Examples
 ///
 /// ```
-/// use differential_equations::sde::*;
-/// use differential_equations::solout::DefaultSolout;
-/// use nalgebra::Vector1;
+/// use differential_equations::{
+///     sde::*,
+///     solout::DefaultSolout,
+/// };
+/// use nalgebra::SVector;
+/// use rand::SeedableRng;
+/// use rand_distr::{Distribution, Normal};
 ///
-/// // Define a simple geometric Brownian motion SDE: dS = μS dt + σS dW
-/// struct GeometricBrownianMotion {
-///     pub mu: f64,
-///     pub sigma: f64,
+/// struct GBM {
+///     rng: rand::rngs::StdRng,
+/// }
+/// 
+/// impl GBM {
+///     fn new(seed: u64) -> Self {
+///         Self {
+///             rng: rand::rngs::StdRng::seed_from_u64(seed),
+///         }
+///     }
 /// }
 ///
-/// impl SDE for GeometricBrownianMotion {
-///     fn drift(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
-///         dydt[0] = self.mu * y[0]; // μS
+/// impl SDE<f64, SVector<f64, 1>> for GBM {
+///     fn drift(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
+///         dydt[0] = 0.1 * y[0]; // μS
 ///     }
-///
-///     fn diffusion(&self, _t: f64, y: &Vector1<f64>, dydw: &mut Vector1<f64>) {
-///         dydw[0] = self.sigma * y[0]; // σS
+///     
+///     fn diffusion(&self, _t: f64, y: &SVector<f64, 1>, dydw: &mut SVector<f64, 1>) {
+///         dydw[0] = 0.2 * y[0]; // σS
+///     }
+///     
+///     fn noise(&self, dt: f64, dw: &mut SVector<f64, 1>) {
+///         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
+///         dw[0] = normal.sample(&mut self.rng.clone());
 ///     }
 /// }
 ///
-/// // Solve from t=0 to t=1 with initial condition S=100
-/// let mut method = EM::new(0.01);
+/// let t0 = 0.0;
+/// let tf = 1.0;
+/// let y0 = SVector::<f64, 1>::new(100.0);
+/// let gbm = GBM::new(42);
+/// let mut solver = EM::new(0.01);
 /// let mut solout = DefaultSolout::new();
-/// let system = GeometricBrownianMotion { mu: 0.1, sigma: 0.2 };
-/// let y0 = Vector1::new(100.0);
-/// let result = solve_sde(&mut method, &system, 0.0, 1.0, &y0, &mut solout);
 ///
-/// match result {
-///     Ok(solution) => {
-///         println!("Final value: {}", solution.y.last().unwrap()[0]);
-///         println!("Number of steps: {}", solution.steps);
-///     },
-///     Err(status) => {
-///         println!("Integration failed: {:?}", status);
-///     }
-/// }
+/// // Solve the SDE
+/// let result = solve_sde(&mut solver, &gbm, t0, tf, &y0, &mut solout);
 /// ```
 ///
 /// # Notes

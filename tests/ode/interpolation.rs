@@ -1,7 +1,7 @@
 //! Suite of test cases for checking the interpolation of the solvers.
 
 use super::systems;
-use differential_equations::ode::IVP;
+use differential_equations::ode::ODEProblem;
 use differential_equations::ode::methods::{
     APCF4, APCV4, DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98,
 };
@@ -24,14 +24,14 @@ macro_rules! test_interpolation {
             // Define the system
             let system = ExponentialGrowth { k: 1.0 };
 
-            // Create Initial Value Problem (IVP) for the system
-            let ivp = IVP::new(system, t0, tf, y0);
+            // Create Initial Value Problem (ODEProblem) for the system
+            let problem = ODEProblem::new(system, t0, tf, y0);
 
             // Initialize the solver
             let mut solver = $solver;
 
             // Solve the system
-            let results = ivp
+            let results = problem
                 .t_eval(
                     vec![0.5, 1.0, 1.69] // Get the Point at t = 0.5, 1.0, 1.69
                 )

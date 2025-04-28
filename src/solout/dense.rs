@@ -43,11 +43,11 @@ use super::*;
 /// let mut dense_output = DenseSolout::new(10);
 ///
 /// // Solve with dense output
-/// let ivp = IVP::new(system, t0, tf, y0);
-/// let solution = ivp.solout(&mut dense_output).solve(&mut solver).unwrap();
+/// let problem = ODEProblem::new(system, t0, tf, y0);
+/// let solution = problem.solout(&mut dense_output).solve(&mut solver).unwrap();
 ///
 /// // Note: This is equivalent to using the convenience method:
-/// let solution = ivp.dense(10).solve(&mut solver).unwrap();
+/// let solution = problem.dense(10).solve(&mut solver).unwrap();
 /// ```
 ///
 /// # Output Characteristics

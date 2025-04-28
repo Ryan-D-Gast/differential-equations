@@ -1,7 +1,7 @@
 //! Suite of test cases for NumericalMethods vs results of SciPy using DOP853 & Tolerences = 1e-12
 
 use super::systems::{ExponentialGrowth, HarmonicOscillator, LinearEquation, LogisticEquation};
-use differential_equations::ode::IVP;
+use differential_equations::ode::ODEProblem;
 use differential_equations::ode::methods::{
     APCF4, APCV4, DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98,
 };
@@ -26,14 +26,14 @@ macro_rules! test_ode {
             let tf = $tf;
             let y0 = $y0;
 
-            // Create Initial Value Problem (IVP) for the system
-            let ivp = IVP::new(system, t0, tf, y0);
+            // Create Initial Value Problem (ODEProblem) for the system
+            let problem = ODEProblem::new(system, t0, tf, y0);
 
             // Initialize the solver
             let mut solver = $solver;
 
             // Solve the system
-            let results = ivp.solve(&mut solver).unwrap();
+            let results = problem.solve(&mut solver).unwrap();
 
             // Save results to csv
             results.to_csv(&format!("target/tests/ode/results/{}_{}.csv", stringify!($solver_name), stringify!($system_name))).unwrap();

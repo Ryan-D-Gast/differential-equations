@@ -1,7 +1,7 @@
 //! # Ordinary Differential Equations (ODE) Module
 //!
 //! This module provides comprehensive functionality for solving Ordinary Differential Equations (ODEs),
-//! with special focus on Initial Value Problems (IVPs).
+//! with special focus on Initial Value Problems (ODEProblems).
 //!
 //! ## Quick Start
 //!
@@ -39,16 +39,16 @@
 //!     let tf = 1.0;
 //!     let y0 = 1.0;
 //!
-//!     // Create an IVP instance
-//!     let ivp = IVP::new(system, t0, tf, y0);
+//!     // Create an ODEProblem instance
+//!     let problem = ODEProblem::new(system, t0, tf, y0);
 //!
 //!     // Initialize solver with desired settings or use defaults
 //!     let mut solver = DOP853::new()
 //!         .rtol(1e-8)  // Relative tolerance
 //!         .atol(1e-6); // Absolute tolerance
 //!
-//!     // Solve the IVP
-//!     let solution = match ivp.solve(&mut solver) {
+//!     // Solve the ODEProblem
+//!     let solution = match problem.solve(&mut solver) {
 //!         Ok(sol) => sol,
 //!         Err(e) => panic!("Error: {:?}", e),
 //!     };
@@ -63,7 +63,7 @@
 //! ## Core Components
 //!
 //! - [`ODE`]: Define your differential equation system by implementing this trait
-//! - [`IVP`]: Set up an initial value problem with your system, time span, and initial conditions
+//! - [`ODEProblem`]: Set up an initial value problem with your system, time span, and initial conditions
 //! - [`Solution`]: After solving, analyze and process your solution data
 //!
 //! ## Available NumericalMethods
@@ -82,8 +82,8 @@
 //!
 //! Custom solution output behaviors can be defined using the [`Solout`] trait.
 //! Common implementations are available in the [`solout`] module or via
-//! extension methods on the [`IVP`] struct. For example, you can use the
-//! `IVP.dense(2).solve(&mut solver)` method to set output all calculated steps and an
+//! extension methods on the [`ODEProblem`] struct. For example, you can use the
+//! `ODEProblem.dense(2).solve(&mut solver)` method to set output all calculated steps and an
 //! interpolated solution between them. e.g. 2 output points per step.
 //!
 //! ## Event Handling
@@ -94,11 +94,11 @@
 //! place and interrupt the solution at that point.
 //!
 
-// IVP Struct which is used to solve the ODE given the system and a solver
-mod ivp;
-pub use ivp::{
-    IVP,       // Initial Value Problem (IVP) for the system of ODEs
-    solve_ivp, // Function to solve the IVP, used internally in IVP Struct
+// ODEProblem Struct which is used to solve the ODE given the system and a solver
+mod solve;
+pub use solve::{
+    ODEProblem,       // Initial Value Problem (ODEProblem) for the system of ODEs
+    solve_problem, // Function to solve the ODEProblem, used internally in ODEProblem Struct
 };
 
 // ODE Trait for Ordinary Differential Equations

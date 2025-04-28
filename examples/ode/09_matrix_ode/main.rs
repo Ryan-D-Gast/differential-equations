@@ -56,9 +56,9 @@ fn main() {
     let tf = 10.0;
     let ode = MatrixODE { omega: 0.1 };
 
-    // Set up and solve the IVP
-    let matrix_ivp = IVP::new(ode, t0, tf, y0);
-    let result = matrix_ivp.dense(100).solve(&mut method);
+    // Set up and solve the ODEProblem
+    let matrix_problem = ODEProblem::new(ode, t0, tf, y0);
+    let result = matrix_problem.dense(100).solve(&mut method);
 
     match result {
         Ok(solution) => {
@@ -75,6 +75,6 @@ fn main() {
             println!("Steps: {}", solution.steps);
             println!("Function evaluations: {}", solution.evals);
         }
-        Err(e) => println!("Error solving the IVP: {:?}", e),
+        Err(e) => println!("Error solving the ODEProblem: {:?}", e),
     }
 }

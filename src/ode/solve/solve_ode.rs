@@ -1,4 +1,4 @@
-//! Solve IVP function
+//! Solve ODEProblem function
 
 use crate::{
     ControlFlag, Error, Solution, Status,
@@ -8,13 +8,13 @@ use crate::{
     traits::{CallBackData, Real, State},
 };
 
-/// Solves an Initial Value Problem (IVP) for a system of ordinary differential equations.
+/// Solves an Initial Value Problem (ODEProblem) for a system of ordinary differential equations.
 ///
 /// This is the core solution function that drives the numerical integration of ODEs.
 /// It handles initialization, time stepping, event detection, and solution output
 /// according to the provided output strategy.
 ///
-/// Note that it is recommend to use the `IVP` struct to solve the ODEs,
+/// Note that it is recommend to use the `ODEProblem` struct to solve the ODEs,
 /// as it provides far more feature rich and convenient interface which
 /// wraps this function. See examples on github for more details.
 ///
@@ -89,7 +89,7 @@ use crate::{
 /// let mut solout = DefaultSolout::new();
 /// let system = ExponentialGrowth;
 /// let y0 = 1.0;
-/// let result = solve_ivp(&mut method, &system, 0.0, 1.0, &y0, &mut solout);
+/// let result = solve_problem(&mut method, &system, 0.0, 1.0, &y0, &mut solout);
 ///
 /// match result {
 ///     Ok(solution) => {
@@ -109,7 +109,7 @@ use crate::{
 /// * The `tf == t0` case is considered an error (no integration to perform).
 /// * The output points depend on the chosen `Solout` implementation.
 ///
-pub fn solve_ivp<T, V, D, S, F, O>(
+pub fn solve_problem<T, V, D, S, F, O>(
     solver: &mut S,
     ode: &F,
     t0: T,

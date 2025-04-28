@@ -37,8 +37,6 @@ use crate::{
 /// use rand::SeedableRng;
 /// use rand_distr::{Distribution, Normal};
 ///
-/// let mut solver = RKM4::new(0.01);
-///
 /// struct OrnsteinUhlenbeck {
 ///     theta: f64,  // Mean reversion speed
 ///     mu: f64,     // Long-term mean
@@ -76,10 +74,13 @@ use crate::{
 ///
 /// let t0 = 0.0;
 /// let tf = 1.0;
-/// let y0 = SVector::new(2.0);  // Initial value away from mean
+/// let y0 = SVector::<f64, 1>::new(2.0);  // Initial value away from mean
+/// let ou_process = OrnsteinUhlenbeck::new(0.5, 1.0, 0.1, 42);
+/// let mut solver = RKM4::new(0.01);
+/// let ou_problem = SDEProblem::new(ou_process, t0, tf, y0);
 ///
 /// // Solve the SDE
-/// let result = solver.solve(OrnsteinUhlenbeck::new(1.0, 1.0, 0.2, 42), t0, tf, y0);
+/// let result = ou_problem.solve(&mut solver);
 /// ```
 ///
 pub struct RKM4<T: Real, V: State<T>, D: CallBackData> {

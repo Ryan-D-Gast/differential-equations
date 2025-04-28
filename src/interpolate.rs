@@ -1,4 +1,4 @@
-//! Interpolation Methods for the IVP struct when solving the system.
+//! Interpolation Methods for the ODEProblem struct when solving the system.
 
 use crate::traits::{Real, State};
 use std::fmt::{Debug, Display};

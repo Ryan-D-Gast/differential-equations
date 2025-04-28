@@ -13,8 +13,8 @@ macro_rules! bench_fixed_step {
                 |b, _| {
                     b.iter(|| {
                         let mut solver = $solver::new($dt);
-                        let ivp = IVP::new($system, $t0, $t1, $y0.clone());
-                        black_box(ivp.solve(&mut solver).unwrap());
+                        let problem = ODEProblem::new($system, $t0, $t1, $y0.clone());
+                        black_box(problem.solve(&mut solver).unwrap());
                     });
                 },
             );

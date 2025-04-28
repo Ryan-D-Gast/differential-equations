@@ -8,9 +8,9 @@ use crate::{
     traits::{CallBackData, Real, State},
 };
 
-/// Stochastic Differential Equation Problem
+/// Initial Value Problem for Stochastic Differential Equations (SDEProblem)
 ///
-/// An SDE Problem takes the form:
+/// The Initial Value Problem takes the form:
 /// dY = a(t, Y)dt + b(t, Y)dW, t0 <= t <= tf, Y(t0) = y0
 /// 
 /// where:
@@ -26,36 +26,46 @@ use crate::{
 ///
 /// ```
 /// use differential_equations::sde::*;
-/// use nalgebra::Vector1;
+/// use nalgebra::SVector;
+/// use rand::SeedableRng;
+/// use rand_distr::{Distribution, Normal};
 ///
-/// struct GeometricBrownianMotion {
-///    pub mu: f64,
-///    pub sigma: f64,
+/// struct GBM {
+///     rng: rand::rngs::StdRng,
+/// }
+/// 
+/// impl GBM {
+///     fn new(seed: u64) -> Self {
+///         Self {
+///             rng: rand::rngs::StdRng::seed_from_u64(seed),
+///         }
+///     }
 /// }
 ///
-/// impl SDE<f64, Vector1<f64>> for GeometricBrownianMotion {
-///    fn drift(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
-///        dydt[0] = self.mu * y[0];
-///    }
-///
-///    fn diffusion(&self, _t: f64, y: &Vector1<f64>, dydw: &mut Vector1<f64>) {
-///        dydw[0] = self.sigma * y[0];
-///    }
+/// impl SDE<f64, SVector<f64, 1>> for GBM {
+///     fn drift(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
+///         dydt[0] = 0.1 * y[0]; // μS
+///     }
+///     
+///     fn diffusion(&self, _t: f64, y: &SVector<f64, 1>, dydw: &mut SVector<f64, 1>) {
+///         dydw[0] = 0.2 * y[0]; // σS
+///     }
+///     
+///     fn noise(&self, dt: f64, dw: &mut SVector<f64, 1>) {
+///         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
+///         dw[0] = normal.sample(&mut self.rng.clone());
+///     }
 /// }
 ///
-/// // Create the SDE and initial conditions
-/// let sde = GeometricBrownianMotion { mu: 0.2, sigma: 0.1 };
 /// let t0 = 0.0;
 /// let tf = 1.0;
-/// let y0 = Vector1::new(100.0);
+/// let y0 = SVector::<f64, 1>::new(100.0);
 /// let mut solver = EM::new(0.01);
+/// let gbm = GBM::new(42);
+/// let gbm_problem = SDEProblem::new(gbm, t0, tf, y0);
 ///
-/// // Basic usage:
-/// let sde_problem = SDEProblem::new(sde, t0, tf, y0);
-/// let solution = sde_problem.solve(&mut solver).unwrap();
-///
-/// // Advanced output control:
-/// let solution = sde_problem.even(0.1).seed(42).solve(&mut solver).unwrap();
+/// // Solve the SDE
+/// let result = gbm_problem.solve(&mut solver);
 /// ```
 ///
 /// # Fields

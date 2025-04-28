@@ -38,8 +38,6 @@ use crate::{
 /// use rand::SeedableRng;
 /// use rand_distr::{Distribution, Normal};
 ///
-/// let mut solver = Milstein::new(0.01);
-///
 /// struct GBM {
 ///     mu: f64,     // Drift rate
 ///     sigma: f64,  // Volatility
@@ -73,10 +71,13 @@ use crate::{
 ///
 /// let t0 = 0.0;
 /// let tf = 1.0;
-/// let y0 = SVector::new(100.0);
+/// let y0 = SVector::<f64, 1>::new(100.0);
+/// let mut solver = Milstein::new(0.01);
+/// let gbm = GBM::new(0.1, 0.2, 42);
+/// let gbm_problem = SDEProblem::new(gbm, t0, tf, y0);
 ///
 /// // Solve the SDE
-/// let result = solver.solve(GBM::new(0.1, 0.2, 42), t0, tf, y0);
+/// let result = gbm_problem.solve(&mut solver);
 /// ```
 ///
 pub struct Milstein<T: Real, V: State<T>, D: CallBackData> {

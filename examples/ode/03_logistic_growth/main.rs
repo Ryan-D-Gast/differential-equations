@@ -42,8 +42,8 @@ fn main() {
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
-    let logistic_growth_ivp = IVP::new(ode, t0, tf, y0);
-    match logistic_growth_ivp
+    let logistic_growth_problem = ODEProblem::new(ode, t0, tf, y0);
+    match logistic_growth_problem
         .even(2.0)  // sets t-out at interval dt: 2.0
         .solve(&mut method) // Solve the ode and return the solution
     {

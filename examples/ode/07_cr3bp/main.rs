@@ -86,14 +86,14 @@ fn main() {
     let t0 = 0.0;
     let tf = 3.0 * 1.509263667286943; // Period of the orbit (sv(t0) ~= sv(tf / 3.0))
 
-    let cr3bp_ivp = IVP::new(ode, t0, tf, sv);
+    let cr3bp_problem = ODEProblem::new(ode, t0, tf, sv);
 
     fn extractor(sv: &StateVector<f64>) -> Vector3<f64> {
         vector![sv.x, sv.y, sv.z]
     }
 
     // Solve the ode with even output at interval dt: 1.0
-    match cr3bp_ivp
+    match cr3bp_problem
         .hyperplane_crossing(vector![1.0, 0.0, 0.0], vector![0.5, 0.5, 0.0], extractor, CrossingDirection::Both)
         .solve(&mut method) // Solve the ode and return the solution
     {

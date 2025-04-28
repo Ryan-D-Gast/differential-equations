@@ -37,10 +37,11 @@
 A high-performance library for solving differential equations in Rust, including:
 
 - **[Ordinary Differential Equations (ODEs)](./docs/ode/introduction.md)** - Fixed-step and adaptive [solvers](./docs/ode/introduction.md/#solvers) with comprehensive features including event detection, dense output, and customizable and common recipes for solution output.
-    - **Initial Value Problems (IVPs)** - Solve problems with known initial conditions
+    - **Initial Value Problems (ODEProblem)** - Solve problems with known initial conditions
 
 - **[Stochastic Differential Equations (SDEs)](./docs/sde/introduction.md)** - Includes solvers such as Euler-Maruyama, Milstein, and Runge-Kutta methods for stochastic differential equations.
-    - **Customizable Noise** - User implements a wide variety of noise in SDE implementation to allow for example diagonal, correlation, and multiplicative noise.
+    - **Initial Value Problems (SDEProblem)** - Solve problems with known initial conditions
+    - **Customizable Noise** - User implements noise in SDE implementation
 
 ## Contributing
 

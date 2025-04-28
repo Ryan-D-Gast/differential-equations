@@ -119,10 +119,10 @@ fn main() {
         gamma,
         population,
     };
-    let sir_ivp = IVP::new(ode, t0, tf, y0);
+    let sir_problem = ODEProblem::new(ode, t0, tf, y0);
 
     // Solve the ode with even output at interval dt: 1.0
-    match sir_ivp
+    match sir_problem
         .even(1.0)  // sets t-out at interval dt: 1.0
         .solve(&mut method) // Solve the ode and return the solution
     {

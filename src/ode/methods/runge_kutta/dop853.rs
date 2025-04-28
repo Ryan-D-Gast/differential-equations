@@ -35,7 +35,7 @@ use crate::{
 ///       dydt[1] = -y[0];
 ///   }
 /// }
-/// let solution = IVP::new(Example, t0, tf, y0).solve(&mut dop853).unwrap();
+/// let solution = ODEProblem::new(Example, t0, tf, y0).solve(&mut dop853).unwrap();
 ///
 /// let (t, y) = solution.last().unwrap();
 /// println!("Solution: ({}, {})", t, y);

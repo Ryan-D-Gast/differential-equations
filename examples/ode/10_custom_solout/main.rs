@@ -145,13 +145,13 @@ fn main() {
     // Create custom solout
     let mut solout = PendulumSolout::new(g, l, 0.1);
 
-    // Create solver and solve the IVP
+    // Create solver and solve the ODEProblem
     // Note DOP853 is so accurate the energy will remain almost constant. Other solvers will show some energy change due to lower accuracy.
     // This is why DOP853 is used a majority of the time for high accuracy simulations.
     let mut solver = DOP853::new().rtol(1e-8).atol(1e-8);
-    let ivp = IVP::new(pendulum, t0, tf, y0);
+    let problem = ODEProblem::new(pendulum, t0, tf, y0);
 
-    let result = ivp.solout(&mut solout).solve(&mut solver).unwrap();
+    let result = problem.solout(&mut solout).solve(&mut solver).unwrap();
 
     // Display results
     println!("Pendulum simulation results:");

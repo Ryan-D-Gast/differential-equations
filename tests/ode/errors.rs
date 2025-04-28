@@ -5,7 +5,7 @@ use differential_equations::ode::ODE;
 use differential_equations::ode::methods::{
     APCF4, APCV4, DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98,
 };
-use differential_equations::ode::{Error, IVP, Status};
+use differential_equations::ode::{Error, ODEProblem, Status};
 use nalgebra::{SVector, vector};
 
 struct SimpleODE;
@@ -42,11 +42,11 @@ macro_rules! test_solver_error {
             let tf = $tf;
             let y0 = $y0;
 
-            let ivp = IVP::new(system, t0, tf, y0);
+            let problem = ODEProblem::new(system, t0, tf, y0);
             let mut solver = $solver;
 
             // Solve the system
-            let results = ivp.solve(&mut solver);
+            let results = problem.solve(&mut solver);
 
             // Assert the result matches expected error
             match results {
@@ -84,11 +84,11 @@ macro_rules! test_solver_status {
             let tf = $tf;
             let y0 = $y0;
 
-            let ivp = IVP::new(system, t0, tf, y0);
+            let problem = ODEProblem::new(system, t0, tf, y0);
             let mut solver = $solver;
 
             // Solve the system
-            let results = ivp.solve(&mut solver);
+            let results = problem.solve(&mut solver);
 
             // Assert the result matches expected status
             match results {

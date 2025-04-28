@@ -1,19 +1,19 @@
 # Ordinary Differential Equations (ODE)
 
-The `ode` module provides tools for solving ordinary differential equations (ODEs), specifically focusing on initial value problems (IVPs).
+The `ode` module provides tools for solving ordinary differential equations (ODEs), specifically focusing on initial value problems (ODEProblems).
 
 ## Table of Contents
 
 - [Numerical Methods](#numerical-methods)
-- [Defining a ODE](#defining-a-system)
-- [Solving an Initial Value Problem (IVP)](#solving-an-initial-value-problem-ivp)
+- [Defining a ODE](#defining-an-ode)
+- [Solving an Initial Value Problem (ODEProblem)](#solving-an-initial-value-problem)
 - [Examples](#examples)
-- [Notation](#notation)
 - [Benchmarks](#benchmarks)
+- [Notation](#notation)
 
 ## Numerical Methods
 
-The module `methods` includes a set of methods for solving ODEs. The solver algorithmic core and coefficients are implemented as structs implementing the `NumericalMethod` trait. The solver's settings can then be configured before being used in the `ivp.solve(&mut method)` method which acts as the controller for the solver.
+The module `methods` includes a set of methods for solving ODEs. The solver algorithmic core and coefficients are implemented as structs implementing the `NumericalMethod` trait. The solver's settings can then be configured before being used in the `problem.solve(&mut method)` method which acts as the controller for the solver.
 
 ### Fixed Step Size
 
@@ -96,7 +96,7 @@ Numerical method selection tables below provide detailed rankings of all availab
 
 > Note: The main trade-off between using an adaptive or fixed-step method is the cost of the differential equation. If it is a complex function then reducing the number of evaluations via an adaptive step size method is optimal. If the function is very simple, relatively short distance between `t0` and `tf` then fixed step size could be optimal if the high memory usage of the adaptive method is a concern. Given all the stipulations for using fixed step size methods for almost all problems, it is recommended to use adaptive step size methods.
 
-## Defining a ODE
+## Defining an ODE
 
 The `ODE` trait defines the differential equation `dydt = f(t, y)` for the solver. The differential equation is used to solve the ordinary differential equation. The trait also includes a `event` function to interrupt the solver when a condition is met or an event occurs.
 
@@ -105,7 +105,7 @@ The `ODE` trait defines the differential equation `dydt = f(t, y)` for the solve
 * `event` - Optional event function to interrupt the solver when a condition is met by returning `ControlFlag::Terminate(reason: CallBackData)`. The `event` function by default returns `ControlFlag::Continue` and thus is ignored. Note that `CallBackData` is by default a `String` but can be replaced with anything implementing `Clone + Debug`.
 
 ### Solout Trait
-* `solout` - function to choose which points to save in the solution. This is useful when you want to save only points that meet certain criteria. Common implementations are included in the `solout` module. The `IVP` trait implements methods to use them easily without direct interaction as well e.g. `even`, `dense`, and `t_eval`.
+* `solout` - function to choose which points to save in the solution. This is useful when you want to save only points that meet certain criteria. Common implementations are included in the `solout` module. The `ODEProblem` trait implements methods to use them easily without direct interaction as well e.g. `even`, `dense`, and `t_eval`.
 
 ### Implementation
 ```rust
@@ -136,9 +136,9 @@ impl ODE<f64, SVector<f64, 1>> for LogisticGrowth {
 
 Note that for clarity, the `ODE` is defined with generics `<T, V>` where `T` is the float type (e.g. `f64` or `f32`) and `V` is the state vector of the system of ordinary differential equations. By default the generics are `f64, f64` and thus can be omitted if the system is a single ODE with a `f64` type and a single state variable `f64`. Here a `SVector` is used despite `f64` being usable here for clarity. For example a system with multiple ODEs of size N then `SVector<f64, N>` can be used.
 
-## Solving an Initial Value Problem (IVP)
+## Solving an Initial Value Problem
 
-The `IVP` trait is used to solve the system using the solver. The trait includes methods to set the initial conditions, solve the system, and get the solution. The `solve` method returns a `Result<Solution, Status>` where `Solution` is a struct containing the solution including fields with outputted t, y, and the solver status, and `Status` is returned with the error if it occurs. In addition, statistics including steps, evals, rejected steps, accepted steps, and the solve time are included as fields in the `Solution` struct.
+The `ODEProblem` trait is used to solve the system using the solver. The trait includes methods to set the initial conditions, solve the system, and get the solution. The `solve` method returns a `Result<Solution, Status>` where `Solution` is a struct containing the solution including fields with outputted t, y, and the solver status, and `Status` is returned with the error if it occurs. In addition, statistics including steps, evals, rejected steps, accepted steps, and the solve time are included as fields in the `Solution` struct.
 
 ```rust
 fn main() {
@@ -147,8 +147,8 @@ fn main() {
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
-    let logistic_growth_ivp = IVP::new(ode, t0, tf, y0);
-    match logistic_growth_ivp
+    let logistic_growth_problem = ODEProblem::new(ode, t0, tf, y0);
+    match logistic_growth_problem
         .even(1.0)          // uses EvenSolout to save with dt of 1.0
         .solve(&mut method) // Solve the system and return the solution
     {
@@ -199,11 +199,11 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 
 | Example | Description & Demonstrated Features |
 |---|---|
-| [Exponential Growth](../../examples/ode/01_exponential_growth/main.rs) | Solves a simple exponential growth equation using the `DOP853` method. Demonstrates basic usage of `IVP` and `ODE` traits. Manually prints results from `Solution` struct fields. |
+| [Exponential Growth](../../examples/ode/01_exponential_growth/main.rs) | Solves a simple exponential growth equation using the `DOP853` method. Demonstrates basic usage of `ODEProblem` and `ODE` traits. Manually prints results from `Solution` struct fields. |
 | [Harmonic Oscillator](../../examples/ode/02_harmonic_oscillator/main.rs) | Simulates a harmonic oscillator system using `RK4` method. Uses a condensed setup to demonstrate chaining to solve without intermediate variables. Uses `last` method on solution to conveniently get results and print. |
-| [Logistic Growth](../../examples/ode/03_logistic_growth/main.rs) | Models logistic growth with a carrying capacity. Demonstrates the use of the `event` function to stop the solver based on a condition. In addition shows the use of `even` output for `IVP` setup and `iter` method on the solution for output. |
+| [Logistic Growth](../../examples/ode/03_logistic_growth/main.rs) | Models logistic growth with a carrying capacity. Demonstrates the use of the `event` function to stop the solver based on a condition. In addition shows the use of `even` output for `ODEProblem` setup and `iter` method on the solution for output. |
 | [SIR Model](../../examples/ode/04_sir_model/main.rs) | Simulates the SIR model for infectious diseases. Uses the `APCV4` method to solve the system. Uses struct as the `State` via `derive(State)` and a custom event termination enum. |
-| [Damped Pendulum](../../examples/ode/05_damped_pendulum/main.rs) | Simulates a simple pendulum using the `RKF` solver. Shows the use of `ivp.t_out` to define points to be saved e.g. `t_out = [1.0, 3.0, 7.5, 10.0]` |
+| [Damped Pendulum](../../examples/ode/05_damped_pendulum/main.rs) | Simulates a simple pendulum using the `RKF` solver. Shows the use of `problem.t_out` to define points to be saved e.g. `t_out = [1.0, 3.0, 7.5, 10.0]` |
 | [Integration](../../examples/ode/06_integration/main.rs) | Demonstrates the differences between `even`, `dense`, `t_out`, and the default solout methods for a simple differential equation with an easily found analytical solution. |
 | [Cr3bp](../../examples/ode/07_cr3bp/main.rs) | Simulates the Circular Restricted Three-Body Problem (CR3BP) using the `DOP853` method. Uses the `hyperplane_crossing` method to log when the spacecraft crosses a 3D plane. |
 | [Damped Oscillator](../../examples/ode/08_damped_oscillator/main.rs) | Demonstrates the use of the `crossing` method to use the CrossingSolout to log instances where a crossing occurs. In this case, the example saves points where the position is at zero. |
@@ -222,7 +222,7 @@ Test results from [differential-equations-comparison](https://github.com/Ryan-D-
 | CR3BP | Rust | 7.0 ± 0.4 | 6.5 | 8.6 | 1.00 |
 | CR3BP | Fortran | 9.8 ± 1.8 | 9.1 | 46.0 | 1.40 ± 0.26 |
 
-Testing has shown that the `differential-equations` Rust implementation is about 10% faster than the Fortran implementations of the DOP853 method.
+Testing has shown that the `differential-equations` Rust implementation is at about 10% to 40% faster than the Fortran implementations of the DOP853 method.
 
 ## Notation
 

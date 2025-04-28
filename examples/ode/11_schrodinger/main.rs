@@ -59,11 +59,11 @@ fn main() {
     let t0 = 0.0;
     let tf = 10.0; // Simulate for 10 time units
 
-    // Create the IVP
-    let schrodinger_ivp = IVP::new(ode, t0, tf, psi0);
+    // Create the ODEProblem
+    let schrodinger_problem = ODEProblem::new(ode, t0, tf, psi0);
 
-    // Solve the IVP
-    match schrodinger_ivp.even(0.5).solve(&mut method) {
+    // Solve the ODEProblem
+    match schrodinger_problem.even(0.5).solve(&mut method) {
         Ok(solution) => {
             println!("Solution:");
             println!("Time, Re(ψ), Im(ψ), |ψ|²");

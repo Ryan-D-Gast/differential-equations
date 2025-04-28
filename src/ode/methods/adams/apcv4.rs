@@ -38,7 +38,7 @@ use crate::{ode::methods::h_init, utils::norm};
 /// let tf = 10.0;
 /// let y0 = vector![1.0, 0.0];
 /// let system = HarmonicOscillator { k: 1.0 };
-/// let results = IVP::new(system, t0, tf, y0).solve(&mut apcv4).unwrap();
+/// let results = ODEProblem::new(system, t0, tf, y0).solve(&mut apcv4).unwrap();
 /// let expected = vector![-0.83907153, 0.54402111];
 /// assert!((results.y.last().unwrap()[0] - expected[0]).abs() < 1e-6);
 /// assert!((results.y.last().unwrap()[1] - expected[1]).abs() < 1e-6);
@@ -366,7 +366,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCV4<T
 
     fn h(&self) -> T {
         // NumericalMethod repeats step size 4 times for each step
-        // so the IVP inquiring is looking for what the next
+        // so the ODEProblem inquiring is looking for what the next
         // state will be thus the step size is multiplied by 4
         self.h * T::from_f64(4.0).unwrap()
     }

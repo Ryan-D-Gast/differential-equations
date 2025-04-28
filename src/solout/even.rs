@@ -47,11 +47,11 @@ use super::*;
 /// let mut even_output = EvenSolout::new(0.1, t0, tf);
 ///
 /// // Solve with evenly spaced output
-/// let ivp = IVP::new(system, t0, tf, y0);
-/// let solution = ivp.solout(&mut even_output).solve(&mut solver).unwrap();
+/// let problem = ODEProblem::new(system, t0, tf, y0);
+/// let solution = problem.solout(&mut even_output).solve(&mut solver).unwrap();
 ///
 /// // Note: This is equivalent to using the convenience method:
-/// let solution = ivp.even(0.1).solve(&mut solver).unwrap();
+/// let solution = problem.even(0.1).solve(&mut solver).unwrap();
 /// ```
 ///
 /// # Output Characteristics

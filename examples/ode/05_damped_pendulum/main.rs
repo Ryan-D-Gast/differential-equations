@@ -76,13 +76,13 @@ fn main() {
     let m = 1.0; // Mass of the pendulum bob (kg)
 
     let ode = DampedPendulumModel { g, l, b, m };
-    let pendulum_ivp = IVP::new(ode, t0, tf, y0);
+    let pendulum_problem = ODEProblem::new(ode, t0, tf, y0);
 
     // t-out points
     let t_out = vec![0.0, 1.0, 3.0, 4.5, 6.9, 10.0];
 
     // Solve the ode with even output at interval dt: 0.1
-    match pendulum_ivp.t_eval(t_out).solve(&mut method) {
+    match pendulum_problem.t_eval(t_out).solve(&mut method) {
         Ok(solution) => {
             // Check if the solver stopped due to the event command
             if let Status::Interrupted(ref reason) = solution.status {

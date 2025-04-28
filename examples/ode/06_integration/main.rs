@@ -37,13 +37,13 @@ fn main() {
     let tf = 5.0;
     let y0 = 0.0;
 
-    let ivp = IVP::new(ode, t0, tf, y0);
+    let problem = ODEProblem::new(ode, t0, tf, y0);
 
     // Create a method (RKF in this case).
     let mut method = RKF::new();
 
-    // Solve the IVP.
-    let solution = ivp.solve(&mut method).unwrap();
+    // Solve the ODEProblem.
+    let solution = problem.solve(&mut method).unwrap();
 
     // Print the results.
     println!("Numerical Integration Example:");
@@ -67,7 +67,7 @@ fn main() {
     // Example with dense output
     println!("-----------------------------");
     println!("Dense Output Example:");
-    let ivp_dense = ivp.dense(2); // 5 interpolation points between each step
+    let ivp_dense = problem.dense(2); // 5 interpolation points between each step
     let mut solver_dense = RKF::new();
     let solution_dense = ivp_dense.solve(&mut solver_dense).unwrap();
 
@@ -79,7 +79,7 @@ fn main() {
     // Example with even t-out
     println!("-----------------------------");
     println!("Even t-out Example:");
-    let ivp_even = ivp.even(1.0); // t-out at interval dt: 1.0
+    let ivp_even = problem.even(1.0); // t-out at interval dt: 1.0
     let mut solver_even = RKF::new();
     let solution_even = ivp_even.solve(&mut solver_even).unwrap();
 
@@ -92,7 +92,7 @@ fn main() {
     println!("-----------------------------");
     println!("t-out Points Example:");
     let t_out = vec![0.0, 2.0, 5.0];
-    let ivp_t_out = ivp.t_eval(t_out);
+    let ivp_t_out = problem.t_eval(t_out);
     let mut solver_t_out = RKF::new();
     let solution_t_out = ivp_t_out.solve(&mut solver_t_out).unwrap();
 

@@ -43,10 +43,10 @@ fn main() {
     let t0 = 0.0;
     let tf = 10.0;
     let ode = ExponentialGrowth { k: 1.0 };
-    let exponential_growth_ivp = IVP::new(ode, t0, tf, y0);
+    let exponential_growth_problem = ODEProblem::new(ode, t0, tf, y0);
 
     // Solve the initial value problem
-    let solution = match exponential_growth_ivp.solve(&mut method) {
+    let solution = match exponential_growth_problem.solve(&mut method) {
         Ok(solution) => solution,
         Err(e) => panic!("Error: {:?}", e),
     };

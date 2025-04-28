@@ -29,8 +29,6 @@ use crate::{
 /// use rand::SeedableRng;
 /// use rand_distr::{Distribution, Normal};
 ///
-/// let mut solver = EM::new(0.01);
-///
 /// struct GBM {
 ///     rng: rand::rngs::StdRng,
 /// }
@@ -60,10 +58,13 @@ use crate::{
 ///
 /// let t0 = 0.0;
 /// let tf = 1.0;
-/// let y0 = SVector::new(100.0);
+/// let y0 = SVector::<f64, 1>::new(100.0);
+/// let mut solver = EM::new(0.01);
+/// let gbm = GBM::new(42);
+/// let gbm_problem = SDEProblem::new(gbm, t0, tf, y0);
 ///
 /// // Solve the SDE
-/// let result = solver.solve(GBM::new(42), t0, tf, y0);
+/// let result = gbm_problem.solve(&mut solver);
 /// ```
 ///
 pub struct EM<T: Real, V: State<T>, D: CallBackData> {

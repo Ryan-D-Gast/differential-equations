@@ -53,11 +53,11 @@ fn main() {
     let t0 = 0.0;
     let tf = 20.0;
 
-    // Create the IVP
-    let damped_oscillator_ivp = IVP::new(ode, t0, tf, y0);
+    // Create the ODEProblem
+    let damped_oscillator_problem = ODEProblem::new(ode, t0, tf, y0);
 
-    // Solve the IVP
-    match damped_oscillator_ivp
+    // Solve the ODEProblem
+    match damped_oscillator_problem
         .crossing(0, 0.0, CrossingDirection::Both)
         .solve(&mut method)
     {

@@ -51,11 +51,11 @@ use super::*;
 /// let mut t_eval_output = TEvalSolout::new(evaluation_points, t0, tf);
 ///
 /// // Solve with specific evaluation points
-/// let ivp = IVP::new(system, t0, tf, y0);
-/// let solution = ivp.solout(&mut t_eval_output).solve(&mut solver).unwrap();
+/// let problem = ODEProblem::new(system, t0, tf, y0);
+/// let solution = problem.solout(&mut t_eval_output).solve(&mut solver).unwrap();
 ///
 /// // Note: This is equivalent to using the convenience method:
-/// let solution = ivp
+/// let solution = problem
 ///     .t_eval(vec![0.0, 0.5, 1.0, 2.0, 3.14, 5.0, 7.5, 10.0])
 ///     .solve(&mut solver).unwrap();
 /// ```

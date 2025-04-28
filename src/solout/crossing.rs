@@ -49,8 +49,8 @@ use super::*;
 /// let mut crossing_detector = CrossingSolout::new(0, 0.0);
 ///
 /// // Solve and get only the crossing points
-/// let ivp = IVP::new(system, t0, tf, y0);
-/// let solution = ivp.solout(&mut crossing_detector).solve(&mut solver).unwrap();
+/// let problem = ODEProblem::new(system, t0, tf, y0);
+/// let solution = problem.solout(&mut crossing_detector).solve(&mut solver).unwrap();
 ///
 /// // solution now contains only the points where position crosses zero
 /// println!("Zero crossings occurred at times: {:?}", solution.t);
