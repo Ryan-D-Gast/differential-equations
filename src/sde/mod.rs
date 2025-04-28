@@ -21,3 +21,6 @@ pub use solve::{
     solve_sde,
     SDEProblem,
 };
+
+// Re-exports to allow users to only import necessary components
+pub use crate::shared::*;
