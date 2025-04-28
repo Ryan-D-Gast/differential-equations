@@ -31,7 +31,7 @@ where
     /// * `y`      - Initial state.
     ///
     /// # Returns
-    /// * Result<(), Status<T, V, D>> - Ok if initialization is successful,
+    /// * Result<NumEvals, Error<T, V>> - Ok if initialization is successful,
     ///
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<NumEvals, Error<T, V>>
     where
@@ -43,7 +43,7 @@ where
     /// * `system` - System of ODEs to solve.
     ///
     /// # Returns
-    /// * Result<usize, Status<T, V, D>> - Ok if step is successful with the number of function evaluations,
+    /// * Result<NumEvals, Errors<T, V>> - Ok if step is successful with the number of function evaluations,
     ///
     fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, V>>
     where
