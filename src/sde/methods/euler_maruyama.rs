@@ -24,7 +24,7 @@ use crate::{
 ///
 /// # Example
 /// ```
-/// use differential_equations::sde::*;
+/// use differential_equations::prelude::*;
 /// use nalgebra::SVector;
 /// use rand::SeedableRng;
 /// use rand_distr::{Distribution, Normal};

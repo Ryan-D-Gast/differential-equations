@@ -3,14 +3,6 @@
 //! This module provides comprehensive functionality for solving Ordinary Differential Equations (ODEs),
 //! with special focus on Initial Value Problems (ODEProblems).
 //!
-//! ## Quick Start
-//!
-//! Import the entire module to access all commonly used components:
-//!
-//! ```rust
-//! use differential_equations::prelude::*;
-//! ```
-//!
 //! ## Example
 //!
 //! The following example demonstrates how to solve a simple linear ODE using the Dormand-Prince 8(5,3) method:
