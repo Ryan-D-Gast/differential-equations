@@ -4,11 +4,6 @@ mod sde;
 pub use sde::SDE;
 
 pub mod methods;
-pub use methods::{
-    EM,
-    Milstein,
-    RKM4,
-};
 
 mod numerical_method;
 pub use numerical_method::{

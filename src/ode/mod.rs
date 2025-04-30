@@ -66,9 +66,7 @@
 //! - [`ODEProblem`]: Set up an initial value problem with your system, time span, and initial conditions
 //! - [`Solution`]: After solving, analyze and process your solution data
 //!
-//! ## Available NumericalMethods
-//!
-//! The most popular solvers are available at the top level:
+//! ## Popular Numerical Methods
 //!
 //! - [`RK4`]: Fixed step 4th order Runge-Kutta method
 //! - [`DOPRI5`]: Adaptive step Dormand-Prince 5(4) method
@@ -114,11 +112,3 @@ pub use numerical_method::{NumEvals, NumericalMethod};
 
 // NumericalMethod for ODEs
 pub mod methods;
-pub use methods::{
-    DOP853, // Adaptive Step Dormand-Prince 8(5,3) NumericalMethod with dense output of order 7
-    DOPRI5, // Adaptive Step Dormand-Prince 5(4) NumericalMethod
-    // Re-exporting popular solvers to ode module for quick access
-    RK4,   // Fixed Step Runge-Kutta 4th Order NumericalMethod
-    RKV65, // Verner 6(5) adaptive method with dense output of order 5
-    RKV98, // Verner 9(8) adaptive method with dense output of order 9
-};

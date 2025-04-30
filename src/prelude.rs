@@ -8,12 +8,14 @@ pub use crate::{
         ODE, // Define the ODE system
         ODEProblem, // Create IVP to solve
 
-        // Commonly used methods
-        DOP853,
-        DOPRI5,
-        RK4,
-        RKV65,
-        RKV98,
+        // Re-exporting popular ODE solvers
+        methods::{
+            DOP853, // Adaptive Step Dormand-Prince 8(5,3) NumericalMethod with dense output of order 7
+            DOPRI5, // Adaptive Step Dormand-Prince 5(4) NumericalMethod
+            RK4,   // Fixed Step Runge-Kutta 4th Order NumericalMethod
+            RKV65, // Verner 6(5) adaptive method with dense output of order 5
+            RKV98, // Verner 9(8) adaptive method with dense output of order 9  RKV98,
+        },
     },
 
     // Stochastic Differential Equations (SDE) module
@@ -21,10 +23,12 @@ pub use crate::{
         SDE, // Define the SDE system
         SDEProblem, // Create IVP to solve
 
-        // Commonly used methods
-        EM,
-        Milstein,
-        RKM4,
+        // Re-exporting popular SDE solvers
+        methods::{
+            EM,
+            Milstein,
+            RKM4,
+        },
     },
 
     // Shared items not specific to a Differential Equation Type
