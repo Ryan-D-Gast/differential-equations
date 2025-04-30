@@ -19,7 +19,7 @@
 //! - Using high-precision DOPRI5 integration
 //! - Detailed solution statistics reporting
 
-use differential_equations::ode::*;
+use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 
 /// Damped Harmonic Oscillator ODE

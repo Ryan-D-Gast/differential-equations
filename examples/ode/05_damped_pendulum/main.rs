@@ -22,7 +22,7 @@
 //! - Status checking with simulation results
 
 use differential_equations::ode::methods::RKF;
-use differential_equations::ode::*;
+use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 
 /// Damped Pendulum Model

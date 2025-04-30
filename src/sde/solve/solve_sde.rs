@@ -75,7 +75,8 @@ use crate::{
 ///
 /// ```
 /// use differential_equations::{
-///     sde::*,
+///     prelude::*,
+///     sde::solve_sde,
 ///     solout::DefaultSolout,
 /// };
 /// use nalgebra::SVector;

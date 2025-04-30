@@ -19,7 +19,7 @@
 //! - Using the nalgebra library for vector state representation
 //! - Compact solution approach with minimal code
 
-use differential_equations::ode::*;
+use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 
 struct HarmonicOscillator {

@@ -23,7 +23,7 @@
 //! - Phase evolution in quantum systems
 //! - Verifying numerical accuracy against analytical predictions
 
-use differential_equations::ode::*;
+use differential_equations::prelude::*;
 use num_complex::Complex;
 
 /// Time-dependent Schrödinger equation for a single quantum state

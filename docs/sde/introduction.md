@@ -51,7 +51,7 @@ The trait also includes a `noise` method to generate random increments and an op
 
 ### Implementation
 ```rust
-use differential_equations::sde::*;
+use differential_equations::prelude::*;
 use nalgebra::SVector;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};

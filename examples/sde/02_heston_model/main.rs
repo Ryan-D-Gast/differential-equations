@@ -17,7 +17,7 @@
 //! providing more realistic price dynamics than models with constant volatility.
 
 use differential_equations::{
-    sde::{SDE, Milstein, SDEProblem},
+    prelude::*,
     derive::State,
 };
 use rand::SeedableRng;

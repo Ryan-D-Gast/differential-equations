@@ -18,7 +18,7 @@ use crate::{
 ///
 /// # Example
 /// ```
-/// use differential_equations::ode::*;
+/// use differential_equations::prelude::*;
 /// use nalgebra::{SVector, vector};
 ///
 /// let mut dop853 = DOP853::new()

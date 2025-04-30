@@ -24,7 +24,8 @@
 
 use differential_equations::{
     derive::State,
-    ode::{methods::APCV4, *},
+    ode::methods::APCV4,
+    prelude::*,
 };
 
 /// SIR (Susceptible, Infected, Recovered) Model

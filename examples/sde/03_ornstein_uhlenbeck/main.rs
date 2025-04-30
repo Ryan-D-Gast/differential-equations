@@ -14,7 +14,7 @@
 //! It has applications in physics, finance (for modeling interest rates), and
 //! various other fields.
 
-use differential_equations::sde::{SDE, RKM4, SDEProblem};
+use differential_equations::prelude::*;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
 

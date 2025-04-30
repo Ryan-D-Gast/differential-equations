@@ -15,7 +15,7 @@
 //! - Handling events during the solution process
 //! - Accessing solution statistics like step counts and evaluations
 
-use differential_equations::ode::*;
+use differential_equations::prelude::*;
 
 struct LogisticGrowth {
     k: f64,

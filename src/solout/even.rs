@@ -21,7 +21,7 @@ use super::*;
 /// # Example
 ///
 /// ```
-/// use differential_equations::ode::*;
+/// use differential_equations::prelude::*;
 /// use differential_equations::solout::EvenSolout;
 /// use nalgebra::{Vector2, vector};
 ///

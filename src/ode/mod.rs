@@ -8,7 +8,7 @@
 //! Import the entire module to access all commonly used components:
 //!
 //! ```rust
-//! use differential_equations::ode::*;
+//! use differential_equations::prelude::*;
 //! ```
 //!
 //! ## Example
@@ -16,7 +16,7 @@
 //! The following example demonstrates how to solve a simple linear ODE using the Dormand-Prince 8(5,3) method:
 //!
 //! ```rust
-//! use differential_equations::ode::*;
+//! use differential_equations::prelude::*;
 //!
 //! pub struct LinearEquation {
 //!     pub a: f64,
@@ -121,6 +121,3 @@ pub use methods::{
     RKV65, // Verner 6(5) adaptive method with dense output of order 5
     RKV98, // Verner 9(8) adaptive method with dense output of order 9
 };
-
-// Re-exports to allow users to only import necessary components
-pub use crate::shared::*;

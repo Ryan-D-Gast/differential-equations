@@ -22,7 +22,7 @@
 //! ## Example (ODE)
 //!
 //!```rust
-//! use differential_equations::ode::*;
+//! use differential_equations::prelude::*;
 //! use nalgebra::{SVector, vector};
 //!
 //! pub struct LinearEquation {
@@ -72,6 +72,10 @@
 //! limitations under the License.
 //! ```
 
+// -- Prelude Module & Recommended Imports for Users --
+
+pub mod prelude;
+
 // -- Types of Differential Equations --
 
 // Ordinary Differential Equations (ODE) Module
@@ -119,13 +123,4 @@ pub mod utils;
 // Derive Macros for Differential Equations
 pub mod derive {
     pub use differential_equations_derive::State;
-}
-
-// -- Shared items for re-exporting to differential equation type modules --
-mod shared {
-    pub use crate::control::ControlFlag;
-    pub use crate::error::Error;
-    pub use crate::solout::CrossingDirection;
-    pub use crate::solution::Solution;
-    pub use crate::status::Status;
 }

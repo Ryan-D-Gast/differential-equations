@@ -71,8 +71,11 @@ use crate::{
 /// # Examples
 ///
 /// ```
-/// use differential_equations::ode::*;
-/// use differential_equations::solout::DefaultSolout;
+/// use differential_equations::{
+///     prelude::*,
+///     solout::DefaultSolout,
+///     ode::solve_ode,
+/// };
 /// use nalgebra::Vector1;
 ///
 /// // Define a simple exponential growth ode: dy/dt = y

@@ -23,7 +23,7 @@ use super::*;
 /// # Example
 ///
 /// ```
-/// use differential_equations::ode::*;
+/// use differential_equations::prelude::*;
 /// use differential_equations::solout::DefaultSolout;
 /// use nalgebra::{Vector1, vector};
 ///

@@ -17,7 +17,7 @@
 //! - Setting custom tolerances for high accuracy
 //! - Accessing solution statistics like step counts and evaluations
 
-use differential_equations::ode::*;
+use differential_equations::prelude::*;
 
 // Define the ode
 struct ExponentialGrowth {

@@ -17,7 +17,7 @@
 //! - Error assessment in numerical integration
 
 use differential_equations::ode::methods::RKF;
-use differential_equations::ode::*;
+use differential_equations::prelude::*;
 
 /// Define the ode for integration.
 /// In this example, we will integrate a simple function: y' = t.

@@ -17,7 +17,7 @@
 //! - Solving higher-dimensional problems with matrix operations
 //! - Displaying selected solution points to manage output
 
-use differential_equations::ode::*;
+use differential_equations::prelude::*;
 use nalgebra::{Matrix2, SMatrix};
 use std::f64::consts::PI;
 

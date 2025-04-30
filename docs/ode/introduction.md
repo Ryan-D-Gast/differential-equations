@@ -111,7 +111,7 @@ The `ODE` trait defines the differential equation `dydt = f(t, y)` for the solve
 ```rust
 // Includes required elements and common methods.
 // Less common methods are in the `methods` module
-use differential_equations::ode::*; 
+use differential_equations::prelude::*; 
 use nalgebra::{SVector, vector};
 
 struct LogisticGrowth {

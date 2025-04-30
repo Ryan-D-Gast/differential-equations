@@ -21,8 +21,7 @@
 //! - Event detection during solution output
 //! - Energy conservation monitoring with high-accuracy solvers
 
-use differential_equations::Solout;
-use differential_equations::ode::*;
+use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 use std::f64::consts::PI;
 
@@ -93,7 +92,7 @@ impl Solout<f64, SVector<f64, 2>> for PendulumSolout {
         solution: &mut Solution<f64, SVector<f64, 2>, String>,
     ) -> ControlFlag<String>
     where
-        I: methods::adams::Interpolation<f64, SVector<f64, 2>>,
+        I: Interpolation<f64, SVector<f64, 2>>,
     {
         let current_angle = y_curr[0];
         let dt = t_curr - self.last_output_time;

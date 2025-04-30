@@ -21,7 +21,7 @@
 //! - High-precision integration with the DOP853 method
 //! - State extraction for specialized calculations
 
-use differential_equations::ode::*;
+use differential_equations::prelude::*;
 use differential_equations::derive::State;
 use nalgebra::{Vector3, vector};
 

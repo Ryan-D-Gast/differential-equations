@@ -29,7 +29,7 @@ pub type ExtractorFn<V, P> = fn(&V) -> P;
 /// # Example
 ///
 /// ```
-/// use differential_equations::ode::*;
+/// use differential_equations::prelude::*;
 /// use nalgebra::{Vector3, Vector6, vector};
 ///
 /// // CR3BP system (simplified representation)

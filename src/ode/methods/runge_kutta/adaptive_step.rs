@@ -190,7 +190,7 @@ macro_rules! adaptive_runge_kutta_method {
             steps: usize, // Number of steps taken
 
             // Status
-            status: $crate::ode::Status<T, V, D>,
+            status: $crate::Status<T, V, D>,
         }
 
         impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> Default for $name<T, V, D> {
@@ -233,13 +233,13 @@ macro_rules! adaptive_runge_kutta_method {
                     reject: false,
                     n_stiff: 0,
                     steps: 0,
-                    status: $crate::ode::Status::Uninitialized,
+                    status: $crate::Status::Uninitialized,
                 }
             }
         }
 
         impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> $crate::ode::NumericalMethod<T, V, D> for $name<T, V, D> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<usize, $crate::ode::Error<T, V>>
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<usize, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>,
             {
@@ -269,22 +269,22 @@ macro_rules! adaptive_runge_kutta_method {
                 self.dydt_prev = self.dydt;
 
                 // Initialize Status
-                self.status = $crate::ode::Status::Initialized;
+                self.status = $crate::Status::Initialized;
 
                 Ok(1)
             }
 
-            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::ode::Error<T, V>>
+            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>,
             {
                 // Make sure step size isn't too small
                 if self.h.abs() < T::default_epsilon() {
-                    self.status = $crate::ode::Status::Error($crate::ode::Error::StepSize {
+                    self.status = $crate::Status::Error($crate::Error::StepSize {
                         t: self.t,
                         y: self.y
                     });
-                    return Err($crate::ode::Error::StepSize {
+                    return Err($crate::Error::StepSize {
                         t: self.t,
                         y: self.y
                     });
@@ -292,11 +292,11 @@ macro_rules! adaptive_runge_kutta_method {
 
                 // Check if max steps has been reached
                 if self.steps >= self.max_steps {
-                    self.status = $crate::ode::Status::Error($crate::ode::Error::MaxSteps {
+                    self.status = $crate::Status::Error($crate::Error::MaxSteps {
                         t: self.t,
                         y: self.y
                     });
-                    return Err($crate::ode::Error::MaxSteps {
+                    return Err($crate::Error::MaxSteps {
                         t: self.t,
                         y: self.y
                     });
@@ -354,7 +354,7 @@ macro_rules! adaptive_runge_kutta_method {
                         // Not rejected this time
                         self.n_stiff = 0;
                         self.reject = false;
-                        self.status = $crate::ode::Status::Solving;
+                        self.status = $crate::Status::Solving;
                     }
 
                     // Update state with the higher-order solution
@@ -369,15 +369,15 @@ macro_rules! adaptive_runge_kutta_method {
                     self.reject = true;
 
                     evals += $stages;
-                    self.status = $crate::ode::Status::RejectedStep;
+                    self.status = $crate::Status::RejectedStep;
                     self.n_stiff += 1;
 
                     // Check for stiffness
                     if self.n_stiff >= self.max_rejects {
-                        self.status = $crate::ode::Status::Error($crate::ode::Error::Stiffness {
+                        self.status = $crate::Status::Error($crate::Error::Stiffness {
                             t: self.t, y: self.y
                         });
-                        return Err($crate::ode::Error::Stiffness {
+                        return Err($crate::Error::Stiffness {
                             t: self.t, y: self.y
                         });
                     }
@@ -425,11 +425,11 @@ macro_rules! adaptive_runge_kutta_method {
                 self.h = h;
             }
 
-            fn status(&self) -> &$crate::ode::Status<T, V, D> {
+            fn status(&self) -> &$crate::Status<T, V, D> {
                 &self.status
             }
 
-            fn set_status(&mut self, status: $crate::ode::Status<T, V, D>) {
+            fn set_status(&mut self, status: $crate::Status<T, V, D>) {
                 self.status = status;
             }
         }

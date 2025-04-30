@@ -19,7 +19,7 @@ use crate::{ode::methods::h_init, utils::norm};
 /// # Example
 ///
 /// ```
-/// use differential_equations::ode::*;
+/// use differential_equations::prelude::*;
 /// use differential_equations::ode::methods::APCV4;
 /// use nalgebra::{SVector, vector};
 ///

@@ -221,7 +221,7 @@ macro_rules! runge_kutta_method {
             c: [T; $stages],
 
             // Status
-            status: $crate::ode::Status<T, V, D>,
+            status: $crate::Status<T, V, D>,
         }
 
         impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> Default for $name<T, V, D> {
@@ -244,13 +244,13 @@ macro_rules! runge_kutta_method {
                     a: a_t,
                     b: b_t,
                     c: c_t,
-                    status: $crate::ode::Status::Uninitialized,
+                    status: $crate::Status::Uninitialized,
                 }
             }
         }
 
         impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> $crate::ode::NumericalMethod<T, V, D> for $name<T, V, D> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<usize, $crate::ode::Error<T, V>>
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<usize, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>
             {
@@ -271,12 +271,12 @@ macro_rules! runge_kutta_method {
                 self.dydt_prev = self.k[0];
 
                 // Initialize Status
-                self.status = $crate::ode::Status::Initialized;
+                self.status = $crate::Status::Initialized;
 
                 Ok(1)
             }
 
-            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::ode::Error<T, V>>
+            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>
             {
@@ -339,11 +339,11 @@ macro_rules! runge_kutta_method {
                 self.h = h;
             }
 
-            fn status(&self) -> &$crate::ode::Status<T, V, D> {
+            fn status(&self) -> &$crate::Status<T, V, D> {
                 &self.status
             }
 
-            fn set_status(&mut self, status: $crate::ode::Status<T, V, D>) {
+            fn set_status(&mut self, status: $crate::Status<T, V, D>) {
                 self.status = status;
             }
         }

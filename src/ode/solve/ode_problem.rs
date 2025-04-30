@@ -20,7 +20,7 @@ use crate::{
 /// # Example
 ///
 /// ```
-/// use differential_equations::ode::*;
+/// use differential_equations::prelude::*;
 ///
 /// struct LinearEquation {
 ///    pub a: f32,
@@ -74,7 +74,7 @@ use crate::{
 /// # Example 2
 ///
 /// ```
-/// use differential_equations::ode::*;
+/// use differential_equations::prelude::*;
 /// use nalgebra::{SVector, vector};
 ///
 /// struct HarmonicOscillator { k: f64 }
