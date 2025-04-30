@@ -16,8 +16,8 @@ pub use numerical_method::{
     NumericalMethod
 };
 
-mod solve;
-pub use solve::{
-    solve_sde,
-    SDEProblem,
-};
+mod solve_sde;
+mod sde_problem;
+
+pub use solve_sde::solve_sde;
+pub use sde_problem::SDEProblem;

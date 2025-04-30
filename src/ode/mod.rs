@@ -94,12 +94,13 @@
 //! place and interrupt the solution at that point.
 //!
 
-// ODEProblem Struct which is used to solve the ODE given the system and a solver
-mod solve;
-pub use solve::{
-    ODEProblem,       // Initial Value Problem (ODEProblem) for the system of ODEs
-    solve_ode, // Function to solve the ODEProblem, used internally in ODEProblem Struct
-};
+// Definitions & Constructors for users to ergonomically solve an ODEProblem problem via the solve_ode function.
+mod ode_problem;
+pub use ode_problem::ODEProblem;
+
+// Solve ODE function
+mod solve_ode;
+pub use solve_ode::solve_ode;
 
 // ODE Trait for Ordinary Differential Equations
 mod ode;
