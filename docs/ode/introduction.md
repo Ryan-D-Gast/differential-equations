@@ -53,7 +53,7 @@ Numerical method selection tables below provide detailed rankings of all availab
 | 2 | DOP853 | 8(5,3) | High |
 | 3 | RKV65 | 6(5) | Medium-High |
 | 4 | DOPRI5 | 5(4) | Medium |
-| 5 | RKF, CashKarp | 4(5) | Medium-Low |
+| 5 | RKF, CashKarp | 5(4) | Medium-Low |
 | 6 | RK4, ThreeEights, APCF4, APCV4 | 4 | Low |
 | 7 | Midpoint, Heuns, Ralston | 2 | Very Low |
 | 8 | Euler | 1 | Minimal |
