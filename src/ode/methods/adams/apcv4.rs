@@ -20,7 +20,7 @@ use crate::{ode::methods::h_init, utils::norm};
 ///
 /// ```
 /// use differential_equations::prelude::*;
-/// use differential_equations::ode::methods::APCV4;
+/// use differential_equations::ode::methods::adams::APCV4;
 /// use nalgebra::{SVector, vector};
 ///
 /// struct HarmonicOscillator {

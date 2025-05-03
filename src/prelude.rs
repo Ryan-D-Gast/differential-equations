@@ -9,12 +9,19 @@ pub use crate::{
         ODEProblem, // Create IVP to solve
 
         // Re-exporting popular ODE solvers
-        methods::{
-            DOP853, // Adaptive Step Dormand-Prince 8(5,3) NumericalMethod with dense output of order 7
-            DOPRI5, // Adaptive Step Dormand-Prince 5(4) NumericalMethod
-            RK4,    // Fixed Step Runge-Kutta 4th Order NumericalMethod
-            RKV65,  // Verner 6(5) adaptive method with dense output of order 5
-            RKV98,  // Verner 9(8) adaptive method with dense output of order 9  RKV98,
+        methods::runge_kutta::{
+            explicit::{
+                DOP853, // Adaptive Step Dormand-Prince 8(5,3) NumericalMethod with dense output of order 7
+                DOPRI5, // Adaptive Step Dormand-Prince 5(4) NumericalMethod
+                Euler,  // Fixed Step Euler NumericalMethod
+                RK4,    // Fixed Step Runge-Kutta 4th Order NumericalMethod
+                RKF,    // Fixed Step Runge-Kutta-Fehlberg NumericalMethod
+                RKV65,  // Verner 6(5) adaptive method with dense output of order 5
+                RKV98,  // Verner 9(8) adaptive method with dense output of order 9
+            },
+            implicit::{
+                GaussLegendre6, // Gauss-Legendre 6th order method (implicit Runge-Kutta)
+            },
         },
     },
 

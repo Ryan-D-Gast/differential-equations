@@ -1,9 +1,29 @@
 //! Suite of test cases for checking the interpolation of the solvers.
 
 use super::systems;
-use differential_equations::ode::ODEProblem;
-use differential_equations::ode::methods::{
-    APCF4, APCV4, DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98,
+use differential_equations::ode::{
+    ODEProblem,
+    methods::{
+        runge_kutta::{
+            explicit::{
+                DOP853,
+                DOPRI5,
+                Euler,
+                RK4,
+                RKF,
+                RKV65,
+                RKV98,
+            },
+            implicit::{
+                CrankNicolson,
+                GaussLegendre6,
+            },
+        },
+        adams::{
+            APCF4,
+            APCV4,
+        },
+    },
 };
 use nalgebra::vector;
 use systems::ExponentialGrowth;
@@ -67,7 +87,9 @@ fn interpolation() {
         solver_name: RKF, solver: RKF::new(),
         solver_name: RK4, solver: RK4::new(0.01),
         solver_name: APCF4, solver: APCF4::new(0.01),
-        solver_name: APCV4, solver: APCV4::new().h0(0.01)
+        solver_name: APCV4, solver: APCV4::new().h0(0.01),
+        solver_name: CrankNicolson, solver: CrankNicolson::new(0.01),
+        solver_name: GaussLegendre6, solver: GaussLegendre6::new().h0(0.01)
     }
 
     test_interpolation! {

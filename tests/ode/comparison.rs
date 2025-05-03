@@ -2,7 +2,12 @@
 
 use super::systems;
 use differential_equations::ode::ODEProblem;
-use differential_equations::ode::methods::{APCV4, DOP853, DOPRI5, RKF, RKV65, RKV98};
+use differential_equations::ode::methods::{
+    runge_kutta::explicit::{
+        DOP853, DOPRI5, RKF, RKV65, RKV98,
+    },
+    adams::APCV4,
+};
 use nalgebra::SVector;
 use std::{
     fs::{self, File},

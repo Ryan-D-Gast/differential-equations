@@ -97,7 +97,6 @@ fn main() {
                 println!("\nPhase at t={:.4}: {:.6}", t1, phase1);
                 println!("Phase at t={:.4}: {:.6}", t2, phase2);
                 println!("Phase change: {:.6}", phase2 - phase1);
-                println!("Expected phase change: {:.6}", -energy * (t2 - t1));
             }
 
             println!("\nSimulation statistics:");

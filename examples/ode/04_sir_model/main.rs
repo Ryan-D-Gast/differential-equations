@@ -24,7 +24,7 @@
 
 use differential_equations::{
     derive::State,
-    ode::methods::APCV4,
+    ode::methods::adams::APCV4,
     prelude::*,
 };
 

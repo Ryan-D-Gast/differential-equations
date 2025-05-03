@@ -3,7 +3,19 @@
 use super::systems::{ExponentialGrowth, HarmonicOscillator, LinearEquation, LogisticEquation};
 use differential_equations::ode::ODEProblem;
 use differential_equations::ode::methods::{
-    APCF4, APCV4, DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98,
+    runge_kutta::{
+        explicit::{
+            DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98,
+        },
+        implicit::{
+           CrankNicolson,
+           GaussLegendre4,
+           GaussLegendre6,
+        },
+    },
+    adams::{
+        APCF4, APCV4,
+    },
 };
 use nalgebra::vector;
 
@@ -99,7 +111,21 @@ fn accuracy() {
 
         solver_name: RKV98,
         solver: RKV98::new(),
-        tolerance: 1e-1
+        tolerance: 1e-1,
+
+        // Implicit methods
+
+        solver_name: CrankNicolson,
+        solver: CrankNicolson::new(0.01),
+        tolerance: 1e1,
+
+        solver_name: GaussLegendre4,
+        solver: GaussLegendre4::new(),
+        tolerance: 1e-3,
+
+        solver_name: GaussLegendre6,
+        solver: GaussLegendre6::new(),
+        tolerance: 1e-3
     }
 
     test_ode! {
@@ -109,6 +135,8 @@ fn accuracy() {
         tf: -10.0,
         y0: vector![22026.46579479],
         expected_result: vector![1.0],
+
+        // Explicit methods
 
         solver_name: DOP853,
         solver: DOP853::new().rtol(1e-12).atol(1e-12),
@@ -144,7 +172,21 @@ fn accuracy() {
 
         solver_name: RKV98,
         solver: RKV98::new(),
-        tolerance: 1e-2
+        tolerance: 1e-2,
+
+        // Implicit methods
+
+        solver_name: CrankNicolson,
+        solver: CrankNicolson::new(-0.01),
+        tolerance: 1e-3,
+
+        solver_name: GaussLegendre4,
+        solver: GaussLegendre4::new(),
+        tolerance: 1e-3,
+
+        solver_name: GaussLegendre6,
+        solver: GaussLegendre6::new(),
+        tolerance: 1e-3
     }
 
     test_ode! {
@@ -154,6 +196,8 @@ fn accuracy() {
         tf: 10.0,
         y0: vector![1.0],
         expected_result: vector![44051.93158958],
+
+        // Explicit methods
 
         solver_name: DOP853,
         solver: DOP853::new().rtol(1e-12).atol(1e-12),
@@ -189,6 +233,20 @@ fn accuracy() {
 
         solver_name: RKV98,
         solver: RKV98::new(),
+        tolerance: 1e1,
+
+        // Implicit methods
+
+        solver_name: CrankNicolson,
+        solver: CrankNicolson::new(0.01),
+        tolerance: 1e3,
+
+        solver_name: GaussLegendre4,
+        solver: GaussLegendre4::new(),
+        tolerance: 1e1,
+
+        solver_name: GaussLegendre6,
+        solver: GaussLegendre6::new(),
         tolerance: 1e1
     }
 
@@ -200,6 +258,8 @@ fn accuracy() {
         y0: vector![1.0, 0.0],
         expected_result: vector![-0.83907153, 0.54402111],
 
+        // Explicit methods
+
         solver_name: DOP853,
         solver: DOP853::new().rtol(1e-12).atol(1e-12),
         tolerance: 1e-3,
@@ -234,6 +294,20 @@ fn accuracy() {
 
         solver_name: RKV98,
         solver: RKV98::new(),
+        tolerance: 1e-3,
+
+        // Implicit methods
+
+        solver_name: CrankNicolson,
+        solver: CrankNicolson::new(0.01),
+        tolerance: 1e-3,
+
+        solver_name: GaussLegendre4,
+        solver: GaussLegendre4::new(),
+        tolerance: 1e-3,
+
+        solver_name: GaussLegendre6,
+        solver: GaussLegendre6::new(),
         tolerance: 1e-3
     }
 
@@ -244,6 +318,8 @@ fn accuracy() {
         tf: 10.0,
         y0: vector![0.1],
         expected_result: vector![9.95525518],
+
+        // Explicit methods
 
         solver_name: DOP853,
         solver: DOP853::new().rtol(1e-12).atol(1e-12),
@@ -279,6 +355,20 @@ fn accuracy() {
 
         solver_name: RKV98,
         solver: RKV98::new(),
+        tolerance: 1e-3,
+
+        // Implicit methods
+
+        solver_name: CrankNicolson,
+        solver: CrankNicolson::new(0.01),
+        tolerance: 1e-3,
+
+        solver_name: GaussLegendre4,
+        solver: GaussLegendre4::new(),
+        tolerance: 1e-3,
+
+        solver_name: GaussLegendre6,
+        solver: GaussLegendre6::new(),
         tolerance: 1e-3
     }
 }

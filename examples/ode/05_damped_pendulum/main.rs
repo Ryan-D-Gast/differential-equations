@@ -21,7 +21,7 @@
 //! - Evaluation at specific time points (t_eval)
 //! - Status checking with simulation results
 
-use differential_equations::ode::methods::RKF;
+use differential_equations::ode::methods::runge_kutta::explicit::RKF;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 

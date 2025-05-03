@@ -16,7 +16,7 @@
 //! - Different output options: dense, even, and t-eval
 //! - Error assessment in numerical integration
 
-use differential_equations::ode::methods::RKF;
+use differential_equations::ode::methods::runge_kutta::explicit::RKF;
 use differential_equations::prelude::*;
 
 /// Define the ode for integration.

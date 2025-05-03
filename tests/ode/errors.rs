@@ -8,15 +8,25 @@ use differential_equations::{
         ODE,
         ODEProblem,
         methods::{
-            DOP853,
-            DOPRI5,
-            RKF,
-            RK4,
-            Euler,
-            APCF4,
-            APCV4,
-            RKV65,
-            RKV98,
+            runge_kutta::{
+                explicit::{
+                    DOP853,
+                    DOPRI5,
+                    Euler,
+                    RK4,
+                    RKF,
+                    RKV65,
+                    RKV98,
+                },
+                implicit::{
+                    CrankNicolson,
+                    GaussLegendre6,
+                },
+            },
+            adams::{
+                APCF4,
+                APCV4,
+            },
         },
     },
 };
@@ -140,7 +150,9 @@ fn invalid_time_span() {
         solver_name: APCF4, solver: APCF4::new(0.1),
         solver_name: APCV4, solver: APCV4::new().h0(0.1),
         solver_name: RKV65, solver: RKV65::new().h0(0.1),
-        solver_name: RKV98, solver: RKV98::new().h0(0.1)
+        solver_name: RKV98, solver: RKV98::new().h0(0.1),
+        solver_name: CrankNicolson, solver: CrankNicolson::new(0.1),
+        solver_name: GaussLegendre6, solver: GaussLegendre6::new().h0(0.1)
     }
 }
 
@@ -161,7 +173,9 @@ fn initial_step_size_too_big() {
         solver_name: APCF4, solver: APCF4::new(10.0),
         solver_name: APCV4, solver: APCV4::new().h0(10.0),
         solver_name: RKV65, solver: RKV65::new().h0(10.0),
-        solver_name: RKV98, solver: RKV98::new().h0(10.0)
+        solver_name: RKV98, solver: RKV98::new().h0(10.0),
+        solver_name: CrankNicolson, solver: CrankNicolson::new(10.0),
+        solver_name: GaussLegendre6, solver: GaussLegendre6::new().h0(10.0)
     }
 }
 
@@ -182,6 +196,8 @@ fn terminate_initial_conditions_trigger() {
         solver_name: APCF4, solver: APCF4::new(0.1),
         solver_name: APCV4, solver: APCV4::new().h0(0.1),
         solver_name: RKV65, solver: RKV65::new().h0(0.1),
-        solver_name: RKV98, solver: RKV98::new().h0(0.1)
+        solver_name: RKV98, solver: RKV98::new().h0(0.1),
+        solver_name: CrankNicolson, solver: CrankNicolson::new(0.1),
+        solver_name: GaussLegendre6, solver: GaussLegendre6::new().h0(0.1)
     }
 }

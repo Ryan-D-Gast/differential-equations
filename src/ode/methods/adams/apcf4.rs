@@ -16,7 +16,7 @@ use super::*;
 ///
 /// ```
 /// use differential_equations::prelude::*;
-/// use differential_equations::ode::methods::APCF4;
+/// use differential_equations::ode::methods::adams::APCF4;
 /// use nalgebra::{SVector, vector};
 ///
 /// struct HarmonicOscillator {
