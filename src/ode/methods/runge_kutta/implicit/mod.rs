@@ -11,5 +11,3 @@ pub use adaptive_step::{
     GaussLegendre4, // Gauss-Legendre 4th order method (implicit Runge-Kutta)
     GaussLegendre6, // Gauss-Legendre 6th order method (implicit Runge-Kutta)
 };
-
-mod radau5;
