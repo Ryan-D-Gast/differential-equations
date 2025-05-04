@@ -48,7 +48,7 @@ macro_rules! adaptive_implicit_runge_kutta_method {
         $(#[$attr:meta])*
         name: $name:ident,
         a: $a:expr,
-        b: $b:expr, // Expects a 2D array: [b_higher, b_lower]
+        b: $b:expr,
         c: $c:expr,
         order: $order:expr,
         stages: $stages:expr
