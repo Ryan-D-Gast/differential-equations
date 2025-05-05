@@ -120,6 +120,9 @@ pub mod interpolate;
 // Shared Utility Functions
 pub mod utils;
 
+// Linear Algebra Functions
+pub mod linalg;
+
 // Derive Macros for Differential Equations
 pub mod derive {
     pub use differential_equations_derive::State;

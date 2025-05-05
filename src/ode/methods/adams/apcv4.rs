@@ -1,7 +1,7 @@
 //! Adams-Predictor-Corrector 4th Order Variable Step Size Method
 
 use super::*;
-use crate::{ode::methods::h_init, utils::norm};
+use crate::{ode::methods::h_init, linalg::norm};
 
 ///
 /// Adams-Predictor-Corrector 4th Order Variable Step Size Method.

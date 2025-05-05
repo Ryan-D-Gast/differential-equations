@@ -6,7 +6,8 @@ use crate::{
     sde::NumericalMethod,
     sde::SDE,
     traits::{CallBackData, Real, State},
-    utils::{validate_step_size_parameters, component_multiply},
+    utils::validate_step_size_parameters, 
+    linalg::component_multiply,
 };
 
 /// Runge-Kutta-Maruyama Method for solving stochastic differential equations.
