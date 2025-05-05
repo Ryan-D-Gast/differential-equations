@@ -3,8 +3,9 @@
 use crate::{
     Error, Status,
     interpolate::{Interpolation, InterpolationError},
-    ode::{NumEvals, NumericalMethod, ODE, methods::h_init},
+    ode::{NumericalMethod, ODE, methods::h_init},
     traits::{CallBackData, Real, State},
+    alias::NumEvals,
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 

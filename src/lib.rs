@@ -123,6 +123,8 @@ pub mod utils;
 // Linear Algebra Functions
 pub mod linalg;
 
+pub mod alias;
+
 // Derive Macros for Differential Equations
 pub mod derive {
     pub use differential_equations_derive::State;

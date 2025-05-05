@@ -100,7 +100,7 @@ pub use ode::{
 
 // NumericalMethod Traits for ODE NumericalMethods.
 mod numerical_method;
-pub use numerical_method::{NumEvals, NumericalMethod};
+pub use numerical_method::NumericalMethod;
 
 // NumericalMethod for ODEs
 pub mod methods;

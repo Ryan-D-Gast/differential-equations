@@ -3,11 +3,9 @@
 use crate::{
     Error, Status,
     ode::ODE,
+    alias::NumEvals,
     traits::{CallBackData, Real, State},
 };
-
-/// Type alias for the number of function evaluations
-pub type NumEvals = usize;
 
 /// NumericalMethod Trait for ODE NumericalMethods
 ///

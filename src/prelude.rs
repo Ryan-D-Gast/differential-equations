@@ -49,4 +49,5 @@ pub use crate::{
     control::ControlFlag,
     interpolate::Interpolation, 
     derive::State,
+    alias::NumEvals,
 };
