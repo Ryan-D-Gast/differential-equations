@@ -59,7 +59,6 @@ where
     /// # Arguments
     /// * `t`    - Current independent variable point.
     /// * `y`    - Current dependent variable point.
-    /// * `dydt` - Current derivative point.
     ///
     /// # Returns
     /// * `ControlFlag` - Command to continue or stop solver.
