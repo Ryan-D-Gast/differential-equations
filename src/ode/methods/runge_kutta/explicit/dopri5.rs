@@ -13,10 +13,6 @@ use crate::{
 /// 5th order Dormand Prince method with embedded 4th order error estimation and
 /// dense output interpolation.
 ///
-/// Builds should begin with weight, normal, dense, or even methods.
-/// and then chain the other methods to set the parameters.
-/// The defaults should be great for most cases.
-///
 /// # Example
 /// ```
 /// use differential_equations::prelude::*;
@@ -643,7 +639,7 @@ const DOPRI5_B: [f64; 7] = [
 ];
 
 // Error estimation coefficients
-const DOPRI5_D: [f64; 7] = [
+const DOPRI5_E: [f64; 7] = [
     71.0 / 57600.0,      // E1
     0.0,                 // E2
     -71.0 / 16695.0,     // E3
@@ -654,7 +650,7 @@ const DOPRI5_D: [f64; 7] = [
 ];
 
 // Dense output coefficients
-const DOPRI5_E: [f64; 7] = [
+const DOPRI5_D: [f64; 7] = [
     -12715105075.0 / 11282082432.0,  // D1
     0.0,                             // D2
     87487479700.0 / 32700410799.0,   // D3
