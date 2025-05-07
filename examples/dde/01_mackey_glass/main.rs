@@ -34,7 +34,7 @@ impl DDE<1> for MackeyGlass {
 
 fn main() {
     // --- Solver Configuration ---
-    let mut solver = DDE23::new()  // Use the Delay version of BS23 solver
+    let mut solver = DDE23::new() // Use the Delay version of BS23 solver
         .max_delay(20.0); // Set the maximum delay to match the problem's tau so unnecessary history can be discarded as the solver progresses (optional)
 
     // --- Problem Definition ---
@@ -48,7 +48,7 @@ fn main() {
     // Define initial conditions and time span
     let t0 = 0.0;
     let tf = 200.0; // Integrate over a longer time span to observe behavior
-    let y0 = 0.1;  // Initial value at t=t0
+    let y0 = 0.1; // Initial value at t=t0
 
     // Define the initial history function phi(t) for t <= t0
     // Often a constant history is used.
@@ -61,10 +61,7 @@ fn main() {
 
     // --- Solve the Problem ---
     println!("Solving Mackey-Glass equation from t={} to t={}...", t0, tf);
-    match problem
-        .even(2.0)
-        .solve(&mut solver)
-    {
+    match problem.even(2.0).solve(&mut solver) {
         Ok(solution) => {
             // Print the solution
             println!("Solution:");

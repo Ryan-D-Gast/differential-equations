@@ -1,10 +1,10 @@
 use crate::{
-    dde::DDE,
     alias::NumEvals,
+    dde::DDE,
     traits::{CallBackData, Real, State},
 };
-    
-pub fn h_init<const L: usize, T, V, D, F> (
+
+pub fn h_init<const L: usize, T, V, D, F>(
     dde: &F,
     t0_init: T,
     tf_init: T,
@@ -17,7 +17,7 @@ pub fn h_init<const L: usize, T, V, D, F> (
     phi_init: &impl Fn(T) -> V,
     f0_init: &V,
 ) -> (T, NumEvals)
-where 
+where
     T: Real,
     V: State<T>,
     D: CallBackData,
@@ -31,18 +31,23 @@ where
     let mut dny = T::zero();
     for n in 0..n_dim {
         let sk = atol_init + rtol_init * y0_init.get(n).abs();
-        if sk <= T::zero() { return (h_min_init.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init, evals); }
+        if sk <= T::zero() {
+            return (
+                h_min_init.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init,
+                evals,
+            );
+        }
         dnf += (f0_init.get(n) / sk).powi(2);
         dny += (y0_init.get(n) / sk).powi(2);
     }
     if n_dim > 0 {
         dnf = (dnf / T::from_usize(n_dim).unwrap()).sqrt();
         dny = (dny / T::from_usize(n_dim).unwrap()).sqrt();
-    } else { // Scalar case
-            dnf = dnf.sqrt();
-            dny = dny.sqrt();
+    } else {
+        // Scalar case
+        dnf = dnf.sqrt();
+        dny = dny.sqrt();
     }
-
 
     let mut h = if dnf <= T::from_f64(1.0e-10).unwrap() || dny <= T::from_f64(1.0e-10).unwrap() {
         T::from_f64(1.0e-6).unwrap()
@@ -55,34 +60,46 @@ where
     let mut y1 = *y0_init + *f0_init * h;
     let mut t1 = t0_init + h;
     let mut f1 = V::zeros();
-    
+
     let mut current_lags_init = [T::zero(); L];
     let mut yd_init = [V::zeros(); L];
 
     // Ensure initial step's delayed points are valid
     if L > 0 {
-        loop { // Adjust h if t1 - lag is "beyond" t0 for phi
+        loop {
+            // Adjust h if t1 - lag is "beyond" t0 for phi
             dde.lags(t1, &y1, &mut current_lags_init);
             let mut reduce_h_for_lag = false;
             let mut h_candidate_from_lag = h.abs();
 
             for i in 0..L {
-                if current_lags_init[i] <= T::zero() { /* error or skip */ continue; }
+                if current_lags_init[i] <= T::zero() {
+                    /* error or skip */
+                    continue;
+                }
                 let t_delayed = t1 - current_lags_init[i];
                 if (t_delayed - t0_init) * posneg_init < -T::default_epsilon() { // t_delayed is "before" t0
                     // This is fine, phi will be used.
-                } else { // t_delayed is "at or after" t0. This means current h is too large.
+                } else {
+                    // t_delayed is "at or after" t0. This means current h is too large.
                     // We need t1 - lag <= t0  => h + t0 - lag <= t0 => h <= lag
-                    h_candidate_from_lag = h_candidate_from_lag.min(current_lags_init[i].abs() * T::from_f64(0.99).unwrap() ); // Reduce h to be less than this lag
+                    h_candidate_from_lag = h_candidate_from_lag
+                        .min(current_lags_init[i].abs() * T::from_f64(0.99).unwrap()); // Reduce h to be less than this lag
                     reduce_h_for_lag = true;
                 }
             }
 
             if reduce_h_for_lag && h_candidate_from_lag < h.abs() {
                 h = h_candidate_from_lag * posneg_init;
-                if h.abs() < h_min_init.abs() { h = h_min_init * posneg_init; } // Respect h_min
-                if h.abs() < T::default_epsilon() { // Avoid zero step
-                    return (h_min_init.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init, evals);
+                if h.abs() < h_min_init.abs() {
+                    h = h_min_init * posneg_init;
+                } // Respect h_min
+                if h.abs() < T::default_epsilon() {
+                    // Avoid zero step
+                    return (
+                        h_min_init.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init,
+                        evals,
+                    );
                 }
                 y1 = *y0_init + *f0_init * h;
                 t1 = t0_init + h;
@@ -94,26 +111,29 @@ where
         // Populate yd_init for the diff call
         dde.lags(t1, &y1, &mut current_lags_init); // Recalculate lags with final t1, y1
         for i in 0..L {
-                let t_delayed = t1 - current_lags_init[i];
-                yd_init[i] = phi_init(t_delayed);
+            let t_delayed = t1 - current_lags_init[i];
+            yd_init[i] = phi_init(t_delayed);
         }
     }
-    
+
     dde.diff(t1, &y1, &yd_init, &mut f1);
     evals += 1;
 
     let mut der2 = T::zero();
     for n in 0..n_dim {
         let sk = atol_init + rtol_init * y0_init.get(n).abs();
-        if sk <= T::zero() { der2 = T::infinity(); break; }
+        if sk <= T::zero() {
+            der2 = T::infinity();
+            break;
+        }
         der2 += ((f1.get(n) - f0_init.get(n)) / sk).powi(2);
     }
     if n_dim > 0 {
         der2 = (der2 / T::from_usize(n_dim).unwrap()).sqrt() / h.abs();
-    } else { // Scalar
+    } else {
+        // Scalar
         der2 = der2.sqrt() / h.abs();
     }
-
 
     let der12 = dnf.max(der2);
     let h1 = if der12 <= T::from_f64(1.0e-15).unwrap() {

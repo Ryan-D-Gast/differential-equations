@@ -1,8 +1,8 @@
 //! Example 09: Matrix Differential Equation
-//! 
+//!
 //! This example solves a matrix differential equation of the form:
 //! dM/dt = AM - MA
-//! 
+//!
 //! where:
 //! - M is a 2×2 matrix representing the state
 //! - A is a 2×2 matrix representing the system dynamics

@@ -5,7 +5,7 @@
 
 use crate::{
     ControlFlag,
-    traits::{Real, State, CallBackData},
+    traits::{CallBackData, Real, State},
 };
 
 /// SDE Trait for Stochastic Differential Equations
@@ -62,7 +62,7 @@ where
     /// * `dydw` - Diffusion term output.
     ///
     fn diffusion(&self, t: T, y: &V, dydw: &mut V);
-    
+
     /// Noise function - generates random noise increments for the SDE
     ///
     /// This function allows custom control over how noise is generated for the SDE.
@@ -70,7 +70,7 @@ where
     /// For standard Wiener process, this is typically normal distribution with mean 0
     /// and standard deviation sqrt(dt).
     ///
-    /// Users are responsible for initializing and managing their own random number 
+    /// Users are responsible for initializing and managing their own random number
     /// generators, allowing full control over seeding for reproducible results.
     ///
     /// # Arguments

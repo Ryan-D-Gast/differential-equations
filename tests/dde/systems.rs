@@ -12,7 +12,13 @@ pub struct MackeyGlass {
 }
 
 impl DDE<1, f64, SVector<f64, 1>> for MackeyGlass {
-    fn diff(&self, _t: f64, y: &SVector<f64, 1>, yd: &[SVector<f64, 1>; 1], dydt: &mut SVector<f64, 1>) {
+    fn diff(
+        &self,
+        _t: f64,
+        y: &SVector<f64, 1>,
+        yd: &[SVector<f64, 1>; 1],
+        dydt: &mut SVector<f64, 1>,
+    ) {
         dydt[0] = (self.beta * yd[0][0]) / (1.0 + yd[0][0].powf(self.n)) - self.gamma * y[0];
     }
 
@@ -27,7 +33,13 @@ pub struct ExponentialGrowth {
 }
 
 impl DDE<0, f64, SVector<f64, 1>> for ExponentialGrowth {
-    fn diff(&self, _t: f64, y: &SVector<f64, 1>, _yd: &[SVector<f64, 1>; 0], dydt: &mut SVector<f64, 1>) {
+    fn diff(
+        &self,
+        _t: f64,
+        y: &SVector<f64, 1>,
+        _yd: &[SVector<f64, 1>; 0],
+        dydt: &mut SVector<f64, 1>,
+    ) {
         dydt[0] = self.k * y[0];
     }
 

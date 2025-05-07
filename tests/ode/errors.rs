@@ -1,31 +1,14 @@
 //! Suite of test cases for NumericalMethods error handling
 
 use differential_equations::{
-    ControlFlag,
-    Error,
-    Status,
+    ControlFlag, Error, Status,
     ode::{
-        ODE,
-        ODEProblem,
+        ODE, ODEProblem,
         methods::{
+            adams::{APCF4, APCV4},
             runge_kutta::{
-                explicit::{
-                    DOP853,
-                    DOPRI5,
-                    Euler,
-                    RK4,
-                    RKF,
-                    RKV65,
-                    RKV98,
-                },
-                implicit::{
-                    CrankNicolson,
-                    GaussLegendre6,
-                },
-            },
-            adams::{
-                APCF4,
-                APCV4,
+                explicit::{DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98},
+                implicit::{CrankNicolson, GaussLegendre6},
             },
         },
     },

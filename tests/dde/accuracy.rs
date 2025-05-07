@@ -1,9 +1,9 @@
 //! Suite of test cases for DDE NumericalMethods.
 //! Expected results should be verified against a trusted solver.
 
+use super::systems::MackeyGlass;
 use differential_equations::dde::DDEProblem;
 use differential_equations::dde::methods::{BS23, DOPRI5}; // DDE23 and DDE45 are aliases for these
-use super::systems::MackeyGlass;
 use nalgebra::vector;
 use std::fs;
 
@@ -85,9 +85,7 @@ fn accuracy() {
     let y0 = vector![0.5]; // Initial state y(0)
 
     // Define the history function: y(t) = 0.5 for t <= 0
-    let history_fn = |_t: f64| {
-        vector![0.5]
-    };
+    let history_fn = |_t: f64| vector![0.5];
 
     // IMPORTANT: The expected_result is a placeholder.
     // Replace with a value obtained from a trusted DDE solver for these parameters.

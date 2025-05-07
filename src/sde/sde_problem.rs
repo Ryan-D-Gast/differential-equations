@@ -3,7 +3,7 @@
 use crate::{
     Error, Solution,
     interpolate::Interpolation,
-    sde::{SDE, NumericalMethod, solve_sde},
+    sde::{NumericalMethod, SDE, solve_sde},
     solout::*,
     traits::{CallBackData, Real, State},
 };
@@ -12,7 +12,7 @@ use crate::{
 ///
 /// The Initial Value Problem takes the form:
 /// dY = a(t, Y)dt + b(t, Y)dW, t0 <= t <= tf, Y(t0) = y0
-/// 
+///
 /// where:
 /// - a(t, Y) is the drift term (deterministic part)
 /// - b(t, Y) is the diffusion term (stochastic part)
@@ -33,7 +33,7 @@ use crate::{
 /// struct GBM {
 ///     rng: rand::rngs::StdRng,
 /// }
-/// 
+///
 /// impl GBM {
 ///     fn new(seed: u64) -> Self {
 ///         Self {
@@ -329,7 +329,7 @@ where
     O: Solout<T, V, D>,
 {
     pub sde_problem: &'a SDEProblem<T, V, D, F>, // Reference to the SDE Problem struct
-    pub solout: O,                              // Solout implementation
+    pub solout: O,                               // Solout implementation
 }
 
 impl<'a, T, V, D, F, O> SDEProblemSoloutPair<'a, T, V, D, F, O>

@@ -3,8 +3,8 @@
 use crate::{
     ControlFlag, Error, Solution, Status,
     dde::DDE,
-    interpolate::Interpolation,
     dde::numerical_method::NumericalMethod,
+    interpolate::Interpolation,
     solout::*,
     traits::{CallBackData, Real, State},
 };

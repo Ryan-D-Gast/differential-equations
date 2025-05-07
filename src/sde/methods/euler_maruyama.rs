@@ -3,11 +3,11 @@
 use crate::{
     Error, Status,
     interpolate::{Interpolation, InterpolationError},
+    linalg::component_multiply,
     sde::NumericalMethod,
     sde::SDE,
     traits::{CallBackData, Real, State},
     utils::validate_step_size_parameters,
-    linalg::component_multiply,
 };
 
 /// Euler-Maruyama Method for solving stochastic differential equations.
@@ -33,7 +33,7 @@ use crate::{
 /// struct GBM {
 ///     rng: rand::rngs::StdRng,
 /// }
-/// 
+///
 /// impl GBM {
 ///     fn new(seed: u64) -> Self {
 ///         Self {
@@ -106,11 +106,11 @@ impl<T: Real, V: State<T>, D: CallBackData> Default for EM<T, V, D> {
 impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for EM<T, V, D> {
     fn init<F>(&mut self, sde: &F, t0: T, tf: T, y0: &V) -> Result<usize, Error<T, V>>
     where
-        F: SDE<T, V, D>
+        F: SDE<T, V, D>,
     {
         // Check Bounds
         match validate_step_size_parameters::<T, V, D>(self.h, T::zero(), T::infinity(), t0, tf) {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => return Err(e),
         }
 
@@ -134,7 +134,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for EM<T, V
 
     fn step<F>(&mut self, sde: &F) -> Result<usize, Error<T, V>>
     where
-        F: SDE<T, V, D>
+        F: SDE<T, V, D>,
     {
         // Log previous state
         self.t_prev = self.t;
@@ -147,7 +147,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for EM<T, V
         // Generate noise increments using the SDE's noise method
         let mut dw = V::zeros();
         sde.noise(self.h, &mut dw);
-        
+
         // Compute next state using Euler-Maruyama method
         let drift_term = self.drift * self.h;
         let diffusion_term = component_multiply(&self.diffusion, &dw);
@@ -197,10 +197,10 @@ impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for EM<T, V, D> 
     fn interpolate(&mut self, t_interp: T) -> Result<V, InterpolationError<T>> {
         // Check if t is within the bounds of the current step
         if t_interp < self.t_prev || t_interp > self.t {
-            return Err(InterpolationError::OutOfBounds { 
-                t_interp, 
-                t_prev: self.t_prev, 
-                t_curr: self.t 
+            return Err(InterpolationError::OutOfBounds {
+                t_interp,
+                t_prev: self.t_prev,
+                t_curr: self.t,
             });
         }
 
@@ -208,7 +208,7 @@ impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for EM<T, V, D> 
         // determine the precise path between points without knowledge of the entire Wiener path
         let s = (t_interp - self.t_prev) / (self.t - self.t_prev);
         let y_interp = self.y_prev + (self.y - self.y_prev) * s;
-        
+
         Ok(y_interp)
     }
 }

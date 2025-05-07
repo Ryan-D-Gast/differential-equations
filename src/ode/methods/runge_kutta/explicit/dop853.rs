@@ -2,9 +2,9 @@
 
 use crate::{
     Error, Status,
+    alias::NumEvals,
     interpolate::{Interpolation, InterpolationError},
     ode::{NumericalMethod, ODE, methods::h_init},
-    alias::NumEvals,
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };

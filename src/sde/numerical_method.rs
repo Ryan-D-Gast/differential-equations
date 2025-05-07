@@ -2,8 +2,8 @@
 
 use crate::{
     Error, Status,
-    sde::SDE, 
-    traits::{CallBackData, Real, State}, 
+    sde::SDE,
+    traits::{CallBackData, Real, State},
 };
 
 /// Type alias for the number of function evaluations
@@ -33,13 +33,7 @@ where
     /// # Returns
     /// * Result<NumEvals, Error<T, V>> - Ok with number of evaluations if initialization is successful
     ///
-    fn init<F>(
-        &mut self,
-        sde: &F,
-        t0: T,
-        tf: T,
-        y: &V,
-    ) -> Result<NumEvals, Error<T, V>>
+    fn init<F>(&mut self, sde: &F, t0: T, tf: T, y: &V) -> Result<NumEvals, Error<T, V>>
     where
         F: SDE<T, V, D>;
 

@@ -1,10 +1,10 @@
 //! Example 04: SIR Epidemiological Model
-//! 
+//!
 //! This example models the spread of an infectious disease using the SIR model with ODEs:
 //! dS/dt = -β * S * I / N
 //! dI/dt = β * S * I / N - γ * I
 //! dR/dt = γ * I
-//! 
+//!
 //! where:
 //! - S is the susceptible population
 //! - I is the infected population
@@ -22,11 +22,7 @@
 //! - Setting up even-interval output points
 //! - Working with solution status information
 
-use differential_equations::{
-    derive::State,
-    ode::methods::adams::APCV4,
-    prelude::*,
-};
+use differential_equations::{derive::State, ode::methods::adams::APCV4, prelude::*};
 
 /// SIR (Susceptible, Infected, Recovered) Model
 struct SIRModel {

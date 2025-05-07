@@ -1,9 +1,9 @@
 //! Example 05: Damped Pendulum
-//! 
+//!
 //! This example simulates a damped pendulum using the system:
 //! dθ/dt = ω
 //! dω/dt = -(b/m)*ω - (g/l)*sin(θ)
-//! 
+//!
 //! where:
 //! - θ (theta) is the angle from vertical
 //! - ω (omega) is the angular velocity
@@ -13,7 +13,7 @@
 //! - l is the length of the pendulum
 //!
 //! Damped pendulums demonstrate both oscillatory behavior and decay due to friction,
-//! eventually settling at the equilibrium position. This system appears in mechanical 
+//! eventually settling at the equilibrium position. This system appears in mechanical
 //! engineering, clock design, and as a model of various control systems.
 //!
 //! This example demonstrates:

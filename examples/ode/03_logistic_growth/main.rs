@@ -1,5 +1,5 @@
 //! # Example 3: Logistic Growth Model
-//! 
+//!
 //! This example demonstrates the solution of a logistic growth model ODE:
 //! dy/dt = k*y*(1 - y/m)
 //!

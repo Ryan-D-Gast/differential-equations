@@ -3,7 +3,7 @@
 use crate::{
     Error, Solution,
     interpolate::Interpolation,
-    ode::{ODE, solve_ode, numerical_method::NumericalMethod},
+    ode::{ODE, numerical_method::NumericalMethod, solve_ode},
     solout::*,
     traits::{CallBackData, Real, State},
 };
@@ -277,7 +277,7 @@ where
     O: Solout<T, V, D>,
 {
     pub problem: &'a ODEProblem<T, V, D, F>, // Reference to the ODEProblem struct
-    pub solout: &'a mut O,        // Reference to the solout implementation
+    pub solout: &'a mut O,                   // Reference to the solout implementation
 }
 
 impl<'a, T, V, D, F, O> ODEProblemMutRefSoloutPair<'a, T, V, D, F, O>
@@ -331,7 +331,7 @@ where
     O: Solout<T, V, D>,
 {
     pub problem: &'a ODEProblem<T, V, D, F>, // Reference to the ODEProblem struct
-    pub solout: O,                // Solout implementation
+    pub solout: O,                           // Solout implementation
 }
 
 impl<'a, T, V, D, F, O> ODEProblemSoloutPair<'a, T, V, D, F, O>

@@ -1,8 +1,8 @@
 //! Example 01: Exponential Growth
-//! 
+//!
 //! This example demonstrates the solution of a simple exponential growth ODE:
 //! dy/dt = k*y
-//! 
+//!
 //! where:
 //! - y is the quantity that grows exponentially
 //! - k is the growth rate constant

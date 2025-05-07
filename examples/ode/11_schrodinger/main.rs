@@ -1,8 +1,8 @@
 //! Example 11: Time-dependent Schrödinger Equation
-//! 
+//!
 //! This example solves the time-dependent Schrödinger equation for a single quantum state:
 //! iħ·d|ψ⟩/dt = H|ψ⟩
-//! 
+//!
 //! where:
 //! - |ψ⟩ is the quantum state (a complex-valued wavefunction)
 //! - H is the Hamiltonian operator
@@ -13,7 +13,7 @@
 //! This simplifies the equation to: d|ψ⟩/dt = -iE|ψ⟩/ħ
 //!
 //! The solution to this equation is |ψ(t)⟩ = |ψ(0)⟩·e^(-iEt/ħ), which has
-//! constant probability amplitude but a rotating phase, demonstrating the 
+//! constant probability amplitude but a rotating phase, demonstrating the
 //! time evolution of quantum states. This is a fundamental equation in quantum
 //! mechanics, governing how quantum systems evolve over time.
 //!

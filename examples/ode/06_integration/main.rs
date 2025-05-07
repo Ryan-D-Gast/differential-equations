@@ -1,8 +1,8 @@
 //! Example 06: Numerical Integration
-//! 
+//!
 //! This example shows how ODEs can be used for numerical integration by solving:
 //! dy/dt = f(t)
-//! 
+//!
 //! where:
 //! - f(t) is the function to be integrated
 //! - y(t) gives the integral of f(t) from t₀ to t

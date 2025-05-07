@@ -2,13 +2,9 @@
 
 use crate::{
     Error, Status,
-    dde::{
-        DDE,
-        NumericalMethod,
-        methods::h_init::h_init,
-    },
-    interpolate::{Interpolation, InterpolationError},
     alias::NumEvals,
+    dde::{DDE, NumericalMethod, methods::h_init::h_init},
+    interpolate::{Interpolation, InterpolationError},
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
@@ -20,7 +16,7 @@ use std::collections::VecDeque;
 /// 7 stages, 6 function evaluations per step.
 ///
 /// # Example
-/// 
+///
 /// ```
 /// use differential_equations::prelude::*;
 /// use differential_equations::dde::methods::DOPRI5;
@@ -42,7 +38,7 @@ use std::collections::VecDeque;
 ///        dydt[0] = yd[0][1];
 ///        dydt[1] = -yd[0][0] - 1.0 * y[1];
 ///     }
-/// 
+///
 ///     fn lags(&self, t: f64, y: &Vector2<f64>, lags: &mut [f64; 1]) {
 ///         lags[0] = 1.0; // Constant delay tau = 1.0
 ///     }
@@ -102,7 +98,7 @@ pub struct DOPRI5<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBa
     y_old: V,
     t_old: T,
     h_old: T,
-    cont: [V; 5],   // For 5-coefficient dense output
+    cont: [V; 5],                             // For 5-coefficient dense output
     cont_buffer: VecDeque<(T, T, T, [V; 5])>, // Store 5-coeff cont
     phi: Option<H>,
     t0: T,
@@ -112,7 +108,9 @@ pub struct DOPRI5<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBa
     yd: [V; L],
 }
 
-impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> NumericalMethod<L, T, V, H, D> for DOPRI5<L, T, V, H, D> {
+impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
+    NumericalMethod<L, T, V, H, D> for DOPRI5<L, T, V, H, D>
+{
     fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: H) -> Result<NumEvals, Error<T, V>>
     where
         F: DDE<L, T, V, D>,
@@ -129,11 +127,18 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Numer
             dde.lags(self.t, &self.y, &mut self.lags);
             for i in 0..L {
                 if self.lags[i] <= T::zero() {
-                    return Err(Error::BadInput { msg: "All lags must be positive.".to_string() });
+                    return Err(Error::BadInput {
+                        msg: "All lags must be positive.".to_string(),
+                    });
                 }
                 let t_delayed = self.t - self.lags[i];
                 if (t_delayed - self.t0) * self.posneg > T::default_epsilon() {
-                     return Err(Error::BadInput { msg: format!("Initial delayed time {} is out of history range (t <= {}).", t_delayed, self.t0) });
+                    return Err(Error::BadInput {
+                        msg: format!(
+                            "Initial delayed time {} is out of history range (t <= {}).",
+                            t_delayed, self.t0
+                        ),
+                    });
                 }
                 self.yd[i] = (self.phi.as_ref().unwrap())(t_delayed);
             }
@@ -143,13 +148,25 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Numer
 
         if self.h0 == T::zero() {
             let (h_est, h_init_evals) = h_init(
-                dde, self.t, self.tf, &self.y, 5, self.rtol, self.atol, self.h_min, self.h_max, self.phi.as_ref().unwrap(), &self.k[0]
+                dde,
+                self.t,
+                self.tf,
+                &self.y,
+                5,
+                self.rtol,
+                self.atol,
+                self.h_min,
+                self.h_max,
+                self.phi.as_ref().unwrap(),
+                &self.k[0],
             );
             self.h0 = h_est;
             evals += h_init_evals;
         }
-        
-        match validate_step_size_parameters::<T, V, D>(self.h0, self.h_min, self.h_max, self.t, self.tf) {
+
+        match validate_step_size_parameters::<T, V, D>(
+            self.h0, self.h_min, self.h_max, self.t, self.tf,
+        ) {
             Ok(h0_validated) => self.h = h0_validated,
             Err(status) => return Err(status),
         }
@@ -157,7 +174,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Numer
         self.t_old = self.t;
         self.y_old = self.y;
         self.h_old = self.h;
-        
+
         self.steps = 0;
         self.n_accepted = 0;
         self.status = Status::Initialized;
@@ -169,8 +186,14 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Numer
         F: DDE<L, T, V, D>,
     {
         if self.steps >= self.max_steps {
-            self.status = Status::Error(Error::MaxSteps { t: self.t, y: self.y });
-            return Err(Error::MaxSteps { t: self.t, y: self.y });
+            self.status = Status::Error(Error::MaxSteps {
+                t: self.t,
+                y: self.y,
+            });
+            return Err(Error::MaxSteps {
+                t: self.t,
+                y: self.y,
+            });
         }
 
         let t_current_step_start = self.t;
@@ -181,15 +204,23 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Numer
         if L > 0 {
             // Estimate y at t+h using Euler step for lag calculation
             let temp_y_for_lags = y_current_step_start + k0_at_step_start * self.h; // Simplified Euler for lag estimate
-            dde.lags(t_current_step_start + self.h, &temp_y_for_lags, &mut self.lags);
+            dde.lags(
+                t_current_step_start + self.h,
+                &temp_y_for_lags,
+                &mut self.lags,
+            );
             for i in 0..L {
                 min_lag_abs = min_lag_abs.min(self.lags[i].abs());
             }
         }
 
-        let max_iter: usize = if L > 0 && min_lag_abs < self.h.abs() && min_lag_abs > T::zero() { 5 } else { 1 };
+        let max_iter: usize = if L > 0 && min_lag_abs < self.h.abs() && min_lag_abs > T::zero() {
+            5
+        } else {
+            1
+        };
         let mut num_evals_this_step = 0;
-        
+
         let mut y_new_from_iter = y_current_step_start; // Will be updated in the loop
         let mut k_fnew_iter = V::zeros(); // f(t+h, y_new_from_iter)
         let mut k_stages_iter = [V::zeros(); 7]; // Stores k[1] to k[6] for the current iteration
@@ -201,88 +232,125 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Numer
             if iter_idx > 0 {
                 y_for_errit_prev_iter = y_new_from_iter; // y_new from previous iteration
             }
-            
+
             // Calculate k_stages_iter[1] to k_stages_iter[5] (stages 2 to 6 of RK method)
             // These use k0_at_step_start and y_current_step_start for the `y` part of RK sum.
-            for j in 1..=5 { // Loop for stages k_stages_iter[1] to k_stages_iter[5]
+            for j in 1..=5 {
+                // Loop for stages k_stages_iter[1] to k_stages_iter[5]
                 let mut yi_stage_sum = k0_at_step_start * self.a[j][0];
-                for l_idx in 1..j { // k_stages_iter[1]...k_stages_iter[j-1]
+                for l_idx in 1..j {
+                    // k_stages_iter[1]...k_stages_iter[j-1]
                     yi_stage_sum += k_stages_iter[l_idx] * self.a[j][l_idx];
                 }
                 let yi = y_current_step_start + yi_stage_sum * self.h;
                 let ti = t_current_step_start + self.c[j] * self.h;
 
-                if L > 0 { dde.lags(ti, &yi, &mut self.lags); self.lagvals(ti, &yi); }
+                if L > 0 {
+                    dde.lags(ti, &yi, &mut self.lags);
+                    self.lagvals(ti, &yi);
+                }
                 dde.diff(ti, &yi, &self.yd, &mut k_stages_iter[j]);
             }
             num_evals_this_step += 5;
 
             // Calculate k_stages_iter[6] (stage 7, using ysti)
             let mut ysti_sum = k0_at_step_start * self.a[6][0]; // a[6][1] is 0 for DOPRI5
-            for l_idx in 2..=5 { // k_stages_iter[2]...k_stages_iter[5]
-                 ysti_sum += k_stages_iter[l_idx] * self.a[6][l_idx];
+            for l_idx in 2..=5 {
+                // k_stages_iter[2]...k_stages_iter[5]
+                ysti_sum += k_stages_iter[l_idx] * self.a[6][l_idx];
             }
             let ysti = y_current_step_start + ysti_sum * self.h;
             let t_sti = t_current_step_start + self.c[6] * self.h; // c[6] is 1.0
 
-            if L > 0 { dde.lags(t_sti, &ysti, &mut self.lags); self.lagvals(t_sti, &ysti); }
+            if L > 0 {
+                dde.lags(t_sti, &ysti, &mut self.lags);
+                self.lagvals(t_sti, &ysti);
+            }
             dde.diff(t_sti, &ysti, &self.yd, &mut k_stages_iter[6]);
             num_evals_this_step += 1;
 
             // Calculate y_new_from_iter (5th order solution)
             let mut sum_for_y_new = k0_at_step_start * self.b[0]; // b[1] is 0 for DOPRI5
-            for l_idx in 2..=6 { // k_stages_iter[2]...k_stages_iter[6]
+            for l_idx in 2..=6 {
+                // k_stages_iter[2]...k_stages_iter[6]
                 sum_for_y_new += k_stages_iter[l_idx] * self.b[l_idx];
             }
             y_new_from_iter = y_current_step_start + sum_for_y_new * self.h;
 
             // Calculate f(t+h, y_new_from_iter) for FSAL and dense output
             let t_new_val_for_k_fnew = t_current_step_start + self.h; // c[6] is 1.0, effectively t+h
-            if L > 0 { dde.lags(t_new_val_for_k_fnew, &y_new_from_iter, &mut self.lags); self.lagvals(t_new_val_for_k_fnew, &y_new_from_iter); }
-            dde.diff(t_new_val_for_k_fnew, &y_new_from_iter, &self.yd, &mut k_fnew_iter);
+            if L > 0 {
+                dde.lags(t_new_val_for_k_fnew, &y_new_from_iter, &mut self.lags);
+                self.lagvals(t_new_val_for_k_fnew, &y_new_from_iter);
+            }
+            dde.diff(
+                t_new_val_for_k_fnew,
+                &y_new_from_iter,
+                &self.yd,
+                &mut k_fnew_iter,
+            );
             num_evals_this_step += 1;
-            
+
             if max_iter > 1 && iter_idx > 0 {
                 let mut errit_val = T::zero();
                 let n_dim = y_current_step_start.len();
                 for i_dim in 0..n_dim {
-                    let scale = self.atol + self.rtol * y_for_errit_prev_iter.get(i_dim).abs().max(y_new_from_iter.get(i_dim).abs());
+                    let scale = self.atol
+                        + self.rtol
+                            * y_for_errit_prev_iter
+                                .get(i_dim)
+                                .abs()
+                                .max(y_new_from_iter.get(i_dim).abs());
                     if scale > T::zero() {
-                        let diff_val = y_new_from_iter.get(i_dim) - y_for_errit_prev_iter.get(i_dim);
+                        let diff_val =
+                            y_new_from_iter.get(i_dim) - y_for_errit_prev_iter.get(i_dim);
                         errit_val += (diff_val / scale).powi(2);
                     }
                 }
-                if n_dim > 0 { errit_val = (errit_val / T::from_usize(n_dim).unwrap()).sqrt(); }
+                if n_dim > 0 {
+                    errit_val = (errit_val / T::from_usize(n_dim).unwrap()).sqrt();
+                }
 
                 if errit_val <= self.rtol * T::from_f64(0.1).unwrap() {
-                    break; 
+                    break;
                 }
-                if iter_idx == max_iter - 1 { // Check on the last iteration
-                     iteration_failed_to_converge = errit_val > self.rtol * T::from_f64(0.1).unwrap();
+                if iter_idx == max_iter - 1 {
+                    // Check on the last iteration
+                    iteration_failed_to_converge =
+                        errit_val > self.rtol * T::from_f64(0.1).unwrap();
                 }
             }
         }
 
         if iteration_failed_to_converge {
             self.h = (self.h.abs() * T::from_f64(0.5).unwrap()).max(self.h_min.abs()) * self.posneg;
-             if L > 0 && min_lag_abs > T::zero() && self.h.abs() < T::from_f64(2.0).unwrap() * min_lag_abs {
-                 self.h = min_lag_abs * self.posneg; // Avoid stepping too far into a discontinuity
+            if L > 0
+                && min_lag_abs > T::zero()
+                && self.h.abs() < T::from_f64(2.0).unwrap() * min_lag_abs
+            {
+                self.h = min_lag_abs * self.posneg; // Avoid stepping too far into a discontinuity
             }
             self.h = constrain_step_size(self.h, self.h_min, self.h_max);
             self.status = Status::RejectedStep;
             // Restore k[0] as it might have been used if we had a k_stages_iter[0]
-            self.k[0] = k0_at_step_start; 
+            self.k[0] = k0_at_step_start;
             return Ok(num_evals_this_step);
         }
-        
+
         let mut err_final = T::zero();
         let n = y_current_step_start.len();
         for i in 0..n {
-            let sk = self.atol + self.rtol * y_current_step_start.get(i).abs().max(y_new_from_iter.get(i).abs());
+            let sk = self.atol
+                + self.rtol
+                    * y_current_step_start
+                        .get(i)
+                        .abs()
+                        .max(y_new_from_iter.get(i).abs());
             // Error estimation using k0_at_step_start and k_stages_iter[1] to k_stages_iter[6]
             // er[1] is 0 for DOPRI5
             let mut err_comp_sum = k0_at_step_start.get(i) * self.er[0];
-            for j in 2..=6 { // k_stages_iter[2] to k_stages_iter[6]
+            for j in 2..=6 {
+                // k_stages_iter[2] to k_stages_iter[6]
                 err_comp_sum += k_stages_iter[j].get(i) * self.er[j];
             }
             let erri = self.h * err_comp_sum;
@@ -290,14 +358,20 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Numer
                 err_final += (erri / sk).powi(2);
             }
         }
-        if n > 0 { err_final = (err_final / T::from_usize(n).unwrap()).sqrt(); }
+        if n > 0 {
+            err_final = (err_final / T::from_usize(n).unwrap()).sqrt();
+        }
 
         self.fac11 = err_final.powf(self.expo1);
-        let fac_beta = if self.beta > T::zero() && self.facold > T::zero() { self.facold.powf(self.beta) } else { T::one() };
+        let fac_beta = if self.beta > T::zero() && self.facold > T::zero() {
+            self.facold.powf(self.beta)
+        } else {
+            T::one()
+        };
         self.fac = self.fac11 / fac_beta;
         self.fac = self.facc2.max(self.facc1.min(self.fac / self.safe));
         let mut h_new_final = self.h / self.fac;
-        
+
         let t_new_val = t_current_step_start + self.h;
 
         if err_final <= T::one() {
@@ -312,20 +386,28 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Numer
             self.cont[1] = ydiff;
             self.cont[2] = bspl;
             self.cont[3] = ydiff - k_fnew_iter * self.h - bspl;
-            
+
             // d[1] is 0 for DOPRI5
             let mut d_sum = k0_at_step_start * self.d[0];
-            for j in 2..=6 { // k_stages_iter[2] to k_stages_iter[6]
+            for j in 2..=6 {
+                // k_stages_iter[2] to k_stages_iter[6]
                 d_sum += k_stages_iter[j] * self.d[j];
             }
             self.cont[4] = d_sum * self.h;
-            
-            self.cont_buffer.push_back((t_current_step_start, t_new_val, self.h, self.cont));
+
+            self.cont_buffer
+                .push_back((t_current_step_start, t_new_val, self.h, self.cont));
 
             if let Some(max_delay_val) = self.max_delay {
-                let prune_time = if self.posneg > T::zero() { t_new_val - max_delay_val } else { t_new_val + max_delay_val };
+                let prune_time = if self.posneg > T::zero() {
+                    t_new_val - max_delay_val
+                } else {
+                    t_new_val + max_delay_val
+                };
                 while let Some((buf_t_start, buf_t_end, _, _)) = self.cont_buffer.front() {
-                    if (self.posneg > T::zero() && *buf_t_end < prune_time) || (self.posneg < T::zero() && *buf_t_start > prune_time) {
+                    if (self.posneg > T::zero() && *buf_t_end < prune_time)
+                        || (self.posneg < T::zero() && *buf_t_start > prune_time)
+                    {
                         self.cont_buffer.pop_front();
                     } else {
                         break;
@@ -355,58 +437,117 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Numer
         Ok(num_evals_this_step)
     }
 
-    fn t(&self) -> T { self.t }
-    fn y(&self) -> &V { &self.y }
-    fn t_prev(&self) -> T { self.t_old }
-    fn y_prev(&self) -> &V { &self.y_old }
-    fn h(&self) -> T { self.h }
-    fn set_h(&mut self, h: T) { self.h = h; }
-    fn status(&self) -> &Status<T, V, D> { &self.status }
-    fn set_status(&mut self, status: Status<T, V, D>) { self.status = status; }
+    fn t(&self) -> T {
+        self.t
+    }
+    fn y(&self) -> &V {
+        &self.y
+    }
+    fn t_prev(&self) -> T {
+        self.t_old
+    }
+    fn y_prev(&self) -> &V {
+        &self.y_old
+    }
+    fn h(&self) -> T {
+        self.h
+    }
+    fn set_h(&mut self, h: T) {
+        self.h = h;
+    }
+    fn status(&self) -> &Status<T, V, D> {
+        &self.status
+    }
+    fn set_status(&mut self, status: Status<T, V, D>) {
+        self.status = status;
+    }
 }
 
-impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Interpolation<T, V> for DOPRI5<L, T, V, H, D> {
+impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Interpolation<T, V>
+    for DOPRI5<L, T, V, H, D>
+{
     fn interpolate(&mut self, t_interp: T) -> Result<V, InterpolationError<T>> {
-        if (t_interp - self.t_old) * self.posneg < T::zero() || (t_interp - self.t) * self.posneg > T::zero() {
-            if (t_interp - self.t_old).abs() > T::default_epsilon() && (t_interp - self.t).abs() > T::default_epsilon() {
-                return Err(InterpolationError::OutOfBounds {
-                    t_interp,
-                    t_prev: self.t_old,
-                    t_curr: self.t,
-                });
-            }
+        if ((t_interp - self.t_old) * self.posneg < T::zero()
+            || (t_interp - self.t) * self.posneg > T::zero())
+            && (t_interp - self.t_old).abs() > T::default_epsilon()
+            && (t_interp - self.t).abs() > T::default_epsilon()
+        {
+            return Err(InterpolationError::OutOfBounds {
+                t_interp,
+                t_prev: self.t_old,
+                t_curr: self.t,
+            });
         }
-        
-        let s = if self.h_old == T::zero() { 
-            if (t_interp - self.t_old).abs() < T::default_epsilon() { T::zero() } else { T::one() }
+
+        let s = if self.h_old == T::zero() {
+            if (t_interp - self.t_old).abs() < T::default_epsilon() {
+                T::zero()
+            } else {
+                T::one()
+            }
         } else {
             (t_interp - self.t_old) / self.h_old
         };
         let s1 = T::one() - s;
 
         // Use the 5-coefficient dense output formula
-        let y_interp = self.cont[0] + 
-                       (self.cont[1] + 
-                       (self.cont[2] + 
-                       (self.cont[3] + self.cont[4] * s1) * s) * s1) * s;
+        let y_interp = self.cont[0]
+            + (self.cont[1] + (self.cont[2] + (self.cont[3] + self.cont[4] * s1) * s) * s1) * s;
         Ok(y_interp)
     }
 }
 
 impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> DOPRI5<L, T, V, H, D> {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
-    pub fn rtol(mut self, rtol: T) -> Self { self.rtol = rtol; self }
-    pub fn atol(mut self, atol: T) -> Self { self.atol = atol; self }
-    pub fn h0(mut self, h0: T) -> Self { self.h0 = h0; self }
-    pub fn h_max(mut self, h_max: T) -> Self { self.h_max = h_max; self }
-    pub fn h_min(mut self, h_min: T) -> Self { self.h_min = h_min; self }
-    pub fn max_steps(mut self, max_steps: usize) -> Self { self.max_steps = max_steps; self }
-    pub fn safe(mut self, safe: T) -> Self { self.safe = safe; self }
-    pub fn fac1(mut self, fac1: T) -> Self { self.fac1 = fac1; self.facc1 = T::one()/fac1; self }
-    pub fn fac2(mut self, fac2: T) -> Self { self.fac2 = fac2; self.facc2 = T::one()/fac2; self }
-    pub fn beta(mut self, beta: T) -> Self { self.beta = beta; self }
-    pub fn max_delay(mut self, max_delay: T) -> Self { self.max_delay = Some(max_delay.abs()); self }
+    pub fn rtol(mut self, rtol: T) -> Self {
+        self.rtol = rtol;
+        self
+    }
+    pub fn atol(mut self, atol: T) -> Self {
+        self.atol = atol;
+        self
+    }
+    pub fn h0(mut self, h0: T) -> Self {
+        self.h0 = h0;
+        self
+    }
+    pub fn h_max(mut self, h_max: T) -> Self {
+        self.h_max = h_max;
+        self
+    }
+    pub fn h_min(mut self, h_min: T) -> Self {
+        self.h_min = h_min;
+        self
+    }
+    pub fn max_steps(mut self, max_steps: usize) -> Self {
+        self.max_steps = max_steps;
+        self
+    }
+    pub fn safe(mut self, safe: T) -> Self {
+        self.safe = safe;
+        self
+    }
+    pub fn fac1(mut self, fac1: T) -> Self {
+        self.fac1 = fac1;
+        self.facc1 = T::one() / fac1;
+        self
+    }
+    pub fn fac2(mut self, fac2: T) -> Self {
+        self.fac2 = fac2;
+        self.facc2 = T::one() / fac2;
+        self
+    }
+    pub fn beta(mut self, beta: T) -> Self {
+        self.beta = beta;
+        self
+    }
+    pub fn max_delay(mut self, max_delay: T) -> Self {
+        self.max_delay = Some(max_delay.abs());
+        self
+    }
 
     fn lagvals(&mut self, t_stage: T, _y_stage: &V) {
         for i in 0..L {
@@ -416,23 +557,43 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> DOPRI
             } else {
                 let mut found_in_buffer = false;
                 for (buf_t_start, buf_t_end, buf_h, buf_cont) in self.cont_buffer.iter().rev() {
-                    if (t_delayed - *buf_t_start) * self.posneg >= -T::default_epsilon() && (t_delayed - *buf_t_end) * self.posneg <= T::default_epsilon() {
+                    if (t_delayed - *buf_t_start) * self.posneg >= -T::default_epsilon()
+                        && (t_delayed - *buf_t_end) * self.posneg <= T::default_epsilon()
+                    {
                         let s = if *buf_h == T::zero() {
-                            if (t_delayed - *buf_t_start).abs() < T::default_epsilon() { T::zero() } else { T::one() }
+                            if (t_delayed - *buf_t_start).abs() < T::default_epsilon() {
+                                T::zero()
+                            } else {
+                                T::one()
+                            }
                         } else {
                             (t_delayed - *buf_t_start) / *buf_h
                         };
-                        self.yd[i] = buf_cont[0] + (buf_cont[1] + (buf_cont[2] + (buf_cont[3] + buf_cont[4] * (T::one() - s)) * s) * (T::one() - s)) * s;
+                        self.yd[i] = buf_cont[0]
+                            + (buf_cont[1]
+                                + (buf_cont[2] + (buf_cont[3] + buf_cont[4] * (T::one() - s)) * s)
+                                    * (T::one() - s))
+                                * s;
                         found_in_buffer = true;
                         break;
                     }
                 }
                 if !found_in_buffer {
-                    if let Some((buf_t_start, _buf_t_end, buf_h, buf_cont)) = self.cont_buffer.back() {
-                         let s = if *buf_h == T::zero() { T::one() } else { (t_delayed - *buf_t_start) / *buf_h };
-                         self.yd[i] = buf_cont[0] + (buf_cont[1] + (buf_cont[2] + (buf_cont[3] + buf_cont[4] * (T::one() - s)) * s) * (T::one() - s)) * s;
+                    if let Some((buf_t_start, _buf_t_end, buf_h, buf_cont)) =
+                        self.cont_buffer.back()
+                    {
+                        let s = if *buf_h == T::zero() {
+                            T::one()
+                        } else {
+                            (t_delayed - *buf_t_start) / *buf_h
+                        };
+                        self.yd[i] = buf_cont[0]
+                            + (buf_cont[1]
+                                + (buf_cont[2] + (buf_cont[3] + buf_cont[4] * (T::one() - s)) * s)
+                                    * (T::one() - s))
+                                * s;
                     } else {
-                        self.yd[i] = (self.phi.as_ref().unwrap())(t_delayed); 
+                        self.yd[i] = (self.phi.as_ref().unwrap())(t_delayed);
                     }
                 }
             }
@@ -440,7 +601,9 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> DOPRI
     }
 }
 
-impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Default for DOPRI5<L, T, V, H, D> {
+impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Default
+    for DOPRI5<L, T, V, H, D>
+{
     fn default() -> Self {
         // Convert coefficient arrays from f64 to type T
         let a_conv = DOPRI5_A.map(|row| row.map(|x| T::from_f64(x).unwrap()));
@@ -456,9 +619,14 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Defau
         let beta_default = T::from_f64(0.04).unwrap();
 
         DOPRI5 {
-            t: T::zero(), y: V::zeros(), h: T::zero(), h0: T::zero(),
-            rtol: T::from_f64(1e-3).unwrap(), atol: T::from_f64(1e-6).unwrap(),
-            h_max: T::infinity(), h_min: T::zero(),
+            t: T::zero(),
+            y: V::zeros(),
+            h: T::zero(),
+            h0: T::zero(),
+            rtol: T::from_f64(1e-3).unwrap(),
+            atol: T::from_f64(1e-6).unwrap(),
+            h_max: T::infinity(),
+            h_min: T::zero(),
             max_steps: 100_000,
             safe: T::from_f64(0.9).unwrap(),
             fac1: fac1_default,
@@ -469,16 +637,28 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Defau
             facc1: T::one() / fac1_default,
             facc2: T::one() / fac2_default,
             facold: T::from_f64(1.0e-4).unwrap(),
-            fac11: T::zero(), fac: T::zero(),
+            fac11: T::zero(),
+            fac: T::zero(),
             status: Status::Uninitialized,
-            steps: 0, n_accepted: 0,
-            a: a_conv, b: b_conv, c: c_conv, er: er_conv, d: d_conv,
+            steps: 0,
+            n_accepted: 0,
+            a: a_conv,
+            b: b_conv,
+            c: c_conv,
+            er: er_conv,
+            d: d_conv,
             k: [V::zeros(); 7],
-            y_old: V::zeros(), t_old: T::zero(), h_old: T::zero(),
+            y_old: V::zeros(),
+            t_old: T::zero(),
+            h_old: T::zero(),
             cont: [V::zeros(); 5], // Initialize 5-element cont
             cont_buffer: VecDeque::new(),
-            phi: None, t0: T::zero(), tf: T::zero(), posneg: T::zero(),
-            lags: [T::zero(); L], yd: [V::zeros(); L],
+            phi: None,
+            t0: T::zero(),
+            tf: T::zero(),
+            posneg: T::zero(),
+            lags: [T::zero(); L],
+            yd: [V::zeros(); L],
         }
     }
 }
@@ -509,7 +689,8 @@ const DOPRI5_A: [[f64; 7]; 7] = [
         0.0,
         0.0,
     ],
-    [ // Coefficients for ysti (used to compute k[6])
+    [
+        // Coefficients for ysti (used to compute k[6])
         35.0 / 384.0,
         0.0, // a[6][1] is 0
         500.0 / 1113.0,

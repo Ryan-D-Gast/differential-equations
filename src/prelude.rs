@@ -53,6 +53,23 @@
 // -- Types of Differential Equations --
 
 pub use crate::{
+    alias::NumEvals,
+    control::ControlFlag,
+    // Delay Differential Equations (DDE) module
+    dde::{
+        DDE,        // Define the DDE system
+        DDEProblem, // Create IVP to solve
+
+        // Re-exporting popular DDE solvers
+        methods::{
+            BS23 as DDE23, // Bogacki-Shampine 2(3) method with adaptive step size and dense output
+            DOPRI5 as DDE45, // Dormand-Prince 5(4) method with adaptive step size
+        },
+    },
+
+    derive::State,
+    error::Error,
+    interpolate::Interpolation,
     // Ordinary Differential Equations (ODE) module
     ode::{
         ODE,        // Define the ODE system
@@ -75,21 +92,9 @@ pub use crate::{
         },
     },
 
-    // Delay Differential Equations (DDE) module
-    dde::{
-        DDE,        // Define the DDE system
-        DDEProblem, // Create IVP to solve
-
-        // Re-exporting popular DDE solvers
-        methods::{
-            BS23 as DDE23, // Bogacki-Shampine 2(3) method with adaptive step size and dense output
-            DOPRI5 as DDE45, // Dormand-Prince 5(4) method with adaptive step size
-        },
-    },
-
     // Stochastic Differential Equations (SDE) module
     sde::{
-        SDE, // Define the SDE system
+        SDE,        // Define the SDE system
         SDEProblem, // Create IVP to solve
 
         // Re-exporting popular SDE solvers
@@ -102,14 +107,9 @@ pub use crate::{
 
     // Shared items not specific to a Differential Equation Type
     solout::{
-        Solout, // Trait for defining a custom output behavior
         CrossingDirection,
+        Solout, // Trait for defining a custom output behavior
     },
-    error::Error,
-    status::Status,
     solution::Solution,
-    control::ControlFlag,
-    interpolate::Interpolation, 
-    derive::State,
-    alias::NumEvals,
+    status::Status,
 };

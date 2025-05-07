@@ -2,9 +2,9 @@
 
 pub use crate::{
     Error, Status,
+    alias::NumEvals,
     interpolate::{Interpolation, InterpolationError, cubic_hermite_interpolate},
     ode::{NumericalMethod, ODE},
-    alias::NumEvals,
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };

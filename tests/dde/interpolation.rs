@@ -26,7 +26,7 @@ macro_rules! test_dde_interpolation {
 
         $(
             // Define the system
-            let system = ExponentialGrowth { k: k };
+            let system = ExponentialGrowth { k };
 
             // Create Initial Value Problem (DDEProblem) for the system
             // For L=0, the history function's exact form for t < t0 is less critical

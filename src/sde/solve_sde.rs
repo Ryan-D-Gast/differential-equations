@@ -3,7 +3,7 @@
 use crate::{
     ControlFlag, Error, Solution, Status,
     interpolate::Interpolation,
-    sde::{SDE, NumericalMethod},
+    sde::{NumericalMethod, SDE},
     solout::*,
     traits::{CallBackData, Real, State},
 };
@@ -86,7 +86,7 @@ use crate::{
 /// struct GBM {
 ///     rng: rand::rngs::StdRng,
 /// }
-/// 
+///
 /// impl GBM {
 ///     fn new(seed: u64) -> Self {
 ///         Self {

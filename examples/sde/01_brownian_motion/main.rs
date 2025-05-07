@@ -1,8 +1,8 @@
 //! Example 01: Brownian Motion
-//! 
+//!
 //! This example simulates standard Brownian motion using the SDE:
 //! dX = σ·dW
-//! 
+//!
 //! where:
 //! - σ (sigma) is the volatility parameter (constant)
 //! - dW is the increment of a standard Wiener process
@@ -17,7 +17,7 @@ use rand_distr::{Distribution, Normal};
 
 /// Struct representing Brownian motion with volatility parameter σ
 struct BrownianMotion {
-    sigma: f64,             // Volatility parameter
+    sigma: f64,              // Volatility parameter
     rng: rand::rngs::StdRng, // Random number generator
 }
 
@@ -42,7 +42,7 @@ impl SDE for BrownianMotion {
     fn diffusion(&self, _t: f64, _y: &f64, dydw: &mut f64) {
         *dydw = self.sigma;
     }
-    
+
     /// Generate noise for Brownian motion
     fn noise(&self, dt: f64, dw: &mut f64) {
         let normal = Normal::new(0.0, dt.sqrt()).unwrap();

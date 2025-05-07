@@ -2,8 +2,8 @@
 
 use crate::{
     Error, Solution,
+    dde::{DDE, numerical_method::NumericalMethod, solve_dde},
     interpolate::Interpolation,
-    dde::{DDE, solve_dde, numerical_method::NumericalMethod},
     solout::*,
     traits::{CallBackData, Real, State},
 };
@@ -19,7 +19,7 @@ use std::marker::PhantomData;
 /// The DDEProblem struct provides a simple interface for solving DDEs:
 ///
 /// # Example
-/// 
+///
 /// ```
 /// use differential_equations::prelude::*;
 /// use differential_equations::dde::methods::BS23;
@@ -41,7 +41,7 @@ use std::marker::PhantomData;
 ///        dydt[0] = y[1] + yd[0][0];
 ///        dydt[1] = -y[0] + yd[0][1];
 ///     }
-/// 
+///
 ///     fn lags(&self, _t: f64, _y: &Vector2<f64>, lags: &mut [f64; 1]) {
 ///        lags[0] = 1.0; // Fixed delay of 1.0
 ///     }
@@ -197,7 +197,10 @@ where
     /// # Returns
     /// * DDEProblem NumericalMethod with Custom Time Evaluation function ready for .solve() method.
     ///
-    pub fn t_eval(&self, points: Vec<T>) -> DDEProblemSoloutPair<'_, L, T, V, D, F, H, TEvalSolout<T>> {
+    pub fn t_eval(
+        &self,
+        points: Vec<T>,
+    ) -> DDEProblemSoloutPair<'_, L, T, V, D, F, H, TEvalSolout<T>> {
         let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf); // Custom time evaluation solout implementation
         DDEProblemSoloutPair::new(self, t_eval_solout)
     }
@@ -264,7 +267,7 @@ where
     O: Solout<T, V, D>,
 {
     pub problem: &'a DDEProblem<L, T, V, D, F, H>, // Reference to the DDEProblem struct
-    pub solout: &'a mut O,        // Reference to the solout implementation
+    pub solout: &'a mut O,                         // Reference to the solout implementation
 }
 
 impl<'a, const L: usize, T, V, D, F, H, O> DDEProblemMutRefSoloutPair<'a, L, T, V, D, F, H, O>
@@ -324,7 +327,6 @@ where
     pub problem: &'a DDEProblem<L, T, V, D, F, H>,
     pub solout: O,
 }
-
 
 impl<'a, const L: usize, T, V, D, F, H, O> DDEProblemSoloutPair<'a, L, T, V, D, F, H, O>
 where

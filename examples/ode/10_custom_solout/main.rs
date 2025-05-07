@@ -1,11 +1,11 @@
 //! Example 10: Custom Solution Output (Solout) for Pendulum
-//! 
+//!
 //! This example demonstrates a pendulum simulation with a custom Solout implementation
 //! that captures specific events and calculates derived quantities. The pendulum equations are:
-//! 
+//!
 //! dθ/dt = ω
 //! dω/dt = -(g/l)*sin(θ)
-//! 
+//!
 //! where:
 //! - θ (theta) is the angle from vertical
 //! - ω (omega) is the angular velocity

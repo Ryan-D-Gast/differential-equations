@@ -3,18 +3,18 @@
 use crate::{
     Error, Status,
     interpolate::{Interpolation, InterpolationError},
+    linalg::component_multiply,
     sde::NumericalMethod,
     sde::SDE,
     traits::{CallBackData, Real, State},
-    utils::validate_step_size_parameters, 
-    linalg::component_multiply,
+    utils::validate_step_size_parameters,
 };
 
 /// Runge-Kutta-Maruyama Method for solving stochastic differential equations.
 ///
 /// This method extends the fourth-order Runge-Kutta method for deterministic ODEs
-/// to the stochastic case. It uses RK4 for the drift term to achieve higher-order 
-/// accuracy in the deterministic part, while maintaining the Euler-Maruyama approach 
+/// to the stochastic case. It uses RK4 for the drift term to achieve higher-order
+/// accuracy in the deterministic part, while maintaining the Euler-Maruyama approach
 /// for the diffusion term.
 ///
 /// For an SDE of the form:
@@ -44,7 +44,7 @@ use crate::{
 ///     sigma: f64,  // Volatility
 ///     rng: rand::rngs::StdRng,
 /// }
-/// 
+///
 /// impl OrnsteinUhlenbeck {
 ///     fn new(theta: f64, mu: f64, sigma: f64, seed: u64) -> Self {
 ///         Self {
@@ -130,11 +130,11 @@ impl<T: Real, V: State<T>, D: CallBackData> Default for RKM4<T, V, D> {
 impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for RKM4<T, V, D> {
     fn init<F>(&mut self, sde: &F, t0: T, tf: T, y0: &V) -> Result<usize, Error<T, V>>
     where
-        F: SDE<T, V, D>
+        F: SDE<T, V, D>,
     {
         // Check Bounds
         match validate_step_size_parameters::<T, V, D>(self.h, T::zero(), T::infinity(), t0, tf) {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => return Err(e),
         }
 
@@ -158,58 +158,58 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for RKM4<T,
 
     fn step<F>(&mut self, sde: &F) -> Result<usize, Error<T, V>>
     where
-        F: SDE<T, V, D>
+        F: SDE<T, V, D>,
     {
         // Log previous state
         self.t_prev = self.t;
         self.y_prev = self.y;
 
         // RK4 for the deterministic part (drift)
-        
+
         // k1 is already calculated from previous step or init
         sde.drift(self.t, &self.y, &mut self.k1);
-        
+
         // k2 calculation: k2 = f(t + h/2, y + h*k1/2)
         let half_h = self.h / T::from_f64(2.0).unwrap();
         let t_half = self.t + half_h;
-        
+
         // y_temp = y + h*k1/2
         self.y_temp = self.y + self.k1 * half_h;
         sde.drift(t_half, &self.y_temp, &mut self.k2);
-        
+
         // k3 calculation: k3 = f(t + h/2, y + h*k2/2)
         // y_temp = y + h*k2/2
         self.y_temp = self.y + self.k2 * half_h;
         sde.drift(t_half, &self.y_temp, &mut self.k3);
-        
+
         // k4 calculation: k4 = f(t + h, y + h*k3)
         let t_full = self.t + self.h;
         // y_temp = y + h*k3
         self.y_temp = self.y + self.k3 * self.h;
         sde.drift(t_full, &self.y_temp, &mut self.k4);
-        
+
         // Compute diffusion term at the current time and state
         sde.diffusion(self.t, &self.y, &mut self.diffusion);
-        
+
         // Generate noise increments using the SDE's noise method
         let mut dw = V::zeros();
         sde.noise(self.h, &mut dw);
-        
+
         // Compute next state using the Runge-Kutta-Maruyama formula
         // y_new = y + (h/6)*(k1 + 2*k2 + 2*k3 + k4) + diffusion * dW
-        
+
         // Calculate RK4 weighted sum for deterministic part
-        let sixth = T::from_f64(1.0/6.0).unwrap();
+        let sixth = T::from_f64(1.0 / 6.0).unwrap();
         let two = T::from_f64(2.0).unwrap();
-        
+
         let drift_term = (self.k1 + self.k2 * two + self.k3 * two + self.k4) * (self.h * sixth);
-        
+
         // Calculate stochastic part (Euler-Maruyama style)
         let diffusion_term = component_multiply(&self.diffusion, &dw);
-        
+
         // Combine deterministic and stochastic components
         let y_new = self.y + drift_term + diffusion_term;
-        
+
         // Update state
         self.t = t_full;
         self.y = y_new;
@@ -254,10 +254,10 @@ impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for RKM4<T, V, D
     fn interpolate(&mut self, t_interp: T) -> Result<V, InterpolationError<T>> {
         // Check if t is within the bounds of the current step
         if t_interp < self.t_prev || t_interp > self.t {
-            return Err(InterpolationError::OutOfBounds { 
-                t_interp, 
-                t_prev: self.t_prev, 
-                t_curr: self.t 
+            return Err(InterpolationError::OutOfBounds {
+                t_interp,
+                t_prev: self.t_prev,
+                t_curr: self.t,
             });
         }
 
@@ -265,7 +265,7 @@ impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for RKM4<T, V, D
         // determine the precise path between points without knowledge of the entire Wiener path
         let s = (t_interp - self.t_prev) / (self.t - self.t_prev);
         let y_interp = self.y_prev + (self.y - self.y_prev) * s;
-        
+
         Ok(y_interp)
     }
 }

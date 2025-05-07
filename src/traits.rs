@@ -40,16 +40,16 @@ impl Real for f64 {
 }
 
 /// State vector trait
-/// 
+///
 /// Represents the state of the system being solved.
-/// 
+///
 /// Implements for the following types:
 /// * `f32` - 32-bit floating point
 /// * `f64` - 64-bit floating point
 /// * `SMatrix` - Matrix type from nalgebra
 /// * `Complex` - Complex number type from num-complex
 /// * `Struct<T>` - Any struct with all fields of type T using #[derive(State)] from the `derive` module
-/// 
+///
 pub trait State<T>:
     Clone
     + Copy

@@ -8,7 +8,7 @@
 //! The following example demonstrates how to solve the Heston stochastic volatility model:
 //!
 //! ```rust
-//! use differential_equations::prelude::*; 
+//! use differential_equations::prelude::*;
 //! use rand::SeedableRng;
 //! use rand_distr::Distribution;
 //!
@@ -99,7 +99,7 @@
 //!     // Print final state
 //!     let final_price = solution.y.last().unwrap().price;
 //!     let final_variance = solution.y.last().unwrap().variance;
-//!     println!("Final price: {:.4}, Final volatility: {:.4}%", 
+//!     println!("Final price: {:.4}, Final volatility: {:.4}%",
 //!              final_price, final_variance.sqrt() * 100.0);
 //! }
 //! ```
@@ -131,13 +131,10 @@ pub use sde::SDE;
 pub mod methods;
 
 mod numerical_method;
-pub use numerical_method::{
-    NumEvals, 
-    NumericalMethod
-};
+pub use numerical_method::{NumEvals, NumericalMethod};
 
-mod solve_sde;
 mod sde_problem;
+mod solve_sde;
 
-pub use solve_sde::solve_sde;
 pub use sde_problem::SDEProblem;
+pub use solve_sde::solve_sde;

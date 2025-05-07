@@ -3,23 +3,23 @@
 use crate::{
     Error, Status,
     interpolate::{Interpolation, InterpolationError},
+    linalg::{component_multiply, component_square},
     sde::NumericalMethod,
     sde::SDE,
     traits::{CallBackData, Real, State},
-    utils::validate_step_size_parameters, 
-    linalg::{component_multiply, component_square},
+    utils::validate_step_size_parameters,
 };
 
 /// Milstein Method for solving stochastic differential equations.
 ///
-/// The Milstein method is a higher-order method for SDEs that includes 
+/// The Milstein method is a higher-order method for SDEs that includes
 /// an additional term from the Itô-Taylor expansion to achieve better accuracy.
 ///
 /// For an SDE of the form:
 /// dY = a(t,Y)dt + b(t,Y)dW
 ///
 /// The Milstein update is:
-/// Y_{n+1} = Y_n + a(t_n, Y_n)Δt + b(t_n, Y_n)ΔW_n + 
+/// Y_{n+1} = Y_n + a(t_n, Y_n)Δt + b(t_n, Y_n)ΔW_n +
 ///           0.5 * b(t_n, Y_n)^2 * [(ΔW_n)² - Δt]
 ///
 /// where ΔW_n is a Wiener process increment.
@@ -28,7 +28,7 @@ use crate::{
 /// scalar SDEs. For geometric Brownian motion, the b(t,Y) term is σY, so the
 /// correction term becomes 0.5 * (σY)^2 * [(ΔW)² - Δt].
 ///
-/// The Milstein method has strong order of convergence 1.0 
+/// The Milstein method has strong order of convergence 1.0
 /// (compared to 0.5 for Euler-Maruyama), making it more accurate
 /// for SDEs with significant diffusion effects.
 ///
@@ -44,7 +44,7 @@ use crate::{
 ///     sigma: f64,  // Volatility
 ///     rng: rand::rngs::StdRng,
 /// }
-/// 
+///
 /// impl GBM {
 ///     fn new(mu: f64, sigma: f64, seed: u64) -> Self {
 ///         Self {
@@ -119,11 +119,11 @@ impl<T: Real, V: State<T>, D: CallBackData> Default for Milstein<T, V, D> {
 impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Milstein<T, V, D> {
     fn init<F>(&mut self, sde: &F, t0: T, tf: T, y0: &V) -> Result<usize, Error<T, V>>
     where
-        F: SDE<T, V, D>
+        F: SDE<T, V, D>,
     {
         // Check Bounds
         match validate_step_size_parameters::<T, V, D>(self.h, T::zero(), T::infinity(), t0, tf) {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => return Err(e),
         }
 
@@ -147,7 +147,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Milstei
 
     fn step<F>(&mut self, sde: &F) -> Result<usize, Error<T, V>>
     where
-        F: SDE<T, V, D>
+        F: SDE<T, V, D>,
     {
         // Log previous state
         self.t_prev = self.t;
@@ -160,25 +160,25 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Milstei
         // Generate noise increments using the SDE's noise method
         let mut dw = V::zeros();
         sde.noise(self.h, &mut dw);
-        
+
         // Compute next state using Milstein method
-        
+
         // Standard Euler-Maruyama terms
         let drift_term = self.drift * self.h;
         let diffusion_term = component_multiply(&self.diffusion, &dw);
-        
+
         // Additional Milstein correction term: 0.5 * b^2 * [(ΔW)² - Δt]
         // Calculate dW² - dt
         let dw_squared = component_square(&dw);
         let dw_squared_minus_dt = dw_squared - dw * self.h;
-        
+
         // Calculate b²
         let diffusion_squared = component_square(&self.diffusion);
-        
+
         // Calculate 0.5 * b² * (dW² - dt)
         let half = T::from_f64(0.5).unwrap();
         let milstein_term = component_multiply(&diffusion_squared, &dw_squared_minus_dt) * half;
-        
+
         // Combine all terms
         let y_new = self.y + drift_term + diffusion_term + milstein_term;
 
@@ -226,10 +226,10 @@ impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for Milstein<T, 
     fn interpolate(&mut self, t_interp: T) -> Result<V, InterpolationError<T>> {
         // Check if t is within the bounds of the current step
         if t_interp < self.t_prev || t_interp > self.t {
-            return Err(InterpolationError::OutOfBounds { 
-                t_interp, 
-                t_prev: self.t_prev, 
-                t_curr: self.t 
+            return Err(InterpolationError::OutOfBounds {
+                t_interp,
+                t_prev: self.t_prev,
+                t_curr: self.t,
             });
         }
 
@@ -237,7 +237,7 @@ impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for Milstein<T, 
         // determine the precise path between points without knowledge of the entire Wiener path
         let s = (t_interp - self.t_prev) / (self.t - self.t_prev);
         let y_interp = self.y_prev + (self.y - self.y_prev) * s;
-        
+
         Ok(y_interp)
     }
 }

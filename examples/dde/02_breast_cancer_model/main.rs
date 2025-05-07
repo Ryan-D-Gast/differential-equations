@@ -61,9 +61,17 @@ fn main() {
     // --- Problem Definition ---
     let tau = 1.0;
     let dde = BreastCancerModel {
-        p0: 0.2, q0: 0.3, v0: 1.0, d0: 5.0,
-        p1: 0.2, q1: 0.3, v1: 1.0, d1: 1.0, d2: 1.0,
-        beta0: 1.0, beta1: 1.0,
+        p0: 0.2,
+        q0: 0.3,
+        v0: 1.0,
+        d0: 5.0,
+        p1: 0.2,
+        q1: 0.3,
+        v1: 1.0,
+        d1: 1.0,
+        d2: 1.0,
+        beta0: 1.0,
+        beta1: 1.0,
         tau,
     };
 
@@ -73,9 +81,7 @@ fn main() {
     let y0 = Vector3::new(1.0, 1.0, 1.0);
 
     // Define the initial history function phi(t) for t <= t0
-    let phi = |_t: f64| -> Vector3<f64> {
-        y0
-    };
+    let phi = |_t: f64| -> Vector3<f64> { y0 };
 
     // Create the DDEProblem
     let problem = DDEProblem::new(dde, t0, tf, y0, phi);
@@ -85,10 +91,7 @@ fn main() {
         "Solving Breast Cancer Model (tau={}) from t={} to t={}...",
         tau, t0, tf
     );
-    match problem
-        .even(0.5)
-        .solve(&mut solver)
-    {
+    match problem.even(0.5).solve(&mut solver) {
         Ok(solution) => {
             println!("Solver finished with status: {:?}", solution.status);
 
@@ -100,7 +103,10 @@ fn main() {
             println!("Number of output points: {}", solution.t.len());
 
             for (t, u) in solution.iter() {
-                println!("t: {:.4}, u1: {:.4}, u2: {:.4}, u3: {:.4}", t, u[0], u[1], u[2]);
+                println!(
+                    "t: {:.4}, u1: {:.4}, u2: {:.4}, u3: {:.4}",
+                    t, u[0], u[1], u[2]
+                );
             }
         }
         Err(e) => {
