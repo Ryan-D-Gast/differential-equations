@@ -1,4 +1,4 @@
-//! Solout trait and common implementations for controlling the output of ODE solvers in the `ode` module.
+//! Solout trait and common implementations for controlling the output of differential equation solvers.
 //!
 //! ## Includes
 //! * `DefaultSolout` for capturing all solver steps
