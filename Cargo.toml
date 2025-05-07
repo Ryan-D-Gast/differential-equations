@@ -104,8 +104,17 @@ path = "examples/sde/02_heston_model/main.rs"
 name = "sde_03_ornstein_uhlenbeck"
 path = "examples/sde/03_ornstein_uhlenbeck/main.rs"
 
+# Delay Differential Equation (DDE) examples
+[[example]]
+name = "dde_01_mackey_glass"
+path = "examples/dde/01_mackey_glass/main.rs"
+
+[[example]]
+name = "dde_02_breast_cancer_model"
+path = "examples/dde/02_breast_cancer_model/main.rs"
+
 # Benchmarks
 [[bench]]
-name = "ode_bench"
+name = "ode_solver_benchmarks"
 harness = false
-path = "benches/ode/main.rs"
+path = "benches/main.rs"

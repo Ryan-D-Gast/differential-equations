@@ -81,6 +81,9 @@ pub mod prelude;
 // Ordinary Differential Equations (ODE) Module
 pub mod ode;
 
+// Delay Differential Equations (DDE) Module
+pub mod dde;
+
 // Stochastic Differential Equations (SDE) Module
 pub mod sde;
 
