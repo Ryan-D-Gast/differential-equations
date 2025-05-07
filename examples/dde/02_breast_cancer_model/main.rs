@@ -8,6 +8,8 @@
 //! du₁/dt = (v₀ / (1 + β₀ * u₃(t-τ)²)) * (p₀ - q₀) * u₁ - d₀ * u₁
 //! du₂/dt = (v₀ / (1 + β₀ * u₃(t-τ)²)) * (1 - p₀ + q₀) * u₁ + (v₁ / (1 + β₁ * u₃(t-τ)²)) * (p₁ - q₁) * u₂ - d₁ * u₂
 //! du₃/dt = (v₁ / (1 + β₁ * u₃(t-τ)²)) * (1 - p₁ + q₁) * u₂ - d₂ * u₃
+//! 
+//! Source: [https://www.nature.com/articles/srep02473]
 //!
 //! where:
 //! - u₁, u₂, u₃ represent different cell populations.
