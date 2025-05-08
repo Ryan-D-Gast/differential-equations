@@ -91,6 +91,10 @@ path = "examples/ode/10_custom_solout/main.rs"
 name = "ode_11_schrodinger"
 path = "examples/ode/11_schrodinger/main.rs"
 
+[[example]]
+name = "ode_12_brusselator"
+path = "examples/ode/12_brusselator/main.rs"
+
 # Stochastic Differential Equation (SDE) examples
 [[example]]
 name = "sde_01_brownian_motion"

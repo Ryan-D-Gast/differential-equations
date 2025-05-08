@@ -75,6 +75,9 @@ where
     /// Number of function evaluations.
     pub evals: usize,
 
+    /// Number of Jacobian evaluations.
+    pub jac_evals: usize,
+
     /// Total number of steps taken by the solver.
     pub steps: usize,
 
@@ -114,6 +117,7 @@ where
             status: Status::Uninitialized,
             evals: 0,
             steps: 0,
+            jac_evals: 0,
             rejected_steps: 0,
             accepted_steps: 0,
             timer: Timer::Off,

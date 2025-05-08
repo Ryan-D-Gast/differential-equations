@@ -7,6 +7,7 @@ use crate::{
     ControlFlag,
     traits::{CallBackData, Real, State},
 };
+use nalgebra::DMatrix;
 
 /// ODE Trait for Differential Equations
 ///
@@ -65,5 +66,23 @@ where
     ///
     fn event(&self, t: T, y: &V) -> ControlFlag<D> {
         ControlFlag::Continue
+    }
+    
+    /// Jacobian matrix J = df/dy
+    /// 
+    /// The Jacobian matrix is a matrix of partial derivatives of a vector-valued function.
+    /// It describes the local behavior of the system of equations and can be used to improve
+    /// the efficiency of certain solvers by providing information about the local behavior
+    /// of the system of equations.
+    /// 
+    /// # Arguments
+    /// * `t` - Independent variable grid point.
+    /// * `y` - Dependent variable vector.
+    /// * `j` - Jacobian matrix. This matrix should be pre-sized by the caller to `dim x dim` where `dim = y.len()`.
+    /// 
+    fn jacobian(&self, t: T, y: &V, j: &mut DMatrix<T>) {
+        // Jacobian usage will have to be turned on in the solver.
+        // if not implemented by the user and turned on in the solver will panic.
+        panic!("Jacobian not implemented for this ODE system. Please implement the Jacobian method.");
     }
 }

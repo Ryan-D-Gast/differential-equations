@@ -72,4 +72,9 @@ where
 
     /// Set status of solver
     fn set_status(&mut self, status: Status<T, V, D>);
+
+    /// Information about the solver
+    fn using_jacobian(&self) -> bool {
+        false
+    }
 }

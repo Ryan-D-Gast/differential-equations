@@ -53,23 +53,6 @@
 // -- Types of Differential Equations --
 
 pub use crate::{
-    alias::NumEvals,
-    control::ControlFlag,
-    // Delay Differential Equations (DDE) module
-    dde::{
-        DDE,        // Define the DDE system
-        DDEProblem, // Create IVP to solve
-
-        // Re-exporting popular DDE solvers
-        methods::{
-            BS23 as DDE23, // Bogacki-Shampine 2(3) method with adaptive step size and dense output
-            DOPRI5 as DDE45, // Dormand-Prince 5(4) method with adaptive step size
-        },
-    },
-
-    derive::State,
-    error::Error,
-    interpolate::Interpolation,
     // Ordinary Differential Equations (ODE) module
     ode::{
         ODE,        // Define the ODE system
@@ -92,6 +75,18 @@ pub use crate::{
         },
     },
 
+    // Delay Differential Equations (DDE) module
+    dde::{
+        DDE,        // Define the DDE system
+        DDEProblem, // Create IVP to solve
+
+        // Re-exporting popular DDE solvers
+        methods::{
+            BS23 as DDE23, // Bogacki-Shampine 2(3) method with adaptive step size and dense output
+            DOPRI5 as DDE45, // Dormand-Prince 5(4) method with adaptive step size
+        },
+    },
+
     // Stochastic Differential Equations (SDE) module
     sde::{
         SDE,        // Define the SDE system
@@ -110,6 +105,20 @@ pub use crate::{
         CrossingDirection,
         Solout, // Trait for defining a custom output behavior
     },
+    alias::NumEvals,
+    control::ControlFlag,
+    derive::State,
+    error::Error,
+    interpolate::Interpolation,
     solution::Solution,
     status::Status,
+};
+
+// -- re-export of nalgebra Types and Macros --
+
+pub use nalgebra::{
+    DMatrix,
+    SMatrix,
+    SVector,
+    vector,
 };

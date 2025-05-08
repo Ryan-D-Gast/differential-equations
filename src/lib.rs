@@ -136,6 +136,7 @@ pub mod utils;
 // Linear Algebra Functions
 pub mod linalg;
 
+// Alias for primative types for readability
 pub mod alias;
 
 // Derive Macros for Differential Equations

@@ -206,6 +206,9 @@ where
             Ok(evals) => {
                 // Update function evaluations
                 solution.evals += evals;
+                if solver.using_jacobian() {
+                    solution.jac_evals += 1; // For now assum 1 Jacobian evaluation per step if being used
+                }
 
                 // Check for a RejectedStep
                 if let Status::RejectedStep = solver.status() {
