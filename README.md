@@ -16,7 +16,7 @@
 
 <p align="center">
     <strong>
-        <a href="./docs/README.md">Documentation</a> |
+        <a href="./docs/introduction.md">Documentation</a> |
         <a href="./examples/ode/01_exponential_growth/main.rs">Examples</a> |
         <a href="https://github.com/Ryan-D-Gast/differential-equations"
         >GitHub</a> |
