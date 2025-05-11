@@ -7,7 +7,7 @@ use differential_equations::ode::{
         adams::{APCF4, APCV4},
         runge_kutta::{
             explicit::{DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98},
-            implicit::{CrankNicolson, GaussLegendre6},
+            implicit::{CrankNicolson, GaussLegendre6, Radau5},
         },
     },
 };
@@ -75,7 +75,8 @@ fn interpolation() {
         solver_name: APCF4, solver: APCF4::new(0.01),
         solver_name: APCV4, solver: APCV4::new().h0(0.01),
         solver_name: CrankNicolson, solver: CrankNicolson::new(0.01),
-        solver_name: GaussLegendre6, solver: GaussLegendre6::new().h0(0.01)
+        solver_name: GaussLegendre6, solver: GaussLegendre6::new().h0(0.01),
+        solver_name: Radau5, solver: Radau5::new().h0(0.01)
     }
 
     test_interpolation! {

@@ -6,7 +6,7 @@ use differential_equations::ode::methods::{
     adams::{APCF4, APCV4},
     runge_kutta::{
         explicit::{DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98},
-        implicit::{CrankNicolson, GaussLegendre4, GaussLegendre6},
+        implicit::{CrankNicolson, GaussLegendre4, GaussLegendre6, Radau5},
     },
 };
 use nalgebra::vector;
@@ -117,6 +117,10 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: GaussLegendre6::new(),
+        tolerance: 1e-3,
+
+        solver_name: Radau5,
+        solver: Radau5::new(),
         tolerance: 1e-3
     }
 
@@ -178,6 +182,10 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: GaussLegendre6::new(),
+        tolerance: 1e-3,
+
+        solver_name: Radau5,
+        solver: Radau5::new(),
         tolerance: 1e-3
     }
 
@@ -239,6 +247,10 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: GaussLegendre6::new(),
+        tolerance: 1e1,
+
+        solver_name: Radau5,
+        solver: Radau5::new(),
         tolerance: 1e1
     }
 
@@ -300,6 +312,10 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: GaussLegendre6::new(),
+        tolerance: 1e-3,
+
+        solver_name: Radau5,
+        solver: Radau5::new(),
         tolerance: 1e-3
     }
 
@@ -361,6 +377,10 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: GaussLegendre6::new(),
+        tolerance: 1e-3,
+
+        solver_name: Radau5,
+        solver: Radau5::new(),
         tolerance: 1e-3
     }
 }
