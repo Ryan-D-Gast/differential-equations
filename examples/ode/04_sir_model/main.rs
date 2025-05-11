@@ -22,7 +22,7 @@
 //! - Setting up even-interval output points
 //! - Working with solution status information
 
-use differential_equations::{derive::State, ode::methods::adams::APCV4, prelude::*};
+use differential_equations::{ode::methods::adams::APCV4, prelude::*};
 
 /// SIR (Susceptible, Infected, Recovered) Model
 struct SIRModel {
