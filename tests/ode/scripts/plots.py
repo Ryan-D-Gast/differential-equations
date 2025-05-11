@@ -2,7 +2,7 @@
 This script reads the csvs in the /target/tests/results/ directory and plots them to compare the results of the solvers implemented in this library.
 If the script `solve_ivp.py` is run before this script the csv result will be compared against the rust implementation.
 
-Call the script from the root of the project with `python ./tests/python_comparison/plots.py`
+Call the script from the root of the project with `python ./tests/ode/scripts/plots.py`
 """
 
 import pandas as pd

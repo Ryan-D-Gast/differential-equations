@@ -1,7 +1,7 @@
 """
 This script was used to generate what the expected results should be for the solvers implemented in this library.
 
-Call the script from the root of the project with `python ./tests/python_comparison/solve_ivp.py`
+Call the script from the root of the project with `python ./tests/ode/scripts/solve_ivp.py`
 """
 
 import numpy as np
