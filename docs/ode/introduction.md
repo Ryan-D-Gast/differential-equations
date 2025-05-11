@@ -41,6 +41,7 @@ The module `methods` includes a set of methods for solving ODEs. The solver algo
 | `CrankNicholson` | Crank-Nicholson implicit method for stiff problems |
 | `GaussLegendre4` | Gauss-Legendre implicit method for stiff problems |
 | `GaussLegendre6` | Gauss-Legendre implicit method for stiff problems | 
+| `Radau5` | Radau implicit method for stiff problems |
 
 **Note:** `dense output` references the solver having an high-order interpolant to provide accurate results between `t_prev` and `t` between steps. Often these require a few extra function evaluations. The order of the interpolant can be found in the docs of the solver. The remaining methods use a cubic Hermite polynomial to provide interpolated results. For event detection the interpolant for each solver is used to find the location of the event. 
 
