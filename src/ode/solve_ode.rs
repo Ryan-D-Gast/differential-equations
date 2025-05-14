@@ -370,7 +370,7 @@ where
                         solution.push(tm, ym.clone());
                         
                         // Reinitialize the solver with the modified state at the precise time
-                        match solver.init(ode, event_time, tf, &ym) {
+                        match solver.init(ode, tm, tf, &ym) {
                             Ok(evals) => {
                                 solution.evals += evals;
                             }
