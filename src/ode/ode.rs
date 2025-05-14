@@ -64,7 +64,7 @@ where
     /// # Returns
     /// * `ControlFlag` - Command to continue or stop solver.
     ///
-    fn event(&self, t: T, y: &V) -> ControlFlag<D> {
+    fn event(&self, t: T, y: &V) -> ControlFlag<T, V, D> {
         ControlFlag::Continue
     }
     

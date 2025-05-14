@@ -44,7 +44,7 @@ impl ODE<f64, SVector<f64, 2>> for DampedPendulumModel {
         dydt[1] = -(self.b / self.m) * omega - (self.g / self.l) * theta.sin(); // domega/dt = -(b/m)*omega - (g/l)*sin(theta)
     }
 
-    fn event(&self, _t: f64, y: &SVector<f64, 2>) -> ControlFlag {
+    fn event(&self, _t: f64, y: &SVector<f64, 2>) -> ControlFlag<f64, SVector<f64, 2>> {
         let theta = y[0];
         let omega = y[1];
 

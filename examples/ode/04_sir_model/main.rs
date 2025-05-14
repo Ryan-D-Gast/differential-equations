@@ -46,7 +46,7 @@ impl ODE<f64, SIRState<f64>, PopulationMonitor> for SIRModel {
         dydt.recovered = self.gamma * i; // Recovered
     }
 
-    fn event(&self, _t: f64, y: &SIRState<f64>) -> ControlFlag<PopulationMonitor> {
+    fn event(&self, _t: f64, y: &SIRState<f64>) -> ControlFlag<f64, SIRState<f64>, PopulationMonitor> {
         let i = y.infected; // Infected
 
         // Check the PopulationMonitor

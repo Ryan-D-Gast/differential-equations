@@ -51,7 +51,7 @@ fn main() {
             // Check if the solver stopped due to the event command
             if let Status::Interrupted(ref reason) = solution.status {
                 // State the reason why the solver stopped
-                println!("NumericalMethod stopped: {}", reason);
+                println!("Numerical Method stopped: {}", reason);
             }
 
             // Print the solution

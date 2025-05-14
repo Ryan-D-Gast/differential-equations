@@ -24,7 +24,7 @@ where
 {
     fn diff(&self, t: T, y: &V, dydt: &mut V);
     
-    fn event(&self, t: T, y: &V) -> ControlFlag<D> {
+    fn event(&self, t: T, y: &V) -> ControlFlag<T, V, D> {
         ControlFlag::Continue
     }
     
@@ -108,7 +108,7 @@ fn event(&self, _t: f64, y: &SIRState<f64>) -> ControlFlag<PopulationMonitor> {
 }
 ```
 
-The return type `ControlFlag<D>` can be:
+The return type `ControlFlag<T, V, D>` can be:
 - `ControlFlag::Continue` - Continue integration
 - `ControlFlag::Terminate(reason)` - Stop integration and return the provided reason
 

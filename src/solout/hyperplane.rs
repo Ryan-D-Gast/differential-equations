@@ -218,7 +218,7 @@ where
         _y_prev: &V2,
         interpolator: &mut I,
         solution: &mut Solution<T, V2, D>,
-    ) -> ControlFlag<D>
+    ) -> ControlFlag<T, V2, D>
     where
         I: Interpolation<T, V2>,
     {

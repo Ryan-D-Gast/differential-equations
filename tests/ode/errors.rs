@@ -22,7 +22,7 @@ impl ODE<f64, SVector<f64, 1>> for SimpleODE {
         dydt[0] = y[0];
     }
 
-    fn event(&self, t: f64, _y: &SVector<f64, 1>) -> ControlFlag {
+    fn event(&self, t: f64, _y: &SVector<f64, 1>) -> ControlFlag<f64, SVector<f64, 1>> {
         if t == 10.0 {
             ControlFlag::Terminate("Initial condition trigger".to_string())
         } else {

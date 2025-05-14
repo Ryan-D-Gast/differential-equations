@@ -43,6 +43,7 @@ impl ODE<f64, SVector<f64, 2>> for Pendulum {
 /// 1. Captures points when angle crosses zero (pendulum passes vertical)
 /// 2. Records energy at each point
 /// 3. Ensures minimum spacing between points
+/// 4. Applies a boost to angular velocity when crossing zero
 struct PendulumSolout {
     g: f64,                   // Gravitational constant
     l: f64,                   // Length of pendulum
@@ -51,6 +52,7 @@ struct PendulumSolout {
     last_output_time: f64,    // Last time a point was output
     energy_values: Vec<f64>,  // Store energy at each output point
     oscillation_count: usize, // Count of oscillations
+    boost_amount: f64,        // Angular velocity boost when crossing zero
 }
 
 impl PendulumSolout {
@@ -63,7 +65,14 @@ impl PendulumSolout {
             last_output_time: -f64::INFINITY,
             energy_values: Vec::new(),
             oscillation_count: 0,
+            boost_amount: 0.05,  // Default boost amount (5% increase in velocity)
         }
+    }
+
+    // Sets the boost amount
+    fn with_boost(mut self, boost: f64) -> Self {
+        self.boost_amount = boost;
+        self
     }
 
     // Calculate the total energy of the pendulum
@@ -90,39 +99,53 @@ impl Solout<f64, SVector<f64, 2>> for PendulumSolout {
         _y_prev: &SVector<f64, 2>,
         _interpolator: &mut I,
         solution: &mut Solution<f64, SVector<f64, 2>, String>,
-    ) -> ControlFlag<String>
+    ) -> ControlFlag<f64, SVector<f64, 2>, String>
     where
         I: Interpolation<f64, SVector<f64, 2>>,
     {
         let current_angle = y_curr[0];
         let dt = t_curr - self.last_output_time;
 
-        // Detect zero crossings (oscillation count)
-        if self.last_angle.signum() != current_angle.signum() && current_angle.signum() != 0.0 {
+        // Detect zero crossings
+        let angle_crossed_zero = self.last_angle.signum() != current_angle.signum() && current_angle.signum() != 0.0;
+        
+        if angle_crossed_zero {
             self.oscillation_count += 1;
+            
+            // Apply a boost to the angular velocity when crossing zero
+            // Create a new state vector with the boosted velocity
+            let mut boosted_state = *y_curr;
+            
+            // Add a boost in the direction the pendulum is moving
+            // This preserves the direction of motion while increasing speed
+            boosted_state[1] = y_curr[1] * (1.0 + self.boost_amount);
+            
+            // Calculate and store energy before adding the boost
+            self.energy_values.push(self.calculate_energy(y_curr));
+            
+            // Add current state to solution before applying the boost
+            solution.push(t_curr, *y_curr);
+            
+            // Update tracking variables
+            self.last_output_time = t_curr;
+            self.last_angle = current_angle;
+            
+            // Return ModifyState to update the solver with our boosted state
+            return ControlFlag::ModifyState(t_curr, boosted_state);
         }
 
-        // Add a point if:
-        // 1. It's been at least min_dt since last point, AND
-        // 2. Either:
-        //    a. The angle crossed zero, OR
-        //    b. The angle changed significantly
+        // For non-zero crossing points, use the original logic
         let significant_change = (current_angle - self.last_angle).abs() > 0.2;
-        let angle_crossed_zero = self.last_angle.signum() != current_angle.signum();
 
-        if dt >= self.min_dt && (angle_crossed_zero || significant_change) {
+        if dt >= self.min_dt && significant_change {
             solution.push(t_curr, *y_curr);
-
-            // Calculate and store energy
             self.energy_values.push(self.calculate_energy(y_curr));
 
-            // Update tracking variables
             self.last_output_time = t_curr;
         }
 
-        self.last_angle = current_angle;
-
         // Continue the integration
+
         ControlFlag::Continue
     }
 }
@@ -142,7 +165,7 @@ fn main() {
     let tf = 10.0;
 
     // Create custom solout
-    let mut solout = PendulumSolout::new(g, l, 0.1);
+    let mut solout = PendulumSolout::new(g, l, 0.1).with_boost(0.05);
 
     // Create solver and solve the ODEProblem
     // Note DOP853 is so accurate the energy will remain almost constant. Other solvers will show some energy change due to lower accuracy.

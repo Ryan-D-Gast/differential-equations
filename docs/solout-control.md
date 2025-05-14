@@ -31,7 +31,7 @@ where
         y_prev: &V,     // Previous state vector
         interpolator: &mut I,  // Interpolator for dense output
         solution: &mut Solution<T, V, D>,  // Solution to store points in
-    ) -> ControlFlag<D>  // Flag to continue or terminate integration
+    ) -> ControlFlag<T, V, D>  // Flag to continue or terminate integration
     where
         I: Interpolation<T, V>;
 }

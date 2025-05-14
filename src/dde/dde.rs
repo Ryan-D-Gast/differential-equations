@@ -86,7 +86,7 @@ where
     ///
     /// The default implementation always returns [`ControlFlag::Continue`], meaning no events
     /// are detected unless this method is overridden.
-    fn event(&self, _t: T, _y: &V) -> ControlFlag<D> {
+    fn event(&self, _t: T, _y: &V) -> ControlFlag<T, V, D> {
         ControlFlag::Continue
     }
 }

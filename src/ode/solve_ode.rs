@@ -165,6 +165,15 @@ where
         &mut solution,
     ) {
         ControlFlag::Continue => {}
+        ControlFlag::ModifyState(tm, ym) => {
+            // Reinitialize the solver with the modified state
+            match solver.init(ode, tm, tf, &ym) {
+                Ok(evals) => {
+                    solution.evals += evals;
+                }
+                Err(e) => return Err(e),
+            }
+        }
         ControlFlag::Terminate(reason) => {
             solution.status = Status::Interrupted(reason);
             solution.timer.complete();
@@ -179,6 +188,15 @@ where
     // Check Terminate before starting incase the initial conditions trigger it
     match ode.event(t0, y0) {
         ControlFlag::Continue => {}
+        ControlFlag::ModifyState(tm, ym) => {
+            // Reinitialize the solver with the modified state
+            match solver.init(ode, tm, tf, &ym) {
+                Ok(evals) => {
+                    solution.evals += evals;
+                }
+                Err(e) => return Err(e),
+            }
+        }
         ControlFlag::Terminate(reason) => {
             solution.status = Status::Interrupted(reason);
             solution.timer.complete();
@@ -207,7 +225,7 @@ where
                 // Update function evaluations
                 solution.evals += evals;
                 if solver.using_jacobian() {
-                    solution.jac_evals += 1; // For now assum 1 Jacobian evaluation per step if being used
+                    solution.jac_evals += 1; // For now assume 1 Jacobian evaluation per step if being used
                 }
 
                 // Check for a RejectedStep
@@ -238,6 +256,15 @@ where
             &mut solution,
         ) {
             ControlFlag::Continue => {}
+            ControlFlag::ModifyState(tm, ym) => {
+                // Reinitialize the solver with the modified state
+                match solver.init(ode, tm, tf, &ym) {
+                    Ok(evals) => {
+                        solution.evals += evals;
+                    }
+                    Err(e) => return Err(e),
+                }
+            }
             ControlFlag::Terminate(reason) => {
                 solution.status = Status::Interrupted(reason);
                 solution.timer.complete();
@@ -251,21 +278,25 @@ where
                 // Update last continue point
                 tc = solver.t();
             }
-            ControlFlag::Terminate(re) => {
-                // For iteration to event point
-                let mut reason = re;
-
-                // Update last stop point
+            // Any non-continue flag means we need to root-find for the precise event time
+            evt @ (ControlFlag::ModifyState(_, _) | ControlFlag::Terminate(_)) => {
+                // Store the initial event that was detected
+                let initial_event = evt;
+                
+                // Update last event point
                 ts = solver.t();
 
-                // If event_tolerance is set, interpolate to the point where event is triggered
+                // Root-finding to determine the precise point where event is triggered
                 // Method: Regula Falsi (False Position) with Illinois adjustment
                 let mut side_count = 0; // Illinois method counter
 
                 // For Illinois method adjustment
                 let mut f_low: T = T::from_f64(-1.0).unwrap(); // Continue represented as -1
-                let mut f_high: T = T::from_f64(1.0).unwrap(); // Terminate represented as +1
+                let mut f_high: T = T::from_f64(1.0).unwrap(); // Event represented as +1
                 let mut t_guess: T;
+                
+                // The final event we'll detect (might change during root finding)
+                let mut final_event = initial_event.clone();
 
                 let max_iterations = 20; // Prevent infinite loops
                 let tol = T::from_f64(1e-10).unwrap(); // Tolerance for convergence
@@ -303,41 +334,67 @@ where
                                 side_count = 0;
                             }
                         }
-                        ControlFlag::Terminate(re) => {
-                            reason = re;
-                            ts = t_guess;
+                        // Any non-continue flag indicates we've found an event
+                        evt @ (ControlFlag::ModifyState(_, _) | ControlFlag::Terminate(_)) => {
+                            final_event = evt; // Update the event we found
+                            ts = t_guess;      // Update the event time
                             side_count = 0;
                             f_low = T::from_f64(-1.0).unwrap(); // Reset low point influence
                         }
                     }
                 }
 
-                // Final event point
-                let y_final = solver.interpolate(ts).unwrap();
-
-                // Remove points after the event point and add the event point
+                // Get the final event point
+                let event_time = ts;
+                let event_state = solver.interpolate(ts).unwrap();
+                
+                // Remove points after the event point incase solout wrote them
                 // Find the cutoff index based on integration direction
                 let cutoff_index = if integration_direction > T::zero() {
-                    // Forward integration - find first index where t > ts
-                    solution.t.iter().position(|&t| t > ts)
+                    // Forward integration - find first index where t > event_time
+                    solution.t.iter().position(|&t| t > event_time)
                 } else {
-                    // Backward integration - find first index where t < ts
-                    solution.t.iter().position(|&t| t < ts)
+                    // Backward integration - find first index where t < event_time
+                    solution.t.iter().position(|&t| t < event_time)
                 };
-
+                
                 // If we found a cutoff point, truncate both vectors
                 if let Some(idx) = cutoff_index {
                     solution.truncate(idx);
                 }
 
-                // Add the event point
-                solution.push(ts, y_final);
-
-                // Set solution parameters
-                solution.status = Status::Interrupted(reason);
-                solution.timer.complete();
-
-                return Ok(solution);
+                // Now handle the event based on its type
+                match final_event {
+                    ControlFlag::ModifyState(tm, ym) => {
+                        // Record the modified state point
+                        solution.push(tm, ym.clone());
+                        
+                        // Reinitialize the solver with the modified state at the precise time
+                        match solver.init(ode, event_time, tf, &ym) {
+                            Ok(evals) => {
+                                solution.evals += evals;
+                            }
+                            Err(e) => return Err(e),
+                        }
+                        
+                        // Update tc to the event time
+                        tc = event_time;
+                    }
+                    ControlFlag::Terminate(reason) => {
+                        // Add the event point
+                        solution.push(event_time, event_state);
+                        
+                        // Set solution parameters
+                        solution.status = Status::Interrupted(reason);
+                        solution.timer.complete();
+                        
+                        return Ok(solution);
+                    }
+                    ControlFlag::Continue => {
+                        // This shouldn't happen, but if it does, just continue
+                        tc = event_time;
+                    }
+                }
             }
         }
     }
