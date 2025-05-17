@@ -6,6 +6,9 @@ use crate::{
 };
 use std::time::Instant;
 
+#[cfg(feature = "polars")]
+use polars::prelude::*;
+
 /// Timer for tracking solution time
 #[derive(Debug, Clone)]
 pub enum Timer<T: Real> {
@@ -40,9 +43,6 @@ impl<T: Real> Timer<T> {
         }
     }
 }
-
-#[cfg(feature = "polars")]
-use polars::prelude::*;
 
 /// Solution of returned by differential equation solvers
 ///
