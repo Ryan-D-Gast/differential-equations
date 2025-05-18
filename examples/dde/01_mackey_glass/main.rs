@@ -13,6 +13,7 @@
 //! This equation was originally proposed as a model for the production of blood cells.
 
 use differential_equations::prelude::*;
+use plotlars::{Axis, LinePlot, Plot, TickDirection};
 
 struct MackeyGlass {
     beta: f64,
@@ -34,7 +35,7 @@ impl DDE<1> for MackeyGlass {
 
 fn main() {
     // --- Solver Configuration ---
-    let mut solver = DDE23::new() // Use the Delay version of BS23 solver
+    let mut solver = DDE45::new() // Use the Delay version of DOPRI5 solver
         .max_delay(20.0); // Set the maximum delay to match the problem's tau so unnecessary history can be discarded as the solver progresses (optional)
 
     // --- Problem Definition ---
@@ -75,6 +76,28 @@ fn main() {
             println!("Accepted steps: {}", solution.accepted_steps);
             println!("Rejected steps: {}", solution.rejected_steps);
             println!("Number of output points: {}", solution.t.len());
+
+            // Plotting the solution using Plotlars
+            let df = solution.to_polars().unwrap();
+
+            LinePlot::builder()
+                .data(&df)
+                .x("t")
+                .y("y0")
+                .plot_title("Mackey-Glass Equation")
+                .x_axis(
+                    &Axis::new()
+                        .tick_direction(TickDirection::InSide)
+                        .show_line(true)
+                        
+                )
+                .y_axis(
+                    &Axis::new()
+                        .tick_direction(TickDirection::InSide)
+                        .show_line(true)
+                )  
+                .build()
+                .plot();
         }
         Err(e) => {
             eprintln!("Error solving DDE: {:?}", e);

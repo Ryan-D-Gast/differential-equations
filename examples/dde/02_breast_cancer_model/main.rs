@@ -18,6 +18,7 @@
 
 use differential_equations::prelude::*;
 use nalgebra::Vector3;
+use plotlars::{Axis, LinePlot, Plot, Rgb, TickDirection};
 
 // Define the Breast Cancer Model DDE struct
 struct BreastCancerModel {
@@ -58,7 +59,7 @@ impl DDE<1, f64, Vector3<f64>> for BreastCancerModel {
 
 fn main() {
     // --- Solver Configuration ---
-    let mut solver = DDE45::new().max_delay(1.0); // DDE version of the DOPRI5 solver
+    let mut solver = DDE23::new().max_delay(1.0); // DDE version of the BS23 solver
 
     // --- Problem Definition ---
     let tau = 1.0;
@@ -93,7 +94,7 @@ fn main() {
         "Solving Breast Cancer Model (tau={}) from t={} to t={}...",
         tau, t0, tf
     );
-    match problem.even(0.5).solve(&mut solver) {
+    match problem.even(0.1).solve(&mut solver) {
         Ok(solution) => {
             println!("Solver finished with status: {:?}", solution.status);
 
@@ -104,12 +105,45 @@ fn main() {
             println!("Rejected steps: {}", solution.rejected_steps);
             println!("Number of output points: {}", solution.t.len());
 
-            for (t, u) in solution.iter() {
-                println!(
-                    "t: {:.4}, u1: {:.4}, u2: {:.4}, u3: {:.4}",
-                    t, u[0], u[1], u[2]
-                );
+            // Print every 5th point to not clutter standard out
+            for (i, (t, u)) in solution.iter().enumerate() {
+                if i % 5 == 0 {
+                    println!(
+                        "t: {:.4}, u1: {:.4}, u2: {:.4}, u3: {:.4}",
+                        t, u[0], u[1], u[2]
+                    );
+                }
             }
+
+            // Plotting the solution using Plotlars
+            let df = solution.to_polars().unwrap();
+
+            LinePlot::builder()
+                .data(&df)
+                .x("t")
+                .y("y0")
+                .additional_lines(vec!["y1", "y2"])
+                .colors(vec![
+                    Rgb(0, 0, 255), // Blue for Susceptible
+                    Rgb(255, 0, 0), // Red for Infected
+                    Rgb(0, 255, 0), // Green for Recovered
+                ])
+                .plot_title("Breast Cancer Model")
+                .x_title("Time")
+                .y_title("Cell Population")
+                .x_axis(
+                    &Axis::new()
+                        .tick_direction(TickDirection::InSide)
+                        .show_line(true)
+                        
+                )
+                .y_axis(
+                    &Axis::new()
+                        .tick_direction(TickDirection::InSide)
+                        .show_line(true)
+                )  
+                .build()
+                .plot();           
         }
         Err(e) => {
             eprintln!("Error solving DDE: {:?}", e);

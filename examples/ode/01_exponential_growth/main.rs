@@ -18,6 +18,7 @@
 //! - Accessing solution statistics like step counts and evaluations
 
 use differential_equations::prelude::*;
+use plotlars::{Axis, LinePlot, TickDirection, Plot};
 
 // Define the ode
 struct ExponentialGrowth {
@@ -62,4 +63,23 @@ fn main() {
     println!("Rejected Steps: {}", solution.rejected_steps);
     println!("Accepted Steps: {}", solution.accepted_steps);
     println!("Status: {:?}", solution.status);
+
+    // Plotting the solution using Plotlars, note feature "polars" has to be enabled in Cargo.toml to turn Solution into a polars DataFrame
+    let df = solution.to_polars().unwrap();
+    LinePlot::builder()
+        .data(&df)
+        .x("t")
+        .y("y0")
+        .plot_title("Exponential Growth")
+        .x_axis(
+            &Axis::new()
+                .tick_direction(TickDirection::InSide)
+                
+        )
+        .y_axis(
+            &Axis::new()
+                .tick_direction(TickDirection::InSide)
+        )  
+        .build()
+        .plot();
 }

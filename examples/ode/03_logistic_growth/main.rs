@@ -16,6 +16,7 @@
 //! - Accessing solution statistics like step counts and evaluations
 
 use differential_equations::prelude::*;
+use plotlars::{Axis, LinePlot, TickDirection, Plot};
 
 struct LogisticGrowth {
     k: f64,
@@ -44,7 +45,7 @@ fn main() {
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
     let logistic_growth_problem = ODEProblem::new(ode, t0, tf, y0);
     match logistic_growth_problem
-        .even(2.0)  // sets t-out at interval dt: 2.0
+        .even(0.1)  // sets t-out at interval dt: 2.0
         .solve(&mut method) // Solve the ode and return the solution
     {
         Ok(solution) => {
@@ -65,6 +66,29 @@ fn main() {
             println!("Steps: {}", solution.steps);
             println!("Rejected Steps: {}", solution.rejected_steps);
             println!("Accepted Steps: {}", solution.accepted_steps);
+
+            // Plotting the solution using Plotlars
+            let df = solution.to_polars().unwrap();
+            LinePlot::builder()
+                .data(&df)
+                .x("t")
+                .y("y0")
+                .plot_title("Logistic Growth")
+                .x_title("Time (s)")
+                .y_title("Population Size")
+                .x_axis(
+                    &Axis::new()
+                        .tick_direction(TickDirection::InSide)
+                        .show_line(true)
+                        
+                )
+                .y_axis(
+                    &Axis::new()
+                        .tick_direction(TickDirection::InSide)
+                        .show_line(true)
+                )  
+                .build()
+                .plot();
         }
         Err(e) => panic!("Error: {:?}", e),
     };

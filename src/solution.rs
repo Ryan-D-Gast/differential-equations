@@ -297,7 +297,9 @@ where
     }
 
     /// Creates a Polars DataFrame of the solution.
-    ///
+    /// 
+    /// Requires feature "polars" to be enabled.
+    /// 
     /// Note that the columns will be named t, y0, y1, ..., yN.
     ///
     /// # Returns
@@ -319,6 +321,45 @@ where
             ));
         }
 
+        DataFrame::new(columns)
+    }
+
+    /// Creates a Polars DataFrame with column names.
+    /// 
+    /// Requires feature "polars" to be enabled.
+    ///
+    /// # Arguments
+    /// * `t_name` - Custom name for the time column
+    /// * `y_names` - Custom names for the state variables
+    ///
+    /// # Returns
+    /// * `Result<DataFrame, PolarsError>` - Result of creating the DataFrame.
+    ///
+    #[cfg(feature = "polars")]
+    pub fn to_named_polars(&self, t_name: &str, y_names: Vec<&str>) -> Result<DataFrame, PolarsError> {
+        let t = self.t.iter().map(|x| x.to_f64()).collect::<Vec<f64>>();
+        let mut columns = vec![Column::new(t_name.into(), t)];
+        
+        let n = self.y[0].len();
+        
+        // Validate that we have enough names for all state variables
+        if y_names.len() != n {
+            return Err(PolarsError::ComputeError(
+                format!("Expected {} column names for state variables, but got {}", 
+                        n, y_names.len()).into()
+            ));
+        }
+        
+        for (i, name) in y_names.iter().enumerate() {
+            columns.push(Column::new(
+                (*name).into(),
+                self.y
+                    .iter()
+                    .map(|x| x.get(i).to_f64())
+                    .collect::<Vec<f64>>(),
+            ));
+        }
+    
         DataFrame::new(columns)
     }
 }

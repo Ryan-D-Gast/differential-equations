@@ -23,6 +23,7 @@
 //! - Working with solution status information
 
 use differential_equations::{ode::methods::adams::APCV4, prelude::*};
+use plotlars::{Axis, LinePlot, Plot, Rgb, TickDirection};
 
 /// SIR (Susceptible, Infected, Recovered) Model
 struct SIRModel {
@@ -146,6 +147,37 @@ fn main() {
             println!("Rejected Steps: {}", solution.rejected_steps);
             println!("Accepted Steps: {}", solution.accepted_steps);
             println!("Solve time: {:?} seconds", solution.timer.elapsed());
+
+            // Turn the solution into a polar's DataFrame
+            let df = solution.to_named_polars("time", vec!["Susceptible", "Infected", "Recovered"]).unwrap();
+
+            // Plotting the solution using Plotlars
+            LinePlot::builder()
+                .data(&df)
+                .x("time")
+                .y("Susceptible")
+                .additional_lines(vec!["Infected", "Recovered"])
+                .colors(vec![
+                    Rgb(0, 0, 255), // Blue for Susceptible
+                    Rgb(255, 0, 0), // Red for Infected
+                    Rgb(0, 255, 0), // Green for Recovered
+                ])
+                .plot_title("SIR Model")
+                .x_title("Days")
+                .y_title("Population")
+                .x_axis(
+                    &Axis::new()
+                        .tick_direction(TickDirection::InSide)
+                        .show_line(true)
+                        
+                )
+                .y_axis(
+                    &Axis::new()
+                        .tick_direction(TickDirection::InSide)
+                        .show_line(true)
+                )  
+                .build()
+                .plot();
         }
         Err(e) => panic!("Error: {:?}", e),
     };

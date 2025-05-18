@@ -21,6 +21,7 @@
 
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
+use plotlars::{Axis, LinePlot, TickDirection, Plot};
 
 struct HarmonicOscillator {
     k: f32,
@@ -44,4 +45,25 @@ fn main() {
         };
     let (tf, yf) = solution.last().unwrap();
     println!("Solution: ({:?}, {:?})", tf, yf);
+
+    // Plotting the solution using Plotlars
+    let df = solution.to_polars().unwrap();
+    LinePlot::builder()
+        .data(&df)
+        .x("t")
+        .y("y0")
+        .plot_title("Harmonic Oscillator")
+        .x_title("Time (s)")
+        .y_title("Position (m)")
+        .x_axis(
+            &Axis::new()
+                .tick_direction(TickDirection::InSide)
+                
+        )
+        .y_axis(
+            &Axis::new()
+                .tick_direction(TickDirection::InSide)
+        )  
+        .build()
+        .plot();
 }
