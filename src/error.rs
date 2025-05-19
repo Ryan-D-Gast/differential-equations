@@ -1,9 +1,9 @@
-//! NumericalMethod Trait for Differential Equation NumericalMethods
+//! NumericalMethod Trait for Differential Equations Crate
 
 use crate::traits::{Real, State};
 use std::fmt::{Debug, Display};
 
-/// Error for Differential Equation NumericalMethods
+/// Error for Differential Equations Crate
 ///
 /// # Variants
 /// * `BadInput` - NumericalMethod input was bad.
