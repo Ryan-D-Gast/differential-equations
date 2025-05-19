@@ -1,10 +1,10 @@
-//! DOPRI5 NumericalMethod for Ordinary Differential Equations.
+//! DOPRI5 ODENumericalMethod for Ordinary Differential Equations.
 
 use crate::{
     Error, Status,
     alias::Evals,
     interpolate::Interpolation,
-    ode::{NumericalMethod, ODE, methods::h_init},
+    ode::{ODENumericalMethod, ODE, methods::h_init},
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
@@ -125,7 +125,7 @@ pub struct DOPRI5<T: Real, V: State<T>, D: CallBackData> {
     cont: [V; 5], // Interpolation coefficients
 }
 
-impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOPRI5<T, V, D> {
+impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for DOPRI5<T, V, D> {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
@@ -171,7 +171,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOPRI5<
         self.non_stiff_counter = 0;
         self.stiffness_counter = 0;
 
-        // NumericalMethod is ready to go
+        // ODENumericalMethod is ready to go
         self.status = Status::Initialized;
 
         Ok(evals)
@@ -439,7 +439,7 @@ impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for DOPRI5<T, V,
 }
 
 impl<T: Real, V: State<T>, D: CallBackData> DOPRI5<T, V, D> {
-    /// Creates a new DOPRI5 NumericalMethod.
+    /// Creates a new DOPRI5 ODENumericalMethod.
     ///
     /// # Returns
     /// * DOPRI5 Struct ready to go for solving.

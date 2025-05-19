@@ -7,20 +7,20 @@ use crate::{
     traits::{CallBackData, Real, State},
 };
 
-/// NumericalMethod Trait for DDE NumericalMethods
+/// DDENumericalMethod Trait for DDE NumericalMethods
 ///
 /// DDE NumericalMethods implement this trait to solve delay differential equations.
 /// The `step` function is called iteratively by a solver function (like `solve_dde`)
 /// to advance the solution.
 ///
-pub trait NumericalMethod<const L: usize, T, V, H, D = String>
+pub trait DDENumericalMethod<const L: usize, T, V, H, D = String>
 where
     T: Real,
     V: State<T>,
     H: Fn(T) -> V,
     D: CallBackData,
 {
-    /// Initialize NumericalMethod before solving DDE.
+    /// Initialize DDENumericalMethod before solving DDE.
     ///
     /// # Arguments
     /// * `dde` - System of DDEs to solve.

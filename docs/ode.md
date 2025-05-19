@@ -13,7 +13,7 @@ The `ode` module provides tools for solving ordinary differential equations (ODE
 
 ## Numerical Methods
 
-The module `methods` includes a set of methods for solving ODEs. The solver algorithmic core and coefficients are implemented as structs implementing the `NumericalMethod` trait. The solver's settings can then be configured before being used in the `problem.solve(&mut method)` method which acts as the controller for the solver.
+The module `methods` includes a set of methods for solving ODEs. The solver algorithmic core and coefficients are implemented as structs implementing the `ODENumericalMethod` trait. The solver's settings can then be configured before being used in the `problem.solve(&mut method)` method which acts as the controller for the solver.
 
 ### Fixed Step Size
 

@@ -180,7 +180,7 @@ macro_rules! adaptive_implicit_runge_kutta_method {
             T: $crate::traits::Real,
             V: $crate::traits::State<T>,
             D: $crate::traits::CallBackData,
-        > $crate::ode::NumericalMethod<T, V, D> for $name<T, V, D> {
+        > $crate::ode::ODENumericalMethod<T, V, D> for $name<T, V, D> {
             fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<$crate::alias::Evals, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>, // ODE trait now includes Jacobian

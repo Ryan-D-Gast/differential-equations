@@ -4,7 +4,7 @@ This guide explains how to select, configure, and use numerical solvers for diff
 
 ## Overview
 
-The library provides various numerical methods for solving different types of differential equations. Each solver implements the `NumericalMethod` trait, which provides a standard interface for initializing and stepping through the solution process.
+The library provides various numerical methods for solving different types of differential equations. Each solver implements a variant of the `NumericalMethod` trait, which provides a standard interface for initializing and stepping through the solution process.
 
 ## Selecting a Solver
 

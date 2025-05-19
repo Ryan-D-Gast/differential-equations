@@ -3,7 +3,7 @@
 use crate::{
     ControlFlag, Error, Solution, Status,
     dde::DDE,
-    dde::numerical_method::NumericalMethod,
+    dde::numerical_method::DDENumericalMethod,
     interpolate::Interpolation,
     solout::*,
     traits::{CallBackData, Real, State},
@@ -34,7 +34,7 @@ use crate::{
 /// # Arguments
 ///
 /// * `solver`: A mutable reference to a DDE solver instance. The solver must implement
-///   both [`NumericalMethod`] (specifically adapted for DDEs, handling the history lookup
+///   both [`DDENumericalMethod`] (specifically adapted for DDEs, handling the history lookup
 ///   closure in its `init` and `step` methods) and [`Interpolation`] (for dense output
 ///   and event localization).
 /// * `dde`: A reference to the DDE system definition, which must implement the [`DDE`] trait.
@@ -74,7 +74,7 @@ where
     D: CallBackData,
     F: DDE<L, T, V, D>,
     H: Fn(T) -> V + Clone,
-    S: NumericalMethod<L, T, V, H, D> + Interpolation<T, V>,
+    S: DDENumericalMethod<L, T, V, H, D> + Interpolation<T, V>,
     O: Solout<T, V, D>,
 {
     // Initialize the Solution object

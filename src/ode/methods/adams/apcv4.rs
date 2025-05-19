@@ -98,8 +98,8 @@ pub struct APCV4<T: Real, V: State<T>, D: CallBackData> {
     pub max_steps: usize,
 }
 
-// Implement NumericalMethod Trait for APCV4
-impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCV4<T, V, D> {
+// Implement ODENumericalMethod Trait for APCV4
+impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for APCV4<T, V, D> {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
@@ -366,7 +366,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCV4<T
     }
 
     fn h(&self) -> T {
-        // NumericalMethod repeats step size 4 times for each step
+        // ODENumericalMethod repeats step size 4 times for each step
         // so the ODEProblem inquiring is looking for what the next
         // state will be thus the step size is multiplied by 4
         self.h * T::from_f64(4.0).unwrap()

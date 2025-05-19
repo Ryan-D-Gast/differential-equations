@@ -7,20 +7,20 @@ use crate::{
     traits::{CallBackData, Real, State},
 };
 
-/// NumericalMethod Trait for SDE NumericalMethods
+/// SDENumericalMethod Trait for SDE NumericalMethods
 ///
 /// SDE NumericalMethods implement this trait to solve stochastic differential equations.
 /// This step function is called iteratively to solve the SDE.
 /// By implementing this trait, different functions can use a user provided
 /// SDE solver to solve the SDE that fits their requirements.
 ///
-pub trait NumericalMethod<T, V, D = String>
+pub trait SDENumericalMethod<T, V, D = String>
 where
     T: Real,
     V: State<T>,
     D: CallBackData,
 {
-    /// Initialize NumericalMethod before solving SDE
+    /// Initialize SDENumericalMethod before solving SDE
     ///
     /// # Arguments
     /// * `sde`    - System of SDEs to solve.

@@ -12,7 +12,7 @@ The `sde` module provides tools for solving stochastic differential equations (S
 
 ## Numerical Methods
 
-The module `methods` includes a set of numerical methods for solving SDEs. Each method is implemented as a struct implementing the `NumericalMethod` trait.
+The module `methods` includes a set of numerical methods for solving SDEs. Each method is implemented as a struct implementing the `SDENumericalMethod` trait.
 
 ### Available Solvers
 

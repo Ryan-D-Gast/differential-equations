@@ -4,7 +4,7 @@ use crate::{
     Error, Status,
     interpolate::Interpolation,
     linalg::component_multiply,
-    sde::{NumericalMethod, SDE},
+    sde::{SDENumericalMethod, SDE},
     alias::Evals,
     traits::{CallBackData, Real, State},
     utils::validate_step_size_parameters,
@@ -103,7 +103,7 @@ impl<T: Real, V: State<T>, D: CallBackData> Default for EM<T, V, D> {
     }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for EM<T, V, D> {
+impl<T: Real, V: State<T>, D: CallBackData> SDENumericalMethod<T, V, D> for EM<T, V, D> {
     fn init<F>(&mut self, sde: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: SDE<T, V, D>,

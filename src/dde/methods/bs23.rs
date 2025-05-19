@@ -1,9 +1,9 @@
-//! BS23 NumericalMethod for Delay Differential Equations.
+//! BS23 DDENumericalMethod for Delay Differential Equations.
 
 use crate::{
     Error, Status,
     alias::Evals,
-    dde::{DDE, NumericalMethod, methods::h_init::h_init},
+    dde::{DDE, DDENumericalMethod, methods::h_init::h_init},
     interpolate::Interpolation,
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
@@ -108,7 +108,7 @@ pub struct BS23<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBack
 }
 
 impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
-    NumericalMethod<L, T, V, H, D> for BS23<L, T, V, H, D>
+    DDENumericalMethod<L, T, V, H, D> for BS23<L, T, V, H, D>
 {
     fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: H) -> Result<Evals, Error<T, V>>
     where

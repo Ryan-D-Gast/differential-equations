@@ -3,7 +3,7 @@
 use crate::{
     Error, Solution,
     interpolate::Interpolation,
-    sde::{NumericalMethod, SDE, solve_sde},
+    sde::{SDENumericalMethod, SDE, solve_sde},
     solout::*,
     traits::{CallBackData, Real, State},
 };
@@ -143,7 +143,7 @@ where
     ///
     pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
     where
-        S: NumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: SDENumericalMethod<T, V, D> + Interpolation<T, V>,
     {
         let mut default_solout = DefaultSolout::new(); // Default solout implementation
         solve_sde(
@@ -298,14 +298,14 @@ where
     /// Solve the SDE Problem using the provided solout
     ///
     /// # Arguments
-    /// * `solver` - NumericalMethod to use for solving the SDE Problem
+    /// * `solver` - SDENumericalMethod to use for solving the SDE Problem
     ///
     /// # Returns
     /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered
     ///
     pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
     where
-        S: NumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: SDENumericalMethod<T, V, D> + Interpolation<T, V>,
     {
         solve_sde(
             solver,
@@ -356,14 +356,14 @@ where
     /// Solve the SDE Problem using the provided solout
     ///
     /// # Arguments
-    /// * `solver` - NumericalMethod to use for solving the SDE Problem
+    /// * `solver` - SDENumericalMethod to use for solving the SDE Problem
     ///
     /// # Returns
     /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered
     ///
     pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
     where
-        S: NumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: SDENumericalMethod<T, V, D> + Interpolation<T, V>,
     {
         solve_sde(
             solver,

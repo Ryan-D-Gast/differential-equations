@@ -68,8 +68,8 @@ pub struct APCF4<T: Real, V: State<T>, D: CallBackData> {
     status: Status<T, V, D>,
 }
 
-// Implement NumericalMethod Trait for APCF4
-impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCF4<T, V, D> {
+// Implement ODENumericalMethod Trait for APCF4
+impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for APCF4<T, V, D> {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,

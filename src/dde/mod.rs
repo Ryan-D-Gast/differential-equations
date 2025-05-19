@@ -10,6 +10,6 @@ mod dde;
 pub use dde::DDE;
 
 mod numerical_method;
-pub use numerical_method::NumericalMethod;
+pub use numerical_method::DDENumericalMethod;
 
 pub mod methods;

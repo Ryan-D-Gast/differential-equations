@@ -131,7 +131,7 @@ pub use sde::SDE;
 pub mod methods;
 
 mod numerical_method;
-pub use numerical_method::NumericalMethod;
+pub use numerical_method::SDENumericalMethod;
 
 mod sde_problem;
 mod solve_sde;

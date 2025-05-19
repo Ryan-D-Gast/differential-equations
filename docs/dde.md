@@ -13,7 +13,7 @@ The `dde` module provides tools for solving delay differential equations (DDEs),
 
 ## Numerical Methods
 
-The `dde::methods` submodule includes a set of methods for solving DDEs. The solver algorithms and their coefficients are implemented as structs that implement the `NumericalMethod` trait (adapted for DDEs). Solver settings can be configured before use with the `problem.solve(&mut method)` method, which controls the solution process.
+The `dde::methods` submodule includes a set of methods for solving DDEs. The solver algorithms and their coefficients are implemented as structs that implement the `DDENumericalMethod` trait (adapted for DDEs). Solver settings can be configured before use with the `problem.solve(&mut method)` method, which controls the solution process.
 
 All currently available DDE solvers feature adaptive step size control.
 
