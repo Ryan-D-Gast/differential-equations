@@ -206,10 +206,10 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCF4<T
 }
 
 impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for APCF4<T, V, D> {
-    fn interpolate(&mut self, t_interp: T) -> Result<V, InterpolationError<T>> {
+    fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // Check if t is within bounds
         if t_interp < self.t_prev[0] || t_interp > self.t {
-            return Err(InterpolationError::OutOfBounds {
+            return Err(Error::OutOfBounds {
                 t_interp,
                 t_prev: self.t_prev[0],
                 t_curr: self.t,

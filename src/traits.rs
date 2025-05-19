@@ -2,7 +2,7 @@
 
 use nalgebra::{RealField, SMatrix};
 use num_complex::Complex;
-use std::ops::{Add, AddAssign, Div, Mul, Sub};
+use std::{fmt::Debug, ops::{Add, AddAssign, Div, Mul, Sub}};
 
 /// Real Number Trait
 ///
@@ -53,6 +53,7 @@ impl Real for f64 {
 pub trait State<T>:
     Clone
     + Copy
+    + Debug
     + Add<Output = Self>
     + Sub<Output = Self>
     + AddAssign

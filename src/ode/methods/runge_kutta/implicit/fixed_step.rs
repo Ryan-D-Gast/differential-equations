@@ -240,18 +240,18 @@ macro_rules! implicit_runge_kutta_method {
         }
 
         impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> $crate::interpolate::Interpolation<T, V> for $name<T, V, D> {
-            fn interpolate(&mut self, t_interp: T) -> Result<V, $crate::interpolate::InterpolationError<T>> {
+            fn interpolate(&mut self, t_interp: T) -> Result<V, $crate::Error<T, V>> {
                  if self.t == self.t_prev { // Handle case before first step
                      if t_interp == self.t_prev {
                          return Ok(self.y_prev);
                      } else {
-                         return Err($crate::interpolate::InterpolationError::OutOfBounds { t_interp, t_prev: self.t_prev, t_curr: self.t });
+                         return Err($crate::Error::OutOfBounds { t_interp, t_prev: self.t_prev, t_curr: self.t });
                      }
                  }
 
                 // Check if t is within the bounds of the current step
                 if t_interp < self.t_prev || t_interp > self.t {
-                    return Err($crate::interpolate::InterpolationError::OutOfBounds {
+                    return Err($crate::Error::OutOfBounds {
                         t_interp,
                         t_prev: self.t_prev,
                         t_curr: self.t });

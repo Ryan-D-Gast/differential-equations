@@ -34,6 +34,11 @@ where
         t: T, // Time at which stiffness was detected
         y: V, // Solution at time t
     },
+    OutOfBounds { 
+        t_interp: T, // Time to interpolate at
+        t_prev: T,   // Time of previous step
+        t_curr: T    // Time of current step
+    },
 }
 
 impl<T, V> Display for Error<T, V>
@@ -49,6 +54,9 @@ where
             }
             Self::StepSize { t, y } => write!(f, "Step size too small at (t, y) = ({}, {})", t, y),
             Self::Stiffness { t, y } => write!(f, "Stiffness detected at (t, y) = ({}, {})", t, y),
+            Self::OutOfBounds { t_interp, t_prev, t_curr } => {
+                write!(f, "Interpolation Error: t_interp {} is not within the previous and current step: t_prev {}, t_curr {}", t_interp, t_prev, t_curr)
+            }
         }
     }
 }
@@ -69,6 +77,9 @@ where
             }
             Self::Stiffness { t, y } => {
                 write!(f, "Stiffness detected at (t, y) = ({:?}, {:?})", t, y)
+            }
+            Self::OutOfBounds { t_interp, t_prev, t_curr } => {
+                write!(f, "Interpolation Error: t_interp {:?} is not within the previous and current step: t_prev {:?}, t_curr {:?}", t_interp, t_prev, t_curr)
             }
         }
     }

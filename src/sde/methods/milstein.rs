@@ -2,7 +2,7 @@
 
 use crate::{
     Error, Status,
-    interpolate::{Interpolation, InterpolationError},
+    interpolate::Interpolation,
     linalg::{component_multiply, component_square},
     sde::{NumericalMethod, SDE},
     alias::Evals,
@@ -230,10 +230,10 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Milstei
 }
 
 impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for Milstein<T, V, D> {
-    fn interpolate(&mut self, t_interp: T) -> Result<V, InterpolationError<T>> {
+    fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // Check if t is within the bounds of the current step
         if t_interp < self.t_prev || t_interp > self.t {
-            return Err(InterpolationError::OutOfBounds {
+            return Err(Error::OutOfBounds {
                 t_interp,
                 t_prev: self.t_prev,
                 t_curr: self.t,

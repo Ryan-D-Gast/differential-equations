@@ -3,7 +3,7 @@
 use crate::{
     Error, Status,
     alias::Evals,
-    interpolate::{Interpolation, InterpolationError},
+    interpolate::Interpolation,
     ode::{NumericalMethod, ODE, methods::h_init},
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
@@ -588,10 +588,10 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOP853<
 }
 
 impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for DOP853<T, V, D> {
-    fn interpolate(&mut self, t_interp: T) -> Result<V, InterpolationError<T>> {
+    fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // Check if interpolation is out of bounds
         if t_interp < self.t_old || t_interp > self.t {
-            return Err(InterpolationError::OutOfBounds {
+            return Err(Error::OutOfBounds {
                 t_interp,
                 t_prev: self.t_old,
                 t_curr: self.t,

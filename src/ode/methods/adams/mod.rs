@@ -3,7 +3,7 @@
 pub use crate::{
     Error, Status,
     alias::Evals,
-    interpolate::{Interpolation, InterpolationError, cubic_hermite_interpolate},
+    interpolate::{Interpolation, cubic_hermite_interpolate},
     ode::{NumericalMethod, ODE},
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},

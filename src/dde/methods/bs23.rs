@@ -4,7 +4,7 @@ use crate::{
     Error, Status,
     alias::Evals,
     dde::{DDE, NumericalMethod, methods::h_init::h_init},
-    interpolate::{Interpolation, InterpolationError},
+    interpolate::Interpolation,
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
@@ -441,7 +441,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
 impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Interpolation<T, V>
     for BS23<L, T, V, H, D>
 {
-    fn interpolate(&mut self, t_interp: T) -> Result<V, InterpolationError<T>> {
+    fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // This interpolates within the last successfully completed step [t_old, t]
         if (t_interp - self.t_old) * self.posneg < T::zero()
             || (t_interp - self.t) * self.posneg > T::zero()
@@ -450,7 +450,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Inter
             if (t_interp - self.t_old).abs() > T::default_epsilon()
                 && (t_interp - self.t).abs() > T::default_epsilon()
             {
-                return Err(InterpolationError::OutOfBounds {
+                return Err(Error::OutOfBounds {
                     t_interp,
                     t_prev: self.t_old,
                     t_curr: self.t,

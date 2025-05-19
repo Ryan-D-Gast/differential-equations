@@ -387,10 +387,10 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCV4<T
 
 // Implement the Interpolation trait for APCV4
 impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for APCV4<T, V, D> {
-    fn interpolate(&mut self, t_interp: T) -> Result<V, InterpolationError<T>> {
+    fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // Check if t is within the range of the solver
         if t_interp < self.t_old || t_interp > self.t {
-            return Err(InterpolationError::OutOfBounds {
+            return Err(Error::OutOfBounds {
                 t_interp,
                 t_prev: self.t_old,
                 t_curr: self.t,

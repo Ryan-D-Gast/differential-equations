@@ -364,10 +364,10 @@ macro_rules! adaptive_dense_runge_kutta_method {
         }
 
         impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> $crate::interpolate::Interpolation<T, V> for $name<T, V, D> {
-            fn interpolate(&mut self, t_interp: T) -> Result<V, $crate::interpolate::InterpolationError<T>> {
+            fn interpolate(&mut self, t_interp: T) -> Result<V, $crate::Error<T, V>> {
                 // Check if t is within bounds
                 if t_interp < self.t_prev || t_interp > self.t {
-                    return Err($crate::interpolate::InterpolationError::OutOfBounds {
+                    return Err($crate::Error::OutOfBounds {
                         t_interp,
                         t_prev: self.t_prev,
                         t_curr: self.t

@@ -1,7 +1,9 @@
 //! Interpolation Methods for the ODEProblem struct when solving the system.
 
-use crate::traits::{Real, State};
-use std::fmt::{Debug, Display};
+use crate::{
+    error::Error,
+    traits::{Real, State},
+};
 
 /// Interpolation trait implemented by Solvers to allow Solout to access interpolated values between t_prev and t_curr
 pub trait Interpolation<T, V>
@@ -13,7 +15,7 @@ where
     ///
     /// Note that the range for interpolation is between t_prev and t_curr.
     /// If t_interp is outside this range, an error will be returned in the
-    /// form of an InterpolationError::OutOfBounds.
+    /// form of an Error::OutOfBounds.
     ///
     /// # Arguments
     /// * `t_interp`  - Time to interpolate at.
@@ -21,66 +23,8 @@ where
     /// # Returns
     /// * Interpolated State Vector.
     ///
-    fn interpolate(&mut self, t_interp: T) -> Result<V, InterpolationError<T>>;
+    fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>>;
 }
-
-/// Interpolation Error for ODE NumericalMethods
-///
-/// # Variants
-/// * `OutOfBounds` - Given t is not within the previous and current step.
-///
-#[derive(PartialEq, Clone)]
-pub enum InterpolationError<T>
-where
-    T: Real,
-{
-    /// Given t is not within the previous and current step
-    OutOfBounds { t_interp: T, t_prev: T, t_curr: T },
-}
-
-impl<T> Display for InterpolationError<T>
-where
-    T: Real,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            InterpolationError::OutOfBounds {
-                t_interp,
-                t_prev,
-                t_curr,
-            } => {
-                write!(
-                    f,
-                    "Interpolation Error: t_interp {} is not within the previous and current step: t_prev {}, t_curr {}",
-                    t_interp, t_prev, t_curr
-                )
-            }
-        }
-    }
-}
-
-impl<T> Debug for InterpolationError<T>
-where
-    T: Real,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            InterpolationError::OutOfBounds {
-                t_interp,
-                t_prev,
-                t_curr,
-            } => {
-                write!(
-                    f,
-                    "Interpolation Error: t_interp {} is not within the previous and current step: t_prev {}, t_curr {}",
-                    t_interp, t_prev, t_curr
-                )
-            }
-        }
-    }
-}
-
-impl<T> std::error::Error for InterpolationError<T> where T: Real {}
 
 /// Cubic Hermite Interpolation
 ///
