@@ -2,7 +2,7 @@
 
 use crate::{
     Error, Status,
-    alias::NumEvals,
+    alias::Evals,
     interpolate::{Interpolation, InterpolationError},
     ode::{NumericalMethod, ODE, methods::h_init},
     traits::{CallBackData, Real, State},
@@ -106,10 +106,6 @@ pub struct Radau5<T: Real, V: State<T>, D: CallBackData> {
     reject: bool,
     n_stiff: usize,
     steps: usize,
-    nfcn: usize, // Total function evaluations
-    njac: usize, // Total Jacobian evaluations
-    naccept: usize,
-    nreject: usize,
     status: Status<T, V, D>,
 
     // --- Jacobian and Newton Solver Data ---
@@ -172,10 +168,6 @@ impl<T: Real, V: State<T>, D: CallBackData> Default for Radau5<T, V, D> {
             reject: false,
             n_stiff: 0,
             steps: 0,
-            nfcn: 0,
-            njac: 0,
-            naccept: 0,
-            nreject: 0,
             status: Status::Uninitialized,
             // Initialize nalgebra structures (empty, to be sized in init)
             jacobian_matrix: nalgebra::DMatrix::zeros(0, 0),
@@ -187,15 +179,16 @@ impl<T: Real, V: State<T>, D: CallBackData> Default for Radau5<T, V, D> {
 }
 
 impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Radau5<T, V, D> {
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<NumEvals, Error<T, V>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
     {
+        let mut evals = Evals::new();
+
         // Calculate initial derivative f(t0, y0)
         let mut initial_dydt = V::zeros();
         ode.diff(t0, y0, &mut initial_dydt);
-        self.nfcn = 1;
-        self.njac = 0; // Reset Jacobian counter
+        evals.fcn += 1;
 
         // If h0 is zero calculate h0 using initial derivative
         if self.h0 == T::zero() {
@@ -210,8 +203,6 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Radau5<
         self.reject = false;
         self.n_stiff = 0;
         self.steps = 0;
-        self.naccept = 0;
-        self.nreject = 0;
 
         // Initialize State
         self.t = t0;
@@ -241,14 +232,14 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Radau5<
         // Initialize dense output coefficients
         self.cont = [V::zeros(); 4];
 
-        Ok(self.nfcn)
+        Ok(evals)
     }
 
-    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, V>>
+    fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
     {
-        let mut evals_step = 0;
+        let mut evals = Evals::new();
 
         // Check step size validity
         if self.h.abs() < self.h_min || self.h.abs() < T::default_epsilon() {
@@ -271,24 +262,23 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Radau5<
 
         // Calculate Jacobian J_n = df/dy(t_n, y_n) once per step attempt
         ode.jacobian(self.t, &self.y, &mut self.jacobian_matrix);
-        self.njac += 1;
+        evals.jac += 1;
 
         // Form Newton iteration matrix: M = I - h * (A ⊗ J)
-        let newton_converged = self.newton_iteration(ode, &mut evals_step)?;
+        let newton_converged = self.newton_iteration(ode, &mut evals)?;
         
         if !newton_converged {
             self.h *= T::from_f64(0.25).unwrap();
             self.h = constrain_step_size(self.h, self.h_min, self.h_max);
             self.reject = true;
             self.n_stiff += 1;
-            self.nreject += 1;
-            self.nfcn += evals_step;
+            evals.fcn += 1;
 
             if self.n_stiff >= self.max_rejects {
                 self.status = Status::Error(Error::Stiffness { t: self.t, y: self.y });
                 return Err(Error::Stiffness { t: self.t, y: self.y });
             }
-            return Ok(0); // Step rejection
+            return Ok(evals); // Step rejection
         }
 
         // --- Newton iteration converged, compute solutions and error ---
@@ -324,7 +314,6 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Radau5<
 
         if err_norm <= T::one() {
             // Step accepted
-            self.naccept += 1;
             self.status = Status::Solving;
             
             // Save current step for interpolation
@@ -339,7 +328,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Radau5<
 
             // Compute new derivative for next step
             ode.diff(self.t, &self.y, &mut self.dydt);
-            evals_step += 1;
+            evals.fcn += 1;
 
             // Calculate dense output coefficients
             self.compute_dense_output_coeffs();
@@ -351,7 +340,6 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Radau5<
             self.h = constrain_step_size(h_new, self.h_min, self.h_max);
         } else {
             // Step rejected
-            self.nreject += 1;
             self.status = Status::RejectedStep;
             self.reject = true;
             self.n_stiff += 1;
@@ -362,12 +350,10 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Radau5<
             }
 
             self.h = constrain_step_size(h_new, self.h_min, self.h_max);
-            self.nfcn += evals_step;
-            return Ok(0); // Step rejection
+            return Ok(evals); // Step rejection
         }
 
-        self.nfcn += evals_step;
-        Ok(evals_step)
+        Ok(evals)
     }
 
     fn t(&self) -> T { self.t }
@@ -382,7 +368,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Radau5<
 
 impl<T: Real, V: State<T>, D: CallBackData> Radau5<T, V, D> {
     /// Newton iteration for solving the implicit equations for stage derivatives k_i.
-    fn newton_iteration<F>(&mut self, ode: &F, evals_step: &mut usize) -> Result<bool, Error<T, V>>
+    fn newton_iteration<F>(&mut self, ode: &F, evals: &mut Evals) -> Result<bool, Error<T, V>>
     where
         F: ODE<T, V, D>,
     {
@@ -420,7 +406,7 @@ impl<T: Real, V: State<T>, D: CallBackData> Radau5<T, V, D> {
                 }
 
                 ode.diff(self.t + self.c[i] * self.h, &self.y_stage[i], &mut self.f_at_stages[i]);
-                *evals_step += 1;
+                evals.fcn += 1;
 
                 for row_idx in 0..dim {
                     self.rhs_newton[i * dim + row_idx] = self.f_at_stages[i].get(row_idx) - self.k[i].get(row_idx);

@@ -84,7 +84,6 @@ macro_rules! implicit_runge_kutta_method {
             // Status & Counters
             status: $crate::Status<T, V, D>,
             steps: usize,
-            nfcn: usize,
         }
 
         impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> Default for $name<T, V, D> {
@@ -111,16 +110,17 @@ macro_rules! implicit_runge_kutta_method {
                     tol: T::from_f64(1e-8).unwrap(), // Default tolerance
                     status: $crate::Status::Uninitialized,
                     steps: 0,
-                    nfcn: 0,
                 }
             }
         }
 
         impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> $crate::ode::NumericalMethod<T, V, D> for $name<T, V, D> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<usize, $crate::Error<T, V>>
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<$crate::alias::Evals, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>
             {
+                let mut evals = $crate::alias::Evals::new();
+
                  if self.h == T::zero() {
                     return Err($crate::Error::BadInput {
                         msg: concat!(stringify!($name), " requires a non-zero fixed step size 'h' to be set.").to_string(),
@@ -137,20 +137,20 @@ macro_rules! implicit_runge_kutta_method {
 
                 // Calculate initial derivative f(t0, y0) for interpolation
                 ode.diff(t0, y0, &mut self.dydt_prev);
-                self.nfcn = 1;
+                evals.fcn += 1;
 
                 // Reset counters
                 self.steps = 0;
 
                 self.status = $crate::Status::Initialized;
-                Ok(self.nfcn)
+                Ok(evals)
             }
 
-            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::Error<T, V>>
+            fn step<F>(&mut self, ode: &F) -> Result<$crate::alias::Evals, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>
             {
-                let mut evals_step = 0;
+                let mut evals = $crate::alias::Evals::new();
 
                 // --- Fixed-Point Iteration for stage derivatives k_i ---
                 // Initial guess: k_i^{(0)} = f(t_n, y_n) (stored in self.dydt_prev)
@@ -173,7 +173,7 @@ macro_rules! implicit_runge_kutta_method {
 
                         // Evaluate f at stage time and value: f(t_n + c_i*h, y_stage)
                         ode.diff(self.t + self.c[i] * self.h, &self.y_stage[i], &mut self.k_new[i]);
-                        evals_step += 1;
+                        evals.fcn += 1;
                     }
 
                     // Check convergence: max ||k_new_i - k_i|| < tol
@@ -203,7 +203,6 @@ macro_rules! implicit_runge_kutta_method {
 
                 // --- Iteration converged, compute final update ---
                 self.steps += 1;
-                self.nfcn += evals_step;
 
                 // Store previous state
                 self.t_prev = self.t;
@@ -223,11 +222,10 @@ macro_rules! implicit_runge_kutta_method {
                 // Calculate derivative at the new point for the *next* step's prediction
                 // and for interpolation purposes.
                 ode.diff(self.t, &self.y, &mut self.dydt_prev); // Store f(t_new, y_new) in dydt_prev for next step
-                evals_step += 1; // Count this evaluation
-                self.nfcn += 1;
+                evals.fcn += 1; // Count this evaluation
 
                 self.status = $crate::Status::Solving;
-                Ok(evals_step) // Return evals for this step
+                Ok(evals) // Return evals for this step
             }
 
             // --- Standard trait methods ---

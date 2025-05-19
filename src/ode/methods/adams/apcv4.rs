@@ -100,10 +100,12 @@ pub struct APCV4<T: Real, V: State<T>, D: CallBackData> {
 
 // Implement NumericalMethod Trait for APCV4
 impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCV4<T, V, D> {
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<NumEvals, Error<T, V>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
     {
+        let mut evals = Evals::new();
+
         self.tf = tf;
 
         // Initialize initial step size if it is zero
@@ -132,7 +134,6 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCV4<T
         // Perform the first 3 steps using Runge-Kutta 4 method
         let two = T::from_f64(2.0).unwrap();
         let six = T::from_f64(6.0).unwrap();
-        let mut evals = 0;
         for i in 1..=3 {
             // Compute k1, k2, k3, k4 of Runge-Kutta 4
             ode.diff(self.t, &self.y, &mut self.k1);
@@ -153,7 +154,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCV4<T
             self.t += self.h;
             self.t_prev[i] = self.t;
             self.y_prev[i] = self.y;
-            evals += 4; // 4 evaluations per Runge-Kutta step
+            evals.fcn += 4; // 4 evaluations per Runge-Kutta step
 
             if i == 1 {
                 self.dydt = self.k1;
@@ -165,10 +166,12 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCV4<T
         Ok(evals)
     }
 
-    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, V>>
+    fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
     {
+        let mut evals = Evals::new();
+
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
@@ -181,8 +184,6 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCV4<T
             });
         }
         self.steps += 1;
-
-        let mut evals = 0;
 
         // If Step size changed and it takes us to the final time perform a Runge-Kutta 4 step to finish
         if self.h != self.t_prev[0] - self.t_prev[1] && self.t + self.h == self.tf {
@@ -202,7 +203,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCV4<T
                 &mut self.k3,
             );
             ode.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
-            evals += 4; // 4 evaluations per Runge-Kutta step
+            evals.fcn += 4; // 4 evaluations per Runge-Kutta step
 
             // Update State
             self.y += (self.k1 + self.k2 * two + self.k3 * two + self.k4) * (self.h / six);
@@ -233,7 +234,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCV4<T
                 / T::from_f64(24.0).unwrap();
 
         // Track number of evaluations
-        evals += 5;
+        evals.fcn += 5;
 
         // Calculate sigma for step size adjustment
         let sigma = T::from_f64(19.0).unwrap() * norm(corrector - predictor)

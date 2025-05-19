@@ -2,7 +2,7 @@
 
 pub use crate::{
     Error, Status,
-    alias::NumEvals,
+    alias::Evals,
     interpolate::{Interpolation, InterpolationError, cubic_hermite_interpolate},
     ode::{NumericalMethod, ODE},
     traits::{CallBackData, Real, State},

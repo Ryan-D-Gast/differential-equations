@@ -2,7 +2,7 @@
 
 use crate::{
     Error, Status,
-    alias::NumEvals,
+    alias::Evals,
     ode::ODE,
     traits::{CallBackData, Real, State},
 };
@@ -29,9 +29,9 @@ where
     /// * `y`      - Initial state.
     ///
     /// # Returns
-    /// * Result<NumEvals, Error<T, V>> - Ok if initialization is successful,
+    /// * Result<Evals, Error<T, V>> - Ok if initialization is successful,
     ///
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<NumEvals, Error<T, V>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>;
 
@@ -41,9 +41,9 @@ where
     /// * `system` - System of ODEs to solve.
     ///
     /// # Returns
-    /// * Result<NumEvals, Errors<T, V>> - Ok if step is successful with the number of function evaluations,
+    /// * Result<Evals, Errors<T, V>> - Ok if step is successful with the number of function evaluations,
     ///
-    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, V>>
+    fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>;
 
@@ -72,9 +72,4 @@ where
 
     /// Set status of solver
     fn set_status(&mut self, status: Status<T, V, D>);
-
-    /// Information about the solver
-    fn using_jacobian(&self) -> bool {
-        false
-    }
 }

@@ -2,7 +2,7 @@
 
 use crate::{
     Error, Status,
-    alias::NumEvals,
+    alias::Evals,
     interpolate::{Interpolation, InterpolationError},
     ode::{NumericalMethod, ODE, methods::h_init},
     traits::{CallBackData, Real, State},
@@ -133,17 +133,19 @@ pub struct DOP853<T: Real, V: State<T>, D: CallBackData> {
 }
 
 impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOP853<T, V, D> {
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<NumEvals, Error<T, V>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
     {
+        let mut evals = Evals::new();
+
         // Set Current State as Initial State
         self.t = t0;
         self.y = *y0;
 
         // Calculate derivative at t0
         ode.diff(t0, y0, &mut self.k[0]);
-        let mut evals = 1; // Increment function evaluations for initial derivative calculation
+        evals.fcn += 1; // Increment function evaluations for initial derivative calculation
 
         // Initialize Previous State
         self.t_old = self.t;
@@ -154,7 +156,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOP853<
             self.h0 = h_init(
                 ode, t0, tf, y0, 8, self.rtol, self.atol, self.h_min, self.h_max,
             );
-            evals += 1; // Increment function evaluations for initial step size calculation
+            evals.fcn += 1; // Increment function evaluations for initial step size calculation
 
             // Adjust h0 to be within bounds
             let posneg = (tf - t0).signum();
@@ -182,10 +184,12 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOP853<
         Ok(evals)
     }
 
-    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, V>>
+    fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
     {
+        let mut evals = Evals::new();
+
         // Check if Max Steps Reached
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
@@ -320,7 +324,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOP853<
         self.k[4] = self.y + self.k[3] * self.h;
 
         // Log evals
-        let mut evals = 11; // Increment function evaluations for the 11 derivative calculations
+        evals.fcn += 11; // Increment function evaluations for the 11 derivative calculations
 
         // Error Estimation
         let mut err = T::zero();
@@ -363,7 +367,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOP853<
             self.facold = err.max(T::from_f64(1.0e-4).unwrap());
             let y_new = self.k[4];
             ode.diff(t_new, &y_new, &mut self.k[3]);
-            evals += 1; // Increment function evaluations for the new derivative calculation
+            evals.fcn += 1; // Increment function evaluations for the new derivative calculation
 
             // stiffness detection
             if self.n_accepted % self.n_stiff == 0 {
@@ -493,7 +497,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for DOP853<
             );
 
             // Log evals
-            evals += 3; // Increment function evaluations for the dense output calculations
+            evals.fcn += 3; // Increment function evaluations for the dense output calculations
 
             // Final preparation - add contributions from the extra stages and scale
             self.cont[4] = (self.cont[4]

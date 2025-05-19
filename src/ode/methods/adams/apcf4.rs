@@ -70,10 +70,12 @@ pub struct APCF4<T: Real, V: State<T>, D: CallBackData> {
 
 // Implement NumericalMethod Trait for APCF4
 impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCF4<T, V, D> {
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<NumEvals, Error<T, V>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
     {
+        let mut evals = Evals::new();
+
         // Check Bounds
         match validate_step_size_parameters::<T, V, D>(self.h, T::zero(), T::infinity(), t0, tf) {
             Ok(h) => self.h = h,
@@ -92,7 +94,6 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCF4<T
 
         let two = T::from_f64(2.0).unwrap();
         let six = T::from_f64(6.0).unwrap();
-        let mut evals = 0;
         for i in 1..=3 {
             // Compute k1, k2, k3, k4 of Runge-Kutta 4
             ode.diff(self.t, &self.y, &mut self.k1);
@@ -113,7 +114,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCF4<T
             self.t += self.h;
             self.t_prev[i] = self.t;
             self.y_prev[i] = self.y;
-            evals += 4; // 4 evaluations per Runge-Kutta step
+            evals.fcn += 4; // 4 evaluations per Runge-Kutta step
 
             if i == 1 {
                 self.dydt = self.k1;
@@ -125,10 +126,12 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCF4<T
         Ok(evals)
     }
 
-    fn step<F>(&mut self, ode: &F) -> Result<NumEvals, Error<T, V>>
+    fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
     {
+        let mut evals = Evals::new();
+
         // state for interpolation
         self.t_old = self.t;
         self.y_old = self.y;
@@ -159,7 +162,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for APCF4<T
         self.t += self.h;
         self.y = corrector;
         ode.diff(self.t, &self.y, &mut self.dydt);
-        let evals = 6; // 6 evaluations for predictor-corrector step
+        evals.fcn += 6; // 6 evaluations for predictor-corrector step
 
         // Shift history: drop the oldest and add the new state at the end.
         self.t_prev.copy_within(1..4, 0);

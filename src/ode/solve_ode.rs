@@ -148,7 +148,8 @@ where
     // Clear statistics in case it was used before and reset solver and check for errors
     match solver.init(ode, t0, tf, y0) {
         Ok(evals) => {
-            solution.evals += evals;
+            solution.evals += evals.fcn;
+            solution.jac_evals += evals.jac;
         }
         Err(e) => return Err(e),
     }
@@ -169,7 +170,8 @@ where
             // Reinitialize the solver with the modified state
             match solver.init(ode, tm, tf, &ym) {
                 Ok(evals) => {
-                    solution.evals += evals;
+                    solution.evals += evals.fcn;
+                    solution.jac_evals += evals.jac;
                 }
                 Err(e) => return Err(e),
             }
@@ -192,7 +194,8 @@ where
             // Reinitialize the solver with the modified state
             match solver.init(ode, tm, tf, &ym) {
                 Ok(evals) => {
-                    solution.evals += evals;
+                    solution.evals += evals.fcn;
+                    solution.jac_evals += evals.jac;
                 }
                 Err(e) => return Err(e),
             }
@@ -223,10 +226,8 @@ where
         match solver.step(ode) {
             Ok(evals) => {
                 // Update function evaluations
-                solution.evals += evals;
-                if solver.using_jacobian() {
-                    solution.jac_evals += 1; // For now assume 1 Jacobian evaluation per step if being used
-                }
+                solution.evals += evals.fcn;
+                solution.jac_evals += evals.jac;
 
                 // Check for a RejectedStep
                 if let Status::RejectedStep = solver.status() {
@@ -260,7 +261,8 @@ where
                 // Reinitialize the solver with the modified state
                 match solver.init(ode, tm, tf, &ym) {
                     Ok(evals) => {
-                        solution.evals += evals;
+                        solution.evals += evals.fcn;
+                        solution.jac_evals += evals.jac;
                     }
                     Err(e) => return Err(e),
                 }
@@ -372,7 +374,8 @@ where
                         // Reinitialize the solver with the modified state at the precise time
                         match solver.init(ode, tm, tf, &ym) {
                             Ok(evals) => {
-                                solution.evals += evals;
+                                solution.evals += evals.fcn;
+                                solution.jac_evals += evals.jac;
                             }
                             Err(e) => return Err(e),
                         }

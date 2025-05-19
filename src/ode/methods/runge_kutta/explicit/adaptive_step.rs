@@ -159,14 +159,17 @@ macro_rules! adaptive_runge_kutta_method {
         }
 
         impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> $crate::ode::NumericalMethod<T, V, D> for $name<T, V, D> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<usize, $crate::Error<T, V>>
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<$crate::alias::Evals, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>,
             {
+                let mut evals = $crate::alias::Evals::new();
+
                 // If h0 is zero calculate h0
                 if self.h0 == T::zero() {
                     self.h0 = $crate::ode::methods::h_init(ode, t0, tf, y, $order, self.rtol, self.atol, self.h_min, self.h_max);
                 }
+                evals.fcn += 1;
 
                 // Check bounds
                 match $crate::utils::validate_step_size_parameters::<T, V, D>(self.h0, self.h_min, self.h_max, t0, tf) {
@@ -191,13 +194,15 @@ macro_rules! adaptive_runge_kutta_method {
                 // Initialize Status
                 self.status = $crate::Status::Initialized;
 
-                Ok(1)
+                Ok(evals)
             }
 
-            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::Error<T, V>>
+            fn step<F>(&mut self, ode: &F) -> Result<$crate::alias::Evals, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>,
             {
+                let mut evals = $crate::alias::Evals::new();
+
                 // Make sure step size isn't too small
                 if self.h.abs() < T::default_epsilon() {
                     self.status = $crate::Status::Error($crate::Error::StepSize {
@@ -261,8 +266,6 @@ macro_rules! adaptive_runge_kutta_method {
                     err_norm = err_norm.max((err.get(n) / tol).abs());
                 };
 
-                let mut evals = 0;
-
                 // Determine if step is accepted
                 if err_norm <= T::one() {
                     // Log previous state
@@ -283,12 +286,12 @@ macro_rules! adaptive_runge_kutta_method {
                     ode.diff(self.t, &self.y, &mut self.dydt);
 
                     // Update statistics
-                    evals += $stages + 1;
+                    evals.fcn += $stages + 1;
                 } else {
                     // Step rejected
                     self.reject = true;
 
-                    evals += $stages;
+                    evals.fcn += $stages;
                     self.status = $crate::Status::RejectedStep;
                     self.n_stiff += 1;
 

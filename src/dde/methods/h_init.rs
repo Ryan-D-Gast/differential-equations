@@ -1,5 +1,5 @@
 use crate::{
-    alias::NumEvals,
+    alias::Evals,
     dde::DDE,
     traits::{CallBackData, Real, State},
 };
@@ -16,14 +16,14 @@ pub fn h_init<const L: usize, T, V, D, F>(
     h_max_init: T,
     phi_init: &impl Fn(T) -> V,
     f0_init: &V,
-) -> (T, NumEvals)
+    evals: &mut Evals,
+) -> T
 where
     T: Real,
     V: State<T>,
     D: CallBackData,
     F: DDE<L, T, V, D>,
 {
-    let mut evals = 0;
     let posneg_init = (tf_init - t0_init).signum();
     let n_dim = y0_init.len();
 
@@ -32,10 +32,7 @@ where
     for n in 0..n_dim {
         let sk = atol_init + rtol_init * y0_init.get(n).abs();
         if sk <= T::zero() {
-            return (
-                h_min_init.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init,
-                evals,
-            );
+            return h_min_init.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init;
         }
         dnf += (f0_init.get(n) / sk).powi(2);
         dny += (y0_init.get(n) / sk).powi(2);
@@ -96,10 +93,7 @@ where
                 } // Respect h_min
                 if h.abs() < T::default_epsilon() {
                     // Avoid zero step
-                    return (
-                        h_min_init.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init,
-                        evals,
-                    );
+                    return h_min_init.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init;
                 }
                 y1 = *y0_init + *f0_init * h;
                 t1 = t0_init + h;
@@ -117,7 +111,7 @@ where
     }
 
     dde.diff(t1, &y1, &yd_init, &mut f1);
-    evals += 1;
+    evals.fcn += 1;
 
     let mut der2 = T::zero();
     for n in 0..n_dim {
@@ -148,5 +142,5 @@ where
     if h_min_init.abs() > T::zero() {
         h = h.max(h_min_init.abs());
     }
-    (h * posneg_init, evals)
+    h * posneg_init
 }

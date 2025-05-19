@@ -111,10 +111,6 @@ macro_rules! adaptive_implicit_runge_kutta_method {
             reject: bool,
             n_stiff: usize,
             steps: usize,
-            nfcn: usize, // Total function evaluations
-            njac: usize, // Total Jacobian evaluations
-            naccept: usize,
-            nreject: usize,
             status: $crate::Status<T, V, D>,
 
             // --- Jacobian and Newton Solver Data ---
@@ -170,10 +166,6 @@ macro_rules! adaptive_implicit_runge_kutta_method {
                     reject: false,
                     n_stiff: 0,
                     steps: 0,
-                    nfcn: 0,
-                    njac: 0,
-                    naccept: 0,
-                    nreject: 0,
                     status: $crate::Status::Uninitialized,
                     // Initialize nalgebra structures (empty, to be sized in init)
                     jacobian_matrix: nalgebra::DMatrix::zeros(0, 0),
@@ -189,15 +181,16 @@ macro_rules! adaptive_implicit_runge_kutta_method {
             V: $crate::traits::State<T>,
             D: $crate::traits::CallBackData,
         > $crate::ode::NumericalMethod<T, V, D> for $name<T, V, D> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<usize, $crate::Error<T, V>>
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<$crate::alias::Evals, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>, // ODE trait now includes Jacobian
             {
+                let mut evals = $crate::alias::Evals::new();
+
                 // Calculate initial derivative f(t0, y0)
                 let mut initial_dydt = V::zeros();
                 ode.diff(t0, y0, &mut initial_dydt);
-                self.nfcn = 1;
-                self.njac = 0; // Reset Jacobian counter
+                evals.fcn += 1;
 
                 // If h0 is zero calculate h0 using initial derivative
                 if self.h0 == T::zero() {
@@ -211,9 +204,6 @@ macro_rules! adaptive_implicit_runge_kutta_method {
                 self.reject = false;
                 self.n_stiff = 0;
                 self.steps = 0;
-                self.naccept = 0;
-                self.nreject = 0;
-                self.njac = 0; // Ensure njac is reset
 
                 // Initialize State
                 self.t = t0;
@@ -240,14 +230,14 @@ macro_rules! adaptive_implicit_runge_kutta_method {
                 self.delta_k_vec = nalgebra::DVector::zeros(newton_system_size);
                 self.f_at_stages = [V::zeros(); $stages];
 
-                Ok(self.nfcn)
+                Ok(evals)
             }
 
-            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::Error<T, V>>
+            fn step<F>(&mut self, ode: &F) -> Result<$crate::alias::Evals, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>, // ODE trait now includes Jacobian
             {
-                let mut evals_step = 0;
+                let mut evals = $crate::alias::Evals::new();
                 let dim = self.y.len();
 
                 // Check step size validity
@@ -271,7 +261,7 @@ macro_rules! adaptive_implicit_runge_kutta_method {
 
                 // Calculate Jacobian J_n = df/dy(t_n, y_n) once per step attempt
                 ode.jacobian(self.t, &self.y, &mut self.jacobian_matrix);
-                self.njac += 1; // Count Jacobian computation (either analytical or FD)
+                evals.jac += 1;
 
                 let mut converged = false;
                 for _iter in 0..self.max_iter {
@@ -283,7 +273,7 @@ macro_rules! adaptive_implicit_runge_kutta_method {
                         }
 
                         ode.diff(self.t + self.c[i] * self.h, &self.y_stage[i], &mut self.f_at_stages[i]);
-                        evals_step += 1;
+                        evals.fcn += 1;
 
                         for row_idx in 0..dim {
                             self.rhs_newton[i * dim + row_idx] = self.f_at_stages[i].get(row_idx) - self.k[i].get(row_idx);
@@ -342,14 +332,12 @@ macro_rules! adaptive_implicit_runge_kutta_method {
                     self.h = $crate::utils::constrain_step_size(self.h, self.h_min, self.h_max);
                     self.reject = true;
                     self.n_stiff += 1;
-                    self.nreject += 1;
-                    self.nfcn += evals_step;
 
                     if self.n_stiff >= self.max_rejects {
                         self.status = $crate::Status::Error($crate::Error::Stiffness { t: self.t, y: self.y });
                         return Err($crate::Error::Stiffness { t: self.t, y: self.y });
                     }
-                    return Ok(0);
+                    return Ok(evals);
                 }
 
                 // --- Iteration converged, compute solutions and error ---
@@ -382,7 +370,6 @@ macro_rules! adaptive_implicit_runge_kutta_method {
                 let h_new = self.h * scale;
 
                 if err_norm <= T::one() {
-                    self.naccept += 1;
                     self.status = $crate::Status::Solving;
 
                     self.t_prev = self.t;
@@ -393,7 +380,7 @@ macro_rules! adaptive_implicit_runge_kutta_method {
                     self.y = y_high;
 
                     ode.diff(self.t, &self.y, &mut self.dydt);
-                    evals_step += 1;
+                    evals.fcn += 1;
 
                     if self.reject {
                         self.n_stiff = 0;
@@ -402,7 +389,6 @@ macro_rules! adaptive_implicit_runge_kutta_method {
 
                     self.h = $crate::utils::constrain_step_size(h_new, self.h_min, self.h_max);
                 } else {
-                    self.nreject += 1;
                     self.status = $crate::Status::RejectedStep;
                     self.reject = true;
                     self.n_stiff += 1;
@@ -413,12 +399,10 @@ macro_rules! adaptive_implicit_runge_kutta_method {
                     }
 
                     self.h = $crate::utils::constrain_step_size(h_new, self.h_min, self.h_max);
-                    self.nfcn += evals_step;
-                    return Ok(0);
+                    return Ok(evals);
                 }
 
-                self.nfcn += evals_step;
-                Ok(evals_step)
+                Ok(evals)
             }
 
             fn t(&self) -> T { self.t }

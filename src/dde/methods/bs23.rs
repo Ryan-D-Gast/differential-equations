@@ -2,7 +2,7 @@
 
 use crate::{
     Error, Status,
-    alias::NumEvals,
+    alias::Evals,
     dde::{DDE, NumericalMethod, methods::h_init::h_init},
     interpolate::{Interpolation, InterpolationError},
     traits::{CallBackData, Real, State},
@@ -110,10 +110,12 @@ pub struct BS23<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBack
 impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
     NumericalMethod<L, T, V, H, D> for BS23<L, T, V, H, D>
 {
-    fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: H) -> Result<NumEvals, Error<T, V>>
+    fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: H) -> Result<Evals, Error<T, V>>
     where
         F: DDE<L, T, V, D>,
     {
+        let mut evals = Evals::new();
+
         self.t = t0;
         self.y = *y0;
         self.t0 = t0;
@@ -121,7 +123,6 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
         self.posneg = (tf - t0).signum();
         self.phi = Some(phi);
 
-        let mut evals = 0;
         if L > 0 {
             dde.lags(self.t, &self.y, &mut self.lags);
             for i in 0..L {
@@ -147,10 +148,10 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
             }
         }
         dde.diff(self.t, &self.y, &self.yd, &mut self.k[0]); // k1 = f(t0, y0, yd(t0-tau))
-        evals += 1;
+        evals.fcn += 1;
 
         if self.h0 == T::zero() {
-            let (h_est, h_init_evals) = h_init(
+            let h_est = h_init(
                 dde,
                 self.t,
                 self.tf,
@@ -162,9 +163,9 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
                 self.h_max,
                 self.phi.as_ref().unwrap(),
                 &self.k[0],
+                &mut evals,
             );
             self.h0 = h_est;
-            evals += h_init_evals;
         }
 
         match validate_step_size_parameters::<T, V, D>(
@@ -184,10 +185,12 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
         Ok(evals)
     }
 
-    fn step<F>(&mut self, dde: &F) -> Result<NumEvals, Error<T, V>>
+    fn step<F>(&mut self, dde: &F) -> Result<Evals, Error<T, V>>
     where
         F: DDE<L, T, V, D>,
     {
+        let mut evals = Evals::new();
+
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
                 t: self.t,
@@ -221,7 +224,6 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
         } else {
             1
         };
-        let mut num_evals_this_step = 0;
 
         let mut y_new_from_iter = y_current_step_start;
         let mut k_from_iter = self.k; // Stores k1, k2, k3, k4 of the converged iteration
@@ -267,7 +269,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
             }
             dde.diff(t_new_val, &y_new_from_iter, &self.yd, &mut self.k[3]); // k4 stored in self.k[3]
 
-            num_evals_this_step += 3; // k2, k3, k4 evaluations
+            evals.fcn += 3; // k2, k3, k4 evaluations
             k_from_iter.copy_from_slice(&self.k);
 
             if max_iter > 1 && iter_idx > 0 {
@@ -309,7 +311,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
             }
             self.h = constrain_step_size(self.h, self.h_min, self.h_max);
             self.status = Status::RejectedStep;
-            return Ok(num_evals_this_step);
+            return Ok(evals);
         }
 
         let mut err_final = T::zero();
@@ -407,7 +409,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
 
         self.steps += 1;
         self.h = constrain_step_size(h_new_final, self.h_min, self.h_max);
-        Ok(num_evals_this_step)
+        Ok(evals)
     }
 
     fn t(&self) -> T {

@@ -3,11 +3,9 @@
 use crate::{
     Error, Status,
     sde::SDE,
+    alias::Evals,
     traits::{CallBackData, Real, State},
 };
-
-/// Type alias for the number of function evaluations
-pub type NumEvals = usize;
 
 /// NumericalMethod Trait for SDE NumericalMethods
 ///
@@ -33,7 +31,7 @@ where
     /// # Returns
     /// * Result<NumEvals, Error<T, V>> - Ok with number of evaluations if initialization is successful
     ///
-    fn init<F>(&mut self, sde: &F, t0: T, tf: T, y: &V) -> Result<NumEvals, Error<T, V>>
+    fn init<F>(&mut self, sde: &F, t0: T, tf: T, y: &V) -> Result<Evals, Error<T, V>>
     where
         F: SDE<T, V, D>;
 
@@ -45,7 +43,7 @@ where
     /// # Returns
     /// * Result<NumEvals, Error<T, V>> - Ok with number of evaluations if step is successful
     ///
-    fn step<F>(&mut self, sde: &F) -> Result<NumEvals, Error<T, V>>
+    fn step<F>(&mut self, sde: &F) -> Result<Evals, Error<T, V>>
     where
         F: SDE<T, V, D>;
 

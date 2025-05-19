@@ -110,10 +110,12 @@ macro_rules! runge_kutta_method {
         }
 
         impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> $crate::ode::NumericalMethod<T, V, D> for $name<T, V, D> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<usize, $crate::Error<T, V>>
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<$crate::alias::Evals, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>
             {
+                let mut evals = $crate::alias::Evals::new();
+
                 // Check Bounds
                 match $crate::utils::validate_step_size_parameters::<T, V, D>(self.h, T::zero(), T::infinity(), t0, tf) {
                     Ok(_) => {},
@@ -124,6 +126,7 @@ macro_rules! runge_kutta_method {
                 self.t = t0;
                 self.y = y.clone();
                 ode.diff(t0, y, &mut self.k[0]);
+                evals.fcn += 1;
 
                 // Initialize previous state
                 self.t_prev = t0;
@@ -133,13 +136,15 @@ macro_rules! runge_kutta_method {
                 // Initialize Status
                 self.status = $crate::Status::Initialized;
 
-                Ok(1)
+                Ok(evals)
             }
 
-            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::Error<T, V>>
+            fn step<F>(&mut self, ode: &F) -> Result<$crate::alias::Evals, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>
             {
+                let mut evals = $crate::alias::Evals::new();
+
                 // Log previous state
                 self.t_prev = self.t;
                 self.y_prev = self.y;
@@ -161,6 +166,7 @@ macro_rules! runge_kutta_method {
                     // Compute k_i = f(t + c_i*h, stage_y)
                     ode.diff(self.t + self.c[i] * self.h, &stage_y, &mut self.k[i]);
                 }
+                evals.fcn += $stages;
 
                 // Compute the final update
                 let mut delta_y = V::zeros();
@@ -172,7 +178,7 @@ macro_rules! runge_kutta_method {
                 self.y += delta_y;
                 self.t += self.h;
 
-                Ok($stages)
+                Ok(evals)
             }
 
             fn t(&self) -> T {

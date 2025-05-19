@@ -95,7 +95,8 @@ where
     // Initialize the solver
     match solver.init(dde, t0, tf, y0, phi.clone()) {
         Ok(evals) => {
-            solution.evals += evals;
+            solution.evals += evals.fcn;
+            solution.jac_evals += evals.jac;
         }
         Err(e) => return Err(e),
     }
@@ -116,7 +117,8 @@ where
             // Reinitialize the solver with the modified state
             match solver.init(dde, tm, tf, &ym, phi.clone()) {
                 Ok(evals) => {
-                    solution.evals += evals;
+                    solution.evals += evals.fcn;
+                    solution.jac_evals += evals.jac;
                 }
                 Err(e) => return Err(e),
             }
@@ -139,7 +141,8 @@ where
             // Reinitialize the solver with the modified state
             match solver.init(dde, tm, tf, &ym, phi.clone()) {
                 Ok(evals) => {
-                    solution.evals += evals;
+                    solution.evals += evals.fcn;
+                    solution.jac_evals += evals.jac;
                 }
                 Err(e) => return Err(e),
             }
@@ -168,7 +171,8 @@ where
         solution.steps += 1;
         match solver.step(dde) {
             Ok(evals) => {
-                solution.evals += evals;
+                solution.evals += evals.fcn;
+                solution.jac_evals += evals.jac;
 
                 if let Status::RejectedStep = solver.status() {
                     solution.rejected_steps += 1;
@@ -198,7 +202,8 @@ where
                 // Reinitialize the solver with the modified state
                 match solver.init(dde, tm, tf, &ym, phi.clone()) {
                     Ok(evals) => {
-                        solution.evals += evals;
+                        solution.evals += evals.fcn;
+                        solution.jac_evals += evals.jac;
                     }
                     Err(e) => return Err(e),
                 }
@@ -309,7 +314,8 @@ where
                         // Reinitialize the solver with the modified state at the precise time
                         match solver.init(dde, tm, tf, &ym, phi.clone()) {
                             Ok(evals) => {
-                                solution.evals += evals;
+                                solution.evals += evals.fcn;
+                                solution.jac_evals += evals.jac;
                             }
                             Err(e) => return Err(e),
                         }

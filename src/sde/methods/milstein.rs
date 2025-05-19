@@ -4,8 +4,8 @@ use crate::{
     Error, Status,
     interpolate::{Interpolation, InterpolationError},
     linalg::{component_multiply, component_square},
-    sde::NumericalMethod,
-    sde::SDE,
+    sde::{NumericalMethod, SDE},
+    alias::Evals,
     traits::{CallBackData, Real, State},
     utils::validate_step_size_parameters,
 };
@@ -117,10 +117,12 @@ impl<T: Real, V: State<T>, D: CallBackData> Default for Milstein<T, V, D> {
 }
 
 impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Milstein<T, V, D> {
-    fn init<F>(&mut self, sde: &F, t0: T, tf: T, y0: &V) -> Result<usize, Error<T, V>>
+    fn init<F>(&mut self, sde: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: SDE<T, V, D>,
     {
+        let mut evals = Evals::new();
+
         // Check Bounds
         match validate_step_size_parameters::<T, V, D>(self.h, T::zero(), T::infinity(), t0, tf) {
             Ok(_) => {}
@@ -138,17 +140,20 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Milstei
         // Initialize derivatives
         sde.drift(t0, y0, &mut self.drift);
         sde.diffusion(t0, y0, &mut self.diffusion);
+        evals.fcn += 2; // 2 function evaluations: drift and diffusion
 
         // Initialize Status
         self.status = Status::Initialized;
 
-        Ok(2) // 2 function evaluations: drift and diffusion
+        Ok(evals) // 2 function evaluations: drift and diffusion
     }
 
-    fn step<F>(&mut self, sde: &F) -> Result<usize, Error<T, V>>
+    fn step<F>(&mut self, sde: &F) -> Result<Evals, Error<T, V>>
     where
         F: SDE<T, V, D>,
     {
+        let mut evals = Evals::new();
+
         // Log previous state
         self.t_prev = self.t;
         self.y_prev = self.y;
@@ -156,6 +161,8 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Milstei
         // Compute derivatives at current time and state
         sde.drift(self.t, &self.y, &mut self.drift);
         sde.diffusion(self.t, &self.y, &mut self.diffusion);
+
+        evals.fcn += 2; // 2 function evaluations: drift and diffusion
 
         // Generate noise increments using the SDE's noise method
         let mut dw = V::zeros();
@@ -186,7 +193,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Milstei
         self.t += self.h;
         self.y = y_new;
 
-        Ok(2) // 2 function evaluations: drift and diffusion
+        Ok(evals)
     }
 
     fn t(&self) -> T {

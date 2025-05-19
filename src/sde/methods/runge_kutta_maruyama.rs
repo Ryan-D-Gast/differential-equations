@@ -4,8 +4,8 @@ use crate::{
     Error, Status,
     interpolate::{Interpolation, InterpolationError},
     linalg::component_multiply,
-    sde::NumericalMethod,
-    sde::SDE,
+    sde::{NumericalMethod, SDE},
+    alias::Evals,
     traits::{CallBackData, Real, State},
     utils::validate_step_size_parameters,
 };
@@ -128,10 +128,12 @@ impl<T: Real, V: State<T>, D: CallBackData> Default for RKM4<T, V, D> {
 }
 
 impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for RKM4<T, V, D> {
-    fn init<F>(&mut self, sde: &F, t0: T, tf: T, y0: &V) -> Result<usize, Error<T, V>>
+    fn init<F>(&mut self, sde: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: SDE<T, V, D>,
     {
+        let mut evals = Evals::new();
+
         // Check Bounds
         match validate_step_size_parameters::<T, V, D>(self.h, T::zero(), T::infinity(), t0, tf) {
             Ok(_) => {}
@@ -149,17 +151,20 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for RKM4<T,
         // Initialize derivatives (calculate first k1 and diffusion coefficient)
         sde.drift(t0, y0, &mut self.k1);
         sde.diffusion(t0, y0, &mut self.diffusion);
+        evals.fcn += 2; // 2 function evaluation for diffusion and drift
 
         // Initialize Status
         self.status = Status::Initialized;
 
-        Ok(2) // 2 function evaluations: drift and diffusion
+        Ok(evals)
     }
 
-    fn step<F>(&mut self, sde: &F) -> Result<usize, Error<T, V>>
+    fn step<F>(&mut self, sde: &F) -> Result<Evals, Error<T, V>>
     where
         F: SDE<T, V, D>,
     {
+        let mut evals = Evals::new();
+
         // Log previous state
         self.t_prev = self.t;
         self.y_prev = self.y;
@@ -195,6 +200,8 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for RKM4<T,
         let mut dw = V::zeros();
         sde.noise(self.h, &mut dw);
 
+        evals.fcn += 5; // 4 for drift (k1, k2, k3, k4) + 1 for diffusion
+
         // Compute next state using the Runge-Kutta-Maruyama formula
         // y_new = y + (h/6)*(k1 + 2*k2 + 2*k3 + k4) + diffusion * dW
 
@@ -214,7 +221,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for RKM4<T,
         self.t = t_full;
         self.y = y_new;
 
-        Ok(5) // 5 function evaluations: 4 for drift (RK4) + 1 for diffusion
+        Ok(evals) // 5 function evaluations: 4 for drift (RK4) + 1 for diffusion
     }
 
     fn t(&self) -> T {

@@ -154,17 +154,17 @@ macro_rules! adaptive_dense_runge_kutta_method {
         }
 
         impl<T: $crate::traits::Real, V: $crate::traits::State<T>, D: $crate::traits::CallBackData> $crate::ode::NumericalMethod<T, V, D> for $name<T, V, D> {
-            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<usize, $crate::Error<T, V>>
+            fn init<F>(&mut self, ode: &F, t0: T, tf: T, y: &V) -> Result<$crate::alias::Evals, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>,
             {
-                let mut evals = 0;
+                let mut evals = $crate::alias::Evals::new();
 
                 // If h0 is zero, calculate initial step size using the utility function
                 if self.h0 == T::zero() {
                     // Call standalone hinit function with order parameter
                     self.h0 = $crate::ode::methods::h_init(ode, t0, tf, y, $order, self.rtol, self.atol, self.h_min, self.h_max);
-                    evals += 2; // hinit uses 2 evaluation
+                    evals.fcn += 2; // hinit uses 2 evaluation
                 }
 
                 // Check bounds
@@ -181,7 +181,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 self.t = t0;
                 self.y = y.clone();
                 ode.diff(t0, y, &mut self.dydt);
-                evals += 1; // Initial derivative evaluation
+                evals.fcn += 1; // Initial derivative evaluation
 
                 // Initialize previous state
                 self.t_prev = t0;
@@ -193,10 +193,12 @@ macro_rules! adaptive_dense_runge_kutta_method {
                 Ok(evals)
             }
 
-            fn step<F>(&mut self, ode: &F) -> Result<usize, $crate::Error<T, V>>
+            fn step<F>(&mut self, ode: &F) -> Result<$crate::alias::Evals, $crate::Error<T, V>>
             where
                 F: $crate::ode::ODE<T, V, D>,
             {
+                let mut evals = $crate::alias::Evals::new();
+
                 // Make sure step size isn't too small
                 if self.h.abs() < T::default_epsilon() {
                     self.status = $crate::Status::Error($crate::Error::StepSize {
@@ -234,7 +236,7 @@ macro_rules! adaptive_dense_runge_kutta_method {
 
                     ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
                 }
-                let mut evals = $stages - 1; // We already have k[0]
+                evals.fcn = $stages - 1; // We already have k[0]
 
                 // Compute higher order solution
                 let mut y_high = self.y;
@@ -284,13 +286,13 @@ macro_rules! adaptive_dense_runge_kutta_method {
 
                         ode.diff(self.t + self.c_dense[i] * self.h, &y_stage, &mut self.k[$stages + i]);
                     }
-                    evals += $extra_stages; // Extra stages for interpolation
+                    evals.fcn += $extra_stages; // Extra stages for interpolation
 
                     // Update state with the higher-order solution
                     self.t += self.h;
                     self.y = y_high;
                     ode.diff(self.t, &self.y, &mut self.dydt);
-                    evals += 1; // Final derivative evaluation
+                    evals.fcn += 1; // Final derivative evaluation
                 } else {
                     // Step rejected
                     self.reject = true;
