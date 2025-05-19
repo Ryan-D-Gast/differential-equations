@@ -24,6 +24,7 @@ def plot_comparison(name):
     plt.ylabel('Solution')
     plt.legend(loc = 'upper left')
     plt.title(f'{name} Comparison')
+    os.makedirs('target/tests/ode/comparison/plots', exist_ok=True)
     plt.savefig(f'target/tests/ode/comparison/plots/{name}_comparison.png')
     plt.close()
 
