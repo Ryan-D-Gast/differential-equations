@@ -105,7 +105,6 @@ macro_rules! adaptive_implicit_runge_kutta_method {
             // --- Implicit Solver Settings ---
             pub max_iter: usize, // Max iterations for Newton solver
             pub tol: T,          // Tolerance for Newton solver convergence
-            pub use_analytical_jacobian: bool, // Switch for Jacobian computation
             fd_epsilon_sqrt: T, // Stores sqrt(machine_epsilon) for FD
 
             // Iteration tracking & Status
@@ -166,14 +165,13 @@ macro_rules! adaptive_implicit_runge_kutta_method {
                     // Implicit defaults
                     max_iter: 50,
                     tol: T::from_f64(1e-8).unwrap(),
-                    use_analytical_jacobian: false, // Require jacobian to be turned on
-                    fd_epsilon_sqrt: T::zero(), // Will be initialized in init()
+                    fd_epsilon_sqrt: T::zero(),
                     // Status
                     reject: false,
                     n_stiff: 0,
                     steps: 0,
                     nfcn: 0,
-                    njac: 0, // Initialize Jacobian counter
+                    njac: 0,
                     naccept: 0,
                     nreject: 0,
                     status: $crate::Status::Uninitialized,
@@ -272,34 +270,7 @@ macro_rules! adaptive_implicit_runge_kutta_method {
                 }
 
                 // Calculate Jacobian J_n = df/dy(t_n, y_n) once per step attempt
-                if self.use_analytical_jacobian {
-                    ode.jacobian(self.t, &self.y, &mut self.jacobian_matrix);
-                } else {
-                    // Compute Jacobian using forward finite differences
-                    let mut y_perturbed = self.y; // Create a mutable copy of y
-                    let mut f_perturbed = V::zeros(); // To store f(t, y_perturbed)
-                    // self.dydt should already contain f(self.t, self.y) from the previous step or init
-                    // If not, it needs to be computed here: ode.diff(self.t, &self.y, &mut self.dydt); evals_step +=1;
-
-                    for j_col in 0..dim {
-                        let y_original_j = self.y.get(j_col);
-                        // Perturbation: h_fd = sqrt(eps) * max(1, |y_j|) to avoid issues if y_j is zero
-                        let perturbation = self.fd_epsilon_sqrt * y_original_j.abs().max(T::one());
-                        
-                        y_perturbed.set(j_col, y_original_j + perturbation); // Perturb y_j
-
-                        ode.diff(self.t, &y_perturbed, &mut f_perturbed);
-                        evals_step += 1; // Count function evaluation for FD
-
-                        // Restore original y_j in y_perturbed for the next column's calculation
-                        y_perturbed.set(j_col, y_original_j); 
-
-                        for i_row in 0..dim {
-                            self.jacobian_matrix[(i_row, j_col)] =
-                                (f_perturbed.get(i_row) - self.dydt.get(i_row)) / perturbation;
-                        }
-                    }
-                }
+                ode.jacobian(self.t, &self.y, &mut self.jacobian_matrix);
                 self.njac += 1; // Count Jacobian computation (either analytical or FD)
 
                 let mut converged = false;
@@ -458,7 +429,6 @@ macro_rules! adaptive_implicit_runge_kutta_method {
             fn set_h(&mut self, h: T) { self.h = h; }
             fn status(&self) -> &$crate::Status<T, V, D> { &self.status }
             fn set_status(&mut self, status: $crate::Status<T, V, D>) { self.status = status; }
-            fn using_jacobian(&self) -> bool { self.use_analytical_jacobian }
         }
 
         impl<
@@ -502,11 +472,6 @@ macro_rules! adaptive_implicit_runge_kutta_method {
                 Self::default()
             }
 
-            /// Use jacobian provided by the ODE system
-            pub fn jacobian(mut self) -> Self {
-                self.use_analytical_jacobian = true;
-                self
-            }
             pub fn h0(mut self, h0: T) -> Self { self.h0 = h0; self }
             pub fn rtol(mut self, rtol: T) -> Self { self.rtol = rtol; self }
             pub fn atol(mut self, atol: T) -> Self { self.atol = atol; self }

@@ -47,7 +47,6 @@ fn main() {
         .rtol(1e-6)
         .atol(1e-6)
         .h0(1e-3) // Initial step size suggestion
-        .jacobian() // Explicitly use the analytical Jacobian from the ODE trait
         .max_iter(20); // Max Newton iterations
 
     // Initial conditions and time span for Brusselator
@@ -60,10 +59,6 @@ fn main() {
 
     // Create the ODE problem
     let problem_analytical = ODEProblem::new(ode_analytical, t0, tf, y0);
-
-    println!(
-        "Solving Brusselator system using GaussLegendre4 with analytical Jacobian..."
-    );
 
     // Solve the problem
     match problem_analytical
@@ -90,44 +85,6 @@ fn main() {
         }
         Err(e) => {
             eprintln!("An error occurred during analytical Jacobian solution: {:?}", e);
-        }
-    }
-
-    // Example of using finite differences for the same problem
-    println!(
-        "\nSolving Brusselator system using GaussLegendre4 with Finite Difference Jacobian..."
-    );
-    // For finite differences, do NOT call .jacobian(). It will default to use_analytical_jacobian = false.
-    let mut method_fd = GaussLegendre6::new()
-        .rtol(1e-6)
-        .atol(1e-6)
-        .h0(1e-3)
-        .max_iter(20);
-
-    let ode_fd = BrusselatorSystem;
-    let problem_fd = ODEProblem::new(ode_fd, t0, tf, y0);
-
-    match problem_fd
-        .even(0.5) // Output points every 0.5 time units
-        .solve(&mut method_fd)
-    {
-        Ok(solution) => {
-            println!("Solution successfully obtained (Finite Differences).");
-            println!("Status: {:?}", solution.status);
-            // Print a few points from the solution
-            println!("Solution points (t, y0, y1) - Finite Differences:");
-            for (t, y_val) in solution.iter() {
-                println!("t: {:.4}, y0: {:.4}, y1: {:.4}", t, y_val[0], y_val[1]);
-            }
-             println!("\nStatistics (Finite Differences):");
-            println!("  Function evaluations: {}", solution.evals);
-            println!("  Jacobian evaluations: {}", solution.jac_evals);
-            println!("  Total steps taken: {}", solution.steps);
-            println!("  Accepted steps: {}", solution.accepted_steps);
-            println!("  Rejected steps: {}", solution.rejected_steps);
-        }
-        Err(e) => {
-            eprintln!("An error occurred during FD solution: {:?}", e);
         }
     }
 }

@@ -40,7 +40,7 @@ const BHAT2: f64 = 1.0 / 9.0 + 0.02;
 
 // TODO: Add matrix coefficients and different step size selection strategies used
 // in the Fortran implementation. Current version only implements core and dense output
-// functionality with simplified jacobian / finite differences handling.
+// functionality with newton iteration and jacobian calls.
 
 /// Radau IIA method of order 5 (3 stages).
 ///
@@ -100,7 +100,6 @@ pub struct Radau5<T: Real, V: State<T>, D: CallBackData> {
     // --- Implicit Solver Settings ---
     pub max_iter: usize, // Max iterations for Newton solver
     pub tol: T,          // Tolerance for Newton solver convergence
-    pub use_analytical_jacobian: bool, // Switch for Jacobian computation
     fd_epsilon_sqrt: T, // Stores sqrt(machine_epsilon) for FD
 
     // Iteration tracking & Status
@@ -168,7 +167,6 @@ impl<T: Real, V: State<T>, D: CallBackData> Default for Radau5<T, V, D> {
             // Implicit defaults
             max_iter: 50,
             tol: T::from_f64(1e-8).unwrap(),
-            use_analytical_jacobian: false,
             fd_epsilon_sqrt: T::zero(),
             // Status
             reject: false,
@@ -251,7 +249,6 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Radau5<
         F: ODE<T, V, D>,
     {
         let mut evals_step = 0;
-        let dim = self.y.len();
 
         // Check step size validity
         if self.h.abs() < self.h_min || self.h.abs() < T::default_epsilon() {
@@ -273,30 +270,7 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Radau5<
         }
 
         // Calculate Jacobian J_n = df/dy(t_n, y_n) once per step attempt
-        if self.use_analytical_jacobian {
-            ode.jacobian(self.t, &self.y, &mut self.jacobian_matrix);
-        } else {
-            // Compute Jacobian using forward finite differences
-            let mut y_perturbed = self.y;
-            let mut f_perturbed = V::zeros();
-
-            for j_col in 0..dim {
-                let y_original_j = self.y.get(j_col);
-                let perturbation = self.fd_epsilon_sqrt * y_original_j.abs().max(T::one());
-                
-                y_perturbed.set(j_col, y_original_j + perturbation);
-
-                ode.diff(self.t, &y_perturbed, &mut f_perturbed);
-                evals_step += 1;
-
-                y_perturbed.set(j_col, y_original_j);
-
-                for i_row in 0..dim {
-                    self.jacobian_matrix[(i_row, j_col)] =
-                        (f_perturbed.get(i_row) - self.dydt.get(i_row)) / perturbation;
-                }
-            }
-        }
+        ode.jacobian(self.t, &self.y, &mut self.jacobian_matrix);
         self.njac += 1;
 
         // Form Newton iteration matrix: M = I - h * (A ⊗ J)
@@ -404,7 +378,6 @@ impl<T: Real, V: State<T>, D: CallBackData> NumericalMethod<T, V, D> for Radau5<
     fn set_h(&mut self, h: T) { self.h = h; }
     fn status(&self) -> &Status<T, V, D> { &self.status }
     fn set_status(&mut self, status: Status<T, V, D>) { self.status = status; }
-    fn using_jacobian(&self) -> bool { self.use_analytical_jacobian }
 }
 
 impl<T: Real, V: State<T>, D: CallBackData> Radau5<T, V, D> {
@@ -581,7 +554,6 @@ impl<
     pub fn new() -> Self {
         Self::default()
     }
-    pub fn jacobian(mut self) -> Self { self.use_analytical_jacobian = true; self }
     pub fn h0(mut self, h0: T) -> Self { self.h0 = h0; self }
     pub fn rtol(mut self, rtol: T) -> Self { self.rtol = rtol; self }
     pub fn atol(mut self, atol: T) -> Self { self.atol = atol; self }

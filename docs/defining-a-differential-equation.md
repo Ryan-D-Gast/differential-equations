@@ -29,7 +29,7 @@ where
     }
     
     fn jacobian(&self, t: T, y: &V, j: &mut DMatrix<T>) {
-        panic!("Jacobian not implemented for this ODE system.");
+        /* Finite difference approximation */
     }
 }
 ```
@@ -145,7 +145,8 @@ fn jacobian(&self, t: T, y: &V, j: &mut DMatrix<T>) {
 }
 ```
 
-Note that to use the Jacobian the solver has to support it and turned on otherwise an approximation like finite difference will be used.
+Note by default the jacobian is calculated using finite differences, which uses function evaluations which aren't logged.
+Implementing a jacobian can result in a major performance improvement for stiff systems if the differential equation is expensive to evaluate.
 
 ## Complete Example
 
