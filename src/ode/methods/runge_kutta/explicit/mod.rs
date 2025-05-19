@@ -20,6 +20,7 @@ pub use adaptive_step::{
 mod adaptive_dense;
 pub use adaptive_dense::{
     RKV65, // Verner's 6(5) adaptive method with dense output of order 5
+    RKV87, // Verner's 8(7) adaptive method with dense output of order 7
     RKV98, // Verner's 9(8) adaptive method with dense output of order 9
 };
 

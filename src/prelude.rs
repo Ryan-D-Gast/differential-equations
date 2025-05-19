@@ -67,6 +67,7 @@ pub use crate::{
                 RK4,    // Fixed Step Runge-Kutta 4th Order NumericalMethod
                 RKF,    // Fixed Step Runge-Kutta-Fehlberg NumericalMethod
                 RKV65,  // Verner 6(5) adaptive method with dense output of order 5
+                RKV87,  // Verner 8(7) adaptive method with dense output of order 7
                 RKV98,  // Verner 9(8) adaptive method with dense output of order 9
             },
             implicit::{

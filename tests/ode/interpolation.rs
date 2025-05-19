@@ -6,7 +6,7 @@ use differential_equations::ode::{
     methods::{
         adams::{APCF4, APCV4},
         runge_kutta::{
-            explicit::{DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98},
+            explicit::{DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV87, RKV98},
             implicit::{CrankNicolson, GaussLegendre6, Radau5},
         },
     },
@@ -67,6 +67,7 @@ fn interpolation() {
         solver_name: DOP853, solver: DOP853::new(),
         solver_name: DOPRI5, solver: DOPRI5::new(),
         solver_name: RKV65, solver: RKV65::new(),
+        solver_name: RKV87, solver: RKV87::new(),
         solver_name: RKV98, solver: RKV98::new(),
 
         // These methods use cubic Hermite interpolation

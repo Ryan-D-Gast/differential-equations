@@ -4,7 +4,7 @@ use super::systems;
 use differential_equations::ode::ODEProblem;
 use differential_equations::ode::methods::{
     adams::APCV4,
-    runge_kutta::explicit::{DOP853, DOPRI5, RKF, RKV65, RKV98},
+    runge_kutta::explicit::{DOP853, DOPRI5, RKF, RKV65, RKV87, RKV98},
 };
 use nalgebra::SVector;
 use std::{
@@ -318,6 +318,7 @@ fn error_vs_evals() {
         RKF, |tol| RKF::new().rtol(tol).atol(tol),
         APCV4, |tol| APCV4::new().tol(tol),
         RKV65, |tol| RKV65::new().rtol(tol).atol(tol),
+        RKV87, |tol| RKV87::new().rtol(tol).atol(tol),
         RKV98, |tol| RKV98::new().rtol(tol).atol(tol)
     }
 
@@ -327,6 +328,7 @@ fn error_vs_evals() {
         RKF, |tol| RKF::new().rtol(tol).atol(tol),
         APCV4, |tol| APCV4::new().tol(tol),
         RKV65, |tol| RKV65::new().rtol(tol).atol(tol),
+        RKV87, |tol| RKV87::new().rtol(tol).atol(tol),
         RKV98, |tol| RKV98::new().rtol(tol).atol(tol)
     }
 
@@ -336,6 +338,7 @@ fn error_vs_evals() {
         RKF, |tol| RKF::new().rtol(tol).atol(tol),
         APCV4, |tol| APCV4::new().tol(tol),
         RKV65, |tol| RKV65::new().rtol(tol).atol(tol),
+        RKV87, |tol| RKV87::new().rtol(tol).atol(tol),
         RKV98, |tol| RKV98::new().rtol(tol).atol(tol)
     }
 
@@ -345,6 +348,7 @@ fn error_vs_evals() {
         RKF, |tol| RKF::new().rtol(tol).atol(tol),
         APCV4, |tol| APCV4::new().tol(tol),
         RKV65, |tol| RKV65::new().rtol(tol).atol(tol),
+        RKV87, |tol| RKV87::new().rtol(tol).atol(tol),
         RKV98, |tol| RKV98::new().rtol(tol).atol(tol)
     }
 
