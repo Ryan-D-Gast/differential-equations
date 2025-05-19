@@ -15,7 +15,7 @@ If you're looking for ways to contribute, here are some areas where we could use
 
 ### Differential Equation Types
 - Add additional support for differential equations:
-   - [ ] Stochastic Delay Differential Equations (DDE)
+   - [ ] Stochastic Delay Differential Equations (SDDE)
    - Add more if you have ideas!
 
 ## Coding Guidelines
