@@ -18,7 +18,6 @@
 
 use differential_equations::prelude::*;
 use nalgebra::Vector3;
-use plotlars::{Axis, LinePlot, Plot, Rgb, TickDirection};
 
 // Define the Breast Cancer Model DDE struct
 struct BreastCancerModel {
@@ -115,35 +114,8 @@ fn main() {
                 }
             }
 
-            // Plotting the solution using Plotlars
-            let df = solution.to_polars().unwrap();
-
-            LinePlot::builder()
-                .data(&df)
-                .x("t")
-                .y("y0")
-                .additional_lines(vec!["y1", "y2"])
-                .colors(vec![
-                    Rgb(0, 0, 255), // Blue for Susceptible
-                    Rgb(255, 0, 0), // Red for Infected
-                    Rgb(0, 255, 0), // Green for Recovered
-                ])
-                .plot_title("Breast Cancer Model")
-                .x_title("Time")
-                .y_title("Cell Population")
-                .x_axis(
-                    &Axis::new()
-                        .tick_direction(TickDirection::InSide)
-                        .show_line(true)
-                        
-                )
-                .y_axis(
-                    &Axis::new()
-                        .tick_direction(TickDirection::InSide)
-                        .show_line(true)
-                )  
-                .build()
-                .plot();           
+            // Create csv
+            solution.to_csv("examples/dde/02_breast_cancer_model/target/breast_cancer_model.csv").unwrap();
         }
         Err(e) => {
             eprintln!("Error solving DDE: {:?}", e);

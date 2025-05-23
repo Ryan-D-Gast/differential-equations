@@ -36,8 +36,6 @@ differential-equations-derive = "0.1.1" # Derives State trait on structs
 polars = { version = "^0.47.1", optional = true } # DataFrame integration for the solution
 
 [dev-dependencies]
-differential-equations = { path = ".", features = ["polars"] } # Enable features for testing
-plotlars = "0.9.3"
 criterion = { version = "0.5.1", features = ["html_reports"] } # Benchmarking library
 rand = "0.9.0" # Random number generation for SDE examples
 rand_distr = "0.5.1" # Random distributions for SDE examples

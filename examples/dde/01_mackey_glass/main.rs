@@ -13,7 +13,6 @@
 //! This equation was originally proposed as a model for the production of blood cells.
 
 use differential_equations::prelude::*;
-use plotlars::{Axis, LinePlot, Plot, TickDirection};
 
 struct MackeyGlass {
     beta: f64,
@@ -77,27 +76,8 @@ fn main() {
             println!("Rejected steps: {}", solution.rejected_steps);
             println!("Number of output points: {}", solution.t.len());
 
-            // Plotting the solution using Plotlars
-            let df = solution.to_polars().unwrap();
-
-            LinePlot::builder()
-                .data(&df)
-                .x("t")
-                .y("y0")
-                .plot_title("Mackey-Glass Equation")
-                .x_axis(
-                    &Axis::new()
-                        .tick_direction(TickDirection::InSide)
-                        .show_line(true)
-                        
-                )
-                .y_axis(
-                    &Axis::new()
-                        .tick_direction(TickDirection::InSide)
-                        .show_line(true)
-                )  
-                .build()
-                .plot();
+            // Save the solution to a CSV file
+            solution.to_csv("examples/dde/01_mackey_glass/target/mackey_glass.csv").unwrap();
         }
         Err(e) => {
             eprintln!("Error solving DDE: {:?}", e);
