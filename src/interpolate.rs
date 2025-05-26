@@ -33,6 +33,8 @@ where
 /// * `t1` - Final Time.
 /// * `y0` - Initial State Vector.
 /// * `y1` - Final State Vector.
+/// * `k0` - Initial Deriv of State Vector.
+/// * `k1` - Final Deriv of State Vector.
 /// * `t`  - Time to interpolate at.
 ///
 /// # Returns
