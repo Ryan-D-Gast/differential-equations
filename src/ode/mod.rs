@@ -85,12 +85,12 @@
 //!
 
 // Definitions & Constructors for users to ergonomically solve an ODEProblem problem via the solve_ode function.
-mod ode_problem;
-pub use ode_problem::ODEProblem;
+mod problem;
+pub use problem::ODEProblem;
 
 // Solve ODE function
-mod solve_ode;
-pub use solve_ode::solve_ode;
+mod solve;
+pub use solve::solve_ode;
 
 // ODE Trait for Ordinary Differential Equations
 mod ode;

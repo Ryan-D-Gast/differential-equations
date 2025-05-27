@@ -133,8 +133,8 @@ pub mod methods;
 mod numerical_method;
 pub use numerical_method::SDENumericalMethod;
 
-mod sde_problem;
-mod solve_sde;
+mod problem;
+mod solve;
 
-pub use sde_problem::SDEProblem;
-pub use solve_sde::solve_sde;
+pub use problem::SDEProblem;
+pub use solve::solve_sde;

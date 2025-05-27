@@ -1,10 +1,10 @@
 //! Delay Differential Equations (DDE) Module
 
-mod dde_problem;
-pub use dde_problem::DDEProblem;
+mod problem;
+pub use problem::DDEProblem;
 
-mod solve_dde;
-pub use solve_dde::solve_dde;
+mod solve;
+pub use solve::solve_dde;
 
 mod dde;
 pub use dde::DDE;

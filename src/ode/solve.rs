@@ -3,7 +3,7 @@
 use crate::{
     ControlFlag, Error, Solution, Status,
     interpolate::Interpolation,
-    ode::{ODE, numerical_method::ODENumericalMethod},
+    ode::{ODE, ODENumericalMethod},
     solout::*,
     traits::{CallBackData, Real, State},
 };
