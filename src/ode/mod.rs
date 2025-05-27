@@ -56,7 +56,6 @@
 //!
 //! - [`ODE`]: Define your differential equation system by implementing this trait
 //! - [`ODEProblem`]: Set up an initial value problem with your system, time span, and initial conditions
-//! - [`Solution`]: After solving, analyze and process your solution data
 //!
 //! ## Popular Numerical Methods
 //!
@@ -64,24 +63,10 @@
 //! - [`DOPRI5`]: Adaptive step Dormand-Prince 5(4) method
 //! - [`DOP853`]: Adaptive step Dormand-Prince 8(5,3) method with 7th order interpolant
 //! - [`RKV65`]: Verner 6(5) adaptive method with dense output of order 5
+//! - [`RKV87`]: Verner 8(7) adaptive method with dense output of order 8
 //! - [`RKV98`]: Verner 9(8) adaptive method with dense output of order 9
 //!
 //! Additional solvers are available in the [`solvers`] module.
-//!
-//! ## Solution Output Control
-//!
-//! Custom solution output behaviors can be defined using the [`Solout`] trait.
-//! Common implementations are available in the [`solout`] module or via
-//! extension methods on the [`ODEProblem`] struct. For example, you can use the
-//! `ODEProblem.dense(2).solve(&mut solver)` method to set output all calculated steps and an
-//! interpolated solution between them. e.g. 2 output points per step.
-//!
-//! ## Event Handling
-//!
-//! The [`ODE`] trait includes event handling capabilities for detecting
-//! and responding to significant conditions during integration. These events
-//! when detected use a root-finding algorithm to determine the point it takes
-//! place and interrupt the solution at that point.
 //!
 
 // Definitions & Constructors for users to ergonomically solve an ODEProblem problem via the solve_ode function.
