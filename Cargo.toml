@@ -24,6 +24,9 @@ include = [
     "CHANGELOG.md",
     "LICENSE"
 ]
+exclude = [
+    "examples/**/target/*",
+]
 
 [features]
 default = []
