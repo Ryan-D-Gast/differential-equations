@@ -86,6 +86,10 @@
 
 pub mod prelude;
 
+// -- Butcher Tableaus --
+
+mod tableau;
+
 // -- Types of Differential Equations --
 
 // Ordinary Differential Equations (ODE) Module
