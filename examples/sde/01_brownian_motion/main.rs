@@ -44,9 +44,9 @@ impl SDE for BrownianMotion {
     }
 
     /// Generate noise for Brownian motion
-    fn noise(&self, dt: f64, dw: &mut f64) {
+    fn noise(&mut self, dt: f64, dw: &mut f64) {
         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
-        *dw = normal.sample(&mut self.rng.clone());
+        *dw = normal.sample(&mut self.rng);
     }
 }
 
@@ -71,7 +71,7 @@ fn main() {
     println!("Random seed: {}", seed);
 
     // Create and solve the problem
-    let problem = SDEProblem::new(sde, t0, tf, y0);
+    let mut problem = SDEProblem::new(sde, t0, tf, y0);
     let solution = problem.solve(&mut solver).unwrap();
 
     // Print solution statistics

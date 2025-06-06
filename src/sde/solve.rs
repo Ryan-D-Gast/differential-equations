@@ -104,21 +104,21 @@ use crate::{
 ///         dydw[0] = 0.2 * y[0]; // σS
 ///     }
 ///     
-///     fn noise(&self, dt: f64, dw: &mut SVector<f64, 1>) {
+///     fn noise(&mut self, dt: f64, dw: &mut SVector<f64, 1>) {
 ///         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
-///         dw[0] = normal.sample(&mut self.rng.clone());
+///         dw[0] = normal.sample(&mut self.rng);
 ///     }
 /// }
 ///
 /// let t0 = 0.0;
 /// let tf = 1.0;
 /// let y0 = SVector::<f64, 1>::new(100.0);
-/// let gbm = GBM::new(42);
+/// let mut gbm = GBM::new(42);
 /// let mut solver = EM::new(0.01);
 /// let mut solout = DefaultSolout::new();
 ///
 /// // Solve the SDE
-/// let result = solve_sde(&mut solver, &gbm, t0, tf, &y0, &mut solout);
+/// let result = solve_sde(&mut solver, &mut gbm, t0, tf, &y0, &mut solout);
 /// ```
 ///
 /// # Notes
@@ -131,7 +131,7 @@ use crate::{
 ///
 pub fn solve_sde<T, V, D, S, F, O>(
     solver: &mut S,
-    sde: &F,
+    sde: &mut F,
     t0: T,
     tf: T,
     y0: &V,

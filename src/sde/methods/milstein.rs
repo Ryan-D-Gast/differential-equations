@@ -64,9 +64,9 @@ use crate::{
 ///         dydw[0] = self.sigma * y[0];
 ///     }
 ///     
-///     fn noise(&self, dt: f64, dw: &mut SVector<f64, 1>) {
+///     fn noise(&mut self, dt: f64, dw: &mut SVector<f64, 1>) {
 ///         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
-///         dw[0] = normal.sample(&mut self.rng.clone());
+///         dw[0] = normal.sample(&mut self.rng);
 ///     }
 /// }
 ///
@@ -75,7 +75,7 @@ use crate::{
 /// let y0 = SVector::<f64, 1>::new(100.0);
 /// let mut solver = Milstein::new(0.01);
 /// let gbm = GBM::new(0.1, 0.2, 42);
-/// let gbm_problem = SDEProblem::new(gbm, t0, tf, y0);
+/// let mut gbm_problem = SDEProblem::new(gbm, t0, tf, y0);
 ///
 /// // Solve the SDE
 /// let result = gbm_problem.solve(&mut solver);
@@ -117,7 +117,7 @@ impl<T: Real, V: State<T>, D: CallBackData> Default for Milstein<T, V, D> {
 }
 
 impl<T: Real, V: State<T>, D: CallBackData> SDENumericalMethod<T, V, D> for Milstein<T, V, D> {
-    fn init<F>(&mut self, sde: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
+    fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: SDE<T, V, D>,
     {
@@ -148,7 +148,7 @@ impl<T: Real, V: State<T>, D: CallBackData> SDENumericalMethod<T, V, D> for Mils
         Ok(evals) // 2 function evaluations: drift and diffusion
     }
 
-    fn step<F>(&mut self, sde: &F) -> Result<Evals, Error<T, V>>
+    fn step<F>(&mut self, sde: &mut F) -> Result<Evals, Error<T, V>>
     where
         F: SDE<T, V, D>,
     {

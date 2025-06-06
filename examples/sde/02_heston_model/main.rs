@@ -70,13 +70,13 @@ impl SDE<f64, HestonState<f64>> for HestonModel {
         dydw.variance = self.sigma * y.variance.sqrt();
     }
 
-    fn noise(&self, dt: f64, dw_vec: &mut HestonState<f64>) {
+    fn noise(&mut self, dt: f64, dw_vec: &mut HestonState<f64>) {
         // Generate correlated Wiener process increments for price and variance
         let normal = rand_distr::Normal::new(0.0, dt.sqrt()).unwrap();
 
         // Generate uncorrelated increments
-        let dw1 = normal.sample(&mut self.rng.clone()); // dW₁
-        let dw2 = normal.sample(&mut self.rng.clone()); // dW₂
+        let dw1 = normal.sample(&mut self.rng); // dW₁
+        let dw2 = normal.sample(&mut self.rng); // dW₂
 
         // Apply correlation using Cholesky decomposition
         dw_vec.price = dw1;
@@ -122,7 +122,7 @@ fn main() {
     let mut solver = Milstein::new(dt);
 
     // Create and solve the problem
-    let problem = SDEProblem::new(sde, t0, tf, y0);
+    let mut problem = SDEProblem::new(sde, t0, tf, y0);
     let solution = problem.solve(&mut solver).unwrap();
 
     // Get final state

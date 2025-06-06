@@ -37,9 +37,9 @@
 //!     fn diffusion(&self, _t: f64, y: &SVector<f64, 1>, dydw: &mut SVector<f64, 1>) {
 //!         dydw[0] = self.sigma * y[0];
 //!     }
-//!     fn noise(&self, dt: f64, dw: &mut SVector<f64, 1>) {
+//!     fn noise(&mut self, dt: f64, dw: &mut SVector<f64, 1>) {
 //!         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
-//!         dw[0] = normal.sample(&mut self.rng.clone());
+//!         dw[0] = normal.sample(&mut self.rng);
 //!     }
 //! }
 //!
@@ -53,7 +53,7 @@
 //!
 //!     let gbm = GBM::new(mu, sigma, seed);
 //!     let mut solver = EM::new(0.01);
-//!     let problem = SDEProblem::new(gbm, t0, tf, y0);
+//!     let mut problem = SDEProblem::new(gbm, t0, tf, y0);
 //!
 //!     let solution = match problem.solve(&mut solver) {
 //!         Ok(sol) => sol,

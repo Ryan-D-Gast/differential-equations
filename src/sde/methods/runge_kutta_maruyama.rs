@@ -67,9 +67,9 @@ use crate::{
 ///         dydw[0] = self.sigma;
 ///     }
 ///     
-///     fn noise(&self, dt: f64, dw: &mut SVector<f64, 1>) {
+///     fn noise(&mut self, dt: f64, dw: &mut SVector<f64, 1>) {
 ///         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
-///         dw[0] = normal.sample(&mut self.rng.clone());
+///         dw[0] = normal.sample(&mut self.rng);
 ///     }
 /// }
 ///
@@ -78,7 +78,7 @@ use crate::{
 /// let y0 = SVector::<f64, 1>::new(2.0);  // Initial value away from mean
 /// let ou_process = OrnsteinUhlenbeck::new(0.5, 1.0, 0.1, 42);
 /// let mut solver = RKM4::new(0.01);
-/// let ou_problem = SDEProblem::new(ou_process, t0, tf, y0);
+/// let mut ou_problem = SDEProblem::new(ou_process, t0, tf, y0);
 ///
 /// // Solve the SDE
 /// let result = ou_problem.solve(&mut solver);
@@ -128,7 +128,7 @@ impl<T: Real, V: State<T>, D: CallBackData> Default for RKM4<T, V, D> {
 }
 
 impl<T: Real, V: State<T>, D: CallBackData> SDENumericalMethod<T, V, D> for RKM4<T, V, D> {
-    fn init<F>(&mut self, sde: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
+    fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: SDE<T, V, D>,
     {
@@ -159,7 +159,7 @@ impl<T: Real, V: State<T>, D: CallBackData> SDENumericalMethod<T, V, D> for RKM4
         Ok(evals)
     }
 
-    fn step<F>(&mut self, sde: &F) -> Result<Evals, Error<T, V>>
+    fn step<F>(&mut self, sde: &mut F) -> Result<Evals, Error<T, V>>
     where
         F: SDE<T, V, D>,
     {

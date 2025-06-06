@@ -51,9 +51,9 @@ use crate::{
 ///         dydw[0] = 0.2 * y[0]; // σS
 ///     }
 ///     
-///     fn noise(&self, dt: f64, dw: &mut SVector<f64, 1>) {
+///     fn noise(&mut self, dt: f64, dw: &mut SVector<f64, 1>) {
 ///         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
-///         dw[0] = normal.sample(&mut self.rng.clone());
+///         dw[0] = normal.sample(&mut self.rng);
 ///     }
 /// }
 ///
@@ -62,7 +62,7 @@ use crate::{
 /// let y0 = SVector::<f64, 1>::new(100.0);
 /// let mut solver = EM::new(0.01);
 /// let gbm = GBM::new(42);
-/// let gbm_problem = SDEProblem::new(gbm, t0, tf, y0);
+/// let mut gbm_problem = SDEProblem::new(gbm, t0, tf, y0);
 ///
 /// // Solve the SDE
 /// let result = gbm_problem.solve(&mut solver);
@@ -141,14 +141,14 @@ where
     /// # Returns
     /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered
     ///
-    pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
+    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
     where
         S: SDENumericalMethod<T, V, D> + Interpolation<T, V>,
     {
         let mut default_solout = DefaultSolout::new(); // Default solout implementation
         solve_sde(
             solver,
-            &self.sde,
+            &mut self.sde,
             self.t0,
             self.tf,
             &self.y0,
@@ -162,7 +162,7 @@ where
     /// * SDE Problem with the provided solout function ready for .solve() method
     ///
     pub fn solout<'a, O: Solout<T, V, D>>(
-        &'a self,
+        &'a mut self,
         solout: &'a mut O,
     ) -> SDEProblemMutRefSoloutPair<'a, T, V, D, F, O> {
         SDEProblemMutRefSoloutPair::new(self, solout)
@@ -177,7 +177,7 @@ where
     /// # Returns
     /// * SDE Problem with Even Solout function ready for .solve() method
     ///
-    pub fn even(&self, dt: T) -> SDEProblemSoloutPair<'_, T, V, D, F, EvenSolout<T>> {
+    pub fn even(&mut self, dt: T) -> SDEProblemSoloutPair<'_, T, V, D, F, EvenSolout<T>> {
         let even_solout = EvenSolout::new(dt, self.t0, self.tf); // Even solout implementation
         SDEProblemSoloutPair::new(self, even_solout)
     }
@@ -191,7 +191,7 @@ where
     /// # Returns
     /// * SDE Problem with Dense Output function ready for .solve() method
     ///
-    pub fn dense(&self, n: usize) -> SDEProblemSoloutPair<'_, T, V, D, F, DenseSolout> {
+    pub fn dense(&mut self, n: usize) -> SDEProblemSoloutPair<'_, T, V, D, F, DenseSolout> {
         let dense_solout = DenseSolout::new(n); // Dense solout implementation
         SDEProblemSoloutPair::new(self, dense_solout)
     }
@@ -205,7 +205,7 @@ where
     /// # Returns
     /// * SDE Problem with Custom Time Evaluation function ready for .solve() method
     ///
-    pub fn t_eval(&self, points: Vec<T>) -> SDEProblemSoloutPair<'_, T, V, D, F, TEvalSolout<T>> {
+    pub fn t_eval(&mut self, points: Vec<T>) -> SDEProblemSoloutPair<'_, T, V, D, F, TEvalSolout<T>> {
         let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf); // Custom time evaluation solout implementation
         SDEProblemSoloutPair::new(self, t_eval_solout)
     }
@@ -222,7 +222,7 @@ where
     /// * SDE Problem with CrossingSolout function ready for .solve() method
     ///
     pub fn crossing(
-        &self,
+        &mut self,
         component_idx: usize,
         threshold: T,
         direction: CrossingDirection,
@@ -245,7 +245,7 @@ where
     /// * SDE Problem with HyperplaneCrossingSolout function ready for .solve() method
     ///
     pub fn hyperplane_crossing<V1>(
-        &self,
+        &mut self,
         point: V1,
         normal: V1,
         extractor: fn(&V) -> V1,
@@ -270,7 +270,7 @@ where
     F: SDE<T, V, D>,
     O: Solout<T, V, D>,
 {
-    pub sde_problem: &'a SDEProblem<T, V, D, F>, // Reference to the SDE Problem struct
+    pub sde_problem: &'a mut SDEProblem<T, V, D, F>, // Reference to the SDE Problem struct
     pub solout: &'a mut O,                       // Reference to the solout implementation
 }
 
@@ -288,7 +288,7 @@ where
     /// * `sde_problem` - Reference to the SDE Problem struct
     /// * `solout` - Reference to the solout implementation
     ///
-    pub fn new(sde_problem: &'a SDEProblem<T, V, D, F>, solout: &'a mut O) -> Self {
+    pub fn new(sde_problem: &'a mut SDEProblem<T, V, D, F>, solout: &'a mut O) -> Self {
         SDEProblemMutRefSoloutPair {
             sde_problem,
             solout,
@@ -309,7 +309,7 @@ where
     {
         solve_sde(
             solver,
-            &self.sde_problem.sde,
+            &mut self.sde_problem.sde,
             self.sde_problem.t0,
             self.sde_problem.tf,
             &self.sde_problem.y0,
@@ -319,7 +319,7 @@ where
 }
 
 /// SDEProblemSoloutPair serves as an intermediate between the SDEProblem struct and solve_sde when a predefined solout is used
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct SDEProblemSoloutPair<'a, T, V, D, F, O>
 where
     T: Real,
@@ -328,8 +328,8 @@ where
     F: SDE<T, V, D>,
     O: Solout<T, V, D>,
 {
-    pub sde_problem: &'a SDEProblem<T, V, D, F>, // Reference to the SDE Problem struct
-    pub solout: O,                               // Solout implementation
+    pub sde_problem: &'a mut SDEProblem<T, V, D, F>, // Reference to the SDE Problem struct
+    pub solout: O,                                   // Solout implementation
 }
 
 impl<'a, T, V, D, F, O> SDEProblemSoloutPair<'a, T, V, D, F, O>
@@ -346,7 +346,7 @@ where
     /// * `sde_problem` - Reference to the SDE Problem struct
     /// * `solout` - Solout implementation
     ///
-    pub fn new(sde_problem: &'a SDEProblem<T, V, D, F>, solout: O) -> Self {
+    pub fn new(sde_problem: &'a mut SDEProblem<T, V, D, F>, solout: O) -> Self {
         SDEProblemSoloutPair {
             sde_problem,
             solout,
@@ -367,7 +367,7 @@ where
     {
         solve_sde(
             solver,
-            &self.sde_problem.sde,
+            &mut self.sde_problem.sde,
             self.sde_problem.t0,
             self.sde_problem.tf,
             &self.sde_problem.y0,

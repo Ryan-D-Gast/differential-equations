@@ -51,9 +51,9 @@ impl SDE for OrnsteinUhlenbeck {
     }
 
     /// Generate noise for the process
-    fn noise(&self, dt: f64, dw: &mut f64) {
+    fn noise(&mut self, dt: f64, dw: &mut f64) {
         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
-        *dw = normal.sample(&mut self.rng.clone());
+        *dw = normal.sample(&mut self.rng);
     }
 }
 
@@ -82,7 +82,7 @@ fn main() {
 
     // Solve with Runge-Kutta-Maruyama
     let mut rk_solver = RKM4::new(dt);
-    let rk_problem = SDEProblem::new(sde, t0, tf, y0);
+    let mut rk_problem = SDEProblem::new(sde, t0, tf, y0);
     let rk_solution = rk_problem.even(1.0).solve(&mut rk_solver).unwrap();
     println!("\nRunge-Kutta-Maruyama results:");
     for (t, y) in rk_solution.iter() {

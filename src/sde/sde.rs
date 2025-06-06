@@ -77,7 +77,7 @@ where
     /// * `dt` - Time step size.
     /// * `dw` - Vector to store generated noise increments.
     ///
-    fn noise(&self, dt: T, dw: &mut V);
+    fn noise(&mut self, dt: T, dw: &mut V);
 
     /// Event function to detect significant conditions during integration.
     ///
