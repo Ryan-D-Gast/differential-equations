@@ -1,9 +1,8 @@
 use crate::tableau::{
     ButcherTableau,
-    NumicalMethodType,
 };
 
-impl ButcherTableau<9, 8, 8, 21, 16, 21> {
+impl ButcherTableau<16, 21> {
     /// A better efficient Runge-Kutta (16:8(9)) pair with 8th-order interpolation.
     ///
     /// # Overview
@@ -38,11 +37,11 @@ impl ButcherTableau<9, 8, 8, 21, 16, 21> {
     /// - J.H. Verner, SIAM J NA 1978, "Explicit Runge-Kutta methods with estimates of the Local Truncation Error"
     /// - J.H. Verner, SIAM J NA 1993, "Differentiable Interpolants for high-order Runge-Kutta methods"
     pub const fn rkv988e() -> Self {
-        let mut a = [[0.0; 21]; 21];
         let mut c = [0.0; 21];
+        let mut a = [[0.0; 21]; 21];
         let mut b = [0.0; 16];
         let mut bh = [0.0; 16];
-        let mut bi8 = [[0.0; 8]; 21];
+        let mut bi8 = [[0.0; 21]; 21];
 
         c[0] = 0.0;
         c[1] = 0.3571e-1;
@@ -525,7 +524,6 @@ impl ButcherTableau<9, 8, 8, 21, 16, 21> {
         bi8[20][7] = 272.4904689883393700780173758256501517585;
 
         Self {
-            method: NumicalMethodType::ExplicitRungeKutta,
             c,
             a,
             b,
@@ -535,7 +533,7 @@ impl ButcherTableau<9, 8, 8, 21, 16, 21> {
     }
 }
 
-impl ButcherTableau<9, 9, 9, 26, 16, 26> {
+impl ButcherTableau<16, 26> {
     /// A better efficient Runge-Kutta (16:9(8)) pair with 9th-order interpolation.
     ///
     /// # Overview
@@ -571,11 +569,11 @@ impl ButcherTableau<9, 9, 9, 26, 16, 26> {
     /// - J.H. Verner, SIAM J NA 1978, "Explicit Runge-Kutta methods with estimates of the Local Truncation Error"
     /// - J.H. Verner, SIAM J NA 1993, "Differentiable Interpolants for high-order Runge-Kutta methods"
     pub const fn rkv989e() -> Self {
-        let mut a = [[0.0; 26]; 26];
         let mut c = [0.0; 26];
+        let mut a = [[0.0; 26]; 26];
         let mut b = [0.0; 16];
         let mut bh = [0.0; 16];
-        let mut bi9 = [[0.0; 9]; 26];
+        let mut bi9 = [[0.0; 26]; 26];
 
         c[0] = 0.0;
         c[1] = 0.3571e-1;
@@ -593,16 +591,6 @@ impl ButcherTableau<9, 9, 9, 26, 16, 26> {
         c[13] = 0.8998;
         c[14] = 1.0;
         c[15] = 1.0;
-        c[16] = 1.0;
-        c[17] = 0.7375018139988810429214526568476200466933;
-        c[18] = 0.749;
-        c[19] = 0.65;
-        c[20] = 0.487;
-        c[21] = 0.97e-2;
-        c[22] = 0.138;
-        c[23] = 0.249;
-        c[24] = 0.439;
-        c[25] = 0.794;
 
         a[1][0] = 0.3571e-1;
 
@@ -1269,7 +1257,6 @@ impl ButcherTableau<9, 9, 9, 26, 16, 26> {
         bi9[25][8] = 440.0137786917170208520501729678092387026;
 
         Self {
-            method: NumicalMethodType::ExplicitRungeKutta,
             c,
             a,
             b,

@@ -1,9 +1,8 @@
 use crate::tableau::{
     ButcherTableau,
-    NumicalMethodType,
 };
 
-impl ButcherTableau<5, 4, 7, 1, 7, 7> {
+impl ButcherTableau<7> {
     /// Dormand-Prince 5(4) Tableau with dense output interpolation.
     ///
     /// # Overview
@@ -40,7 +39,7 @@ impl ButcherTableau<5, 4, 7, 1, 7, 7> {
         let mut a = [[0.0; 7]; 7];
         let mut b = [0.0; 7];
         let mut bh = [0.0; 7];
-        let mut bi4 = [[0.0; 7]; 1];
+        let mut bi4 = [[0.0; 7]; 7];
 
         c[0] = 0.0;
         c[1] = 0.2;
@@ -102,7 +101,6 @@ impl ButcherTableau<5, 4, 7, 1, 7, 7> {
         bi4[0][6] = 69997945.0 / 29380423.0;
 
         ButcherTableau {
-            method: NumicalMethodType::DormandPrince,
             c,
             a,
             b,

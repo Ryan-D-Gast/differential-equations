@@ -1,9 +1,8 @@
 use crate::tableau::{
     ButcherTableau,
-    NumicalMethodType,
 };
 
-impl ButcherTableau<8, 7, 7, 17, 13, 17> {
+impl ButcherTableau<13, 17> {
     /// An efficient Runge-Kutta (13:7) pair method with 7th-order interpolation.
     ///
     /// # Overview
@@ -34,7 +33,7 @@ impl ButcherTableau<8, 7, 7, 17, 13, 17> {
         let mut a = [[0.0; 17]; 17];
         let mut b = [0.0; 13];
         let mut bh = [0.0; 13];
-        let mut bi7 = [[0.0; 7]; 17];
+        let mut bi7 = [[0.0; 17]; 17];
 
         c[0] = 0.0;
         c[1] = 0.92662e-1;
@@ -375,7 +374,6 @@ impl ButcherTableau<8, 7, 7, 17, 13, 17> {
         bi7[16][6] = 173.0851912761581306251501634371839282326;
 
         Self {
-            method: NumicalMethodType::ExplicitRungeKutta,
             c,
             a,
             b,
@@ -385,7 +383,7 @@ impl ButcherTableau<8, 7, 7, 17, 13, 17> {
     }
 }
 
-impl ButcherTableau<8, 8, 8, 21, 13, 21> {
+impl ButcherTableau<13, 21> {
     /// A highly efficient Runge-Kutta (13:8(7)) pair method.
     ///
     /// # Overview
@@ -421,7 +419,7 @@ impl ButcherTableau<8, 8, 8, 21, 13, 21> {
         let mut a = [[0.0; 21]; 21];
         let mut b = [0.0; 13];
         let mut bh = [0.0; 13];
-        let mut bi8 = [[0.0; 8]; 21];
+        let mut bi8 = [[0.0; 21]; 21];
 
         c[0] = 0.0;
         c[1] = 0.92662e-1;
@@ -901,7 +899,6 @@ impl ButcherTableau<8, 8, 8, 21, 13, 21> {
         bi8[20][7] = -80.77216725726792837258122924487852845967;
 
         Self {
-            method: NumicalMethodType::ExplicitRungeKutta,
             c,
             a,
             b,

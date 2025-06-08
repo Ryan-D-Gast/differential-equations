@@ -1,9 +1,8 @@
 use crate::tableau::{
     ButcherTableau,
-    NumicalMethodType,
 };
 
-impl ButcherTableau<8, 5, 16, 4, 12, 15> {
+impl ButcherTableau<12, 16> {
     /// Dormand-Prince 8(5,3) Tableau with dense output interpolation.
     ///
     /// # Overview
@@ -39,11 +38,11 @@ impl ButcherTableau<8, 5, 16, 4, 12, 15> {
     /// - Dormand, J. R. & Prince, P. J. (1980), "A family of embedded Runge-Kutta formulae",
     ///   Journal of Computational and Applied Mathematics, 6(1), pp. 19-26
     pub const fn dop853() -> Self {
-        let mut c = [0.0; 15];
-        let mut a = [[0.0; 15]; 15];
+        let mut c = [0.0; 16];
+        let mut a = [[0.0; 16]; 16];
         let mut b = [0.0; 12];
         let mut bh = [0.0; 12];
-        let mut bi7 = [[0.0; 16]; 4];
+        let mut bi7 = [[0.0; 16]; 16];
 
         c[0] = 0.0;
         c[1] = 5.260_015_195_876_773E-2;
@@ -242,7 +241,6 @@ impl ButcherTableau<8, 5, 16, 4, 12, 15> {
         bi7[3][15] = -1.497_268_362_579_856_4E2;
 
         ButcherTableau {
-            method: NumicalMethodType::DormandPrince,
             c,
             a,
             b,
