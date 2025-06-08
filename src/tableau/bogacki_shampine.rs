@@ -1,3 +1,5 @@
+//! Bogacki-Shampine Runge-Kutta method.
+
 use crate::tableau::ButcherTableau;
 
 impl ButcherTableau<4> {

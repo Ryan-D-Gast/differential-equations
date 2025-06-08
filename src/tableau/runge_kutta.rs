@@ -1,6 +1,6 @@
-use crate::tableau::{
-    ButcherTableau,
-};
+//! Classic or typical Runge-Kutta methods without unique properties
+
+use crate::tableau::ButcherTableau;
 
 impl ButcherTableau<4> {
     /// Classic Runge-Kutta 4th order method (RK4).

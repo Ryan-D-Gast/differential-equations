@@ -1,3 +1,5 @@
+//! Gauss-Legendre Implicit Runge-Kutta Methods
+
 use crate::tableau::ButcherTableau;
 
 const SQRT_3: f64 = 1.732050808;

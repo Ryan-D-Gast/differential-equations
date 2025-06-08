@@ -1,3 +1,5 @@
+//! Lobatto Implicit Runge-Kutta Methods
+
 use crate::tableau::ButcherTableau;
 
 impl ButcherTableau<2> {

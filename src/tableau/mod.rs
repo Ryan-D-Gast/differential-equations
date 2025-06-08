@@ -1,20 +1,11 @@
 #![allow(dead_code)]
 //! Butcher Tableau
 
-// Classic Runge-Kutta methods
-mod rk4;
-
-// Embedded Runge-Kutta methods
+// Explicit Runge-Kutta methods
+mod runge_kutta;
 mod bogacki_shampine;
-
-// Verner's Runge-Kutta methods, source: https://www.sfu.ca/~jverner/
-mod rkv76;
-mod rkv87;
-mod rkv98;
-
-// Dormand-Prince methods
-mod dopri5;
-mod dop853;
+mod verner;
+mod dorman_prince;
 
 // Implicit Runge-Kutta methods
 mod lobatto;
@@ -53,12 +44,4 @@ impl<const S: usize, const T: usize> ButcherTableau<S, T> {
 
     /// Number of extra stages for interpolation
     pub const EXTRA_STAGES: usize = T - S;
-}
-
-pub trait NumericalMethod<const S: usize> {
-    /// Get the Butcher tableau for the method.
-    fn tableau(&self) -> &ButcherTableau<S>;
-
-    /// Prepare continuous output coefficients for interpolation.
-    fn prepare_continuous_output(&self);
 }

@@ -1,6 +1,6 @@
-use crate::tableau::{
-    ButcherTableau,
-};
+//! Radau Implicit Runge-Kutta methods.
+
+use crate::tableau::ButcherTableau;
 
 const SQRT_6: f64 = 2.449489743;
 
