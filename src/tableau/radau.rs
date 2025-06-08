@@ -1,10 +1,13 @@
 //! Radau Implicit Runge-Kutta methods.
 
-use crate::tableau::ButcherTableau;
+use crate::{
+    tableau::ButcherTableau,
+    traits::Real,
+};
 
 const SQRT_6: f64 = 2.449489743;
 
-impl ButcherTableau<2> {
+impl<T: Real> ButcherTableau<T, 2> {
     /// Butcher Tableau for the Radau IIA method of order 3.
     ///
     /// # Overview
@@ -31,7 +34,7 @@ impl ButcherTableau<2> {
     /// # References
     /// - Hairer, E., Nørsett, S. P., & Wanner, G. (1993). *Solving Ordinary Differential Equations I: Nonstiff Problems*. Springer.
     /// - Hairer, E., & Wanner, G. (1996). *Solving Ordinary Differential Equations II: Stiff and Differential-Algebraic Problems*. Springer.
-    pub const fn radau_iia_3() -> Self {
+    pub fn radau_iia_3() -> Self {
         let mut c = [0.0; 2];
         let mut a = [[0.0; 2]; 2];
         let mut b = [0.0; 2];
@@ -47,6 +50,10 @@ impl ButcherTableau<2> {
         b[0] = 3.0 / 4.0;
         b[1] = 1.0 / 4.0;
 
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+
         Self {
             c,
             a,
@@ -57,7 +64,7 @@ impl ButcherTableau<2> {
     }
 }
 
-impl ButcherTableau<3> {
+impl<T: Real> ButcherTableau<T, 3> {
     /// Butcher Tableau for the Radau IIA method of order 5.
     ///
     /// # Overview
@@ -107,7 +114,7 @@ impl ButcherTableau<3> {
     /// # References
     /// - Hairer, E., Nørsett, S. P., & Wanner, G. (1993). *Solving Ordinary Differential Equations I: Nonstiff Problems*. Springer.
     /// - Hairer, E., & Wanner, G. (1996). *Solving Ordinary Differential Equations II: Stiff and Differential-Algebraic Problems*. Springer.
-    pub const fn radau_iia_5() -> Self {
+    pub fn radau_iia_5() -> Self {
         let mut c = [0.0; 3];
         let mut a = [[0.0; 3]; 3];
         let mut b = [0.0; 3];
@@ -131,6 +138,10 @@ impl ButcherTableau<3> {
         b[0] = 4.0 / 9.0 - SQRT_6 / 36.0;
         b[1] = 4.0 / 9.0 + SQRT_6 / 36.0;
         b[2] = 1.0 / 9.0;
+
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
 
         Self {
             c,

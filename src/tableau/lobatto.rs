@@ -1,8 +1,11 @@
 //! Lobatto Implicit Runge-Kutta Methods
 
-use crate::tableau::ButcherTableau;
+use crate::{
+    tableau::ButcherTableau,
+    traits::Real,
+};
 
-impl ButcherTableau<2> {
+impl<T: Real> ButcherTableau<T, 2> {
     /// Butcher Tableau for the Lobatto IIIC method of order 2.
     ///
     /// # Overview
@@ -28,7 +31,7 @@ impl ButcherTableau<2> {
     ///
     /// # References
     /// - Hairer, E., & Wanner, G. (1996). *Solving Ordinary Differential Equations II: Stiff and Differential-Algebraic Problems*. Springer. (Page 80, Table 5.7)
-    pub const fn lobatto_iiic_2() -> Self {
+    pub fn lobatto_iiic_2() -> Self {
         let mut c = [0.0; 2];
         let mut a = [[0.0; 2]; 2];
         let mut b = [0.0; 2];
@@ -48,6 +51,11 @@ impl ButcherTableau<2> {
         bh[0] = 1.0;
         bh[1] = 0.0;
 
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let bh = bh.map(|x| T::from_f64(x).unwrap());
+
         Self {
             c,
             a,
@@ -58,7 +66,7 @@ impl ButcherTableau<2> {
     }
 }
 
-impl ButcherTableau<3> {
+impl<T: Real> ButcherTableau<T, 3> {
     /// Butcher Tableau for the Lobatto IIIC method of order 4.
     ///
     /// # Overview
@@ -84,7 +92,7 @@ impl ButcherTableau<3> {
     ///
     /// # References
     /// - Hairer, E., & Wanner, G. (1996). *Solving Ordinary Differential Equations II: Stiff and Differential-Algebraic Problems*. Springer. (Page 80, Table 5.7)
-    pub const fn lobatto_iiic_4() -> Self {
+    pub fn lobatto_iiic_4() -> Self {
         let mut c = [0.0; 3];
         let mut a = [[0.0; 3]; 3];
         let mut b = [0.0; 3];
@@ -113,6 +121,11 @@ impl ButcherTableau<3> {
         bh[0] = -1.0 / 2.0;
         bh[1] = 2.0;
         bh[2] = -1.0 / 2.0;
+
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let bh = bh.map(|x| T::from_f64(x).unwrap());
 
         Self {
             c,

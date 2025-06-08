@@ -1,8 +1,11 @@
 //! Bogacki-Shampine Runge-Kutta method.
 
-use crate::tableau::ButcherTableau;
+use crate::{
+    tableau::ButcherTableau,
+    traits::Real,
+};
 
-impl ButcherTableau<4> {
+impl<T: Real> ButcherTableau<T, 4> {
     /// Butcher Tableau for the Bogacki-Shampine method.
     ///
     /// # Overview
@@ -37,7 +40,7 @@ impl ButcherTableau<4> {
     /// # References
     /// - Bogacki, P., & Shampine, L. F. (1989). "A 3(2) pair of Runge-Kutta formulas". *Applied Mathematics Letters*, 2(4), 321-325.
     /// - Shampine, L. F. (1994). *Numerical solution of ordinary differential equations*. Chapman & Hall. (Discusses the interpolant)
-    pub const fn bogacki_shampine() -> Self {
+    pub fn bogacki_shampine() -> Self {
         let mut c = [0.0; 4];
         let mut a = [[0.0; 4]; 4];
         let mut b = [0.0; 4];
@@ -93,6 +96,12 @@ impl ButcherTableau<4> {
         // Coefficients for k_3 (4th stage derivative) are all zero as it's not used in the interpolant.
         // bi[j][3] = 0.0 for j=0..3
         */
+
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let bh = bh.map(|x| T::from_f64(x).unwrap());
+        // let bi = bi.map(|row| row.map(|x| T::from_f64(x).unwrap()));
 
         Self {
             c,

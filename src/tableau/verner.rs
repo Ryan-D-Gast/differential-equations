@@ -1,8 +1,11 @@
 //! Verner's Runge-Kutta methods with high-order interpolation. source: https://www.sfu.ca/~jverner/
 
-use crate::tableau::ButcherTableau;
+use crate::{
+    tableau::ButcherTableau,
+    traits::Real,
+};
 
-impl ButcherTableau<10,13> {
+impl<T: Real> ButcherTableau<T, 10, 13> {
     /// A 'most efficient' Runge-Kutta (10:6(7)) pair with 6th-order interpolation.
     ///
     /// # Overview
@@ -35,7 +38,7 @@ impl ButcherTableau<10,13> {
     /// # References
     /// - J.H. Verner, SIAM NA 1978, "Explicit Runge-Kutta methods with estimates of the Local Truncation Error"
     /// - J.H. Verner, SIAM NA 30, 1993, "Differentiable Interpolants for high-order Runge-Kutta methods"
-    pub const fn rkv766e() -> Self {
+    pub fn rkv766e() -> Self {
         let mut c = [0.0; 13];
         let mut a = [[0.0; 13]; 13];
         let mut b = [0.0; 10];
@@ -262,6 +265,12 @@ impl ButcherTableau<10,13> {
         bi6[12][4] = 60.83345444770411331060500303070857149829;
         bi6[12][5] = -29.02415929863817127361656993973848170993;
 
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let bh = bh.map(|x| T::from_f64(x).unwrap());
+        let bi6 = bi6.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+
         Self {
             c,
             a,
@@ -272,7 +281,7 @@ impl ButcherTableau<10,13> {
     }
 }
 
-impl ButcherTableau<10, 16> {
+impl<T: Real> ButcherTableau<T, 10, 16> {
     /// A 'most efficient' Runge-Kutta (10:7(6)) pair with 7th-order interpolation.
     ///
     /// # Overview
@@ -306,7 +315,7 @@ impl ButcherTableau<10, 16> {
     /// # References
     /// - J.H. Verner, SIAM NA 1978, "Explicit Runge-Kutta methods with estimates of the Local Truncation Error"
     /// - J.H. Verner, SIAM NA 30, 1993, "Differentiable Interpolants for high-order Runge-Kutta methods"
-    pub const fn rkv767e() -> Self {
+    pub fn rkv767e() -> Self {
         let mut c = [0.0; 16];
         let mut a = [[0.0; 16]; 16];
         let mut b = [0.0; 10];
@@ -621,6 +630,12 @@ impl ButcherTableau<10, 16> {
         bi7[15][5] = -517.9168751756012942639785021372581285996;
         bi7[15][6] = 158.6613101864669192787279448258680763681;
 
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let bh = bh.map(|x| T::from_f64(x).unwrap());
+        let bi7 = bi7.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+
         Self {
             c,
             a,
@@ -631,7 +646,7 @@ impl ButcherTableau<10, 16> {
     }
 }
 
-impl ButcherTableau<13, 17> {
+impl<T: Real> ButcherTableau<T, 13, 17> {
     /// An efficient Runge-Kutta (13:7) pair method with 7th-order interpolation.
     ///
     /// # Overview
@@ -657,7 +672,7 @@ impl ButcherTableau<13, 17> {
     /// # References
     /// - J.H. Verner, SIAM NA 1978, "Explicit Runge--Kutta methods with estimates of the Local Truncation Error"
     /// - J.H. Verner, SIAM NA 30, 1993, "Differentiable Interpolants for high-order Runge--Kutta methods"
-    pub const fn rkv877e() -> Self {
+    pub fn rkv877e() -> Self {
         let mut c = [0.0; 17];
         let mut a = [[0.0; 17]; 17];
         let mut b = [0.0; 13];
@@ -1002,6 +1017,12 @@ impl ButcherTableau<13, 17> {
         bi7[16][5] = -564.9514449798660354502747046801145472079;
         bi7[16][6] = 173.0851912761581306251501634371839282326;
 
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let bh = bh.map(|x| T::from_f64(x).unwrap());
+        let bi7 = bi7.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+
         Self {
             c,
             a,
@@ -1012,7 +1033,7 @@ impl ButcherTableau<13, 17> {
     }
 }
 
-impl ButcherTableau<13, 21> {
+impl<T: Real> ButcherTableau<T, 13, 21> {
     /// A highly efficient Runge-Kutta (13:8(7)) pair method.
     ///
     /// # Overview
@@ -1043,7 +1064,7 @@ impl ButcherTableau<13, 21> {
     /// Developed based on formulas in:
     /// - J.H. Verner, SIAM NA 1978, "Explicit Runge--Kutta methods with estimates of the Local Truncation Error"
     /// - J.H. Verner, SIAM NA 30, 1993, "Differentiable Interpolants for high-order Runge--Kutta methods"
-    pub const fn rkv878e() -> Self {
+    pub fn rkv878e() -> Self {
         let mut c = [0.0; 21];
         let mut a = [[0.0; 21]; 21];
         let mut b = [0.0; 13];
@@ -1527,6 +1548,12 @@ impl ButcherTableau<13, 21> {
         bi8[20][6] = 346.6953482377737791841235419437045433947;
         bi8[20][7] = -80.77216725726792837258122924487852845967;
 
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let bh = bh.map(|x| T::from_f64(x).unwrap());
+        let bi8 = bi8.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+
         Self {
             c,
             a,
@@ -1537,7 +1564,7 @@ impl ButcherTableau<13, 21> {
     }
 }
 
-impl ButcherTableau<16, 21> {
+impl<T: Real> ButcherTableau<T, 16, 21> {
     /// A better efficient Runge-Kutta (16:8(9)) pair with 8th-order interpolation.
     ///
     /// # Overview
@@ -1571,7 +1598,7 @@ impl ButcherTableau<16, 21> {
     /// # References
     /// - J.H. Verner, SIAM J NA 1978, "Explicit Runge-Kutta methods with estimates of the Local Truncation Error"
     /// - J.H. Verner, SIAM J NA 1993, "Differentiable Interpolants for high-order Runge-Kutta methods"
-    pub const fn rkv988e() -> Self {
+    pub fn rkv988e() -> Self {
         let mut c = [0.0; 21];
         let mut a = [[0.0; 21]; 21];
         let mut b = [0.0; 16];
@@ -2058,6 +2085,12 @@ impl ButcherTableau<16, 21> {
         bi8[20][6] = -993.1678967729130171884598684827601522494;
         bi8[20][7] = 272.4904689883393700780173758256501517585;
 
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let bh = bh.map(|x| T::from_f64(x).unwrap());
+        let bi8 = bi8.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+
         Self {
             c,
             a,
@@ -2068,7 +2101,7 @@ impl ButcherTableau<16, 21> {
     }
 }
 
-impl ButcherTableau<16, 26> {
+impl<T: Real> ButcherTableau<T, 16, 26> {
     /// A better efficient Runge-Kutta (16:9(8)) pair with 9th-order interpolation.
     ///
     /// # Overview
@@ -2103,7 +2136,7 @@ impl ButcherTableau<16, 26> {
     /// # References
     /// - J.H. Verner, SIAM J NA 1978, "Explicit Runge-Kutta methods with estimates of the Local Truncation Error"
     /// - J.H. Verner, SIAM J NA 1993, "Differentiable Interpolants for high-order Runge-Kutta methods"
-    pub const fn rkv989e() -> Self {
+    pub fn rkv989e() -> Self {
         let mut c = [0.0; 26];
         let mut a = [[0.0; 26]; 26];
         let mut b = [0.0; 16];
@@ -2790,6 +2823,12 @@ impl ButcherTableau<16, 26> {
         bi9[25][6] = 2198.545841718649266979102957216738477165;
         bi9[25][7] = -1564.562048273728342299716850911579457005;
         bi9[25][8] = 440.0137786917170208520501729678092387026;
+
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let bh = bh.map(|x| T::from_f64(x).unwrap());
+        let bi9 = bi9.map(|row| row.map(|x| T::from_f64(x).unwrap()));
 
         Self {
             c,

@@ -1,8 +1,11 @@
 //! Dormand-Prince Runge-Kutta methods with dense output interpolation.
 
-use crate::tableau::ButcherTableau;
+use crate::{
+    tableau::ButcherTableau,
+    traits::Real,
+};
 
-impl ButcherTableau<7> {
+impl<T: Real> ButcherTableau<T, 7> {
     /// Dormand-Prince 5(4) Tableau with dense output interpolation.
     ///
     /// # Overview
@@ -34,7 +37,7 @@ impl ButcherTableau<7> {
     ///   Journal of Computational and Applied Mathematics, 6(1), pp. 19-26
     /// - Hairer, E., Nørsett, S. P. & Wanner, G. (1993), "Solving Ordinary Differential Equations I: 
     ///   Nonstiff Problems", Springer Series in Computational Mathematics, Vol. 8, Springer-Verlag
-    pub const fn dopri5() -> Self {
+    pub fn dopri5() -> Self {
         let mut c = [0.0; 7];
         let mut a = [[0.0; 7]; 7];
         let mut b = [0.0; 7];
@@ -100,6 +103,12 @@ impl ButcherTableau<7> {
         bi4[0][5] = -1453857185.0 / 822651844.0;
         bi4[0][6] = 69997945.0 / 29380423.0;
 
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let bh = bh.map(|x| T::from_f64(x).unwrap());
+        let bi4 = bi4.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+
         ButcherTableau {
             c,
             a,
@@ -110,7 +119,7 @@ impl ButcherTableau<7> {
     }
 }
 
-impl ButcherTableau<12, 16> {
+impl<T: Real> ButcherTableau<T, 12, 16> {
     /// Dormand-Prince 8(5,3) Tableau with dense output interpolation.
     ///
     /// # Overview
@@ -145,7 +154,7 @@ impl ButcherTableau<12, 16> {
     ///   Nonstiff Problems", Springer Series in Computational Mathematics, Vol. 8, Springer-Verlag
     /// - Dormand, J. R. & Prince, P. J. (1980), "A family of embedded Runge-Kutta formulae",
     ///   Journal of Computational and Applied Mathematics, 6(1), pp. 19-26
-    pub const fn dop853() -> Self {
+    pub fn dop853() -> Self {
         let mut c = [0.0; 16];
         let mut a = [[0.0; 16]; 16];
         let mut b = [0.0; 12];
@@ -347,6 +356,12 @@ impl ButcherTableau<12, 16> {
         bi7[3][13] = 9.632_455_395_918_828E1;
         bi7[3][14] = -3.917_726_167_561_544E1;
         bi7[3][15] = -1.497_268_362_579_856_4E2;
+
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let bh = bh.map(|x| T::from_f64(x).unwrap());
+        let bi7 = bi7.map(|row| row.map(|x| T::from_f64(x).unwrap()));
 
         ButcherTableau {
             c,

@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 //! Butcher Tableau
 
+use crate::traits::Real;
+
 // Explicit Runge-Kutta methods
 mod runge_kutta;
 mod bogacki_shampine;
@@ -19,8 +21,9 @@ mod radau;
 /// includes support for embedded methods (for error estimation) and dense output through interpolation.
 /// 
 /// # Generic Parameters
+/// - `T`: The type of the coefficients, typically a floating-point type (e.g., `f32`, `f64`).
 /// - `S`: Number of stages in the method.
-/// - `T`: Primary Stages plus extra stages for interpolation (default is equal to `S`).
+/// - `I`: Primary Stages plus extra stages for interpolation (default is equal to `S`).
 /// 
 /// # Fields
 /// - `c`: Node coefficients (time steps within the interval).
@@ -30,18 +33,18 @@ mod radau;
 ///   
 ///   These allow approximation at any point within the integration step.
 /// 
-pub struct ButcherTableau<const S: usize, const T: usize = S> {
-    pub c: [f64; T],
-    pub a: [[f64; T]; T],
-    pub b: [f64; S],
-    pub bh: Option<[f64; S]>,
-    pub bi: Option<[[f64; T]; T]>,
+pub struct ButcherTableau<T: Real, const S: usize, const I: usize = S> {
+    pub c: [T; I],
+    pub a: [[T; I]; I],
+    pub b: [T; S],
+    pub bh: Option<[T; S]>,
+    pub bi: Option<[[T; I]; I]>,
 }
 
-impl<const S: usize, const T: usize> ButcherTableau<S, T> {
+impl<T: Real, const S: usize, const I: usize> ButcherTableau<T, S, I> {
     /// Number of stages in the method
     pub const STAGES: usize = S;
 
     /// Number of extra stages for interpolation
-    pub const EXTRA_STAGES: usize = T - S;
+    pub const EXTRA_STAGES: usize = I - S;
 }

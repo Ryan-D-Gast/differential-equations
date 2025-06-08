@@ -1,10 +1,13 @@
 //! Gauss-Legendre Implicit Runge-Kutta Methods
 
-use crate::tableau::ButcherTableau;
+use crate::{
+    tableau::ButcherTableau,
+    traits::Real,
+};
 
 const SQRT_3: f64 = 1.732050808;
 
-impl ButcherTableau<2> {
+impl<T: Real> ButcherTableau<T, 2> {
     /// Butcher Tableau for the Gauss-Legendre method of order 4.
     ///
     /// # Overview
@@ -30,7 +33,7 @@ impl ButcherTableau<2> {
     ///
     /// # References
     /// - Hairer, E., Nørsett, S. P., & Wanner, G. (1993). *Solving Ordinary Differential Equations I: Nonstiff Problems*. Springer. (Page 200, Table 4.5)
-    pub const fn gauss_legendre_4() -> Self {
+    pub fn gauss_legendre_4() -> Self {
         let mut c = [0.0; 2];
         let mut a = [[0.0; 2]; 2];
         let mut b = [0.0; 2];
@@ -53,6 +56,11 @@ impl ButcherTableau<2> {
         bh[0] = 0.5 + sqrt3_2;
         bh[1] = 0.5 - sqrt3_2;
 
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let bh = bh.map(|x| T::from_f64(x).unwrap());
+
         Self {
             c,
             a,
@@ -63,7 +71,7 @@ impl ButcherTableau<2> {
     }
 }
 
-impl ButcherTableau<3> {
+impl<T: Real> ButcherTableau<T, 3> {
     /// Butcher Tableau for the Gauss-Legendre method of order 6.
     ///
     /// # Overview
@@ -90,7 +98,7 @@ impl ButcherTableau<3> {
     ///
     /// # References
     /// - Hairer, E., Nørsett, S. P., & Wanner, G. (1993). *Solving Ordinary Differential Equations I: Nonstiff Problems*. Springer. (Page 200, Table 4.5)
-    pub const fn gauss_legendre_6() -> Self {
+    pub fn gauss_legendre_6() -> Self {
         let mut c = [0.0; 3];
         let mut a = [[0.0; 3]; 3];
         let mut b = [0.0; 3];
@@ -125,6 +133,11 @@ impl ButcherTableau<3> {
         bh[0] = -5.0 / 6.0;
         bh[1] = 8.0 / 3.0;
         bh[2] = -5.0 / 6.0;
+
+        let c = c.map(|x| T::from_f64(x).unwrap());
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let bh = bh.map(|x| T::from_f64(x).unwrap());
 
         Self {
             c,

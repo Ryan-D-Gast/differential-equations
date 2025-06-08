@@ -1,8 +1,11 @@
 //! Classic or typical Runge-Kutta methods without unique properties
 
-use crate::tableau::ButcherTableau;
+use crate::{
+    tableau::ButcherTableau,
+    traits::Real,
+};
 
-impl ButcherTableau<4> {
+impl<T: Real> ButcherTableau<T, 4> {
     /// Classic Runge-Kutta 4th order method (RK4).
     ///
     /// # Overview
@@ -34,7 +37,7 @@ impl ButcherTableau<4> {
     /// # References
     /// - Kutta, W. (1901). "Beitrag zur näherungsweisen Integration totaler Differentialgleichungen". *Zeitschrift für Mathematik und Physik*, 46, 435-453.
     /// - Runge, C. (1895). "Über die numerische Auflösung von Differentialgleichungen". *Mathematische Annalen*, 46, 167-178.
-    pub const fn rk4() -> Self {
+    pub fn rk4() -> Self {
         let mut c = [0.0; 4];
         let mut a = [[0.0; 4]; 4];
         let mut b = [0.0; 4];
@@ -52,6 +55,10 @@ impl ButcherTableau<4> {
         b[1] = 1.0 / 3.0;
         b[2] = 1.0 / 3.0;
         b[3] = 1.0 / 6.0;
+
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let c = c.map(|x| T::from_f64(x).unwrap());
 
         Self {
             c,
