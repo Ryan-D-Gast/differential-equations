@@ -5,7 +5,7 @@ use differential_equations::ode::ODEProblem;
 use differential_equations::ode::methods::{
     adams::{APCF4, APCV4},
     runge_kutta::{
-        explicit::{DOP853, DOPRI5, RKV65, ExplicitRungeKutta},
+        explicit::{DOP853, DOPRI5, ExplicitRungeKutta},
         implicit::{CrankNicolson, GaussLegendre4, GaussLegendre6, Radau5},
     },
 };
@@ -118,7 +118,7 @@ fn accuracy() {
         tolerance: 1e3,
 
         solver_name: RKV65,
-        solver: RKV65::new(),
+        solver: ExplicitRungeKutta::rkv655e(),
         tolerance: 1e-1,
 
         solver_name: RKV766e,
@@ -223,7 +223,7 @@ fn accuracy() {
         tolerance: 1e-1,
 
         solver_name: RKV65,
-        solver: RKV65::new(),
+        solver: ExplicitRungeKutta::rkv655e(),
         tolerance: 1e-2,
 
         solver_name: RKV766e,
@@ -328,7 +328,7 @@ fn accuracy() {
         tolerance: 1e4,
 
         solver_name: RKV65,
-        solver: RKV65::new(),
+        solver: ExplicitRungeKutta::rkv655e(),
         tolerance: 1e1,
 
         solver_name: RKV766e,
@@ -433,7 +433,7 @@ fn accuracy() {
         tolerance: 1e-1,
 
         solver_name: RKV65,
-        solver: RKV65::new(),
+        solver: ExplicitRungeKutta::rkv655e(),
         tolerance: 1e-3,
 
         solver_name: RKV766e,
@@ -538,7 +538,7 @@ fn accuracy() {
         tolerance: 1e-2,
 
         solver_name: RKV65,
-        solver: RKV65::new(),
+        solver: ExplicitRungeKutta::rkv655e(),
         tolerance: 1e-3,
 
         solver_name: RKV766e,

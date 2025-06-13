@@ -305,7 +305,60 @@ impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 6, 6> {
     }
 }
 
-// Methods with dense output (Verner's methods, already implemented)
+impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 9, 10> {
+    /// Creates a Verner's 6(5) method with dense output of order 5.
+    ///
+    /// Uses the Butcher tableau from [`ButcherTableau::rkv655e`].
+    /// 
+    /// For detailed coefficients and method properties, see [`ButcherTableau::rkv655e`].
+    pub fn rkv655e() -> Self {
+        let order = 6;
+        let tableau = ButcherTableau::rkv655e();
+        let c = tableau.c;
+        let a = tableau.a;
+        let b = tableau.b;
+        let bh = tableau.bh.unwrap();
+        let bi = tableau.bi.unwrap();
+
+        ExplicitRungeKutta {
+            c,
+            a,
+            b,
+            bh: Some(bh),
+            bi: Some(bi),
+            order,
+            ..Default::default()
+        }
+    }
+}
+
+impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 9, 12> {
+    /// Creates a Verner's 6(5) method with dense output of order 6.
+    ///
+    /// Uses the Butcher tableau from [`ButcherTableau::rkv656e`].
+    /// 
+    /// For detailed coefficients and method properties, see [`ButcherTableau::rkv656e`].
+    pub fn rkv656e() -> Self {
+        let order = 6;
+        let tableau = ButcherTableau::rkv656e();
+        let c = tableau.c;
+        let a = tableau.a;
+        let b = tableau.b;
+        let bh = tableau.bh;
+        let bi = tableau.bi;
+
+        ExplicitRungeKutta {
+            c,
+            a,
+            b,
+            bh: bh,
+            bi: bi,
+            order,
+            ..Default::default()
+        }
+    }
+}
+
 impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 10, 13> {
     /// Creates a ExplicitRungeKutta 7(6) method with 10 stages and a 6th order interpolant.
     ///
