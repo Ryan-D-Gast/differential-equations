@@ -31,5 +31,5 @@ pub mod dopri5;
 pub use dop853::DOP853;
 pub use dopri5::DOPRI5;
 
-mod rk;
-pub use rk::ExplicitRungeKutta;
+mod explicit_runge_kutta;
+pub use explicit_runge_kutta::ExplicitRungeKutta;

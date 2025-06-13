@@ -25,7 +25,7 @@ impl<T: Real> ButcherTableau<T, 4> {
     ///   would be required.
     ///
     /// # Butcher Tableau
-    /// ```
+    /// ```text
     /// 0   |
     /// 1/2 | 1/2
     /// 1/2 | 0   1/2
@@ -83,7 +83,7 @@ impl<T: Real> ButcherTableau<T, 4> {
     ///   (floating-point operations) per time step.
     ///
     /// # Butcher Tableau
-    /// ```
+    /// ```text
     /// 0   |
     /// 1/3 | 1/3
     /// 2/3 | -1/3 1
@@ -140,7 +140,7 @@ impl<T: Real> ButcherTableau<T, 2> {
     /// - Number of stages: 2
     ///
     /// # Butcher Tableau
-    /// ```
+    /// ```text
     /// 0   |
     /// 1/2 | 1/2
     /// ----|--------
@@ -184,7 +184,7 @@ impl<T: Real> ButcherTableau<T, 2> {
     /// - Number of stages: 2
     ///
     /// # Butcher Tableau
-    /// ```
+    /// ```text
     /// 0   |
     /// 1   | 1
     /// ----|--------
@@ -228,7 +228,7 @@ impl<T: Real> ButcherTableau<T, 2> {
     /// - Number of stages: 2
     /// 
     /// # Butcher Tableau
-    /// ```
+    /// ```text
     /// 0   |
     /// 2/3 | 2/3
     /// ----|--------
@@ -274,7 +274,7 @@ impl<T: Real> ButcherTableau<T, 1> {
     /// - Number of stages: 1
     ///
     /// # Butcher Tableau
-    /// ```
+    /// ```text
     /// 0 | 
     /// --|--
     ///   | 1
@@ -313,7 +313,7 @@ impl<T: Real> ButcherTableau<T, 6> {
     /// - It uses the difference between 4th and 5th order approximations to estimate error.
     ///
     /// # Butcher Tableau
-    /// ```
+    /// ```text
     /// 0      |
     /// 1/4    | 1/4
     /// 3/8    | 3/32         9/32
@@ -397,7 +397,7 @@ impl<T: Real> ButcherTableau<T, 6> {
     ///   that often provides better accuracy than RKF45 for some problem types.
     ///
     /// # Butcher Tableau
-    /// ```
+    /// ```text
     /// 0      |
     /// 1/5    | 1/5
     /// 3/10   | 3/40         9/40

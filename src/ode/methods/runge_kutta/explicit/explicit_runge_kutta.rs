@@ -1,20 +1,19 @@
-//! Adaptive Runge-Kutta solver with dense output using Butcher tableau.
+//! Runge-Kutta solvers with support for dense output, embedded error estimation, and fixed steps.
 
 use crate::{
     Error, Status,
     alias::Evals,
-    interpolate::Interpolation,
+    interpolate::{Interpolation, cubic_hermite_interpolate},
     ode::{ODENumericalMethod, ODE, methods::h_init},
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
     tableau::ButcherTableau,
 };
 
-/// Adaptive Runge-Kutta solver with dense output interpolation that uses
-/// a Butcher tableau for its coefficients.
-///
-/// This solver can use any Butcher tableau that has embedded method coefficients
-/// and interpolation coefficients to provide error estimation and dense output.
+/// Runge-Kutta solver that can handle:
+/// - Fixed-step methods with cubic Hermite interpolation
+/// - Adaptive step methods with embedded error estimation and cubic Hermite interpolation
+/// - Advanced methods with dense output interpolation using Butcher tableau coefficients
 ///
 /// # Type Parameters
 ///
@@ -22,7 +21,7 @@ use crate::{
 /// * `V`: State vector type
 /// * `D`: Callback data type
 /// * `const S`: Number of stages in the method
-/// * `const I`: Total number of stages including interpolation
+/// * `const I`: Total number of stages including interpolation (equal to S for methods without dense output)
 pub struct ExplicitRungeKutta<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> {
     // Initial Step Size
     pub h0: T,
@@ -39,6 +38,7 @@ pub struct ExplicitRungeKutta<T: Real, V: State<T>, D: CallBackData, const S: us
     h_prev: T,
     t_prev: T,
     y_prev: V,
+    dydt_prev: V, // Added to support cubic Hermite interpolation
 
     // Stage values
     k: [V; I],
@@ -47,10 +47,10 @@ pub struct ExplicitRungeKutta<T: Real, V: State<T>, D: CallBackData, const S: us
     c: [T; I],
     a: [[T; I]; I],
     b: [T; S],
-    bh: [T; S],
+    bh: Option<[T; S]>,  // Optional for methods without error estimation
 
     // Interpolation coefficients
-    bi: [[T; I]; I],
+    bi: Option<[[T; I]; I]>,  // Optional for methods without dense output
     cont: [T; I],
 
     // Settings
@@ -89,12 +89,13 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Defa
             h_prev: T::zero(),
             t_prev: T::zero(),
             y_prev: V::zeros(),
+            dydt_prev: V::zeros(),
             k: [V::zeros(); I],
             c: [T::zero(); I],
             a: [[T::zero(); I]; I],
             b: [T::zero(); S],
-            bh: [T::zero(); S],
-            bi: [[T::zero(); I]; I],
+            bh: None,
+            bi: None,
             cont: [T::zero(); I],
             rtol: T::from_f64(1.0e-6).unwrap(),
             atol: T::from_f64(1.0e-6).unwrap(),
@@ -116,6 +117,195 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Defa
     }
 }
 
+// Fixed step methods (S = I, no embedded error estimation, cubic Hermite interpolation)
+impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 1, 1> {
+    /// Creates an Explicit Euler method (1st order, 1 stage).
+    ///
+    /// Uses the Butcher tableau from [`ButcherTableau::euler`].
+    /// 
+    /// For detailed coefficients and method properties, see [`ButcherTableau::euler`].
+    pub fn euler(h0: T) -> Self {
+        let order = 1;
+        let tableau = ButcherTableau::euler();
+        let c = tableau.c;
+        let a = tableau.a;
+        let b = tableau.b;
+
+        ExplicitRungeKutta {
+            h0,
+            c,
+            a,
+            b,
+            order,
+            ..Default::default()
+        }
+    }
+}
+
+impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 2, 2> {
+    /// Creates an Explicit Midpoint method (2nd order, 2 stages).
+    ///
+    /// Uses the Butcher tableau from [`ButcherTableau::midpoint`].
+    /// 
+    /// For detailed coefficients and method properties, see [`ButcherTableau::midpoint`].
+    pub fn midpoint(h0: T) -> Self {
+        let order = 2;
+        let tableau = ButcherTableau::midpoint();
+        let c = tableau.c;
+        let a = tableau.a;
+        let b = tableau.b;
+
+        ExplicitRungeKutta {
+            h0,
+            c,
+            a,
+            b,
+            order,
+            ..Default::default()
+        }
+    }
+
+    /// Creates an Explicit Heun method (2nd order, 2 stages).
+    ///
+    /// Uses the Butcher tableau from [`ButcherTableau::heun`].
+    /// 
+    /// For detailed coefficients and method properties, see [`ButcherTableau::heun`].
+    pub fn heun(h0: T) -> Self {
+        let order = 2;
+        let tableau = ButcherTableau::heun();
+        let c = tableau.c;
+        let a = tableau.a;
+        let b = tableau.b;
+
+        ExplicitRungeKutta {
+            h0,
+            c,
+            a,
+            b,
+            order,
+            ..Default::default()
+        }
+    }
+
+    /// Creates an Explicit Ralston method (2nd order, 2 stages).
+    ///
+    /// Uses the Butcher tableau from [`ButcherTableau::ralston`].
+    /// 
+    /// For detailed coefficients and method properties, see [`ButcherTableau::ralston`].
+    pub fn ralston(h0: T) -> Self {
+        let order = 2;
+        let tableau = ButcherTableau::ralston();
+        let c = tableau.c;
+        let a = tableau.a;
+        let b = tableau.b;
+
+        ExplicitRungeKutta {
+            h0,
+            c,
+            a,
+            b,
+            order,
+            ..Default::default()
+        }
+    }
+}
+
+impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 4, 4> {
+    /// Creates the classical 4th order Runge-Kutta method.
+    ///
+    /// Uses the Butcher tableau from [`ButcherTableau::rk4`].
+    /// 
+    /// For detailed coefficients and method properties, see [`ButcherTableau::rk4`].
+    pub fn rk4(h0: T) -> Self {
+        let order = 4;
+        let tableau = ButcherTableau::rk4();
+        let c = tableau.c;
+        let a = tableau.a;
+        let b = tableau.b;
+
+        ExplicitRungeKutta {
+            h0,
+            c,
+            a,
+            b,
+            order,
+            ..Default::default()
+        }
+    }
+    
+    /// Creates the three-eighths rule 4th order Runge-Kutta method.
+    ///
+    /// Uses the Butcher tableau from [`ButcherTableau::three_eighths`].
+    /// 
+    /// For detailed coefficients and method properties, see [`ButcherTableau::three_eighths`].
+    pub fn three_eighths(h0: T) -> Self {
+        let order = 4;
+        let tableau = ButcherTableau::three_eighths();
+        let c = tableau.c;
+        let a = tableau.a;
+        let b = tableau.b;
+
+        ExplicitRungeKutta {
+            h0,
+            c,
+            a,
+            b,
+            order,
+            ..Default::default()
+        }
+    }
+}
+
+// Adaptive step methods (embedded error estimation, cubic Hermite interpolation)
+impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 6, 6> {
+    /// Creates a Runge-Kutta-Fehlberg 4(5) method with error estimation.
+    ///
+    /// Uses the Butcher tableau from [`ButcherTableau::rkf45`].
+    /// 
+    /// For detailed coefficients and method properties, see [`ButcherTableau::rkf45`].
+    pub fn rkf45() -> Self {
+        let order = 5;
+        let tableau = ButcherTableau::rkf45();
+        let c = tableau.c;
+        let a = tableau.a;
+        let b = tableau.b;
+        let bh = tableau.bh.unwrap();
+
+        ExplicitRungeKutta {
+            c,
+            a,
+            b,
+            bh: Some(bh),
+            order,
+            ..Default::default()
+        }
+    }
+    
+    /// Creates a Cash-Karp 4(5) method with error estimation.
+    ///
+    /// Uses the Butcher tableau from [`ButcherTableau::cash_karp`].
+    /// 
+    /// For detailed coefficients and method properties, see [`ButcherTableau::cash_karp`].
+    pub fn cash_karp() -> Self {
+        let order = 5;
+        let tableau = ButcherTableau::cash_karp();
+        let c = tableau.c;
+        let a = tableau.a;
+        let b = tableau.b;
+        let bh = tableau.bh.unwrap();
+
+        ExplicitRungeKutta {
+            c,
+            a,
+            b,
+            bh: Some(bh),
+            order,
+            ..Default::default()
+        }
+    }
+}
+
+// Methods with dense output (Verner's methods, already implemented)
 impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 10, 13> {
     /// Creates a ExplicitRungeKutta 7(6) method with 10 stages and a 6th order interpolant.
     ///
@@ -128,8 +318,8 @@ impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 10, 13> 
         let c = tableau.c;
         let a = tableau.a;
         let b = tableau.b;
-        let bh = tableau.bh.unwrap();
-        let bi = tableau.bi.unwrap();
+        let bh = tableau.bh;
+        let bi = tableau.bi;
 
         ExplicitRungeKutta {
             c,
@@ -155,8 +345,8 @@ impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 10, 16> 
         let c = tableau.c;
         let a = tableau.a;
         let b = tableau.b;
-        let bh = tableau.bh.unwrap();
-        let bi = tableau.bi.unwrap();
+        let bh = tableau.bh;
+        let bi = tableau.bi;
 
         ExplicitRungeKutta {
             c,
@@ -182,8 +372,8 @@ impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 13, 17> 
         let c = tableau.c;
         let a = tableau.a;
         let b = tableau.b;
-        let bh = tableau.bh.unwrap();
-        let bi = tableau.bi.unwrap();
+        let bh = tableau.bh;
+        let bi = tableau.bi;
 
         ExplicitRungeKutta {
             c,
@@ -209,8 +399,8 @@ impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 13, 21> 
         let c = tableau.c;
         let a = tableau.a;
         let b = tableau.b;
-        let bh = tableau.bh.unwrap();
-        let bi = tableau.bi.unwrap();
+        let bh = tableau.bh;
+        let bi = tableau.bi;
 
         ExplicitRungeKutta {
             c,
@@ -236,8 +426,8 @@ impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 16, 21> 
         let c = tableau.c;
         let a = tableau.a;
         let b = tableau.b;
-        let bh = tableau.bh.unwrap();
-        let bi = tableau.bi.unwrap();
+        let bh = tableau.bh;
+        let bi = tableau.bi;
 
         ExplicitRungeKutta {
             c,
@@ -263,8 +453,8 @@ impl<T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<T, V, D, 16, 26> 
         let c = tableau.c;
         let a = tableau.a;
         let b = tableau.b;
-        let bh = tableau.bh.unwrap();
-        let bi = tableau.bi.unwrap();
+        let bh = tableau.bh;
+        let bi = tableau.bi;
 
         ExplicitRungeKutta {
             c,
@@ -287,8 +477,16 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODEN
 
         // If h0 is zero, calculate initial step size
         if self.h0 == T::zero() {
-            self.h0 = h_init(ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max);
-            evals.fcn += 2;
+            // Only use adaptive step size calculation if the method supports it
+            if self.bh.is_some() {
+                self.h0 = h_init(ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max);
+                evals.fcn += 2;
+            } else {
+                // Simple default step size for fixed-step methods
+                let duration = (tf - t0).abs();
+                let default_steps = T::from_usize(100).unwrap();
+                self.h0 = duration / default_steps;
+            }
         }
 
         // Check bounds
@@ -310,6 +508,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODEN
         // Initialize previous state
         self.t_prev = t0;
         self.y_prev = y0.clone();
+        self.dydt_prev = self.dydt.clone();
 
         // Initialize Status
         self.status = Status::Initialized;
@@ -359,20 +558,48 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODEN
         }
         evals.fcn += self.stages - 1; // We already have k[0]
 
+        // Store current state before update for interpolation
+        self.t_prev = self.t;
+        self.y_prev = self.y;
+        self.dydt_prev = self.k[0];
+
+        // For methods without embedded error estimation, simply update the solution
+        if self.bh.is_none() {
+            // Compute solution
+            let mut y_next = self.y;
+            for i in 0..self.stages {
+                y_next += self.k[i] * (self.b[i] * self.h);
+            }
+
+            // Update state
+            self.t += self.h;
+            self.y = y_next;
+            
+            // Calculate new derivative for next step
+            ode.diff(self.t, &self.y, &mut self.dydt);
+            evals.fcn += 1;
+            
+            self.status = Status::Solving;
+            return Ok(evals);
+        }
+        
+        // For adaptive methods with error estimation
         // Compute higher order solution
-        let mut y_high = self.y.clone();
+        let mut y_high = self.y;
         for i in 0..self.stages {
             y_high += self.k[i] * (self.b[i] * self.h);
         }
 
         // Compute lower order solution for error estimation
-        let mut y_low = self.y.clone();
-        for i in 0..self.stages {
-            y_low += self.k[i] * (self.bh[i] * self.h);
+        let mut y_low = self.y;
+        if let Some(bh) = &self.bh {
+            for i in 0..self.stages {
+                y_low += self.k[i] * (bh[i] * self.h);
+            }
         }
 
         // Compute error estimate
-        let err = y_high.clone() - y_low;
+        let err = y_high - y_low;
 
         // Calculate error norm
         let mut err_norm: T = T::zero();
@@ -387,7 +614,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODEN
         if err_norm <= T::one() {
             // Log previous state
             self.t_prev = self.t;
-            self.y_prev = self.y.clone();
+            self.y_prev = self.y;
             self.h_prev = self.h;
 
             if self.reject {
@@ -396,16 +623,19 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODEN
                 self.status = Status::Solving;
             }
 
-            // Compute extra stages for dense output
-            for i in 0..(I - S) {
-                let mut y_stage = self.y.clone();
-                for j in 0..self.stages + i {
-                    y_stage += self.k[j] * (self.a[self.stages + i][j] * self.h);
-                }
+            // If method has dense output stages, compute them
+            if self.bi.is_some() {
+                // Compute extra stages for dense output
+                for i in 0..(I - S) {
+                    let mut y_stage = self.y;
+                    for j in 0..self.stages + i {
+                        y_stage += self.k[j] * (self.a[self.stages + i][j] * self.h);
+                    }
 
-                ode.diff(self.t + self.c[self.stages + i] * self.h, &y_stage, &mut self.k[self.stages + i]);
+                    ode.diff(self.t + self.c[self.stages + i] * self.h, &y_stage, &mut self.k[self.stages + i]);
+                }
+                evals.fcn += I - S;
             }
-            evals.fcn += I - S;
 
             // Update state with the higher-order solution
             self.t += self.h;
@@ -429,7 +659,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODEN
             }
         }
 
-        // Calculate new step size
+        // Calculate new step size for adaptive methods
         let order = T::from_usize(self.order).unwrap();
         let err_order = T::one() / order;
 
@@ -465,30 +695,49 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Inte
             });
         }
 
-        // Calculate the normalized distance within the step [0, 1]
-        let s = (t_interp - self.t_prev) / self.h_prev;
+        // If method has dense output coefficients, use them
+        if self.bi.is_some() {
+            // Calculate the normalized distance within the step [0, 1]
+            let s = (t_interp - self.t_prev) / self.h_prev;
+            
+            // Get the interpolation coefficients
+            let bi = self.bi.as_ref().unwrap();
 
-        // Compute the interpolation coefficients using Horner's method
-        for i in 0..self.dense_stages {
-            // Start with the highest-order term
-            self.cont[i] = self.bi[i][self.dense_stages - 1];
+            // Compute the interpolation coefficients using Horner's method
+            for i in 0..self.dense_stages {
+                // Start with the highest-order term
+                self.cont[i] = bi[i][self.dense_stages - 1];
 
-            // Apply Horner's method
-            for j in (0..self.dense_stages).rev() {
-                self.cont[i] = self.cont[i] * s + self.bi[i][j];
+                // Apply Horner's method
+                for j in (0..self.dense_stages - 1).rev() {
+                    self.cont[i] = self.cont[i] * s + bi[i][j];
+                }
+
+                // Multiply by s
+                self.cont[i] *= s;
             }
 
-            // Multiply by s
-            self.cont[i] *= s;
-        }
-
-        // Compute the interpolated value
-        let mut y_interp = self.y_prev.clone();
-        for i in 0..I {
-            if i < self.k.len() && i < self.cont.len() {
-                y_interp += self.k[i] * (self.cont[i] * self.h_prev);
+            // Compute the interpolated value
+            let mut y_interp = self.y_prev;
+            for i in 0..I {
+                if i < self.k.len() && i < self.cont.len() {
+                    y_interp += self.k[i] * (self.cont[i] * self.h_prev);
+                }
             }
+
+            return Ok(y_interp);
         }
+        
+        // Otherwise use cubic Hermite interpolation
+        let y_interp = cubic_hermite_interpolate(
+            self.t_prev, 
+            self.t, 
+            &self.y_prev, 
+            &self.y, 
+            &self.dydt_prev, 
+            &self.dydt, 
+            t_interp
+        );
 
         Ok(y_interp)
     }

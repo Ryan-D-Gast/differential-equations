@@ -6,7 +6,7 @@ use differential_equations::ode::{
     methods::{
         adams::{APCF4, APCV4},
         runge_kutta::{
-            explicit::{DOP853, DOPRI5, Euler, RK4, RKF, RKV65, ExplicitRungeKutta},
+            explicit::{DOP853, DOPRI5, RKV65, ExplicitRungeKutta},
             implicit::{CrankNicolson, GaussLegendre6, Radau5},
         },
     },
@@ -67,12 +67,12 @@ fn interpolation() {
         solver_name: DOP853, solver: DOP853::new(),
         solver_name: DOPRI5, solver: DOPRI5::new(),
         solver_name: RKV65, solver: RKV65::new(),
-        solver_name: Verner87, solver: ExplicitRungeKutta::rkv877e(),
-        solver_name: Verner98, solver: ExplicitRungeKutta::rkv988e(),
+        solver_name: RKV87, solver: ExplicitRungeKutta::rkv877e(),
+        solver_name: RKV98, solver: ExplicitRungeKutta::rkv988e(),
 
         // These methods use cubic Hermite interpolation
-        solver_name: RKF, solver: RKF::new(),
-        solver_name: RK4, solver: RK4::new(0.01),
+        solver_name: RKF, solver: ExplicitRungeKutta::rkf45(),
+        solver_name: RK4, solver: ExplicitRungeKutta::rk4(0.01),
         solver_name: APCF4, solver: APCF4::new(0.01),
         solver_name: APCV4, solver: APCV4::new().h0(0.01),
         solver_name: CrankNicolson, solver: CrankNicolson::new(0.01),
@@ -84,6 +84,6 @@ fn interpolation() {
         tolerance: 1e-2,
         // Euler's method produces less accurate y values thus affecting the interpolation
         // cubic Hermite interpolation is used.
-        solver_name: Euler, solver: Euler::new(0.01)
+        solver_name: Euler, solver: ExplicitRungeKutta::euler(0.01)
     }
 }

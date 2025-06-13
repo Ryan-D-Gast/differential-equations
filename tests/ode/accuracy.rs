@@ -5,7 +5,7 @@ use differential_equations::ode::ODEProblem;
 use differential_equations::ode::methods::{
     adams::{APCF4, APCV4},
     runge_kutta::{
-        explicit::{DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV87, RKV98, ExplicitRungeKutta},
+        explicit::{DOP853, DOPRI5, RKV65, ExplicitRungeKutta},
         implicit::{CrankNicolson, GaussLegendre4, GaussLegendre6, Radau5},
     },
 };
@@ -77,17 +77,37 @@ fn accuracy() {
         solver: DOPRI5::new(),
         tolerance: 1e1,
 
-        solver_name: RKF,
-        solver: RKF::new(),
+        solver_name: RKF45,
+        solver: ExplicitRungeKutta::rkf45(),
+        tolerance: 1e3,
+
+        solver_name: CashKarp,
+        solver: ExplicitRungeKutta::cash_karp(),
         tolerance: 1e3,
 
         solver_name: RK4,
-        solver: RK4::new(0.01),
+        solver: ExplicitRungeKutta::rk4(0.01),
+        tolerance: 1e3,
+
+        solver_name: ThreeEighths,
+        solver: ExplicitRungeKutta::three_eighths(0.01),
         tolerance: 1e3,
 
         solver_name: Euler,
-        solver: Euler::new(0.01),
+        solver: ExplicitRungeKutta::euler(0.01),
         tolerance: 2e3,
+
+        solver_name: Midpoint,
+        solver: ExplicitRungeKutta::midpoint(0.01),
+        tolerance: 1e3,
+
+        solver_name: Heun,
+        solver: ExplicitRungeKutta::heun(0.01),
+        tolerance: 1e3,
+
+        solver_name: Ralston,
+        solver: ExplicitRungeKutta::ralston(0.01),
+        tolerance: 1e3,
 
         solver_name: APCF4,
         solver: APCF4::new(0.01),
@@ -101,12 +121,28 @@ fn accuracy() {
         solver: RKV65::new(),
         tolerance: 1e-1,
 
-        solver_name: RKV87,
+        solver_name: RKV766e,
+        solver: ExplicitRungeKutta::rkv766e(),
+        tolerance: 1e-1,
+
+        solver_name: RKV767e,
+        solver: ExplicitRungeKutta::rkv767e(),
+        tolerance: 1e-1,
+
+        solver_name: RKV877e,
         solver: ExplicitRungeKutta::rkv877e(),
         tolerance: 1e-1,
 
-        solver_name: RKV98,
-        solver: RKV98::new(),
+        solver_name: RKV878e,
+        solver: ExplicitRungeKutta::rkv878e(),
+        tolerance: 1e-1,
+
+        solver_name: RKV988e,
+        solver: ExplicitRungeKutta::rkv988e(),
+        tolerance: 1e-1,
+
+        solver_name: RKV989e,
+        solver: ExplicitRungeKutta::rkv989e(),
         tolerance: 1e-1,
 
         // Implicit methods
@@ -146,16 +182,36 @@ fn accuracy() {
         solver: DOPRI5::new(),
         tolerance: 1e-2,
 
-        solver_name: RKF,
-        solver: RKF::new(),
+        solver_name: RKF45,
+        solver: ExplicitRungeKutta::rkf45(),
+        tolerance: 1e-2,
+
+        solver_name: CashKarp,
+        solver: ExplicitRungeKutta::cash_karp(),
         tolerance: 1e-2,
 
         solver_name: RK4,
-        solver: RK4::new(-0.01),
+        solver: ExplicitRungeKutta::rk4(-0.01),
+        tolerance: 1e-2,
+
+        solver_name: ThreeEighths,
+        solver: ExplicitRungeKutta::three_eighths(-0.01),
         tolerance: 1e-2,
 
         solver_name: Euler,
-        solver: Euler::new(-0.01),
+        solver: ExplicitRungeKutta::euler(-0.01),
+        tolerance: 1e-1,
+
+        solver_name: Midpoint,
+        solver: ExplicitRungeKutta::midpoint(-0.01),
+        tolerance: 1e-1,
+
+        solver_name: Heun,
+        solver: ExplicitRungeKutta::heun(-0.01),
+        tolerance: 1e-1,
+
+        solver_name: Ralston,
+        solver: ExplicitRungeKutta::ralston(-0.01),
         tolerance: 1e-1,
 
         solver_name: APCF4,
@@ -170,12 +226,28 @@ fn accuracy() {
         solver: RKV65::new(),
         tolerance: 1e-2,
 
-        solver_name: RKV87,
-        solver: RKV87::new(),
+        solver_name: RKV766e,
+        solver: ExplicitRungeKutta::rkv766e(),
         tolerance: 1e-2,
 
-        solver_name: RKV98,
-        solver: RKV98::new(),
+        solver_name: RKV767e,
+        solver: ExplicitRungeKutta::rkv767e(),
+        tolerance: 1e-2,
+
+        solver_name: RKV877e,
+        solver: ExplicitRungeKutta::rkv877e(),
+        tolerance: 1e-2,
+
+        solver_name: RKV878e,
+        solver: ExplicitRungeKutta::rkv878e(),
+        tolerance: 1e-2,
+
+        solver_name: RKV988e,
+        solver: ExplicitRungeKutta::rkv988e(),
+        tolerance: 1e-2,
+
+        solver_name: RKV989e,
+        solver: ExplicitRungeKutta::rkv989e(),
         tolerance: 1e-2,
 
         // Implicit methods
@@ -215,16 +287,36 @@ fn accuracy() {
         solver: DOPRI5::new(),
         tolerance: 1e1,
 
-        solver_name: RKF,
-        solver: RKF::new(),
+        solver_name: RKF45,
+        solver: ExplicitRungeKutta::rkf45(),
+        tolerance: 1e3,
+
+        solver_name: CashKarp,
+        solver: ExplicitRungeKutta::cash_karp(),
         tolerance: 1e3,
 
         solver_name: RK4,
-        solver: RK4::new(0.01),
+        solver: ExplicitRungeKutta::rk4(0.01),
+        tolerance: 1e3,
+
+        solver_name: ThreeEighths,
+        solver: ExplicitRungeKutta::three_eighths(0.01),
         tolerance: 1e3,
 
         solver_name: Euler,
-        solver: Euler::new(0.01),
+        solver: ExplicitRungeKutta::euler(0.01),
+        tolerance: 1e4,
+
+        solver_name: Midpoint,
+        solver: ExplicitRungeKutta::midpoint(0.01),
+        tolerance: 1e4,
+
+        solver_name: Heun,
+        solver: ExplicitRungeKutta::heun(0.01),
+        tolerance: 1e4,
+
+        solver_name: Ralston,
+        solver: ExplicitRungeKutta::ralston(0.01),
         tolerance: 1e4,
 
         solver_name: APCF4,
@@ -239,12 +331,28 @@ fn accuracy() {
         solver: RKV65::new(),
         tolerance: 1e1,
 
-        solver_name: RKV87,
-        solver: RKV87::new(),
+        solver_name: RKV766e,
+        solver: ExplicitRungeKutta::rkv766e(),
         tolerance: 1e1,
 
-        solver_name: RKV98,
-        solver: RKV98::new(),
+        solver_name: RKV767e,
+        solver: ExplicitRungeKutta::rkv767e(),
+        tolerance: 1e1,
+
+        solver_name: RKV877e,
+        solver: ExplicitRungeKutta::rkv877e(),
+        tolerance: 1e1,
+
+        solver_name: RKV878e,
+        solver: ExplicitRungeKutta::rkv878e(),
+        tolerance: 1e1,
+
+        solver_name: RKV988e,
+        solver: ExplicitRungeKutta::rkv988e(),
+        tolerance: 1e1,
+
+        solver_name: RKV989e,
+        solver: ExplicitRungeKutta::rkv989e(),
         tolerance: 1e1,
 
         // Implicit methods
@@ -284,16 +392,36 @@ fn accuracy() {
         solver: DOPRI5::new(),
         tolerance: 1e-2,
 
-        solver_name: RKF,
-        solver: RKF::new(),
+        solver_name: RKF45,
+        solver: ExplicitRungeKutta::rkf45(),
+        tolerance: 1e-3,
+
+        solver_name: CashKarp,
+        solver: ExplicitRungeKutta::cash_karp(),
         tolerance: 1e-3,
 
         solver_name: RK4,
-        solver: RK4::new(0.01),
+        solver: ExplicitRungeKutta::rk4(0.01),
+        tolerance: 1e-1,
+
+        solver_name: ThreeEighths,
+        solver: ExplicitRungeKutta::three_eighths(0.01),
         tolerance: 1e-1,
 
         solver_name: Euler,
-        solver: Euler::new(0.01),
+        solver: ExplicitRungeKutta::euler(0.01),
+        tolerance: 1e-1,
+
+        solver_name: Midpoint,
+        solver: ExplicitRungeKutta::midpoint(0.01),
+        tolerance: 1e-1,
+
+        solver_name: Heun,
+        solver: ExplicitRungeKutta::heun(0.01),
+        tolerance: 1e-1,
+
+        solver_name: Ralston,
+        solver: ExplicitRungeKutta::ralston(0.01),
         tolerance: 1e-1,
 
         solver_name: APCF4,
@@ -308,12 +436,28 @@ fn accuracy() {
         solver: RKV65::new(),
         tolerance: 1e-3,
 
-        solver_name: RKV87,
-        solver: RKV87::new(),
+        solver_name: RKV766e,
+        solver: ExplicitRungeKutta::rkv766e(),
         tolerance: 1e-3,
 
-        solver_name: RKV98,
-        solver: RKV98::new(),
+        solver_name: RKV767e,
+        solver: ExplicitRungeKutta::rkv767e(),
+        tolerance: 1e-3,
+
+        solver_name: RKV877e,
+        solver: ExplicitRungeKutta::rkv877e(),
+        tolerance: 1e-3,
+
+        solver_name: RKV878e,
+        solver: ExplicitRungeKutta::rkv878e(),
+        tolerance: 1e-3,
+
+        solver_name: RKV988e,
+        solver: ExplicitRungeKutta::rkv988e(),
+        tolerance: 1e-3,
+
+        solver_name: RKV989e,
+        solver: ExplicitRungeKutta::rkv989e(),
         tolerance: 1e-3,
 
         // Implicit methods
@@ -353,16 +497,36 @@ fn accuracy() {
         solver: DOPRI5::new(),
         tolerance: 1e-3,
 
-        solver_name: RKF,
-        solver: RKF::new(),
+        solver_name: RKF45,
+        solver: ExplicitRungeKutta::rkf45(),
+        tolerance: 1e-2,
+
+        solver_name: CashKarp,
+        solver: ExplicitRungeKutta::cash_karp(),
         tolerance: 1e-2,
 
         solver_name: RK4,
-        solver: RK4::new(0.01),
+        solver: ExplicitRungeKutta::rk4(0.01),
+        tolerance: 1e3,
+
+        solver_name: ThreeEighths,
+        solver: ExplicitRungeKutta::three_eighths(0.01),
         tolerance: 1e3,
 
         solver_name: Euler,
-        solver: Euler::new(0.01),
+        solver: ExplicitRungeKutta::euler(0.01),
+        tolerance: 1e-2,
+
+        solver_name: Midpoint,
+        solver: ExplicitRungeKutta::midpoint(0.01),
+        tolerance: 1e-2,
+
+        solver_name: Heun,
+        solver: ExplicitRungeKutta::heun(0.01),
+        tolerance: 1e-2,
+
+        solver_name: Ralston,
+        solver: ExplicitRungeKutta::ralston(0.01),
         tolerance: 1e-2,
 
         solver_name: APCF4,
@@ -377,12 +541,28 @@ fn accuracy() {
         solver: RKV65::new(),
         tolerance: 1e-3,
 
-        solver_name: RKV87,
-        solver: RKV87::new(),
+        solver_name: RKV766e,
+        solver: ExplicitRungeKutta::rkv766e(),
         tolerance: 1e-3,
 
-        solver_name: RKV98,
-        solver: RKV98::new(),
+        solver_name: RKV767e,
+        solver: ExplicitRungeKutta::rkv767e(),
+        tolerance: 1e-3,
+
+        solver_name: RKV877e,
+        solver: ExplicitRungeKutta::rkv877e(),
+        tolerance: 1e-3,
+
+        solver_name: RKV878e,
+        solver: ExplicitRungeKutta::rkv878e(),
+        tolerance: 1e-3,
+
+        solver_name: RKV988e,
+        solver: ExplicitRungeKutta::rkv988e(),
+        tolerance: 1e-3,
+
+        solver_name: RKV989e,
+        solver: ExplicitRungeKutta::rkv989e(),
         tolerance: 1e-3,
 
         // Implicit methods
