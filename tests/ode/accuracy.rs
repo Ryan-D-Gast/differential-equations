@@ -5,7 +5,7 @@ use differential_equations::ode::ODEProblem;
 use differential_equations::ode::methods::{
     adams::{APCF4, APCV4},
     runge_kutta::{
-        explicit::{DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV87, RKV98},
+        explicit::{DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV87, RKV98, ExplicitRungeKutta},
         implicit::{CrankNicolson, GaussLegendre4, GaussLegendre6, Radau5},
     },
 };
@@ -102,7 +102,7 @@ fn accuracy() {
         tolerance: 1e-1,
 
         solver_name: RKV87,
-        solver: RKV87::new(),
+        solver: ExplicitRungeKutta::rkv877e(),
         tolerance: 1e-1,
 
         solver_name: RKV98,
