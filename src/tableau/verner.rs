@@ -6,13 +6,18 @@ use crate::{
 };
 
 impl<T: Real> ButcherTableau<T, 9, 10> {
+    /// Verner's RKV(6,5,5)e method with 5th-order interpolation.
+    /// 
+    ///
     /// A 'most efficient' Runge-Kutta (9,6(5)) FSAL pair with rational coefficients.
     ///
+    /// # Overview
     /// This is a nine-stage FSAL pair of methods of orders p=6 and p=5, with dominant stage order 3.
     /// The coefficients are exact rationals. The method is "most efficient" in the sense that the
     /// maximum coefficient in `b` and `A` is not large, and the propagating formula nearly minimizes
     /// the 2-norm of the local truncation error (T_72 ≈ 1.44e-6).
     ///
+    /// # Interpolation
     /// Additional stages and interpolating weights allow computation of an approximation at any point
     /// in the domain of solution of order up to p. These interpolants have continuous derivatives.
     ///
@@ -22,11 +27,9 @@ impl<T: Real> ButcherTableau<T, 9, 10> {
     /// The remaining two nodes are chosen to minimize the maximum 2-norm of the local truncation error
     /// for the order 6 interpolant, Ti_72 ≈ 4.44e-5 (two local maxima on [0,1]).
     ///
-    /// See: J.H. Verner, SIAM NA 1978, 772-790; Annals of Num. Math 1 1994, 225-244;
-    /// and SIAM NA 30, 1993, 1446-1466 for details and usage of the interpolants.
+    /// # Source
+    /// [Verner's RKV655e](https://www.sfu.ca/~jverner/RKV65.IIIXb.Efficient.00000144617.081204.RATOnWeb)
     ///
-    /// # Returns
-    /// Butcher tableau for Verner's RKV(6,5,5)e method with 5th-order interpolation. Verner's RKV(6,5,5)e method with 5th-order interpolation.
     pub fn rkv655e() -> Self {
         let mut c = [0.0; 10];
         let mut a = [[0.0; 10]; 10];
@@ -207,20 +210,30 @@ impl<T: Real> ButcherTableau<T, 9, 10> {
 }
 
 impl<T: Real> ButcherTableau<T, 9, 12> {
-    /// Verner's RKV(6,5,6)e method with 6th-order interpolation.
+    /// Verner's RKV(6,5,5)e method with 5th-order interpolation.
+    /// 
     ///
-    /// This method uses the same primary stages as [`rkv655e`] but provides a 6th-order interpolant
-    /// using two additional nodes, chosen to minimize the maximum 2-norm of the local truncation error
-    /// on [0,1] (Ti_72 ≈ 4.44e-5, two local maxima).
+    /// A 'most efficient' Runge-Kutta (9,6(5)) FSAL pair with rational coefficients.
     ///
-    /// The interpolant has continuous derivatives and allows for high-accuracy solution approximation
-    /// at any point in the integration interval.
+    /// # Overview
+    /// This is a nine-stage FSAL pair of methods of orders p=6 and p=5, with dominant stage order 3.
+    /// The coefficients are exact rationals. The method is "most efficient" in the sense that the
+    /// maximum coefficient in `b` and `A` is not large, and the propagating formula nearly minimizes
+    /// the 2-norm of the local truncation error (T_72 ≈ 1.44e-6).
     ///
-    /// See: J.H. Verner, SIAM NA 1978, 772-790; Annals of Num. Math 1 1994, 225-244;
-    /// and SIAM NA 30, 1993, 1446-1466 for details and usage of the interpolants.
+    /// # Interpolation
+    /// Additional stages and interpolating weights allow computation of an approximation at any point
+    /// in the domain of solution of order up to p. These interpolants have continuous derivatives.
     ///
-    /// # Returns
-    /// Butcher tableau for Verner's RKV(6,5,6)e method with 6th-order interpolation.
+    /// The additional node c[9]=1/2 is chosen to achieve order 5 interpolation in ten stages, with
+    /// maximum 2-norm of the local truncation error Ti_62 ≈ 3.18e-4 (three local maxima on [0,1]).
+    ///
+    /// The remaining two nodes are chosen to minimize the maximum 2-norm of the local truncation error
+    /// for the order 6 interpolant, Ti_72 ≈ 4.44e-5 (two local maxima on [0,1]).
+    ///
+    /// # Source
+    /// [Verner's RKV655e](https://www.sfu.ca/~jverner/RKV65.IIIXb.Efficient.00000144617.081204.RATOnWeb)
+    ///
     pub fn rkv656e() -> Self {
         let mut c = [0.0; 12];
         let mut a = [[0.0; 12]; 12];
@@ -443,6 +456,7 @@ impl<T: Real> ButcherTableau<T, 9, 12> {
 
 impl<T: Real> ButcherTableau<T, 10, 13> {
     /// A 'most efficient' Runge-Kutta (10:6(7)) pair with 6th-order interpolation.
+    /// 
     ///
     /// # Overview
     /// This provides a 10-stage Runge-Kutta method with:
@@ -471,9 +485,9 @@ impl<T: Real> ButcherTableau<T, 10, 13> {
     ///
     /// - The interpolation error has four local maximum values on [0,1]
     ///
-    /// # References
-    /// - J.H. Verner, SIAM NA 1978, "Explicit Runge-Kutta methods with estimates of the Local Truncation Error"
-    /// - J.H. Verner, SIAM NA 30, 1993, "Differentiable Interpolants for high-order Runge-Kutta methods"
+    /// # Source
+    /// [Verner's RKV766e](https://www.sfu.ca/~jverner/RKV76.IIa.Efficient.000003389335684.240711.FLOAT6040OnWeb)
+    /// 
     pub fn rkv766e() -> Self {
         let mut c = [0.0; 13];
         let mut a = [[0.0; 13]; 13];
@@ -748,9 +762,9 @@ impl<T: Real> ButcherTableau<T, 10, 16> {
     /// - This method uses the same primary stages as the 6th-order method (rkv766e)
     /// - The higher-order interpolant requires more additional stages
     ///
-    /// # References
-    /// - J.H. Verner, SIAM NA 1978, "Explicit Runge-Kutta methods with estimates of the Local Truncation Error"
-    /// - J.H. Verner, SIAM NA 30, 1993, "Differentiable Interpolants for high-order Runge-Kutta methods"
+    /// # Source
+    /// [Verner's RKV766e](https://www.sfu.ca/~jverner/RKV76.IIa.Efficient.000003389335684.240711.FLOAT6040OnWeb)
+    /// 
     pub fn rkv767e() -> Self {
         let mut c = [0.0; 16];
         let mut a = [[0.0; 16]; 16];
@@ -1105,9 +1119,8 @@ impl<T: Real> ButcherTableau<T, 13, 17> {
     /// - This method uses the same initial 13 stages as the 8th-order method (rkv878e).
     /// - The interpolant requires fewer additional stages than the 8th-order version.
     ///
-    /// # References
-    /// - J.H. Verner, SIAM NA 1978, "Explicit Runge--Kutta methods with estimates of the Local Truncation Error"
-    /// - J.H. Verner, SIAM NA 30, 1993, "Differentiable Interpolants for high-order Runge--Kutta methods"
+    /// # Source
+    /// [Verner's RKV878e](https://www.sfu.ca/~jverner/RKV87.IIa.Efficient.000000011182-240510.FLOAT6040OnWeb)
     pub fn rkv877e() -> Self {
         let mut c = [0.0; 17];
         let mut a = [[0.0; 17]; 17];
@@ -1496,10 +1509,8 @@ impl<T: Real> ButcherTableau<T, 13, 21> {
     ///   
     /// - The interpolation error has two local maximum values on [0,1].
     ///
-    /// # References
-    /// Developed based on formulas in:
-    /// - J.H. Verner, SIAM NA 1978, "Explicit Runge--Kutta methods with estimates of the Local Truncation Error"
-    /// - J.H. Verner, SIAM NA 30, 1993, "Differentiable Interpolants for high-order Runge--Kutta methods"
+    /// # Source
+    /// [Verner's RKV878e](https://www.sfu.ca/~jverner/RKV87.IIa.Efficient.000000011182-240510.FLOAT6040OnWeb)
     pub fn rkv878e() -> Self {
         let mut c = [0.0; 21];
         let mut a = [[0.0; 21]; 21];
@@ -2031,9 +2042,8 @@ impl<T: Real> ButcherTableau<T, 16, 21> {
     /// - This method shares the same primary stages as the 9th-order method (rkv989e).
     /// - The interpolant requires fewer additional stages than the 9th-order version.
     ///
-    /// # References
-    /// - J.H. Verner, SIAM J NA 1978, "Explicit Runge-Kutta methods with estimates of the Local Truncation Error"
-    /// - J.H. Verner, SIAM J NA 1993, "Differentiable Interpolants for high-order Runge-Kutta methods"
+    /// # Source
+    /// [Verner's RKV878e](https://www.sfu.ca/~jverner/RKV98.IIa.Efficient.00000034399.240407.BetterEfficientonWeb)
     pub fn rkv988e() -> Self {
         let mut c = [0.0; 21];
         let mut a = [[0.0; 21]; 21];
@@ -2569,9 +2579,8 @@ impl<T: Real> ButcherTableau<T, 16, 26> {
     ///   as they require c[18] to be a zero of a cubic polynomial with coefficients
     ///   that are surds in terms of sqrt(6).
     ///
-    /// # References
-    /// - J.H. Verner, SIAM J NA 1978, "Explicit Runge-Kutta methods with estimates of the Local Truncation Error"
-    /// - J.H. Verner, SIAM J NA 1993, "Differentiable Interpolants for high-order Runge-Kutta methods"
+    /// # Source
+    /// [Verner's RKV878e](https://www.sfu.ca/~jverner/RKV98.IIa.Efficient.00000034399.240407.BetterEfficientonWeb)
     pub fn rkv989e() -> Self {
         let mut c = [0.0; 26];
         let mut a = [[0.0; 26]; 26];
