@@ -1,15 +1,18 @@
 //! Suite of test cases for checking the interpolation of the solvers.
 
 use super::systems;
-use differential_equations::ode::{
-    ODEProblem,
-    methods::{
-        adams::{APCF4, APCV4},
-        runge_kutta::{
-            explicit::{DOP853, DOPRI5, ExplicitRungeKutta},
-            implicit::{CrankNicolson, GaussLegendre6, Radau5},
-        },
-    },
+use differential_equations::{
+    methods::ExplicitRungeKutta,
+    ode::{
+        ODEProblem,
+        methods::{
+            adams::{APCF4, APCV4},
+            runge_kutta::{
+                explicit::{DOP853, DOPRI5},
+                implicit::{CrankNicolson, GaussLegendre6, Radau5},
+            },
+        }
+    }
 };
 use nalgebra::vector;
 use systems::ExponentialGrowth;

@@ -90,6 +90,9 @@ pub mod prelude;
 
 mod tableau;
 
+// -- Numerical Methods for Differential Equations --
+pub mod methods;
+
 // -- Types of Differential Equations --
 
 // Ordinary Differential Equations (ODE) Module

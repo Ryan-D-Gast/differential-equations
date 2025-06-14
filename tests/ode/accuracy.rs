@@ -1,13 +1,18 @@
 //! Suite of test cases for NumericalMethods vs results of SciPy using DOP853 & Tolerences = 1e-12
 
 use super::systems::{ExponentialGrowth, HarmonicOscillator, LinearEquation, LogisticEquation};
-use differential_equations::ode::ODEProblem;
-use differential_equations::ode::methods::{
-    adams::{APCF4, APCV4},
-    runge_kutta::{
-        explicit::{DOP853, DOPRI5, ExplicitRungeKutta},
-        implicit::{CrankNicolson, GaussLegendre4, GaussLegendre6, Radau5},
-    },
+use differential_equations::{
+    methods::ExplicitRungeKutta,
+    ode::{
+        ODEProblem,
+        methods::{
+            adams::{APCF4, APCV4},
+            runge_kutta::{
+                explicit::{DOP853, DOPRI5},
+                implicit::{CrankNicolson, GaussLegendre4, GaussLegendre6, Radau5},
+            },
+        }
+    }
 };
 use nalgebra::vector;
 

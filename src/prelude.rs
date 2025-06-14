@@ -53,6 +53,11 @@
 // -- Types of Differential Equations --
 
 pub use crate::{
+    // Numerical Methods
+    methods::{
+        ExplicitRungeKutta, // Explicit Runge-Kutta methods for ODEs
+    },
+
     // Ordinary Differential Equations (ODE) module
     ode::{
         ODE,        // Define the ODE system
