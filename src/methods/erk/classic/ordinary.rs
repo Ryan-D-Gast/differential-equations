@@ -1,7 +1,6 @@
 //! Classic Runge-Kutta methods for ODEs
 
-use super::{ExplicitRungeKutta, Classic};
-
+use super::{ExplicitRungeKutta, Ordinary, Classic};
 use crate::{
     Error, Status,
     alias::Evals,
@@ -10,9 +9,6 @@ use crate::{
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
-
-/// Typestate for Explicit Runge-Kutta methods that can solve ODEs
-pub struct Ordinary;
 
 impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODENumericalMethod<T, V, D> for ExplicitRungeKutta<Ordinary, Classic, T, V, D, S, I> {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>

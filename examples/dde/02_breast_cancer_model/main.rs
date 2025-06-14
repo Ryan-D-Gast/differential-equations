@@ -58,7 +58,7 @@ impl DDE<1, f64, Vector3<f64>> for BreastCancerModel {
 
 fn main() {
     // --- Solver Configuration ---
-    let mut solver = DDE23::new().max_delay(1.0); // DDE version of the BS23 solver
+    let mut solver = ExplicitRungeKutta::rkv766e().max_delay(1.0); // DDE version of the rkv766e solver
 
     // --- Problem Definition ---
     let tau = 1.0;

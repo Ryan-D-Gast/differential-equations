@@ -2,10 +2,14 @@
 
 mod classic;
 
-use std::marker::PhantomData;
 use crate::{
+    methods::Delay,
     Status,
     traits::{CallBackData, Real, State},
+};
+use std::{
+    collections::VecDeque, 
+    marker::PhantomData
 };
 
 /// Runge-Kutta solver that can handle:
@@ -23,6 +27,9 @@ use crate::{
 /// * `const S`: Number of stages in the method
 /// * `const I`: Total number of stages including interpolation (equal to S for methods without dense output)
 pub struct ExplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> {
+    // Domain of problem
+    t0: T,
+
     // Initial Step Size
     pub h0: T,
 
@@ -82,11 +89,16 @@ pub struct ExplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const
 
     // Equation type
     equation: PhantomData<E>,
+
+    // DDE (Delay) support
+    cont_buffer: VecDeque<(T, V, V)>, // (t, y, dydt)
+    max_delay: Option<T>, // Minimum delay for DDEs so that buffer can be emptied
 }
 
 impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Default for ExplicitRungeKutta<E, F, T, V, D, S, I> {
     fn default() -> Self {
         Self {
+            t0: T::zero(),
             h0: T::zero(),
             h: T::zero(),
             t: T::zero(),
@@ -121,6 +133,8 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize
             dense_stages: I,
             family: PhantomData,
             equation: PhantomData,
+            cont_buffer: VecDeque::new(),
+            max_delay: None,
         }
     }
 }
@@ -199,5 +213,13 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize
     /// Get the number of terms in the dense output interpolation polynomial
     pub fn dense_stages(&self) -> usize {
         self.dense_stages
+    }
+}
+
+impl<F, T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ExplicitRungeKutta<Delay, F, T, V, D, S, I> {
+    /// Set the maximum delay for DDEs
+    pub fn max_delay(mut self, max_delay: T) -> Self {
+        self.max_delay = Some(max_delay);
+        self
     }
 }

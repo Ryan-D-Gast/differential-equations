@@ -34,7 +34,7 @@ impl DDE<1> for MackeyGlass {
 
 fn main() {
     // --- Solver Configuration ---
-    let mut solver = DDE45::new() // Use the Delay version of DOPRI5 solver
+    let mut solver = ExplicitRungeKutta::rkv878e() // Use the Delay version of rkv878e solver
         .max_delay(20.0); // Set the maximum delay to match the problem's tau so unnecessary history can be discarded as the solver progresses (optional)
 
     // --- Problem Definition ---

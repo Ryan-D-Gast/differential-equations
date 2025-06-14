@@ -32,7 +32,7 @@ where
     /// # Returns
     /// * Result<NumEvals, Error<T, V>> - Ok(evals) if initialization is successful, Err otherwise.
     ///
-    fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: H) -> Result<Evals, Error<T, V>>
+    fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: &H) -> Result<Evals, Error<T, V>>
     where
         F: DDE<L, T, V, D>;
 
@@ -44,7 +44,7 @@ where
     /// # Returns
     /// * Result<NumEvals, Error<T, V>> - Ok(evals) if step is successful, Err otherwise.
     ///
-    fn step<F>(&mut self, dde: &F) -> Result<Evals, Error<T, V>>
+    fn step<F>(&mut self, dde: &F, phi: &H) -> Result<Evals, Error<T, V>>
     where
         F: DDE<L, T, V, D>;
 

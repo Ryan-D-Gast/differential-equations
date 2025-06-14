@@ -64,7 +64,7 @@ use std::collections::VecDeque;
 /// * `fac2`   - 10.0
 /// * `beta`   - 0.0 (No PI stabilization by default for BS23, can be enabled)
 /// * `max_delay` - None
-pub struct BS23<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> {
+pub struct BS23<const L: usize, T: Real, V: State<T>, D: CallBackData> {
     pub h0: T,
     t: T,
     y: V,
@@ -99,7 +99,6 @@ pub struct BS23<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBack
     h_old: T,
     cont: [V; 4], // For cubic Hermite dense output
     cont_buffer: VecDeque<(T, T, T, [V; 4])>,
-    phi: Option<H>,
     t0: T,
     tf: T,
     posneg: T,
@@ -108,9 +107,9 @@ pub struct BS23<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBack
 }
 
 impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
-    DDENumericalMethod<L, T, V, H, D> for BS23<L, T, V, H, D>
+    DDENumericalMethod<L, T, V, H, D> for BS23<L, T, V, D>
 {
-    fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: H) -> Result<Evals, Error<T, V>>
+    fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: &H) -> Result<Evals, Error<T, V>>
     where
         F: DDE<L, T, V, D>,
     {
@@ -121,7 +120,6 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
         self.t0 = t0;
         self.tf = tf;
         self.posneg = (tf - t0).signum();
-        self.phi = Some(phi);
 
         if L > 0 {
             dde.lags(self.t, &self.y, &mut self.lags);
@@ -144,7 +142,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
                         ),
                     });
                 }
-                self.yd[i] = (self.phi.as_ref().unwrap())(t_delayed);
+                self.yd[i] = phi(t_delayed);
             }
         }
         dde.diff(self.t, &self.y, &self.yd, &mut self.k[0]); // k1 = f(t0, y0, yd(t0-tau))
@@ -161,7 +159,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
                 self.atol,
                 self.h_min,
                 self.h_max,
-                self.phi.as_ref().unwrap(),
+                phi,
                 &self.k[0],
                 &mut evals,
             );
@@ -185,7 +183,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
         Ok(evals)
     }
 
-    fn step<F>(&mut self, dde: &F) -> Result<Evals, Error<T, V>>
+    fn step<F>(&mut self, dde: &F, phi: &H) -> Result<Evals, Error<T, V>>
     where
         F: DDE<L, T, V, D>,
     {
@@ -242,7 +240,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
             let mut yi = y_current_step_start + self.k[0] * (self.a[0][0] * self.h);
             if L > 0 {
                 dde.lags(ti, &yi, &mut self.lags);
-                self.lagvals(ti, &yi);
+                self.lagvals(ti, &yi, phi);
             }
             dde.diff(ti, &yi, &self.yd, &mut self.k[1]); // k2 stored in self.k[1]
 
@@ -251,7 +249,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
             yi = y_current_step_start + self.k[1] * (self.a[1][1] * self.h); // BS23: y + h*A_32*k2
             if L > 0 {
                 dde.lags(ti, &yi, &mut self.lags);
-                self.lagvals(ti, &yi);
+                self.lagvals(ti, &yi, phi);
             }
             dde.diff(ti, &yi, &self.yd, &mut self.k[2]); // k3 stored in self.k[2]
 
@@ -265,7 +263,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
             // The k4 calculation in dde23 is f(tnew, ynew).
             if L > 0 {
                 dde.lags(t_new_val, &y_new_from_iter, &mut self.lags);
-                self.lagvals(t_new_val, &y_new_from_iter);
+                self.lagvals(t_new_val, &y_new_from_iter, phi);
             }
             dde.diff(t_new_val, &y_new_from_iter, &self.yd, &mut self.k[3]); // k4 stored in self.k[3]
 
@@ -438,8 +436,8 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
     }
 }
 
-impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Interpolation<T, V>
-    for BS23<L, T, V, H, D>
+impl<const L: usize, T: Real, V: State<T>, D: CallBackData> Interpolation<T, V>
+    for BS23<L, T, V, D>
 {
     fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // This interpolates within the last successfully completed step [t_old, t]
@@ -474,7 +472,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Inter
     }
 }
 
-impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> BS23<L, T, V, H, D> {
+impl<const L: usize, T: Real, V: State<T>, D: CallBackData> BS23<L, T, V, D> {
     pub fn new() -> Self {
         Self::default()
     }
@@ -527,13 +525,16 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> BS23<
         self
     }
 
-    fn lagvals(&mut self, t_stage: T, _y_stage: &V) {
+    fn lagvals<H>(&mut self, t_stage: T, _y_stage: &V, phi: &H) 
+    where 
+        H: Fn(T) -> V,
+    {
         // y_stage not used if interpolating from buffer
         for i in 0..L {
             let t_delayed = t_stage - self.lags[i];
             if (t_delayed - self.t0) * self.posneg <= T::default_epsilon() {
                 // t_delayed <= t0 (forward) or t_delayed >= t0 (backward)
-                self.yd[i] = (self.phi.as_ref().unwrap())(t_delayed);
+                self.yd[i] = phi(t_delayed);
             } else {
                 // Search cont_buffer (most recent first)
                 let mut found_in_buffer = false;
@@ -576,7 +577,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> BS23<
                         // This implies we are trying to access a future point not yet computed or history not covering it.
                         // For now, use phi, though this might be incorrect if t_delayed > t0.
                         // A proper error or specific handling for "future" lookups in early steps might be needed.
-                        self.yd[i] = (self.phi.as_ref().unwrap())(t_delayed);
+                        self.yd[i] = phi(t_delayed);
                         // Consider panic or error: panic!("Lag value lookup failed for t_delayed={}", t_delayed);
                     }
                 }
@@ -605,8 +606,8 @@ const BS23_A: [[f64; 4]; 3] = [
 const BS23_B_SOL: [f64; 3] = [2.0 / 9.0, 1.0 / 3.0, 4.0 / 9.0]; // For solution (uses k1, k2, k3)
 const BS23_E: [f64; 4] = [-5.0 / 72.0, 1.0 / 12.0, 1.0 / 9.0, -1.0 / 8.0]; // For error estimate (uses k1, k2, k3, k4)
 
-impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Default
-    for BS23<L, T, V, H, D>
+impl<const L: usize, T: Real, V: State<T>, D: CallBackData> Default
+    for BS23<L, T, V, D>
 {
     fn default() -> Self {
         let c_conv = BS23_C.map(|x| T::from_f64(x).unwrap());
@@ -653,7 +654,6 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Defau
             h_old: T::zero(),
             cont: [V::zeros(); 4],
             cont_buffer: VecDeque::new(),
-            phi: None,
             t0: T::zero(),
             tf: T::zero(),
             posneg: T::zero(),

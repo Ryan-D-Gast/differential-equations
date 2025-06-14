@@ -1,17 +1,15 @@
 //! Runge-Kutta solvers with support for dense output, embedded error estimation, and fixed steps.
 
-mod ode;
-mod dde;
+mod ordinary;
+mod delay;
 
 use super::ExplicitRungeKutta;
+use crate::methods::{Classic, Ordinary, Delay};
 
 use crate::{
     traits::{CallBackData, Real, State},
     tableau::ButcherTableau,
 };
-
-/// Typestate pattern for Classic Runge-Kutta methods
-pub struct Classic;
 
 // Macro for fixed step constructors
 macro_rules! impl_erk_fixed_step_constructor {
@@ -81,7 +79,7 @@ impl_erk_adaptive_step_constructor!(rkv655e, 6, 9, 10, "Creates a Verner's 6(5) 
 impl_erk_adaptive_step_constructor!(rkv656e, 6, 9, 12, "Creates a Verner's 6(5) method with dense output of order 6.");
 impl_erk_adaptive_step_constructor!(rkv766e, 7, 10, 13, "Creates a ExplicitRungeKutta 7(6) method with 10 stages and a 6th order interpolant.");
 impl_erk_adaptive_step_constructor!(rkv767e, 7, 10, 16, "Creates a ExplicitRungeKutta 7(6) method with 10 stages and a 7th order interpolant.");
-impl_erk_adaptive_step_constructor!(rkv877e, 8, 13, 17, "Creates a ExplicitRungeKutta 8(7) method with 13 stages with 7th order interpolant.");
-impl_erk_adaptive_step_constructor!(rkv878e, 8, 13, 21, "Creates a ExplicitRungeKutta 8(7) method with 13 stages with 8th order interpolant.");
-impl_erk_adaptive_step_constructor!(rkv988e, 9, 16, 21, "Creates a ExplicitRungeKutta 9(8) method with 16 stages with 8th order interpolant.");
-impl_erk_adaptive_step_constructor!(rkv989e, 9, 16, 26, "Creates a ExplicitRungeKutta 9(8) method with 16 stages with 9th order interpolant.");
+impl_erk_adaptive_step_constructor!(rkv877e, 8, 13, 17, "Creates a ExplicitRungeKutta 8(7) method with 13 stages and a 7th order interpolant.");
+impl_erk_adaptive_step_constructor!(rkv878e, 8, 13, 21, "Creates a ExplicitRungeKutta 8(7) method with 13 stages and a 8th order interpolant.");
+impl_erk_adaptive_step_constructor!(rkv988e, 9, 16, 21, "Creates a ExplicitRungeKutta 9(8) method with 16 stages and a 8th order interpolant.");
+impl_erk_adaptive_step_constructor!(rkv989e, 9, 16, 26, "Creates a ExplicitRungeKutta 9(8) method with 16 stages and a 9th order interpolant.");

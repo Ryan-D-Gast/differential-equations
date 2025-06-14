@@ -93,7 +93,7 @@ where
     };
 
     // Initialize the solver
-    match solver.init(dde, t0, tf, y0, phi.clone()) {
+    match solver.init(dde, t0, tf, y0, &phi) {
         Ok(evals) => {
             solution.evals += evals.fcn;
             solution.jac_evals += evals.jac;
@@ -115,7 +115,7 @@ where
         ControlFlag::Continue => {}
         ControlFlag::ModifyState(tm, ym) => {
             // Reinitialize the solver with the modified state
-            match solver.init(dde, tm, tf, &ym, phi.clone()) {
+            match solver.init(dde, tm, tf, &ym, &phi) {
                 Ok(evals) => {
                     solution.evals += evals.fcn;
                     solution.jac_evals += evals.jac;
@@ -139,7 +139,7 @@ where
         ControlFlag::Continue => {}
         ControlFlag::ModifyState(tm, ym) => {
             // Reinitialize the solver with the modified state
-            match solver.init(dde, tm, tf, &ym, phi.clone()) {
+            match solver.init(dde, tm, tf, &ym, &phi) {
                 Ok(evals) => {
                     solution.evals += evals.fcn;
                     solution.jac_evals += evals.jac;
@@ -169,7 +169,7 @@ where
 
         // Perform a step
         solution.steps += 1;
-        match solver.step(dde) {
+        match solver.step(dde, &phi) {
             Ok(evals) => {
                 solution.evals += evals.fcn;
                 solution.jac_evals += evals.jac;
@@ -200,7 +200,7 @@ where
             ControlFlag::Continue => {}
             ControlFlag::ModifyState(tm, ym) => {
                 // Reinitialize the solver with the modified state
-                match solver.init(dde, tm, tf, &ym, phi.clone()) {
+                match solver.init(dde, tm, tf, &ym, &phi) {
                     Ok(evals) => {
                         solution.evals += evals.fcn;
                         solution.jac_evals += evals.jac;
@@ -312,7 +312,7 @@ where
                         solution.push(tm, ym.clone());
 
                         // Reinitialize the solver with the modified state at the precise time
-                        match solver.init(dde, tm, tf, &ym, phi.clone()) {
+                        match solver.init(dde, tm, tf, &ym, &phi) {
                             Ok(evals) => {
                                 solution.evals += evals.fcn;
                                 solution.jac_evals += evals.jac;

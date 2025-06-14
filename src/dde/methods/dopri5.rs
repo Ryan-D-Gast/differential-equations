@@ -65,7 +65,7 @@ use std::collections::VecDeque;
 /// * `fac2`   - 10.0
 /// * `beta`   - 0.04 (PI stabilization enabled by default for DOPRI5)
 /// * `max_delay` - None
-pub struct DOPRI5<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> {
+pub struct DOPRI5<const L: usize, T: Real, V: State<T>, D: CallBackData> {
     pub h0: T,
     t: T,
     y: V,
@@ -100,7 +100,6 @@ pub struct DOPRI5<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBa
     h_old: T,
     cont: [V; 5],                             // For 5-coefficient dense output
     cont_buffer: VecDeque<(T, T, T, [V; 5])>, // Store 5-coeff cont
-    phi: Option<H>,
     t0: T,
     tf: T,
     posneg: T,
@@ -109,9 +108,9 @@ pub struct DOPRI5<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBa
 }
 
 impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
-    DDENumericalMethod<L, T, V, H, D> for DOPRI5<L, T, V, H, D>
+    DDENumericalMethod<L, T, V, H, D> for DOPRI5<L, T, V, D>
 {
-    fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: H) -> Result<Evals, Error<T, V>>
+    fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: &H) -> Result<Evals, Error<T, V>>
     where
         F: DDE<L, T, V, D>,
     {
@@ -122,7 +121,6 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
         self.t0 = t0;
         self.tf = tf;
         self.posneg = (tf - t0).signum();
-        self.phi = Some(phi);
 
         if L > 0 {
             dde.lags(self.t, &self.y, &mut self.lags);
@@ -141,7 +139,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
                         ),
                     });
                 }
-                self.yd[i] = (self.phi.as_ref().unwrap())(t_delayed);
+                self.yd[i] = phi(t_delayed);
             }
         }
         dde.diff(self.t, &self.y, &self.yd, &mut self.k[0]); // k1 = f(t0, y0, yd(t0-tau))
@@ -158,7 +156,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
                 self.atol,
                 self.h_min,
                 self.h_max,
-                self.phi.as_ref().unwrap(),
+                phi,
                 &self.k[0],
                 &mut evals,
             );
@@ -182,7 +180,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
         Ok(evals)
     }
 
-    fn step<F>(&mut self, dde: &F) -> Result<Evals, Error<T, V>>
+    fn step<F>(&mut self, dde: &F, phi: &H) -> Result<Evals, Error<T, V>>
     where
         F: DDE<L, T, V, D>,
     {
@@ -249,7 +247,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
 
                 if L > 0 {
                     dde.lags(ti, &yi, &mut self.lags);
-                    self.lagvals(ti, &yi);
+                    self.lagvals(ti, &yi, phi);
                 }
                 dde.diff(ti, &yi, &self.yd, &mut k_stages_iter[j]);
             }
@@ -266,7 +264,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
 
             if L > 0 {
                 dde.lags(t_sti, &ysti, &mut self.lags);
-                self.lagvals(t_sti, &ysti);
+                self.lagvals(t_sti, &ysti, phi);
             }
             dde.diff(t_sti, &ysti, &self.yd, &mut k_stages_iter[6]);
             evals.fcn += 1;
@@ -283,7 +281,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
             let t_new_val_for_k_fnew = t_current_step_start + self.h; // c[6] is 1.0, effectively t+h
             if L > 0 {
                 dde.lags(t_new_val_for_k_fnew, &y_new_from_iter, &mut self.lags);
-                self.lagvals(t_new_val_for_k_fnew, &y_new_from_iter);
+                self.lagvals(t_new_val_for_k_fnew, &y_new_from_iter, phi);
             }
             dde.diff(
                 t_new_val_for_k_fnew,
@@ -465,8 +463,8 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData>
     }
 }
 
-impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Interpolation<T, V>
-    for DOPRI5<L, T, V, H, D>
+impl<const L: usize, T: Real, V: State<T>, D: CallBackData> Interpolation<T, V>
+    for DOPRI5<L, T, V, D>
 {
     fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         if ((t_interp - self.t_old) * self.posneg < T::zero()
@@ -499,7 +497,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Inter
     }
 }
 
-impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> DOPRI5<L, T, V, H, D> {
+impl<const L: usize, T: Real, V: State<T>, D: CallBackData> DOPRI5<L, T, V, D> {
     pub fn new() -> Self {
         Self::default()
     }
@@ -551,11 +549,14 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> DOPRI
         self
     }
 
-    fn lagvals(&mut self, t_stage: T, _y_stage: &V) {
+    fn lagvals<H>(&mut self, t_stage: T, _y_stage: &V, phi: &H) 
+    where 
+        H: Fn(T) -> V,
+    {
         for i in 0..L {
             let t_delayed = t_stage - self.lags[i];
             if (t_delayed - self.t0) * self.posneg <= T::default_epsilon() {
-                self.yd[i] = (self.phi.as_ref().unwrap())(t_delayed);
+                self.yd[i] = phi(t_delayed);
             } else {
                 let mut found_in_buffer = false;
                 for (buf_t_start, buf_t_end, buf_h, buf_cont) in self.cont_buffer.iter().rev() {
@@ -595,7 +596,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> DOPRI
                                     * (T::one() - s))
                                 * s;
                     } else {
-                        self.yd[i] = (self.phi.as_ref().unwrap())(t_delayed);
+                        self.yd[i] = phi(t_delayed);
                     }
                 }
             }
@@ -603,8 +604,8 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> DOPRI
     }
 }
 
-impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Default
-    for DOPRI5<L, T, V, H, D>
+impl<const L: usize, T: Real, V: State<T>, D: CallBackData> Default
+    for DOPRI5<L, T, V, D>
 {
     fn default() -> Self {
         // Convert coefficient arrays from f64 to type T
@@ -655,7 +656,6 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData> Defau
             h_old: T::zero(),
             cont: [V::zeros(); 5], // Initialize 5-element cont
             cont_buffer: VecDeque::new(),
-            phi: None,
             t0: T::zero(),
             tf: T::zero(),
             posneg: T::zero(),
