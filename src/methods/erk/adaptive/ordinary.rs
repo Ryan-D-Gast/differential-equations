@@ -11,7 +11,7 @@ use crate::{
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
-impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODENumericalMethod<T, V, D> for ExplicitRungeKutta<Ordinary, Adaptive, T, V, D, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> ODENumericalMethod<T, V, D> for ExplicitRungeKutta<Ordinary, Adaptive, T, V, D, O, S, I> {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
@@ -94,11 +94,6 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODEN
             ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
         }
         evals.fcn += self.stages - 1; // We already have k[0]
-
-        // Store current state before update for interpolation
-        self.t_prev = self.t;
-        self.y_prev = self.y;
-        self.dydt_prev = self.k[0];
  
         // For adaptive methods with error estimation
         // Compute higher order solution
@@ -132,6 +127,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODEN
             // Log previous state
             self.t_prev = self.t;
             self.y_prev = self.y;
+            self.dydt_prev = self.k[0];
             self.h_prev = self.h;
 
             if self.reject {
@@ -201,7 +197,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODEN
     fn set_status(&mut self, status: Status<T, V, D>) { self.status = status; }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Interpolation<T, V> for ExplicitRungeKutta<Ordinary, Adaptive, T, V, D, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> Interpolation<T, V> for ExplicitRungeKutta<Ordinary, Adaptive, T, V, D, O, S, I> {
     fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // Check if t is within bounds
         if t_interp < self.t_prev || t_interp > self.t {
@@ -220,25 +216,26 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Inte
             // Get the interpolation coefficients
             let bi = self.bi.as_ref().unwrap();
 
+            let mut cont = [T::zero(); I];
             // Compute the interpolation coefficients using Horner's method
             for i in 0..self.dense_stages {
                 // Start with the highest-order term
-                self.cont[i] = bi[i][self.dense_stages - 1];
+                cont[i] = bi[i][self.dense_stages - 1];
 
                 // Apply Horner's method
                 for j in (0..self.dense_stages - 1).rev() {
-                    self.cont[i] = self.cont[i] * s + bi[i][j];
+                    cont[i] = cont[i] * s + bi[i][j];
                 }
 
                 // Multiply by s
-                self.cont[i] *= s;
+                cont[i] *= s;
             }
 
             // Compute the interpolated value
             let mut y_interp = self.y_prev;
             for i in 0..I {
                 if i < self.k.len() && i < self.cont.len() {
-                    y_interp += self.k[i] * (self.cont[i] * self.h_prev);
+                    y_interp += self.k[i] * (cont[i] * self.h_prev);
                 }
             }
 

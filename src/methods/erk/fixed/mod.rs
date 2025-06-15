@@ -14,7 +14,7 @@ use crate::{
 // Macro for fixed step constructors
 macro_rules! impl_erk_fixed_step_constructor {
     ($method_name:ident, $order_val:expr, $s_val:expr, $doc:expr) => {
-        impl<E, T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<E, Fixed, T, V, D, $s_val, $s_val> {
+        impl<E, T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<E, Fixed, T, V, D, $order_val, $s_val, $s_val> {
             #[doc = $doc]
             pub fn $method_name(h0: T) -> Self {
                 let order = $order_val;

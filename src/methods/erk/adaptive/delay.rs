@@ -12,7 +12,7 @@ use crate::{
 };
 use std::collections::VecDeque;
 
-impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const S: usize, const I: usize> DDENumericalMethod<L, T, V, H, D> for ExplicitRungeKutta<Delay, Adaptive, T, V, D, S, I> {
+impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const O: usize, const S: usize, const I: usize> DDENumericalMethod<L, T, V, H, D> for ExplicitRungeKutta<Delay, Adaptive, T, V, D, O, S, I> {
     fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: &H) -> Result<Evals, Error<T, V>>
     where
         F: DDE<L, T, V, D>,
@@ -29,7 +29,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         self.steps = 0;
         self.n_stiff = 0;
         self.reject = false;
-        self.cont_buffer = VecDeque::new();
+        self.history = VecDeque::new();
 
         // Initialize arrays for lags and delayed states
         let mut lags = [T::zero(); L];
@@ -61,8 +61,8 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         // Calculate initial derivative
         dde.diff(self.t, &self.y, &yd, &mut self.dydt);
         evals.fcn += 1;
-        self.dydt_prev = self.dydt;        // Store initial state in cont_buffer
-        self.cont_buffer.push_back((self.t, self.y.clone(), self.dydt.clone()));
+        self.dydt_prev = self.dydt;        // Store initial state in history
+        self.history.push_back((self.t, self.y.clone(), self.dydt.clone()));
 
         // Calculate initial step size h0 if not provided
         if self.h0 == T::zero() {
@@ -268,12 +268,12 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
             evals.fcn += 1;
 
             // Update continuous output buffer and remove old entries if max_delay is set
-            self.cont_buffer.push_back((self.t, self.y, self.dydt));
+            self.history.push_back((self.t, self.y, self.dydt));
             if let Some(max_delay) = self.max_delay {
                 let cutoff_time = self.t - max_delay;
-                while let Some((t_front, _, _)) = self.cont_buffer.get(1){
+                while let Some((t_front, _, _)) = self.history.get(1){
                     if *t_front < cutoff_time {
-                        self.cont_buffer.pop_front();
+                        self.history.pop_front();
                     } else {
                         break; // Stop pruning when we reach the cutoff time
                     }
@@ -307,7 +307,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
     fn set_status(&mut self, status: Status<T, V, D>) { self.status = status; }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ExplicitRungeKutta<Delay, Adaptive, T, V, D, S, I> {    
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> ExplicitRungeKutta<Delay, Adaptive, T, V, D, O, S, I> {    
     fn lagvals<const L: usize, H>(&mut self, t_stage: T, lags: &[T; L], yd: &mut [V; L], phi: &H) 
     where 
         H: Fn(T) -> V,
@@ -325,20 +325,21 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Expl
                     
                     let bi_coeffs = self.bi.as_ref().unwrap();
 
+                    let mut cont = [T::zero(); I];
                     for i in 0..I {
                         if i < self.cont.len() && i < bi_coeffs.len() {
-                            self.cont[i] = bi_coeffs[i][self.dense_stages - 1];
+                            cont[i] = bi_coeffs[i][self.dense_stages - 1];
                             for j in (0..self.dense_stages - 1).rev() {
-                                self.cont[i] = self.cont[i] * s + bi_coeffs[i][j];
+                                cont[i] = cont[i] * s + bi_coeffs[i][j];
                             }
-                            self.cont[i] *= s;
+                            cont[i] *= s;
                         }
                     }
 
                     let mut y_interp = self.y_prev;
                     for i in 0..I {
                         if i < self.k.len() && i < self.cont.len() {
-                            y_interp += self.k[i] * (self.cont[i] * self.h_prev);
+                            y_interp += self.k[i] * (cont[i] * self.h_prev);
                         }
                     }
                     yd[i] = y_interp;
@@ -352,10 +353,10 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Expl
                         &self.dydt, 
                         t_delayed
                     );
-                }            // If t_delayed is before t_prev and after t0, we need to search in the cont_buffer
-            } else {                // Search through cont_buffer to find appropriate interpolation points
+                }            // If t_delayed is before t_prev and after t0, we need to search in the history
+            } else {                // Search through history to find appropriate interpolation points
                 let mut found_interpolation = false;
-                let buffer = &self.cont_buffer;
+                let buffer = &self.history;
                 // Find two consecutive points that sandwich t_delayed using iterators
                 let mut buffer_iter = buffer.iter();
                 if let Some(mut prev_entry) = buffer_iter.next() {
@@ -388,10 +389,10 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Expl
                         }
                         prev_entry = curr_entry;
                     }
-                }// If not found in cont_buffer, this indicates insufficient history in buffer
+                }// If not found in history, this indicates insufficient history in buffer
                 if !found_interpolation {
                     // Debug: show buffer contents
-                    let buffer = &self.cont_buffer;
+                    let buffer = &self.history;
                     println!("Buffer contents ({} entries):", buffer.len());
                     for (idx, (t_buf, _, _)) in buffer.iter().enumerate() {
                         if idx < 5 || idx >= buffer.len() - 5 {
@@ -400,14 +401,14 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Expl
                             println!("  ... ({} more entries) ...", buffer.len() - 10);
                         }
                     }
-                    panic!("Insufficient history in cont_buffer for t_delayed = {} (t_prev = {}, t = {}). Buffer may need to retain more points or there's a logic error in determining interpolation intervals.", t_delayed, self.t_prev, self.t);
+                    panic!("Insufficient history in history for t_delayed = {} (t_prev = {}, t = {}). Buffer may need to retain more points or there's a logic error in determining interpolation intervals.", t_delayed, self.t_prev, self.t);
                 }
             }
         }
     }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Interpolation<T, V> for ExplicitRungeKutta<Delay, Adaptive, T, V, D, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> Interpolation<T, V> for ExplicitRungeKutta<Delay, Adaptive, T, V, D, O, S, I> {
     /// Interpolates the solution at a given time `t_interp`.
     fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         if (t_interp - self.t_prev) < T::zero() || (t_interp - self.t) > T::zero() {
@@ -419,20 +420,21 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Inte
             
             let bi_coeffs = self.bi.as_ref().unwrap();
 
+            let mut cont = [T::zero(); I];
             for i in 0..I {
-                if i < self.cont.len() && i < bi_coeffs.len() {
-                    self.cont[i] = bi_coeffs[i][self.dense_stages - 1];
+                if i < cont.len() && i < bi_coeffs.len() {
+                    cont[i] = bi_coeffs[i][self.dense_stages - 1];
                     for j in (0..self.dense_stages - 1).rev() {
-                        self.cont[i] = self.cont[i] * s + bi_coeffs[i][j];
+                        cont[i] = cont[i] * s + bi_coeffs[i][j];
                     }
-                    self.cont[i] *= s;
+                    cont[i] *= s;
                 }
             }
 
             let mut y_interp = self.y_prev;
             for i in 0..I {
                 if i < self.k.len() && i < self.cont.len() {
-                    y_interp += self.k[i] * (self.cont[i] * self.h_prev);
+                    y_interp += self.k[i] * (cont[i] * self.h_prev);
                 }
             }
             return Ok(y_interp);

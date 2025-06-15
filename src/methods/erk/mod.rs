@@ -25,9 +25,10 @@ use std::{
 /// * `T`: Real number type (f32, f64)
 /// * `V`: State vector type
 /// * `D`: Callback data type
+/// * `const O`: Order of the method
 /// * `const S`: Number of stages in the method
 /// * `const I`: Total number of stages including interpolation (equal to S for methods without dense output)
-pub struct ExplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> {
+pub struct ExplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> {
     // Domain of problem
     t0: T,
 
@@ -59,7 +60,7 @@ pub struct ExplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const
 
     // Interpolation coefficients
     bi: Option<[[T; I]; I]>,  // Optional for methods without dense output
-    cont: [T; I],
+    cont: [V; O],
 
     // Settings
     pub rtol: T,
@@ -92,11 +93,11 @@ pub struct ExplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const
     equation: PhantomData<E>,
 
     // DDE (Delay) support
-    cont_buffer: VecDeque<(T, V, V)>, // (t, y, dydt)
+    history: VecDeque<(T, V, V)>, // (t, y, dydt)
     max_delay: Option<T>, // Minimum delay for DDEs so that buffer can be emptied
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Default for ExplicitRungeKutta<E, F, T, V, D, S, I> {
+impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> Default for ExplicitRungeKutta<E, F, T, V, D, O, S, I> {
     fn default() -> Self {
         Self {
             t0: T::zero(),
@@ -115,7 +116,7 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize
             b: [T::zero(); S],
             bh: None,
             bi: None,
-            cont: [T::zero(); I],
+            cont: [V::zeros(); O],
             rtol: T::from_f64(1.0e-6).unwrap(),
             atol: T::from_f64(1.0e-6).unwrap(),
             h_max: T::infinity(),
@@ -134,13 +135,13 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize
             dense_stages: I,
             family: PhantomData,
             equation: PhantomData,
-            cont_buffer: VecDeque::new(),
+            history: VecDeque::new(),
             max_delay: None,
         }
     }
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ExplicitRungeKutta<E, F, T, V, D, S, I> {
+impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> ExplicitRungeKutta<E, F, T, V, D, O, S, I> {
     /// Set the relative tolerance for error control
     pub fn rtol(mut self, rtol: T) -> Self {
         self.rtol = rtol;
@@ -217,7 +218,7 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize
     }
 }
 
-impl<F, T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ExplicitRungeKutta<Delay, F, T, V, D, S, I> {
+impl<F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> ExplicitRungeKutta<Delay, F, T, V, D, O, S, I> {
     /// Set the maximum delay for DDEs
     pub fn max_delay(mut self, max_delay: T) -> Self {
         self.max_delay = Some(max_delay);
