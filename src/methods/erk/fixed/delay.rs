@@ -1,33 +1,30 @@
-//! Classic Runge-Kutta methods for DDEs
+//! Fixed Runge-Kutta methods for DDEs
 
-use super::{ExplicitRungeKutta, Delay, Classic};
+use super::{ExplicitRungeKutta, Delay, Fixed};
 use crate::{
     Error, Status,
     alias::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
-    dde::{DDENumericalMethod, DDE, methods::h_init::h_init},
+    dde::{DDENumericalMethod, DDE},
     traits::{CallBackData, Real, State},
-    utils::{constrain_step_size, validate_step_size_parameters},
+    utils::validate_step_size_parameters,
 };
 use std::collections::VecDeque;
 
-impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const S: usize, const I: usize> DDENumericalMethod<L, T, V, H, D> for ExplicitRungeKutta<Delay, Classic, T, V, D, S, I> {
+impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const S: usize, const I: usize> DDENumericalMethod<L, T, V, H, D> for ExplicitRungeKutta<Delay, Fixed, T, V, D, S, I> {
     fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: &H) -> Result<Evals, Error<T, V>>
     where
         F: DDE<L, T, V, D>,
     {
-        let mut evals = Evals::new();
-
-        // Initialize solver state
+        let mut evals = Evals::new();        // Initialize solver state
         self.t0 = t0;
         self.t = t0;
-        self.y = y0.clone();
+        self.y = *y0;
         self.t_prev = t0;
-        self.y_prev = y0.clone();
+        self.y_prev = *y0;
         self.status = Status::Initialized;
         self.steps = 0;
         self.n_stiff = 0;
-        self.reject = false;
         self.cont_buffer = VecDeque::new();
 
         // Initialize arrays for lags and delayed states
@@ -61,20 +58,14 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         dde.diff(self.t, &self.y, &yd, &mut self.dydt);
         evals.fcn += 1;
         self.dydt_prev = self.dydt;        // Store initial state in cont_buffer
-        self.cont_buffer.push_back((self.t, self.y.clone(), self.dydt.clone()));
+        self.cont_buffer.push_back((self.t, self.y, self.dydt));
 
         // Calculate initial step size h0 if not provided
         if self.h0 == T::zero() {
-            if self.bh.is_some() { 
-                // Adaptive step method
-                self.h0 = h_init(dde, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max, phi, &self.k[0], &mut evals);
-                evals.fcn += 2; // h_init performs 2 function evaluations
-            } else { 
-                // Fixed step method
-                let duration = (tf - t0).abs();
-                let default_steps = T::from_usize(100).unwrap();
-                self.h0 = duration / default_steps;
-            }
+            // Simple default step size for fixed-step methods
+            let duration = (tf - t0).abs();
+            let default_steps = T::from_usize(100).unwrap();
+            self.h0 = duration / default_steps;
         }
 
         // Validate and set initial step size h
@@ -109,9 +100,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         let mut yd = [V::zeros(); L];
 
         // Store current derivative as k[0] for RK computations
-        self.k[0] = self.dydt;
-
-        // DDE: Determine if iterative approach for lag handling is needed
+        self.k[0] = self.dydt;        // DDE: Determine if iterative approach for lag handling is needed
         let mut min_lag_abs = T::infinity();
         if L > 0 {
             // Predict y at t+h using Euler step to estimate lags at t+h
@@ -133,7 +122,6 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         let mut dydt_next_candidate_iter = V::zeros(); // Derivative at t+h using y_next_candidate_iter
         let mut y_prev_candidate_iter = self.y; // y_next_candidate_iter from previous DDE iteration
         let mut dde_iteration_failed = false;
-        let mut err_norm: T = T::zero(); // Error norm for step size control
 
         // DDE iteration loop (for handling implicit lags or just one pass for explicit)
         for iter_idx in 0..max_iter {
@@ -156,60 +144,10 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
             }
             evals.fcn += self.stages - 1; // k[0] was already available
 
-            // Fixed-step methods: update solution and return
-            if self.bh.is_none() {
-                let mut y_next = self.y;
-                for i in 0..self.stages {
-                    y_next += self.k[i] * (self.b[i] * self.h);
-                }
-                self.t_prev = self.t; // Store before update
-                self.y_prev = self.y;
-                self.dydt_prev = self.dydt;
-
-                self.t += self.h;
-                self.y = y_next;
-
-                // Calculate derivative at the new point
-                if L > 0 {
-                    dde.lags(self.t, &self.y, &mut lags);
-                    self.lagvals(self.t, &lags, &mut yd, phi);
-                }
-                dde.diff(self.t, &self.y, &yd, &mut self.dydt);
-                evals.fcn += 1;
-                
-                // Update continuous output buffer and remove old entries if max_delay is set
-                self.cont_buffer.push_back((self.t, self.y, self.dydt));
-                if let Some(max_delay) = self.max_delay {
-                    let cutoff_time = self.t - max_delay;
-                    while let Some((t_front, _, _)) = self.cont_buffer.get(1){
-                        if *t_front < cutoff_time {
-                            self.cont_buffer.pop_front();
-                        } else {
-                            break; // Stop pruning when we reach the cutoff time
-                        }
-                    }
-                } 
-
-                return Ok(evals);
-            } 
-            // Adaptive methods: compute high and low order solutions for error estimation
-            let mut y_high = self.y; // Higher order solution
+            // Compute solution
+            let mut y_next = self.y;
             for i in 0..self.stages {
-                y_high += self.k[i] * (self.b[i] * self.h);
-            }
-            let mut y_low = self.y; // Lower order solution (for error estimation)
-            if let Some(bh_coeffs) = &self.bh {
-                for i in 0..self.stages {
-                    y_low += self.k[i] * (bh_coeffs[i] * self.h);
-                }
-            }
-            let err_vec: V = y_high - y_low.clone(); // Error vector
-
-            // Calculate error norm (||err||)
-            err_norm = T::zero();
-            for n in 0..self.y.len() {
-                let tol = self.atol + self.rtol * self.y.get(n).abs().max(y_high.get(n).abs());
-                err_norm = err_norm.max((err_vec.get(n) / tol).abs());
+                y_next += self.k[i] * (self.b[i] * self.h);
             }
 
             // DDE iteration convergence check (if max_iter > 1)
@@ -217,9 +155,9 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 let mut dde_iteration_error = T::zero();
                 let n_dim = self.y.len();
                 for i_dim in 0..n_dim {
-                    let scale = self.atol + self.rtol * y_prev_candidate_iter.get(i_dim).abs().max(y_high.get(i_dim).abs());
+                    let scale = T::from_f64(1e-10).unwrap() + y_prev_candidate_iter.get(i_dim).abs().max(y_next.get(i_dim).abs());
                     if scale > T::zero() {
-                        let diff_val = y_high.get(i_dim) - y_prev_candidate_iter.get(i_dim);
+                        let diff_val = y_next.get(i_dim) - y_prev_candidate_iter.get(i_dim);
                         dde_iteration_error += (diff_val / scale).powi(2);
                     }
                 }
@@ -227,14 +165,14 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                     dde_iteration_error = (dde_iteration_error / T::from_usize(n_dim).unwrap()).sqrt();
                 }
 
-                if dde_iteration_error <= self.rtol * T::from_f64(0.1).unwrap() {
+                if dde_iteration_error <= T::from_f64(1e-6).unwrap() {
                     break; // DDE iteration converged
                 }
                 if iter_idx == max_iter - 1 { // Last iteration
-                    dde_iteration_failed = dde_iteration_error > self.rtol * T::from_f64(0.1).unwrap();
+                    dde_iteration_failed = dde_iteration_error > T::from_f64(1e-6).unwrap();
                 }
             }
-            y_next_candidate_iter = y_high; // Update candidate solution for t+h
+            y_next_candidate_iter = y_next; // Update candidate solution for t+h
 
             // Compute derivative at t+h with the current candidate y_next_candidate_iter
             if L > 0 {
@@ -253,89 +191,59 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
             if L > 0 && min_lag_abs > T::zero() && self.h.abs() < T::from_f64(2.0).unwrap() * min_lag_abs {
                 self.h = min_lag_abs * sign; // Or some factor of min_lag_abs
             }
-            self.h = constrain_step_size(self.h, self.h_min, self.h_max);
             self.status = Status::RejectedStep; // Indicate step rejection due to DDE iteration
-            // self.k[0] = self.dydt; // k[0] is already self.dydt, no need to reset
             return Ok(evals); // Return to retry step with smaller h
         }
 
-        // Step size controller for adaptive methods (based on err_norm)
-        let order_t = T::from_usize(self.order).unwrap();
-        let err_order_inv = T::one() / order_t;
-        let mut scale_factor = self.safety_factor * err_norm.powf(-err_order_inv);
-        scale_factor = scale_factor.max(self.min_scale).min(self.max_scale);
+        // Store current state before update for interpolation
+        self.t_prev = self.t;
+        self.y_prev = self.y;
+        self.dydt_prev = self.dydt;
+
+        // Update state to t + h
+        self.t += self.h;
+        self.y = y_next_candidate_iter;
         
-        let h_new = self.h * scale_factor;
-
-        // Step acceptance/rejection logic
-        if err_norm <= T::one() { // Step accepted
-            self.t_prev = self.t;
-            self.y_prev = self.y;
-            self.dydt_prev = self.dydt; // Derivative at t_prev
-            self.h_prev = self.h; // Store accepted step size
-
-            if self.reject { // If previous step was rejected
-                self.n_stiff = 0;
-                self.reject = false;
-            }
-            self.status = Status::Solving;
-
-            // Compute additional stages for dense output if available
-            if self.bi.is_some() {
-                for i in 0..(I - S) { // I is total stages, S is main method stages
-                    let mut y_stage_dense = self.y; // Base for dense stage calculation
-                    // Sum up contributions from previous k values for this dense stage
-                    for j in 0..self.stages + i { // self.stages is S
-                        y_stage_dense += self.k[j] * (self.a[self.stages + i][j] * self.h);
-                    }
-                    // Evaluate lags and derivative for the dense stage
-                    if L > 0 {
-                        dde.lags(self.t + self.c[self.stages + i] * self.h, &y_stage_dense, &mut lags);
-                        self.lagvals(self.t + self.c[self.stages + i] * self.h, &lags, &mut yd, phi);
-                    }
-                    dde.diff(self.t + self.c[self.stages + i] * self.h, &y_stage_dense, &yd, &mut self.k[self.stages + i]);
-                }
-                evals.fcn += I - S; // Account for function evaluations for dense stages
-            }
-
-            // Update state to t + h
-            self.t += self.h;
-            self.y = y_next_candidate_iter;
-            // Update derivative at the new state (self.t, self.y)
-            if L > 0 {
-                dde.lags(self.t, &self.y, &mut lags);
-                self.lagvals(self.t, &lags, &mut yd, phi);
-            }
-            dde.diff(self.t, &self.y, &yd, &mut self.dydt); // This is f(t_new, y_new)
-            evals.fcn += 1;
-
-            // Update continuous output buffer and remove old entries if max_delay is set
-            self.cont_buffer.push_back((self.t, self.y, self.dydt));
-            if let Some(max_delay) = self.max_delay {
-                let cutoff_time = self.t - max_delay;
-                while let Some((t_front, _, _)) = self.cont_buffer.get(1){
-                    if *t_front < cutoff_time {
-                        self.cont_buffer.pop_front();
-                    } else {
-                        break; // Stop pruning when we reach the cutoff time
-                    }
-                }
-            }
-
-            self.h = constrain_step_size(h_new, self.h_min, self.h_max); // Set next step size
-        } else { // Step rejected
-            self.reject = true;
-            self.status = Status::RejectedStep;
-            self.n_stiff += 1;
-
-            // Check for excessive rejections (potential stiffness)
-            if self.n_stiff >= self.max_rejects {
-                self.status = Status::Error(Error::Stiffness { t: self.t, y: self.y });
-                return Err(Error::Stiffness { t: self.t, y: self.y });
-            }
-            // Reduce step size for next attempt
-            self.h = constrain_step_size(h_new, self.h_min, self.h_max);
+        // Calculate new derivative for next step
+        if L > 0 {
+            dde.lags(self.t, &self.y, &mut lags);
+            self.lagvals(self.t, &lags, &mut yd, phi);
         }
+        dde.diff(self.t, &self.y, &yd, &mut self.dydt);
+        evals.fcn += 1;
+
+        // Compute additional stages for dense output if available
+        if self.bi.is_some() {
+            for i in 0..(I - S) { // I is total stages, S is main method stages
+                let mut y_stage_dense = self.y_prev; // Use previous state as base
+                // Sum up contributions from previous k values for this dense stage
+                for j in 0..self.stages + i { // self.stages is S
+                    y_stage_dense += self.k[j] * (self.a[self.stages + i][j] * self.h);
+                }
+                // Evaluate lags and derivative for the dense stage
+                if L > 0 {
+                    dde.lags(self.t_prev + self.c[self.stages + i] * self.h, &y_stage_dense, &mut lags);
+                    self.lagvals(self.t_prev + self.c[self.stages + i] * self.h, &lags, &mut yd, phi);
+                }
+                dde.diff(self.t_prev + self.c[self.stages + i] * self.h, &y_stage_dense, &yd, &mut self.k[self.stages + i]);
+            }
+            evals.fcn += I - S; // Account for function evaluations for dense stages
+        }
+
+        // Update continuous output buffer and remove old entries if max_delay is set
+        self.cont_buffer.push_back((self.t, self.y, self.dydt));
+        if let Some(max_delay) = self.max_delay {
+            let cutoff_time = self.t - max_delay;
+            while let Some((t_front, _, _)) = self.cont_buffer.get(1){
+                if *t_front < cutoff_time {
+                    self.cont_buffer.pop_front();
+                } else {
+                    break; // Stop pruning when we reach the cutoff time
+                }
+            }
+        }
+
+        self.status = Status::Solving;
         Ok(evals)
     }
 
@@ -349,8 +257,8 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
     fn set_status(&mut self, status: Status<T, V, D>) { self.status = status; }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ExplicitRungeKutta<Delay, Classic, T, V, D, S, I> {    
-    fn lagvals<const L: usize, H>(&mut self, t_stage: T, lags: &[T; L], yd: &mut [V; L], phi: &H) 
+impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ExplicitRungeKutta<Delay, Fixed, T, V, D, S, I> {    
+    pub fn lagvals<const L: usize, H>(&mut self, t_stage: T, lags: &[T; L], yd: &mut [V; L], phi: &H) 
     where 
         H: Fn(T) -> V,
     {
@@ -363,7 +271,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Expl
             // If t_delayed is after t_prev then use interpolation function
             } else if (t_delayed - self.t_prev) * self.h.signum() > T::default_epsilon() {
                 if self.bi.is_some() {
-                    let s = (t_delayed - self.t_prev) / self.h_prev;
+                    let s = (t_delayed - self.t_prev) / self.h;
                     
                     let bi_coeffs = self.bi.as_ref().unwrap();
 
@@ -380,7 +288,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Expl
                     let mut y_interp = self.y_prev;
                     for i in 0..I {
                         if i < self.k.len() && i < self.cont.len() {
-                            y_interp += self.k[i] * (self.cont[i] * self.h_prev);
+                            y_interp += self.k[i] * (self.cont[i] * self.h);
                         }
                     }
                     yd[i] = y_interp;
@@ -449,14 +357,12 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Expl
     }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Interpolation<T, V> for ExplicitRungeKutta<Delay, Classic, T, V, D, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Interpolation<T, V> for ExplicitRungeKutta<Delay, Fixed, T, V, D, S, I> {
     /// Interpolates the solution at a given time `t_interp`.
     fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         if (t_interp - self.t_prev) < T::zero() || (t_interp - self.t) > T::zero() {
             return Err(Error::OutOfBounds { t_interp, t_prev: self.t_prev, t_curr: self.t });
-        }
-
-        if self.bi.is_some() {
+        }        if self.bi.is_some() {
             let s = (t_interp - self.t_prev) / self.h_prev;
             
             let bi_coeffs = self.bi.as_ref().unwrap();

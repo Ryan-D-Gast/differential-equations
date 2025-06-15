@@ -1,6 +1,6 @@
-//! Classic Runge-Kutta methods for ODEs
+//! Adaptive Runge-Kutta methods for ODEs
 
-use super::{ExplicitRungeKutta, Ordinary, Classic};
+use super::{ExplicitRungeKutta, Ordinary, Adaptive};
 use crate::{
     Error, Status,
     alias::Evals,
@@ -10,7 +10,7 @@ use crate::{
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
-impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODENumericalMethod<T, V, D> for ExplicitRungeKutta<Ordinary, Classic, T, V, D, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODENumericalMethod<T, V, D> for ExplicitRungeKutta<Ordinary, Adaptive, T, V, D, S, I> {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
@@ -20,15 +20,9 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODEN
         // If h0 is zero, calculate initial step size
         if self.h0 == T::zero() {
             // Only use adaptive step size calculation if the method supports it
-            if self.bh.is_some() {
-                self.h0 = h_init(ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max);
-                evals.fcn += 2;
-            } else {
-                // Simple default step size for fixed-step methods
-                let duration = (tf - t0).abs();
-                let default_steps = T::from_usize(100).unwrap();
-                self.h0 = duration / default_steps;
-            }
+            self.h0 = h_init(ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max);
+            evals.fcn += 2;
+
         }
 
         // Check bounds
@@ -48,9 +42,9 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODEN
         evals.fcn += 1;
 
         // Initialize previous state
-        self.t_prev = t0;
-        self.y_prev = y0.clone();
-        self.dydt_prev = self.dydt.clone();
+        self.t_prev = self.t;
+        self.y_prev = self.y;
+        self.dydt_prev = self.dydt;
 
         // Initialize Status
         self.status = Status::Initialized;
@@ -104,27 +98,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODEN
         self.t_prev = self.t;
         self.y_prev = self.y;
         self.dydt_prev = self.k[0];
-
-        // For methods without embedded error estimation, simply update the solution
-        if self.bh.is_none() {
-            // Compute solution
-            let mut y_next = self.y;
-            for i in 0..self.stages {
-                y_next += self.k[i] * (self.b[i] * self.h);
-            }
-
-            // Update state
-            self.t += self.h;
-            self.y = y_next;
-            
-            // Calculate new derivative for next step
-            ode.diff(self.t, &self.y, &mut self.dydt);
-            evals.fcn += 1;
-            
-            self.status = Status::Solving;
-            return Ok(evals);
-        }
-        
+ 
         // For adaptive methods with error estimation
         // Compute higher order solution
         let mut y_high = self.y;
@@ -226,7 +200,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODEN
     fn set_status(&mut self, status: Status<T, V, D>) { self.status = status; }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Interpolation<T, V> for ExplicitRungeKutta<Ordinary, Classic, T, V, D, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Interpolation<T, V> for ExplicitRungeKutta<Ordinary, Adaptive, T, V, D, S, I> {
     fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // Check if t is within bounds
         if t_interp < self.t_prev || t_interp > self.t {
@@ -267,20 +241,20 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> Inte
                 }
             }
 
-            return Ok(y_interp);
-        }
-        
-        // Otherwise use cubic Hermite interpolation
-        let y_interp = cubic_hermite_interpolate(
-            self.t_prev, 
-            self.t, 
-            &self.y_prev, 
-            &self.y, 
-            &self.dydt_prev, 
-            &self.dydt, 
-            t_interp
-        );
+            Ok(y_interp)
+        } else {
+            // Otherwise use cubic Hermite interpolation
+            let y_interp = cubic_hermite_interpolate(
+                self.t_prev, 
+                self.t, 
+                &self.y_prev, 
+                &self.y, 
+                &self.dydt_prev, 
+                &self.dydt, 
+                t_interp
+            );
 
-        Ok(y_interp)
+            Ok(y_interp)
+        }
     }
 }

@@ -1,6 +1,7 @@
 //! Explicit Runge-Kutta (ERK) methods
 
-mod classic;
+mod adaptive;
+mod fixed;
 
 use crate::{
     methods::Delay,
@@ -19,8 +20,8 @@ use std::{
 ///
 /// # Type Parameters
 ///
-/// * `E`: Equation type (e.g., ODE, DDE, SDE)
-/// * `F`: Family type (e.g., Classic, DormandPrince, etc.)
+/// * `E`: Equation type (e.g., Ordinary, Delay, Stochastic)
+/// * `F`: Family type (e.g., Adaptive, Fixed, DormandPrince, etc.)
 /// * `T`: Real number type (f32, f64)
 /// * `V`: State vector type
 /// * `D`: Callback data type
