@@ -1,5 +1,7 @@
 //! Numerical Methods for Differential Equations
 
+mod h_init;
+
 // --- Explicit Runge-Kutta Methods ---
 mod erk;
 pub use erk::ExplicitRungeKutta;

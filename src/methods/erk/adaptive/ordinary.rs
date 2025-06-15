@@ -4,8 +4,9 @@ use super::{ExplicitRungeKutta, Ordinary, Adaptive};
 use crate::{
     Error, Status,
     alias::Evals,
+    methods::h_init::InitialStepSize,
     interpolate::{Interpolation, cubic_hermite_interpolate},
-    ode::{ODENumericalMethod, ODE, methods::h_init},
+    ode::{ODENumericalMethod, ODE},
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
@@ -20,7 +21,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const S: usize, const I: usize> ODEN
         // If h0 is zero, calculate initial step size
         if self.h0 == T::zero() {
             // Only use adaptive step size calculation if the method supports it
-            self.h0 = h_init(ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max);
+            self.h0 = InitialStepSize::<Ordinary>::compute(ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max, &mut evals);
             evals.fcn += 2;
 
         }

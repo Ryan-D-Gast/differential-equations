@@ -15,8 +15,9 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
     fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: &H) -> Result<Evals, Error<T, V>>
     where
         F: DDE<L, T, V, D>,
-    {
-        let mut evals = Evals::new();        // Initialize solver state
+    {        
+        // Initialize solver state
+        let mut evals = Evals::new();
         self.t0 = t0;
         self.t = t0;
         self.y = *y0;

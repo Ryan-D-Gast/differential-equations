@@ -3,9 +3,10 @@
 use super::{ExplicitRungeKutta, Delay, Adaptive};
 use crate::{
     Error, Status,
+    methods::h_init::InitialStepSize,
     alias::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
-    dde::{DDENumericalMethod, DDE, methods::h_init::h_init},
+    dde::{DDENumericalMethod, DDE},
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
@@ -66,7 +67,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         // Calculate initial step size h0 if not provided
         if self.h0 == T::zero() {
             // Adaptive step method
-            self.h0 = h_init(dde, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max, phi, &self.k[0], &mut evals);
+            self.h0 = InitialStepSize::<Delay>::compute(dde, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max, phi, &self.k[0], &mut evals);
             evals.fcn += 2; // h_init performs 2 function evaluations
         }
 
