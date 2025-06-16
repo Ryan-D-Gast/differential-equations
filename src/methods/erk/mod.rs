@@ -2,6 +2,7 @@
 
 mod adaptive;
 mod fixed;
+mod dormandprince;
 
 use crate::{
     methods::Delay,
@@ -123,7 +124,7 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
             atol: T::from_f64(1.0e-6).unwrap(),
             h_max: T::infinity(),
             h_min: T::zero(),
-            max_steps: 10000,
+            max_steps: 10_000,
             max_rejects: 100,
             safety_factor: T::from_f64(0.9).unwrap(),
             min_scale: T::from_f64(0.2).unwrap(),
