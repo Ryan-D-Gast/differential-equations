@@ -25,7 +25,6 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         self.y_prev = *y0;
         self.status = Status::Initialized;
         self.steps = 0;
-        self.n_stiff = 0;
         self.history = VecDeque::new();
 
         // Initialize arrays for lags and delayed states
@@ -362,42 +361,59 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> Interpolation<T, V> for ExplicitRungeKutta<Delay, Fixed, T, V, D, O, S, I> {
     /// Interpolates the solution at a given time `t_interp`.
     fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
-        if (t_interp - self.t_prev) < T::zero() || (t_interp - self.t) > T::zero() {
-            return Err(Error::OutOfBounds { t_interp, t_prev: self.t_prev, t_curr: self.t });
-        }        if self.bi.is_some() {
-            let s = (t_interp - self.t_prev) / self.h_prev;
-            
-            let bi_coeffs = self.bi.as_ref().unwrap();
-
-            let mut cont = [T::zero(); I];
-            for i in 0..I {
-                if i < cont.len() && i < bi_coeffs.len() {
-                    cont[i] = bi_coeffs[i][self.dense_stages - 1];
-                    for j in (0..self.dense_stages - 1).rev() {
-                        cont[i] = cont[i] * s + bi_coeffs[i][j];
-                    }
-                    cont[i] *= s;
-                }
-            }
-
-            let mut y_interp = self.y_prev;
-            for i in 0..I {
-                if i < self.k.len() && i < cont.len() {
-                    y_interp += self.k[i] * (cont[i] * self.h_prev);
-                }
-            }
-            return Ok(y_interp);
+        let posneg = self.h.signum();
+        if (t_interp - self.t_prev) * posneg < T::zero() || (t_interp - self.t) * posneg > T::zero() {
+            return Err(Error::OutOfBounds {
+                t_interp,
+                t_prev: self.t_prev,
+                t_curr: self.t,
+            });
         }
 
-        let y_interp = cubic_hermite_interpolate(
-            self.t_prev, 
-            self.t, 
-            &self.y_prev, 
-            &self.y, 
-            &self.dydt_prev, 
-            &self.dydt, 
-            t_interp
-        );
-        Ok(y_interp)
+        // If method has dense output coefficients, use them
+        if self.bi.is_some() {
+            // Calculate the normalized distance within the step [0, 1]
+            let s = (t_interp - self.t_prev) / self.h_prev;
+            
+            // Get the interpolation coefficients
+            let bi = self.bi.as_ref().unwrap();
+
+            let mut cont = [T::zero(); I];
+            // Compute the interpolation coefficients using Horner's method
+            for i in 0..self.dense_stages {
+                // Start with the highest-order term
+                cont[i] = bi[i][self.order - 1];
+
+                // Apply Horner's method
+                for j in (0..self.order - 1).rev() {
+                    cont[i] = cont[i] * s + bi[i][j];
+                }
+
+                // Multiply by s
+                cont[i] *= s;
+            }
+
+            // Compute the interpolated value
+            let mut y_interp = self.y_prev;
+            for i in 0..I {
+                y_interp += self.k[i] * cont[i] * self.h_prev;
+            }
+
+            Ok(y_interp)
+        } else {
+            // Otherwise use cubic Hermite interpolation
+            let y_interp = cubic_hermite_interpolate(
+                self.t_prev, 
+                self.t, 
+                &self.y_prev, 
+                &self.y, 
+                &self.dydt_prev, 
+                &self.dydt, 
+                t_interp
+            );
+
+            Ok(y_interp)
+        }
     }
+
 }

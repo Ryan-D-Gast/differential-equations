@@ -33,8 +33,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         }
 
         // Initialize Statistics
-        self.reject = false;
-        self.n_stiff = 0;
+        self.stiffness_counter = 0;
 
         // Initialize State
         self.t = t0;
@@ -130,9 +129,8 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             self.dydt_prev = self.k[0];
             self.h_prev = self.h;
 
-            if self.reject {
-                self.n_stiff = 0;
-                self.reject = false;
+            if let Status::RejectedStep = self.status {
+                self.stiffness_counter = 0;
                 self.status = Status::Solving;
             }
 
@@ -157,12 +155,11 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             evals.fcn += 1;
         } else {
             // Step rejected
-            self.reject = true;
             self.status = Status::RejectedStep;
-            self.n_stiff += 1;
+            self.stiffness_counter += 1;
 
             // Check for stiffness
-            if self.n_stiff >= self.max_rejects {
+            if self.stiffness_counter >= self.max_rejects {
                 self.status = Status::Error(Error::Stiffness {
                     t: self.t, y: self.y
                 });
@@ -220,10 +217,10 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             // Compute the interpolation coefficients using Horner's method
             for i in 0..self.dense_stages {
                 // Start with the highest-order term
-                cont[i] = bi[i][self.dense_stages - 1];
+                cont[i] = bi[i][self.order - 1];
 
                 // Apply Horner's method
-                for j in (0..self.dense_stages - 1).rev() {
+                for j in (0..self.order - 1).rev() {
                     cont[i] = cont[i] * s + bi[i][j];
                 }
 
@@ -234,9 +231,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             // Compute the interpolated value
             let mut y_interp = self.y_prev;
             for i in 0..I {
-                if i < self.k.len() && i < self.cont.len() {
-                    y_interp += self.k[i] * (cont[i] * self.h_prev);
-                }
+                y_interp += self.k[i] * cont[i] * self.h_prev;
             }
 
             Ok(y_interp)

@@ -56,7 +56,8 @@ pub struct ExplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const
     c: [T; I],
     a: [[T; I]; I],
     b: [T; S],
-    bh: Option<[T; S]>,  // Optional for methods without error estimation
+    bh: Option<[T; S]>,  // Lower order coefficients for embedded methods
+    er: Option<[T; S]>,  // Error estimation coefficients
 
     // Interpolation coefficients
     bi: Option<[[T; I]; I]>,  // Optional for methods without dense output
@@ -74,8 +75,8 @@ pub struct ExplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const
     pub max_scale: T,
 
     // Iteration tracking
-    reject: bool,
-    n_stiff: usize,
+    stiffness_counter: usize,
+    non_stiffness_counter: usize,
     steps: usize,
 
     // Status
@@ -115,6 +116,7 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
             a: [[T::zero(); I]; I],
             b: [T::zero(); S],
             bh: None,
+            er: None,
             bi: None,
             cont: [V::zeros(); O],
             rtol: T::from_f64(1.0e-6).unwrap(),
@@ -126,8 +128,8 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
             safety_factor: T::from_f64(0.9).unwrap(),
             min_scale: T::from_f64(0.2).unwrap(),
             max_scale: T::from_f64(10.0).unwrap(),
-            reject: false,
-            n_stiff: 0,
+            stiffness_counter: 0,
+            non_stiffness_counter: 0,
             steps: 0,
             status: Status::Uninitialized,
             order: 0,

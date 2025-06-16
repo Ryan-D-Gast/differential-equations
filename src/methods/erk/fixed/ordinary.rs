@@ -30,7 +30,6 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }        // Initialize Statistics
-        self.n_stiff = 0;
 
         // Initialize State
         self.t = t0;
@@ -161,10 +160,10 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             // Compute the interpolation coefficients using Horner's method
             for i in 0..self.dense_stages {
                 // Start with the highest-order term
-                cont[i] = bi[i][self.dense_stages - 1];
+                cont[i] = bi[i][self.order - 1];
 
                 // Apply Horner's method
-                for j in (0..self.dense_stages - 1).rev() {
+                for j in (0..self.order - 1).rev() {
                     cont[i] = cont[i] * s + bi[i][j];
                 }
 
@@ -175,14 +174,12 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             // Compute the interpolated value
             let mut y_interp = self.y_prev;
             for i in 0..I {
-                if i < self.k.len() && i < cont.len() {
-                    y_interp += self.k[i] * (cont[i] * self.h_prev);
-                }
+                y_interp += self.k[i] * cont[i] * self.h_prev;
             }
 
             Ok(y_interp)
-        // Otherwise use cubic Hermite interpolation
         } else {
+            // Otherwise use cubic Hermite interpolation
             let y_interp = cubic_hermite_interpolate(
                 self.t_prev, 
                 self.t, 
@@ -195,5 +192,6 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
             Ok(y_interp)
         }
+
     }
 }

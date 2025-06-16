@@ -205,6 +205,7 @@ impl<T: Real> ButcherTableau<T, 9, 10> {
             b,
             bh: Some(bh),
             bi: Some(bi5),
+            er: None,
         }
     }
 }
@@ -450,6 +451,7 @@ impl<T: Real> ButcherTableau<T, 9, 12> {
             b,
             bh: Some(bh),
             bi: Some(bi6),
+            er: None,
         }
     }
 }
@@ -727,6 +729,7 @@ impl<T: Real> ButcherTableau<T, 10, 13> {
             b,
             bh: Some(bh),
             bi: Some(bi6),
+            er: None,
         }
     }
 }
@@ -1092,6 +1095,7 @@ impl<T: Real> ButcherTableau<T, 10, 16> {
             b,
             bh: Some(bh),
             bi: Some(bi7),
+            er: None,
         }
     }
 }
@@ -1478,6 +1482,7 @@ impl<T: Real> ButcherTableau<T, 13, 17> {
             b,
             bh: Some(bh),
             bi: Some(bi7),
+            er: None,
         }
     }
 }
@@ -2007,6 +2012,7 @@ impl<T: Real> ButcherTableau<T, 13, 21> {
             b,
             bh: Some(bh),
             bi: Some(bi8),
+            er: None,
         }
     }
 }
@@ -2543,6 +2549,7 @@ impl<T: Real> ButcherTableau<T, 16, 21> {
             b,
             bh: Some(bh),
             bi: Some(bi8),
+            er: None,
         }
     }
 }
@@ -3281,6 +3288,7 @@ impl<T: Real> ButcherTableau<T, 16, 26> {
             b,
             bh: Some(bh),
             bi: Some(bi9),
+            er: None,
         }
     }
 }

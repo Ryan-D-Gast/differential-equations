@@ -41,8 +41,8 @@ impl<T: Real> ButcherTableau<T, 7> {
         let mut c = [0.0; 7];
         let mut a = [[0.0; 7]; 7];
         let mut b = [0.0; 7];
-        let mut bh = [0.0; 7];
         let mut bi4 = [[0.0; 7]; 7];
+        let mut er = [0.0; 7];
 
         c[0] = 0.0;
         c[1] = 0.2;
@@ -87,13 +87,13 @@ impl<T: Real> ButcherTableau<T, 7> {
         b[5] = 11.0 / 84.0;
         b[6] = 0.0;
 
-        bh[0] = 71.0 / 57600.0;
-        bh[1] = 0.0;
-        bh[2] = -71.0 / 16695.0;
-        bh[3] = 71.0 / 1920.0;
-        bh[4] = -17253.0 / 339200.0;
-        bh[5] = 22.0 / 525.0;
-        bh[6] = 1.0 / 40.0;
+        er[0] = 71.0 / 57600.0;
+        er[1] = 0.0;
+        er[2] = -71.0 / 16695.0;
+        er[3] = 71.0 / 1920.0;
+        er[4] = -17253.0 / 339200.0;
+        er[5] = 22.0 / 525.0;
+        er[6] = 1.0 / 40.0;
 
         bi4[0][0] = -12715105075.0 / 11282082432.0;
         bi4[0][1] = 0.0;
@@ -106,15 +106,16 @@ impl<T: Real> ButcherTableau<T, 7> {
         let c = c.map(|x| T::from_f64(x).unwrap());
         let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
         let b = b.map(|x| T::from_f64(x).unwrap());
-        let bh = bh.map(|x| T::from_f64(x).unwrap());
+        let er = er.map(|x| T::from_f64(x).unwrap());
         let bi4 = bi4.map(|row| row.map(|x| T::from_f64(x).unwrap()));
 
         ButcherTableau {
             c,
             a,
             b,
-            bh: Some(bh),
+            bh: None,
             bi: Some(bi4),
+            er: Some(er),
         }
     }
 }
@@ -160,6 +161,7 @@ impl<T: Real> ButcherTableau<T, 12, 16> {
         let mut b = [0.0; 12];
         let mut bh = [0.0; 12];
         let mut bi7 = [[0.0; 16]; 16];
+        let mut er = [0.0; 12];
 
         c[0] = 0.0;
         c[1] = 5.260_015_195_876_773E-2;
@@ -264,14 +266,18 @@ impl<T: Real> ButcherTableau<T, 12, 16> {
         b[10] = 2.013_654_008_040_303_4E-1;
         b[11] = 4.471_061_572_777_259E-2;
 
-        bh[0] = 1.312_004_499_419_488E-2;
-        bh[5] = -1.225_156_446_376_204_4;
-        bh[6] = -4.957_589_496_572_502E-1;
-        bh[7] = 1.664_377_182_454_986_4;
-        bh[8] = -3.503_288_487_499_736_6E-1;
-        bh[9] = 3.341_791_187_130_175E-1;
-        bh[10] = 8.192_320_648_511_571E-2;
-        bh[11] = -2.235_530_786_388_629_4E-2;
+        bh[0] = 2.440_944_881_889_764E-1;
+        bh[8] = 7.338_466_882_816_118E-1;
+        bh[11] = 2.205_882_352_941_176_6E-2;
+
+        er[0] = 1.312_004_499_419_488E-2;
+        er[5] = -1.225_156_446_376_204_4;
+        er[6] = -4.957_589_496_572_502E-1;
+        er[7] = 1.664_377_182_454_986_4;
+        er[8] = -3.503_288_487_499_736_6E-1;
+        er[9] = 3.341_791_187_130_175E-1;
+        er[10] = 8.192_320_648_511_571E-2;
+        er[11] = -2.235_530_786_388_629_4E-2;
 
         c[12] = 0.1E+00;
 
@@ -362,6 +368,7 @@ impl<T: Real> ButcherTableau<T, 12, 16> {
         let b = b.map(|x| T::from_f64(x).unwrap());
         let bh = bh.map(|x| T::from_f64(x).unwrap());
         let bi7 = bi7.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let er = er.map(|x| T::from_f64(x).unwrap());
 
         ButcherTableau {
             c,
@@ -369,6 +376,7 @@ impl<T: Real> ButcherTableau<T, 12, 16> {
             b,
             bh: Some(bh),
             bi: Some(bi7),
+            er: Some(er),
         }
     }
 }

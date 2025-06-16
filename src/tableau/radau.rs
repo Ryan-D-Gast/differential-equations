@@ -60,6 +60,7 @@ impl<T: Real> ButcherTableau<T, 2> {
             b,
             bh: None,
             bi: None,
+            er: None,
         }
     }
 }
@@ -149,6 +150,7 @@ impl<T: Real> ButcherTableau<T, 3> {
             b,
             bh: None,
             bi: None,
+            er: None,
         }
     }
 }

@@ -110,6 +110,7 @@ impl<T: Real> ButcherTableau<T, 4> {
             bh: Some(bh),
             bi: None,
             //bi: Some(bi),
+            er: None,
         }
     }
 }

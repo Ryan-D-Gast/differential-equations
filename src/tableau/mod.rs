@@ -30,6 +30,8 @@ mod radau;
 /// - `a`: Runge-Kutta matrix coefficients (coupling between stages).
 /// - `b`: Weight coefficients for the primary method's final stage.
 /// - `bh`: Weight coefficients for the embedded method (used for error estimation).
+/// - `bi`: Weight coefficients for the interpolation method (used for dense output).
+/// - `er`: Error estimation coefficients (optional, not all adaptive methods have these).
 ///   
 ///   These allow approximation at any point within the integration step.
 /// 
@@ -39,6 +41,7 @@ pub struct ButcherTableau<T: Real, const S: usize, const I: usize = S> {
     pub b: [T; S],
     pub bh: Option<[T; S]>,
     pub bi: Option<[[T; I]; I]>,
+    pub er: Option<[T; S]>,
 }
 
 impl<T: Real, const S: usize, const I: usize> ButcherTableau<T, S, I> {
