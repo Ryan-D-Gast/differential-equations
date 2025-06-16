@@ -156,7 +156,7 @@ impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for DOP8
             self.h0 = h_init(
                 ode, t0, tf, y0, 8, self.rtol, self.atol, self.h_min, self.h_max,
             );
-            evals.fcn += 1; // Increment function evaluations for initial step size calculation
+            evals.fcn += 2; // Increment function evaluations for initial step size calculation
 
             // Adjust h0 to be within bounds
             let posneg = (tf - t0).signum();
