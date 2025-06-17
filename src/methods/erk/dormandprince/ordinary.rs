@@ -81,11 +81,12 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Compute stages
         let mut y_stage = V::zeros();
         for i in 1..self.stages {
-            y_stage = self.y;
+            y_stage = V::zeros();
 
             for j in 0..i {
-                y_stage += self.k[j] * (self.a[i][j] * self.h);
+                y_stage += self.k[j] * self.a[i][j];
             }
+            y_stage = self.y + y_stage * self.h;
 
             ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);        
         }
@@ -162,7 +163,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             if self.steps % n_stiff_threshold == 0 {
                 let mut stdnum = T::zero();
                 let mut stden = T::zero();
-                let sqr = yseg - self.k[2];
+                let sqr = yseg - self.k[S-1];
                 for i in 0..sqr.len() {
                     stdnum += sqr.get(i).powi(2);
                 }
@@ -200,7 +201,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             self.cont[0] = self.y;
             let ydiff = y_new - self.y;
             self.cont[1] = ydiff;
-            let bspl = self.dydt_prev * self.h - ydiff;
+            let bspl = self.k[0] * self.h - ydiff;
             self.cont[2] = bspl;
             self.cont[3] = ydiff - self.dydt * self.h - bspl;
 
@@ -211,13 +212,14 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                     // First dense output coefficient, k{i=order+1}, is the derivative at the new point
                     self.k[self.stages] = self.dydt;
 
-                    for i in 1..(I - S) {
-                        let mut y_stage = self.y;
-                        for j in 0..self.stages + i {
-                            y_stage += self.k[j] * (self.a[self.stages + i][j] * self.h);
+                    for i in S+1..I {
+                        let mut y_stage = V::zeros();
+                        for j in 0..i {
+                            y_stage += self.k[j] * self.a[i][j];
                         }
+                        y_stage = self.y + y_stage * self.h;
 
-                        ode.diff(self.t + self.c[self.stages + i] * self.h, &y_stage, &mut self.k[self.stages + i]);
+                        ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
                         evals.fcn += 1;
                     }
                 }
@@ -226,7 +228,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 for i in 4..self.order {
                     self.cont[i] = V::zeros();
                     for j in 0..self.dense_stages {
-                        self.cont[i] += self.k[j] * bi[i-4][j];
+                        self.cont[i] += self.k[j] * bi[i][j];
                     }
                     self.cont[i] = self.cont[i] * self.h;
                 }
@@ -236,12 +238,12 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             self.t_prev = self.t;
             self.y_prev = self.y;
             self.dydt_prev = self.k[0];
-            self.k[0] = self.dydt;
             self.h_prev = self.h;
 
             // Update the state with new values
             self.t = t_new;
             self.y = y_new;
+            self.k[0] = self.dydt;
 
             // Check if previous step is rejected
             if let Status::RejectedStep = self.status {
@@ -278,47 +280,40 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 t_prev: self.t_prev,
                 t_curr: self.t,
             });
-        }
- 
+        }        
+        
         // Evaluate the interpolation polynomial at the requested time
         let s = (t_interp - self.t_prev) / self.h_prev;
         let s1 = T::one() - s;
+        // Single loop implementation of: cont[0] + (cont[1] + (cont[2] + (cont[3] + conpar*s1)*s)*s1)*s
+        
+        let mut y_interp = self.cont[0];
+        
+        // Build the entire nested polynomial in one loop using Horner's method
+        let mut poly = self.cont[O - 1];
+        
+        // Work backwards from the highest coefficient to cont[1]
+        for i in (1..O - 1).rev() {
+            // Determine the multiplication factor based on the nesting pattern
+            let factor = if i >= 4 {
+                // For the higher-order part (conpar), alternate s and s1
+                if (O - 1 - i) % 2 == 1 { s1 } else { s }
+            } else {
+                // For the main polynomial part, follow the specific pattern
+                match i {
+                    3 => s1,  // cont[3] gets multiplied by s1
+                    2 => s,   // cont[2] gets multiplied by s  
+                    1 => s1,  // cont[1] gets multiplied by s1
+                    _ => s    // fallback
+                }
+            };
+            
+            poly = poly * factor + self.cont[i];
+        }
+        
+        // Final multiplication by s for the outermost level
+        y_interp = y_interp + poly * s;
 
-        // Compute the interpolated value using nested polynomial evaluation
-        let conpar = self.cont[4] + (self.cont[5] + (self.cont[6] + self.cont[7] * s) * s1) * s;
-
-        let y_interp = self.cont[0]
-            + (self.cont[1] + (self.cont[2] + (self.cont[3] + conpar * s1) * s) * s1) * s;
-
-        Ok(y_interp)       
+        Ok(y_interp)
     }
-//
-//        // Evaluate the interpolation polynomial at the requested time
-//        let s = (t_interp - self.t_prev) / self.h_prev;
-//        let s1 = T::one() - s;        // Use generic dense output formula with nested polynomial evaluation
-//        let mut y_interp = self.cont[0];
-//        
-//        // Build the nested polynomial from the inside out using a single loop
-//        if O > 1 {
-//            let mut poly = V::zeros();
-//            
-//            // Start from the innermost term and work outward
-//            for i in (1..O).rev() {
-//                if i == O - 1 {
-//                    // Innermost term - multiply by s1 for odd indices, s for even indices
-//                    poly = self.cont[i] * if i % 2 == 1 { s1 } else { s };
-//                } else {
-//                    // Add current coefficient and multiply appropriately
-//                    poly = poly + self.cont[i];
-//                    // Even indices multiply by s, odd indices multiply by s1
-//                    poly = poly * if i % 2 == 0 { s } else { s1 };
-//                }
-//            }
-//            
-//            // Final multiplication by s for the outermost term
-//            y_interp = y_interp + poly * s;
-//        }
-//
-//        Ok(y_interp)
-//    }
 }

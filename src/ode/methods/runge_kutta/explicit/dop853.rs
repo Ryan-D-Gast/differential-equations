@@ -214,6 +214,8 @@ impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for DOP8
             });
         }
 
+        self.steps += 1;
+
         // The twelve stages
         ode.diff(
             self.t + self.c[1] * self.h,
