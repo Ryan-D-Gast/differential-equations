@@ -109,48 +109,37 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Number of function evaluations
         evals.fcn += self.stages - 1; // We already have k[0]
 
-        // Error Estimation
-        let mut err = T::zero();
-        let mut err2 = T::zero();
+        // Error estimation
         let er = self.er.unwrap();
         let n = self.y.len();
+        let mut err = T::zero();
+        let mut err2 = T::zero();
+        let mut erri;
         for i in 0..n {
+            // Calculate the error scale
             let sk = self.atol + self.rtol * self.y.get(i).abs().max(y_new.get(i).abs());
+
+            // Primary error term
+            erri = T::zero();
+            for j in 0..self.stages {
+                erri += er[j] * self.k[j].get(i);
+            }
+            err += (erri / sk).powi(2);
+
+            // Optional secondary error term
             if let Some(bh) = &self.bh {
-                let mut erri = yseg.get(i);
+                erri = yseg.get(i);
                 for j in 0..self.stages {
                     erri -= bh[j] * self.k[j].get(i);
                 }
                 err2 += (erri / sk).powi(2);
             }
-            let mut erri = T::zero();
-            for j in 0..self.stages {
-                erri += er[j] * self.k[j].get(i);
-            }
-            err += (erri / sk).powi(2);
         }
         let mut deno = err + T::from_f64(0.01).unwrap() * err2;
         if deno <= T::zero() {
             deno = T::one();
         }
         err = self.h.abs() * err * (T::one() / (deno * T::from_usize(n).unwrap())).sqrt();
-
-        // Step size settings
-        let beta =  T::from_f64(0.0).unwrap();
-        let expo1 = T::from_f64(1.0 / 8.0).unwrap();
-        let facc1 = T::from_f64(1.0 / 0.33).unwrap();
-        let facc2 = T::from_f64(1.0 / 6.0).unwrap();
-        let facold = T::from_f64(1.0e-4).unwrap();
-        // Computation of h_new
-        let fac11 = err.powf(expo1);
-        // Requirement that fac1 <= h_new/h <= fac2
-        let fac = facc2.max(
-            facc1.min(
-                // Lund-stabilization
-                (fac11 / facold.powf(beta)) / self.safety_factor
-            )
-        );
-        let mut h_new = self.h / fac;
 
         // Determine if step is accepted
         if err <= T::one() {
@@ -247,17 +236,24 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
             // Check if previous step is rejected
             if let Status::RejectedStep = self.status {
-                h_new = self.h.min(h_new);
                 self.status = Status::Solving;
             }
         } else {
             // Step Rejected
-            h_new = self.h / facc1.min(fac11 / self.safety_factor);
             self.status = Status::RejectedStep;
         }
 
-        // Ensure step size is within bounds of h_min and h_max
-        self.h = constrain_step_size(h_new, self.h_min, self.h_max);
+        // Calculate new step size for adaptive methods
+        let order = T::from_usize(self.order).unwrap();
+        let err_order = T::one() / order;
+
+        // Step size controller
+        let scale = self.safety_factor * err.powf(-err_order);
+        let scale = scale.max(self.min_scale).min(self.max_scale);
+        self.h *= scale;
+
+        // Ensure step size is within bounds
+        self.h = constrain_step_size(self.h, self.h_min, self.h_max);
         
         Ok(evals)
     }

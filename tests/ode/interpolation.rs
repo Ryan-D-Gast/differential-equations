@@ -8,7 +8,6 @@ use differential_equations::{
         methods::{
             adams::{APCF4, APCV4},
             runge_kutta::{
-                explicit::{DOP853, DOPRI5},
                 implicit::{CrankNicolson, GaussLegendre6, Radau5},
             },
         }
@@ -67,8 +66,8 @@ fn interpolation() {
     test_interpolation! {
         tolerance: 1e-3,
         // This method uses a internal high order interpolation method
-        solver_name: DOP853, solver: DOP853::new(),
-        solver_name: DOPRI5, solver: DOPRI5::new(),
+        solver_name: DOP853, solver: ExplicitRungeKutta::dop853(),
+        solver_name: DOPRI5, solver: ExplicitRungeKutta::dopri5(),
         solver_name: RKV65, solver: ExplicitRungeKutta::rkv655e(),
         solver_name: RKV87, solver: ExplicitRungeKutta::rkv877e(),
         solver_name: RKV98, solver: ExplicitRungeKutta::rkv988e(),

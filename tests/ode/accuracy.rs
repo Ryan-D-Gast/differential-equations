@@ -8,7 +8,6 @@ use differential_equations::{
         methods::{
             adams::{APCF4, APCV4},
             runge_kutta::{
-                explicit::{DOP853, DOPRI5},
                 implicit::{CrankNicolson, GaussLegendre4, GaussLegendre6, Radau5},
             },
         }
@@ -75,11 +74,11 @@ fn accuracy() {
         expected_result: vector![22026.46579479],
 
         solver_name: DOP853,
-        solver: DOP853::new().rtol(1e-12).atol(1e-12),
+        solver: ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12),
         tolerance: 1e-3,
 
         solver_name: DOPRI5,
-        solver: DOPRI5::new(),
+        solver: ExplicitRungeKutta::dopri5(),
         tolerance: 1e1,
 
         solver_name: RKF45,
@@ -180,11 +179,11 @@ fn accuracy() {
         // Explicit methods
 
         solver_name: DOP853,
-        solver: DOP853::new().rtol(1e-12).atol(1e-12),
+        solver: ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12),
         tolerance: 1e-3,
 
         solver_name: DOPRI5,
-        solver: DOPRI5::new(),
+        solver: ExplicitRungeKutta::dopri5(),
         tolerance: 1e-2,
 
         solver_name: RKF45,
@@ -285,11 +284,11 @@ fn accuracy() {
         // Explicit methods
 
         solver_name: DOP853,
-        solver: DOP853::new().rtol(1e-12).atol(1e-12),
+        solver: ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12),
         tolerance: 1e-3,
 
         solver_name: DOPRI5,
-        solver: DOPRI5::new(),
+        solver: ExplicitRungeKutta::dopri5(),
         tolerance: 1e1,
 
         solver_name: RKF45,
@@ -390,11 +389,11 @@ fn accuracy() {
         // Explicit methods
 
         solver_name: DOP853,
-        solver: DOP853::new().rtol(1e-12).atol(1e-12),
+        solver: ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12),
         tolerance: 1e-3,
 
         solver_name: DOPRI5,
-        solver: DOPRI5::new(),
+        solver: ExplicitRungeKutta::dopri5(),
         tolerance: 1e-2,
 
         solver_name: RKF45,
@@ -495,11 +494,11 @@ fn accuracy() {
         // Explicit methods
 
         solver_name: DOP853,
-        solver: DOP853::new().rtol(1e-12).atol(1e-12),
+        solver: ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12),
         tolerance: 1e-3,
 
         solver_name: DOPRI5,
-        solver: DOPRI5::new(),
+        solver: ExplicitRungeKutta::dopri5(),
         tolerance: 1e-3,
 
         solver_name: RKF45,

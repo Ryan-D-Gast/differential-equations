@@ -50,7 +50,7 @@ impl Real for f64 {
 /// * `Complex` - Complex number type from num-complex
 /// * `Struct<T>` - Any struct with all fields of type T using #[derive(State)] from the `derive` module
 ///
-pub trait State<T>:
+pub trait State<T: Real>:
     Clone
     + Copy
     + Debug
