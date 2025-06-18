@@ -38,10 +38,11 @@ macro_rules! impl_erk_adaptive_step_constructor {
 }
 
 // Adaptive step methods (embedded error estimation, cubic Hermite interpolation)
+impl_erk_adaptive_step_constructor!(bs23, 3, 4, 4, "Creates a Bogacki-Shampine 2(3) method with error estimation.");
 impl_erk_adaptive_step_constructor!(rkf45, 5, 6, 6, "Creates a Runge-Kutta-Fehlberg 4(5) method with error estimation.");
 impl_erk_adaptive_step_constructor!(cash_karp, 5, 6, 6, "Creates a Cash-Karp 4(5) method with error estimation.");
-impl_erk_adaptive_step_constructor!(rkv655e, 6, 9, 10, "Creates a Verner's 6(5) method with dense output of order 5.");
-impl_erk_adaptive_step_constructor!(rkv656e, 6, 9, 12, "Creates a Verner's 6(5) method with dense output of order 6.");
+impl_erk_adaptive_step_constructor!(rkv655e, 6, 9, 10, "Creates a ExplictRungeKutta 6(5) method with 9 stages and a 5th order interpolant.");
+impl_erk_adaptive_step_constructor!(rkv656e, 6, 9, 12, "Creates a ExplictRungeKutta 6(5) method with 9 stages and a 6th order interpolant.");
 impl_erk_adaptive_step_constructor!(rkv766e, 7, 10, 13, "Creates a ExplicitRungeKutta 7(6) method with 10 stages and a 6th order interpolant.");
 impl_erk_adaptive_step_constructor!(rkv767e, 7, 10, 16, "Creates a ExplicitRungeKutta 7(6) method with 10 stages and a 7th order interpolant.");
 impl_erk_adaptive_step_constructor!(rkv877e, 8, 13, 17, "Creates a ExplicitRungeKutta 8(7) method with 13 stages and a 7th order interpolant.");
