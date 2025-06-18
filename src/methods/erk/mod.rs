@@ -133,7 +133,7 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
             non_stiffness_counter: 0,
             steps: 0,
             status: Status::Uninitialized,
-            order: 0,
+            order: O,
             stages: S,
             dense_stages: I,
             family: PhantomData,

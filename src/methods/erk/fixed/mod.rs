@@ -17,7 +17,6 @@ macro_rules! impl_erk_fixed_step_constructor {
         impl<E, T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<E, Fixed, T, V, D, $order_val, $s_val, $s_val> {
             #[doc = $doc]
             pub fn $method_name(h0: T) -> Self {
-                let order = $order_val;
                 let tableau = ButcherTableau::$method_name();
                 let c = tableau.c;
                 let a = tableau.a;
@@ -28,7 +27,6 @@ macro_rules! impl_erk_fixed_step_constructor {
                     c,
                     a,
                     b,
-                    order,
                     ..Default::default()
                 }
             }

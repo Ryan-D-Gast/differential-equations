@@ -17,7 +17,6 @@ macro_rules! impl_erk_dormand_prince_constructor {
         impl<E, T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<E, DormandPrince, T, V, D, $order_val, $s_val, $m_val> {
             #[doc = $doc]
             pub fn $method_name() -> Self {
-                let order = $order_val;
                 let tableau = ButcherTableau::<T, $s_val, $m_val>::$method_name();
                 let c = tableau.c;
                 let a = tableau.a;
@@ -33,7 +32,6 @@ macro_rules! impl_erk_dormand_prince_constructor {
                     bh,
                     er,
                     bi,
-                    order,
                     ..Default::default()
                 }
             }

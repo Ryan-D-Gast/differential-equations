@@ -40,12 +40,11 @@ impl<T: Real> ButcherTableau<T, 4> {
     /// # References
     /// - Bogacki, P., & Shampine, L. F. (1989). "A 3(2) pair of Runge-Kutta formulas". *Applied Mathematics Letters*, 2(4), 321-325.
     /// - Shampine, L. F. (1994). *Numerical solution of ordinary differential equations*. Chapman & Hall. (Discusses the interpolant)
-    pub fn bogacki_shampine() -> Self {
+    pub fn bs23() -> Self {
         let mut c = [0.0; 4];
         let mut a = [[0.0; 4]; 4];
         let mut b = [0.0; 4];
         let mut bh = [0.0; 4];
-        // let mut bi = [[0.0; 4]; 4];
 
         c[0] = 0.0;
         c[1] = 1.0 / 2.0;
@@ -68,48 +67,17 @@ impl<T: Real> ButcherTableau<T, 4> {
         bh[2] = 1.0 / 3.0;
         bh[3] = 1.0 / 8.0;
 
-        /* THIS NEEDS REVIEWED
-        // bi matrix (interpolation coefficients)
-        // Interpolant: y_n + h * [ (bi[0][0]θ + bi[1][0]θ^2 + bi[2][0]θ^3)k_0 +
-        //                          (bi[0][1]θ + bi[1][1]θ^2 + bi[2][1]θ^3)k_1 +
-        //                          (bi[0][2]θ + bi[1][2]θ^2 + bi[2][2]θ^3)k_2 ]
-        // (k_0, k_1, k_2 are the first three stage derivatives. k_3 is not used by this interpolant)
-
-        // Coefficients for k_0 (1st stage derivative)
-        bi[0][0] = 1.0;          // θ^1
-        bi[1][0] = -3.0 / 2.0;   // θ^2
-        bi[2][0] = 2.0 / 3.0;    // θ^3
-        // bi[3][0] = 0.0;       // θ^4 (not used for cubic)
-
-        // Coefficients for k_1 (2nd stage derivative)
-        // bi[0][1] = 0.0;       // θ^1
-        bi[1][1] = 2.0;          // θ^2
-        bi[2][1] = -4.0 / 3.0;   // θ^3
-        // bi[3][1] = 0.0;       // θ^4
-
-        // Coefficients for k_2 (3rd stage derivative)
-        // bi[0][2] = 0.0;       // θ^1
-        bi[1][2] = -1.0 / 2.0;   // θ^2
-        bi[2][2] = 2.0 / 3.0;    // θ^3
-        // bi[3][2] = 0.0;       // θ^4
-        
-        // Coefficients for k_3 (4th stage derivative) are all zero as it's not used in the interpolant.
-        // bi[j][3] = 0.0 for j=0..3
-        */
-
         let c = c.map(|x| T::from_f64(x).unwrap());
         let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
         let b = b.map(|x| T::from_f64(x).unwrap());
         let bh = bh.map(|x| T::from_f64(x).unwrap());
-        // let bi = bi.map(|row| row.map(|x| T::from_f64(x).unwrap()));
 
         Self {
             c,
             a,
             b,
-            bh: Some(bh),
             bi: None,
-            //bi: Some(bi),
+            bh: Some(bh),
             er: None,
         }
     }
