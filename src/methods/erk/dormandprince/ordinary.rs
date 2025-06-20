@@ -269,7 +269,8 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 }
 
 impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> Interpolation<T, V> for ExplicitRungeKutta<Ordinary, DormandPrince, T, V, D, O, S, I> {
-    fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {        // Check if interpolation is out of bounds
+    fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {        
+        // Check if interpolation is out of bounds
         if t_interp < self.t_prev || t_interp > self.t {
             return Err(Error::OutOfBounds {
                 t_interp,
@@ -280,35 +281,23 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         
         // Evaluate the interpolation polynomial at the requested time
         let s = (t_interp - self.t_prev) / self.h_prev;
-        let s1 = T::one() - s;
-        // Single loop implementation of: cont[0] + (cont[1] + (cont[2] + (cont[3] + conpar*s1)*s)*s1)*s
+        let s1 = T::one() - s;        
         
-        let mut y_interp = self.cont[0];
-        
-        // Build the entire nested polynomial in one loop using Horner's method
-        let mut poly = self.cont[O - 1];
-        
-        // Work backwards from the highest coefficient to cont[1]
-        for i in (1..O - 1).rev() {
-            // Determine the multiplication factor based on the nesting pattern
+        // Functional implementation of: cont[0] + (cont[1] + (cont[2] + (cont[3] + conpar*s1)*s)*s1)*s
+        let ilast = self.cont.len() - 1;
+        let poly = (1..ilast).rev().fold(self.cont[ilast], |acc, i| {            
             let factor = if i >= 4 {
-                // For the higher-order part (conpar), alternate s and s1
-                if (O - 1 - i) % 2 == 1 { s1 } else { s }
+                // For the higher-order part (conpar), alternate s and s1 based on index parity
+                if (ilast - i) % 2 == 1 { s1 } else { s }
             } else {
-                // For the main polynomial part, follow the specific pattern
-                match i {
-                    3 => s1,  // cont[3] gets multiplied by s1
-                    2 => s,   // cont[2] gets multiplied by s  
-                    1 => s1,  // cont[1] gets multiplied by s1
-                    _ => s    // fallback
-                }
+                // For the main polynomial part, pattern is [s1, s, s1] for indices [3, 2, 1]
+                if i % 2 == 1 { s1 } else { s }
             };
-            
-            poly = poly * factor + self.cont[i];
-        }
+            acc * factor + self.cont[i]
+        });
         
         // Final multiplication by s for the outermost level
-        y_interp = y_interp + poly * s;
+        let y_interp = self.cont[0] + poly * s;
 
         Ok(y_interp)
     }
