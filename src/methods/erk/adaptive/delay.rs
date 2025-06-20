@@ -22,9 +22,9 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         // Initialize solver state
         self.t0 = t0;
         self.t = t0;
-        self.y = y0.clone();
-        self.t_prev = t0;
-        self.y_prev = y0.clone();
+        self.y = *y0;
+        self.t_prev = self.t;
+        self.y_prev = self.y;
         self.status = Status::Initialized;
         self.steps = 0;
         self.stiffness_counter = 0;
@@ -61,7 +61,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         dde.diff(self.t, &self.y, &yd, &mut self.dydt);
         evals.fcn += 1;
         self.dydt_prev = self.dydt;        // Store initial state in history
-        self.history.push_back((self.t, self.y.clone(), self.dydt.clone()));
+        self.history.push_back((self.t, self.y, self.dydt));
 
         // Calculate initial step size h0 if not provided
         if self.h0 == T::zero() {
@@ -160,7 +160,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                     y_low += self.k[i] * (bh_coeffs[i] * self.h);
                 }
             }
-            let err_vec: V = y_high - y_low.clone(); // Error vector
+            let err_vec: V = y_high - y_low; // Error vector
 
             // Calculate error norm (||err||)
             err_norm = T::zero();

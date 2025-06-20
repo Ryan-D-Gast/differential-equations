@@ -35,8 +35,8 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // Initialize State
         self.t = t0;
-        self.y = y0.clone();
-        ode.diff(t0, y0, &mut self.k[0]);
+        self.y = *y0;
+        ode.diff(self.t, &self.y, &mut self.k[0]);
         self.dydt = self.k[0];
         evals.fcn += 1;
 

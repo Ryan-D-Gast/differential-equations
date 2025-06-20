@@ -37,8 +37,8 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // Initialize State
         self.t = t0;
-        self.y = y0.clone();
-        ode.diff(t0, y0, &mut self.dydt);
+        self.y = *y0;
+        ode.diff(self.t, &self.y, &mut self.dydt);
         evals.fcn += 1;
 
         // Initialize previous state
@@ -80,11 +80,11 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         self.steps += 1;
 
         // Save k[0] as the current derivative
-        self.k[0] = self.dydt.clone();
+        self.k[0] = self.dydt;
 
         // Compute stages
         for i in 1..self.stages {
-            let mut y_stage = self.y.clone();
+            let mut y_stage = self.y;
 
             for j in 0..i {
                 y_stage += self.k[j] * (self.a[i][j] * self.h);
