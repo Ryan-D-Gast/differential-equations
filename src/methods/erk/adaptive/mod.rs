@@ -38,7 +38,6 @@ macro_rules! impl_erk_adaptive_step_constructor {
 }
 
 // Adaptive step methods (embedded error estimation, cubic Hermite interpolation)
-impl_erk_adaptive_step_constructor!(bs23, 3, 4, 4, "Creates a Bogacki-Shampine 2(3) method with error estimation.");
 impl_erk_adaptive_step_constructor!(rkf45, 5, 6, 6, "Creates a Runge-Kutta-Fehlberg 4(5) method with error estimation.");
 impl_erk_adaptive_step_constructor!(cash_karp, 5, 6, 6, "Creates a Cash-Karp 4(5) method with error estimation.");
 impl_erk_adaptive_step_constructor!(rkv655e, 6, 9, 10, "Creates a ExplictRungeKutta 6(5) method with 9 stages and a 5th order interpolant.");

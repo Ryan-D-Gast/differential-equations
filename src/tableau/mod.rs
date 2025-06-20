@@ -5,7 +5,6 @@ use crate::traits::Real;
 
 // Explicit Runge-Kutta methods
 mod runge_kutta;
-mod bogacki_shampine;
 mod verner;
 mod dorman_prince;
 
