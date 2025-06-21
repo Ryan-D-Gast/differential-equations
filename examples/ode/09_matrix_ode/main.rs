@@ -45,7 +45,7 @@ impl ODE<f64, SMatrix<f64, 2, 2>> for MatrixODE {
 
 fn main() {
     // Create a method
-    let mut method = DOP853::new().rtol(1e-6).atol(1e-6);
+    let mut method = ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-6);
 
     // Initial condition: rotation matrix at 45 degrees
     let angle = PI / 4.0;

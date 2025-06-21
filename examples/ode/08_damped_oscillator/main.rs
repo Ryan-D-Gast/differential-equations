@@ -38,7 +38,7 @@ impl ODE<f64, SVector<f64, 2>> for DampedOscillator {
 
 fn main() {
     // Initialize the method
-    let mut method = DOPRI5::new().rtol(1e-8).atol(1e-8);
+    let mut method = ExplicitRungeKutta::dopri5().rtol(1e-8).atol(1e-8);
 
     // Define the ode parameters
     let damping = 0.5;
