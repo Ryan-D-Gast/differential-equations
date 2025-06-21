@@ -55,7 +55,8 @@
 pub use crate::{
     // Numerical Methods
     methods::{
-        ExplicitRungeKutta, // Explicit Runge-Kutta methods for ODEs
+        ExplicitRungeKutta, // Explicit Runge-Kutta methods for ODEs, DDEs, and SDEs
+        ImplicitRungeKutta, // Implicit Runge-Kutta methods for ODEs
     },
 
     // Ordinary Differential Equations (ODE) module

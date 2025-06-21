@@ -7,8 +7,8 @@ mod erk;
 pub use erk::ExplicitRungeKutta;
 
 // --- Implicit Runge-Kutta Methods ---
-// mod irk;
-// pub use irk::ImplicitRungeKutta;
+mod irk;
+pub use irk::ImplicitRungeKutta;
 
 // --- Adams-Bashforth Methods ---
 // mod ab;
