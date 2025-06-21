@@ -63,7 +63,7 @@ fn main() {
     let sde = BrownianMotion::new(sigma, seed);
 
     // Create solver
-    let mut solver = EM::new(dt);
+    let mut solver = ExplicitRungeKutta::euler(dt);
 
     println!("Simulating Brownian motion with σ = {}", sigma);
     println!("Time interval: [{}, {}], Step size: {}", t0, tf, dt);
