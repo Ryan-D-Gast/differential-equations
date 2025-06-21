@@ -27,7 +27,7 @@ pub struct Fixed;
 /// Adaptive-step methods
 pub struct Adaptive;
 
-/// Adaptive-step methods by Dormand-Prince
+/// Explicit Adaptive-step methods by Dormand-Prince
 /// 
 /// Note that technically, Dormand-Prince is a specific adaptive method, but we keep it as a separate category 
 /// because the there are optimizations for the primary stages, error estimation, and dense output interpolation
