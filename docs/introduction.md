@@ -18,7 +18,7 @@
 ## Table of Contents
 
 - [Introduction](./introduction.md)
-- [Quick Start](./quick_state.md)
+- [Quick Start](./quick_start.md)
 - [Architecture](./architecture.md)
 - [Defining a Differential Equation](./defining-a-differential-equation.md)
 - [Setting Up a Solver](./setting-up-a-solver.md)
