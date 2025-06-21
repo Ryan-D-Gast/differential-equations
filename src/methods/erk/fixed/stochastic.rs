@@ -129,8 +129,14 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         self.y = y_next;
         
         // Calculate new drift for next step
-        sde.drift(self.t, &self.y, &mut self.dydt);
-        evals.fcn += 1;
+        if self.fsal {
+            // If FSAL (First Same As Last) is enabled, we can reuse the last derivative
+            self.dydt = self.k[S - 1];
+        } else {
+            // Otherwise, compute the new derivative
+            sde.drift(self.t, &self.y, &mut self.dydt);
+            evals.fcn += 1;
+        }
         
         self.status = Status::Solving;        
         Ok(evals)

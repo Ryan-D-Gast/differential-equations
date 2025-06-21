@@ -151,8 +151,16 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             // Update state with the higher-order solution
             self.t += self.h;
             self.y = y_high;
-            ode.diff(self.t, &self.y, &mut self.dydt);
-            evals.fcn += 1;
+
+            // Compute the derivative for the next step
+            if self.fsal {
+                // If FSAL (First Same As Last) is enabled, we can reuse the last derivative
+                self.dydt = self.k[S - 1];
+            } else {
+                // Otherwise, compute the new derivative
+                ode.diff(self.t, &self.y, &mut self.dydt);
+                evals.fcn += 1;
+            }
         } else {
             // Step rejected
             self.status = Status::RejectedStep;

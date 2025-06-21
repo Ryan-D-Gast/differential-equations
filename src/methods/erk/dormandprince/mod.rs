@@ -24,6 +24,7 @@ macro_rules! impl_erk_dormand_prince_constructor {
                 let bh = tableau.bh;
                 let er = tableau.er;
                 let bi = tableau.bi;
+                let fsal = true; // DOP methods are FSAL by definition, also this isn't used in implementation because its assumed but just for consistency
 
                 ExplicitRungeKutta {
                     c,
@@ -32,6 +33,7 @@ macro_rules! impl_erk_dormand_prince_constructor {
                     bh,
                     er,
                     bi,
+                    fsal, 
                     ..Default::default()
                 }
             }

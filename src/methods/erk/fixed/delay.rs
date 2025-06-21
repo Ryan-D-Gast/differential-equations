@@ -205,12 +205,18 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         self.y = y_next_candidate_iter;
         
         // Calculate new derivative for next step
-        if L > 0 {
-            dde.lags(self.t, &self.y, &mut lags);
-            self.lagvals(self.t, &lags, &mut yd, phi);
+        if self.fsal {
+            // If FSAL (First Same As Last) is enabled, we can reuse the last derivative
+            self.dydt = self.k[S - 1];
+        } else {
+            // Otherwise, compute the new derivative
+            if L > 0 {
+                dde.lags(self.t, &self.y, &mut lags);
+                self.lagvals(self.t, &lags, &mut yd, phi);
+            }
+            dde.diff(self.t, &self.y, &yd, &mut self.dydt);
+            evals.fcn += 1;
         }
-        dde.diff(self.t, &self.y, &yd, &mut self.dydt);
-        evals.fcn += 1;
 
         // Compute additional stages for dense output if available
         if self.bi.is_some() {

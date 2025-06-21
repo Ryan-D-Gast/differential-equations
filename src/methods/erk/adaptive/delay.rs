@@ -258,12 +258,19 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
             self.t += self.h;
             self.y = y_next_candidate_iter;
             // Update derivative at the new state (self.t, self.y)
-            if L > 0 {
-                dde.lags(self.t, &self.y, &mut lags);
-                self.lagvals(self.t, &lags, &mut yd, phi);
+            // Compute the derivative for the next step
+            if self.fsal {
+                // If FSAL (First Same As Last) is enabled, we can reuse the last derivative
+                self.dydt = self.k[S - 1];
+            } else {
+                if L > 0 {
+                    dde.lags(self.t, &self.y, &mut lags);
+                    self.lagvals(self.t, &lags, &mut yd, phi);
+                }
+                // Otherwise, compute the new derivative
+                dde.diff(self.t, &self.y, &yd, &mut self.dydt);
+                evals.fcn += 1;
             }
-            dde.diff(self.t, &self.y, &yd, &mut self.dydt); // This is f(t_new, y_new)
-            evals.fcn += 1;
 
             // Update continuous output buffer and remove old entries if max_delay is set
             self.history.push_back((self.t, self.y, self.dydt));

@@ -87,6 +87,7 @@ pub struct ExplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const
     order: usize,
     stages: usize,
     dense_stages: usize,
+    fsal: bool, // First Same As Last (FSAL) property
 
     // Family classification
     family: PhantomData<F>,
@@ -136,6 +137,7 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
             order: O,
             stages: S,
             dense_stages: I,
+            fsal: false,
             family: PhantomData,
             equation: PhantomData,
             history: VecDeque::new(),
