@@ -1,10 +1,10 @@
 //! Runge-Kutta solvers with support for dense output, embedded error estimation, and fixed steps.
 
 mod ordinary;
-//mod delay;
+mod delay;
 
 use super::ExplicitRungeKutta;
-use crate::methods::{DormandPrince, Ordinary};
+use crate::methods::{DormandPrince, Ordinary, Delay};
 
 use crate::{
     traits::{CallBackData, Real, State},

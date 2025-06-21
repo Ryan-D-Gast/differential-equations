@@ -2,8 +2,10 @@
 //! Expected results should be verified against a trusted solver.
 
 use super::systems::MackeyGlass;
-use differential_equations::dde::DDEProblem;
-use differential_equations::dde::methods::{BS23, DOPRI5}; // DDE23 and DDE45 are aliases for these
+use differential_equations::{
+    dde::DDEProblem,
+    methods::ExplicitRungeKutta,
+};
 use nalgebra::vector;
 use std::fs;
 
@@ -81,15 +83,12 @@ fn accuracy() {
 
     // Define initial conditions and time span
     let t0 = 0.0;
-    let tf = 50.0; // Time horizon for the simulation
-    let y0 = vector![0.5]; // Initial state y(0)
+    let tf = 50.0;
+    let y0 = vector![0.5];
 
     // Define the history function: y(t) = 0.5 for t <= 0
     let history_fn = |_t: f64| vector![0.5];
-
-    // IMPORTANT: The expected_result is a placeholder.
-    // Replace with a value obtained from a trusted DDE solver for these parameters.
-    let placeholder_expected_result_at_tf50 = vector![0.6441197095478753];
+    let expected_result = vector![0.6441197095478753];
 
     test_dde! {
         system_name: mackey_glass_default_params,
@@ -98,14 +97,22 @@ fn accuracy() {
         tf: tf,
         y0: y0,
         history: history_fn,
-        expected_result: placeholder_expected_result_at_tf50,
+        expected_result: expected_result,
 
-        solver_name: BS23,
-        solver: BS23::new(),
-        tolerance: 1e-2,
+        solver_name: RK4,
+        solver: ExplicitRungeKutta::rk4(0.1),
+        tolerance: 1e-1,
+
+        solver_name: RKV655,
+        solver: ExplicitRungeKutta::rkv655e(),
+        tolerance: 1e-3,
 
         solver_name: DOPRI5,
-        solver: DOPRI5::new(),
-        tolerance: 1e-2
+        solver: ExplicitRungeKutta::dopri5(),
+        tolerance: 1e-3,
+
+        solver_name: DOP853,
+        solver: ExplicitRungeKutta::dop853(),
+        tolerance: 1e-3
     }
 }

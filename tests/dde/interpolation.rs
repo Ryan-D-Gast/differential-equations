@@ -1,9 +1,9 @@
 //! Suite of test cases for checking the interpolation of DDE solvers.
 
 use super::systems::ExponentialGrowth;
-use differential_equations::dde::{
-    DDEProblem,
-    methods::{BS23, DOPRI5},
+use differential_equations::{
+    dde::DDEProblem,
+    methods::ExplicitRungeKutta,
 };
 use nalgebra::vector;
 
@@ -71,13 +71,11 @@ macro_rules! test_dde_interpolation {
 #[test]
 fn interpolation() {
     test_dde_interpolation! {
-        tolerance: 1e-3, // General tolerance, DDE DOPRI5 uses 5-coeff, BS23 uses 4-coeff (cubic)
+        tolerance: 1e-3,
 
-        // DDE Solvers
-        // BS23 (DDE23) uses 3rd order dense output (cubic hermite interpolation)
-        solver_name: DDE23, solver: BS23::new().rtol(1e-8),
-
-        // DOPRI5 (DDE45) now uses the 5-coefficient dense output from the ODE version
-        solver_name: DDE45, solver: DOPRI5::new()
+        solver_name: RKV4, solver: ExplicitRungeKutta::rk4(0.1),
+        solver_name: RKV655, solver: ExplicitRungeKutta::rkv655e(),
+        solver_name: DDE45, solver: ExplicitRungeKutta::dopri5(),
+        solver_name: DOP853, solver: ExplicitRungeKutta::dop853()
     }
 }
