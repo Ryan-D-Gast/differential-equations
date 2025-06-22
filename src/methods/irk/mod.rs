@@ -1,8 +1,7 @@
 //! Implicit Runge-Kutta (IRK) methods
 
-// TODO: Implement these modules
 mod adaptive;
-// mod fixed;
+mod fixed;
 
 use crate::{
     Status,

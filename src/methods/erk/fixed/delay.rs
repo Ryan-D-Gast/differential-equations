@@ -82,12 +82,6 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
     {
         let mut evals = Evals::new();
 
-        // Validate step size
-        if self.h.abs() < T::default_epsilon() {
-            self.status = Status::Error(Error::StepSize { t: self.t, y: self.y });
-            return Err(Error::StepSize { t: self.t, y: self.y });
-        }
-
         // Check maximum number of steps
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps { t: self.t, y: self.y });

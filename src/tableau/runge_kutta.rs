@@ -5,6 +5,8 @@ use crate::{
     traits::Real,
 };
 
+// -- Explicit Runge-Kutta methods (ERK) --
+
 impl<T: Real> ButcherTableau<T, 4> {
     /// Classic Runge-Kutta 4th order method (RK4).
     ///
@@ -471,6 +473,89 @@ impl<T: Real> ButcherTableau<T, 6> {
             a,
             b,
             bh: Some(bh),
+            bi: None,
+            er: None,
+        }
+    }
+}
+
+// --- Implicit Runge-Kutta methods (IRK) ---
+
+impl<T: Real> ButcherTableau<T, 1> {
+    pub fn backward_euler() -> Self {
+        let mut c = [0.0; 1];
+        let mut a = [[0.0; 1]; 1];
+        let mut b = [0.0; 1];
+
+        c[0] = 1.0;
+        a[0][0] = 1.0;
+        b[0] = 1.0;
+
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let c = c.map(|x| T::from_f64(x).unwrap());
+
+        Self {
+            c,
+            a,
+            b,
+            bh: None,
+            bi: None,
+            er: None,
+        }
+    }
+}
+
+impl<T: Real> ButcherTableau<T, 2> {
+    pub fn trapezoidal() -> Self {
+        let mut c = [0.0; 2];
+        let mut a = [[0.0; 2]; 2];
+        let mut b = [0.0; 2];
+
+        c[0] = 0.0;
+        c[1] = 1.0;
+
+        a[1][0] = 1.0;
+
+        b[0] = 0.5;
+        b[1] = 0.5;
+
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let c = c.map(|x| T::from_f64(x).unwrap());
+
+        Self {
+            c,
+            a,
+            b,
+            bh: None,
+            bi: None,
+            er: None,
+        }
+    }
+
+    pub fn crank_nicolson() -> Self {
+        let mut c = [0.0; 2];
+        let mut a = [[0.0; 2]; 2];
+        let mut b = [0.0; 2];
+
+        c[0] = 0.0;
+        c[1] = 1.0;
+
+        a[1][0] = 1.0;
+
+        b[0] = 0.5;
+        b[1] = 0.5;
+
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let c = c.map(|x| T::from_f64(x).unwrap());
+
+        Self {
+            c,
+            a,
+            b,
+            bh: None,
             bi: None,
             er: None,
         }

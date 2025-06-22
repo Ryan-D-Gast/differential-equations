@@ -233,8 +233,20 @@ where
     while solving {
         // Check if next step overshoots tf
         if (solver.t() + solver.h() - tf) * integration_direction > T::zero() {
+            // New step size to reach tf
+            let h_new = tf - solver.t();
+
+            // If the new step size is extremely small, consider the integration complete
+            if h_new.abs() < T::default_epsilon() * T::from_f64(10.0).unwrap() {
+                // Set the status to complete and finalize the solution
+                solver.set_status(Status::Complete);
+                solution.status = Status::Complete;
+                solution.timer.complete();
+                return Ok(solution);
+            }
+
             // Correct step size to reach tf
-            solver.set_h(tf - solver.t());
+            solver.set_h(h_new);
             solving = false;
         }
 
