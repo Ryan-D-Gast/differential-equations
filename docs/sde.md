@@ -4,35 +4,10 @@ The `sde` module provides tools for solving stochastic differential equations (S
 
 ## Table of Contents
 
-- [Numerical Methods](#numerical-methods)
 - [Defining an SDE](#defining-an-sde)
 - [Solving an SDE Problem](#solving-an-sde-problem)
 - [Examples](#examples)
 - [Notation](#notation)
-
-## Numerical Methods
-
-The module `methods` includes a set of numerical methods for solving SDEs. Each method is implemented as a struct implementing the `SDENumericalMethod` trait.
-
-### Available Solvers
-
-| Solver | Description |
-|--------|-------------|
-| `EM` (Euler-Maruyama) | The simplest SDE solver, extending Euler's method to stochastic equations. Has strong order 0.5. |
-| `Milstein` | Higher-order method that includes an additional correction term for improved accuracy. Has strong order 1.0. |
-| `RKM4` (Runge-Kutta-Maruyama) | Combines RK4 for deterministic part with Euler-Maruyama for stochastic part. Improved accuracy for drift-dominated SDEs. |
-
-## Numerical Method Comparison
-
-### Accuracy and Complexity
-
-| Solver | Strong Order | Computational Complexity | Best For |
-|--------|-------------|--------------------------|----------|
-| EM | 0.5 | Low | Simple systems, quick prototyping |
-| Milstein | 1.0 | Medium | Systems with significant diffusion effects |
-| RKM4 | 0.5 (stochastic), 4.0 (deterministic) | High | Systems with dominant drift terms |
-
-> Note: The "strong order" refers to the rate of convergence of the numerical solution to the exact solution in the mean-square sense. Higher orders provide more accurate solutions with smaller step sizes.
 
 ## Defining an SDE
 
@@ -120,7 +95,7 @@ fn main() {
     let sde = GBM::new(mu, sigma, seed);
     
     // Create solver with fixed step size
-    let mut solver = Milstein::new(0.01);
+    let mut solver = ExplicitRungeKutta::rk4(0.01);
     
     // Create and solve the problem
     let problem = SDEProblem::new(sde, t0, tf, y0);
@@ -142,9 +117,9 @@ For more examples, see the `examples/sde` directory:
 
 | Example | Description |
 |---------|-------------|
-| [Brownian Motion](../../examples/sde/01_brownian_motion/main.rs) | Simulates standard Brownian motion using the Euler-Maruyama method. |
-| [Heston Model](../../examples/sde/02_heston_model/main.rs) | Implements the Heston stochastic volatility model for asset pricing using the Milstein method. |
-| [Ornstein-Uhlenbeck](../../examples/sde/03_ornstein_uhlenbeck/main.rs) | Simulates the Ornstein-Uhlenbeck process using the Runge-Kutta-Maruyama method. |
+| [Brownian Motion](../../examples/sde/01_brownian_motion/main.rs) | Simulates standard Brownian motion. |
+| [Heston Model](../../examples/sde/02_heston_model/main.rs) | Implements the Heston stochastic volatility model for asset pricing. |
+| [Ornstein-Uhlenbeck](../../examples/sde/03_ornstein_uhlenbeck/main.rs) | Simulates the Ornstein-Uhlenbeck process. |
 
 ## Notation
 

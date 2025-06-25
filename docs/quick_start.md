@@ -83,7 +83,7 @@ use nalgebra::{SVector, vector};
 
 fn main() {
     // Choose a numerical method and set tolerances
-    let mut method = DOP853::new()
+    let mut method = ExplicitRungeKutta::dop853()
         .rtol(1e-7) // Set relative tolerance
         .atol(1e-7);// Set absolute tolerance
 

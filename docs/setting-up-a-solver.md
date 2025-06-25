@@ -32,13 +32,13 @@ Here's a quick reference for some of the available solvers:
 Most solvers can be instantiated and configured using a builder pattern:
 
 ```rust
-use differential_equations::ode::methods::dopri5::DOPRI5;
+use differential_equations::methods::ExplicitRungeKutta;
 
 // Create a solver with default settings
-let mut solver = DOPRI5::new();
+let mut solver = ExplicitRungeKutta::dopri5();
 
 // Or, create and configure a solver
-let mut solver = DOPRI5::new()
+let mut solver = ExplicitRungeKutta::dopri5()
     .rtol(1e-6)      // Relative tolerance
     .atol(1e-9)      // Absolute tolerance
     .max_steps(10000); // Maximum number of steps
@@ -53,7 +53,7 @@ Most numerical methods share these common configuration options:
 Tolerances control the accuracy of the adaptive step size mechanism:
 
 ```rust
-let mut solver = DOPRI5::new()
+let mut solver = ExplicitRungeKutta::dopri5()
     .rtol(1e-6)  // Relative tolerance
     .atol(1e-9); // Absolute tolerance
 ```
@@ -64,7 +64,7 @@ let mut solver = DOPRI5::new()
 ### Step Size Control
 
 ```rust
-let mut solver = DOPRI5::new()
+let mut solver = ExplicitRungeKutta::dopri5()
     .h0(0.01)     // Initial step size
     .h_min(1e-6)  // Minimum step size
     .h_max(0.1);  // Maximum step size
@@ -77,7 +77,7 @@ let mut solver = DOPRI5::new()
 ### Other Common Settings
 
 ```rust
-let mut solver = DOPRI5::new()
+let mut solver = ExplicitRungeKutta::dopri5()
     .max_steps(100000)  // Maximum number of steps
     .n_stiff(1000);     // Check for stiffness every n_stiff steps
 ```
@@ -89,7 +89,7 @@ let mut solver = DOPRI5::new()
 Each solver may have additional parameters specific to its algorithm. For example, DOPRI5 has parameters for step size control:
 
 ```rust
-let mut solver = DOPRI5::new()
+let mut solver = ExplicitRungeKutta::dopri5()
     .safe(0.9)  // Safety factor for step size control
     .beta(0.04) // Parameter for step size stabilization
     .fac1(0.2)  // Minimum factor for step size reduction
@@ -118,7 +118,7 @@ let problem = ODEProblem::new(
 );
 
 // Configure solver
-let mut solver = DOPRI5::new().rtol(1e-6).atol(1e-9);
+let mut solver = ExplicitRungeKutta::dopri5().rtol(1e-6).atol(1e-9);
 
 // Solve the problem
 let solution = problem.solve(&mut solver).unwrap();
@@ -185,7 +185,7 @@ impl ODE<f64, Vector2<f64>> for HarmonicOscillator {
 
 fn main() {
     // Create solver with specific settings
-    let mut solver = DOPRI5::new()
+    let mut solver = ExplicitRungeKutta::dopri5()
         .rtol(1e-6)
         .atol(1e-9)
         .max_steps(10000);
