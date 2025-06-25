@@ -2,13 +2,16 @@
 
 use super::systems;
 use differential_equations::{
-    methods::ExplicitRungeKutta,
+    methods::{
+        ExplicitRungeKutta,
+        ImplicitRungeKutta,
+    },
     ode::{
         ODEProblem,
         methods::{
             adams::{APCF4, APCV4},
             runge_kutta::{
-                implicit::{CrankNicolson, GaussLegendre6, Radau5},
+                implicit::Radau5,
             },
         }
     }
@@ -77,9 +80,9 @@ fn interpolation() {
         solver_name: RK4, solver: ExplicitRungeKutta::rk4(0.01),
         solver_name: APCF4, solver: APCF4::new(0.01),
         solver_name: APCV4, solver: APCV4::new().h0(0.01),
-        solver_name: CrankNicolson, solver: CrankNicolson::new(0.01),
-        solver_name: GaussLegendre6, solver: GaussLegendre6::new().h0(0.01),
-        solver_name: Radau5, solver: Radau5::new().h0(0.01)
+        solver_name: CrankNicolson, solver: ImplicitRungeKutta::crank_nicolson(0.01),
+        solver_name: GaussLegendre6, solver: ImplicitRungeKutta::gauss_legendre_6(),
+        solver_name: Radau5, solver: Radau5::new()
     }
 
     test_interpolation! {

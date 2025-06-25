@@ -7,17 +7,23 @@ use crate::{
     interpolate::{Interpolation, cubic_hermite_interpolate},
     ode::{ODENumericalMethod, ODE},
     traits::{CallBackData, Real, State},
+    utils::validate_step_size_parameters,
 };
 use nalgebra::{DMatrix, DVector};
 
 impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> ODENumericalMethod<T, V, D> for ImplicitRungeKutta<Ordinary, Fixed, T, V, D, O, S, I> {
-    fn init<F>(&mut self, ode: &F, t0: T, _tf: T, y0: &V) -> Result<Evals, Error<T, V>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
     {
         let mut evals = Evals::new();        
-        // Set the fixed step size
-        self.h = self.h0;
+
+        // Check bounds
+        match validate_step_size_parameters::<T, V, D>(self.h0, self.h_min, self.h_max, t0, tf) {
+            // Set the fixed step size
+            Ok(h0) => self.h = h0,
+            Err(status) => return Err(status),
+        }
         
         // Initialize Statistics
         self.stiffness_counter = 0;

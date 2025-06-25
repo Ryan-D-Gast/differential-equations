@@ -1,14 +1,17 @@
-//! Suite of test cases for NumericalMethods vs results of SciPy using DOP853 & Tolerences = 1e-12
+//! Suite of test cases for numerical methods vs results of SciPy using DOP853 & Tolerences = 1e-12
 
 use super::systems::{ExponentialGrowth, HarmonicOscillator, LinearEquation, LogisticEquation};
 use differential_equations::{
-    methods::ExplicitRungeKutta,
+    methods::{
+        ExplicitRungeKutta,
+        ImplicitRungeKutta
+    },
     ode::{
         ODEProblem,
         methods::{
             adams::{APCF4, APCV4},
             runge_kutta::{
-                implicit::{CrankNicolson, GaussLegendre4, GaussLegendre6, Radau5},
+                implicit::Radau5,
             },
         }
     }
@@ -152,15 +155,15 @@ fn accuracy() {
         // Implicit methods
 
         solver_name: CrankNicolson,
-        solver: CrankNicolson::new(0.01),
+        solver: ImplicitRungeKutta::crank_nicolson(0.01),
         tolerance: 1e1,
 
         solver_name: GaussLegendre4,
-        solver: GaussLegendre4::new(),
+        solver: ImplicitRungeKutta::gauss_legendre_4(),
         tolerance: 1e-3,
 
         solver_name: GaussLegendre6,
-        solver: GaussLegendre6::new(),
+        solver: ImplicitRungeKutta::gauss_legendre_6(),
         tolerance: 1e-3,
 
         solver_name: Radau5,
@@ -257,15 +260,15 @@ fn accuracy() {
         // Implicit methods
 
         solver_name: CrankNicolson,
-        solver: CrankNicolson::new(-0.01),
+        solver: ImplicitRungeKutta::crank_nicolson(-0.01),
         tolerance: 1e-3,
 
         solver_name: GaussLegendre4,
-        solver: GaussLegendre4::new(),
+        solver: ImplicitRungeKutta::gauss_legendre_4(),
         tolerance: 1e-3,
 
         solver_name: GaussLegendre6,
-        solver: GaussLegendre6::new(),
+        solver: ImplicitRungeKutta::gauss_legendre_6(),
         tolerance: 1e-3,
 
         solver_name: Radau5,
@@ -362,15 +365,15 @@ fn accuracy() {
         // Implicit methods
 
         solver_name: CrankNicolson,
-        solver: CrankNicolson::new(0.01),
+        solver: ImplicitRungeKutta::crank_nicolson(0.01),
         tolerance: 1e3,
 
         solver_name: GaussLegendre4,
-        solver: GaussLegendre4::new(),
+        solver: ImplicitRungeKutta::gauss_legendre_4(),
         tolerance: 1e1,
 
         solver_name: GaussLegendre6,
-        solver: GaussLegendre6::new(),
+        solver: ImplicitRungeKutta::gauss_legendre_6(),
         tolerance: 1e1,
 
         solver_name: Radau5,
@@ -467,15 +470,15 @@ fn accuracy() {
         // Implicit methods
 
         solver_name: CrankNicolson,
-        solver: CrankNicolson::new(0.01),
+        solver: ImplicitRungeKutta::crank_nicolson(0.01),
         tolerance: 1e-3,
 
         solver_name: GaussLegendre4,
-        solver: GaussLegendre4::new(),
+        solver: ImplicitRungeKutta::gauss_legendre_4(),
         tolerance: 1e-3,
 
         solver_name: GaussLegendre6,
-        solver: GaussLegendre6::new(),
+        solver: ImplicitRungeKutta::gauss_legendre_6(),
         tolerance: 1e-3,
 
         solver_name: Radau5,
@@ -572,15 +575,15 @@ fn accuracy() {
         // Implicit methods
 
         solver_name: CrankNicolson,
-        solver: CrankNicolson::new(0.01),
+        solver: ImplicitRungeKutta::crank_nicolson(0.01),
         tolerance: 1e-3,
 
         solver_name: GaussLegendre4,
-        solver: GaussLegendre4::new(),
+        solver: ImplicitRungeKutta::gauss_legendre_4(),
         tolerance: 1e-3,
 
         solver_name: GaussLegendre6,
-        solver: GaussLegendre6::new(),
+        solver: ImplicitRungeKutta::gauss_legendre_6(),
         tolerance: 1e-3,
 
         solver_name: Radau5,

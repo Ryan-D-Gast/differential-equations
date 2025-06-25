@@ -28,7 +28,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         match validate_step_size_parameters::<T, V, D>(self.h0, self.h_min, self.h_max, t0, tf) {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
-        }        
+        }
         
         // Initialize Statistics
         self.stiffness_counter = 0;

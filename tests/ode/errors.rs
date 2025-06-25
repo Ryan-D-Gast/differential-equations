@@ -1,15 +1,15 @@
-//! Suite of test cases for NumericalMethods error handling
+//! Suite of test cases for numerical method error handling
 
 use differential_equations::{
     ControlFlag, Error, Status,
+    methods::{
+        ExplicitRungeKutta,
+        ImplicitRungeKutta
+    },
     ode::{
         ODE, ODEProblem,
         methods::{
             adams::{APCF4, APCV4},
-            runge_kutta::{
-                explicit::{DOP853, DOPRI5, Euler, RK4, RKF, RKV65, RKV98},
-                implicit::{CrankNicolson, GaussLegendre6},
-            },
         },
     },
 };
@@ -125,17 +125,17 @@ fn invalid_time_span() {
         tf: 0.0,
         y0: vector![1.0],
         expected_error: Error::<f64, SVector<f64, 1>>::BadInput { msg: "Invalid input: tf (0.0) cannot be equal to t0 (0.0)".to_string() },
-        solver_name: DOP853, solver: DOP853::new(),
-        solver_name: DOPRI5, solver: DOPRI5::new(),
-        solver_name: RKF, solver: RKF::new().h0(0.1),
-        solver_name: RK4, solver: RK4::new(0.1),
-        solver_name: Euler, solver: Euler::new(0.1),
+        solver_name: DOP853, solver: ExplicitRungeKutta::dop853(),
+        solver_name: DOPRI5, solver: ExplicitRungeKutta::dopri5(),
+        solver_name: RKF, solver: ExplicitRungeKutta::rkf45().h0(0.1),
+        solver_name: RK4, solver: ExplicitRungeKutta::rk4(0.1),
+        solver_name: Euler, solver: ExplicitRungeKutta::euler(0.1),
         solver_name: APCF4, solver: APCF4::new(0.1),
         solver_name: APCV4, solver: APCV4::new().h0(0.1),
-        solver_name: RKV65, solver: RKV65::new().h0(0.1),
-        solver_name: RKV98, solver: RKV98::new().h0(0.1),
-        solver_name: CrankNicolson, solver: CrankNicolson::new(0.1),
-        solver_name: GaussLegendre6, solver: GaussLegendre6::new().h0(0.1)
+        solver_name: RKV65, solver: ExplicitRungeKutta::rkv655e().h0(0.1),
+        solver_name: RKV98, solver: ExplicitRungeKutta::rkv988e().h0(0.1),
+        solver_name: CrankNicolson, solver: ImplicitRungeKutta::crank_nicolson(0.1),
+        solver_name: GaussLegendre6, solver: ImplicitRungeKutta::gauss_legendre_6().h0(0.1)
     }
 }
 
@@ -148,17 +148,17 @@ fn initial_step_size_too_big() {
         tf: 1.0,
         y0: vector![1.0],
         expected_error: Error::<f64, SVector<f64, 1>>::BadInput { msg: "Invalid input: Absolute value of initial step size (10.0) must be less than or equal to the absolute value of the integration interval (tf - t0 = 1.0)".to_string() },
-        solver_name: DOP853, solver: DOP853::new().h0(10.0),
-        solver_name: DOPRI5, solver: DOPRI5::new().h0(10.0),
-        solver_name: RKF, solver: RKF::new().h0(10.0),
-        solver_name: RK4, solver: RK4::new(10.0),
-        solver_name: Euler, solver: Euler::new(10.0),
+        solver_name: DOP853, solver: ExplicitRungeKutta::dop853().h0(10.0),
+        solver_name: DOPRI5, solver: ExplicitRungeKutta::dopri5().h0(10.0),
+        solver_name: RKF, solver: ExplicitRungeKutta::rkf45().h0(10.0),
+        solver_name: RK4, solver: ExplicitRungeKutta::rk4(10.0),
+        solver_name: Euler, solver: ExplicitRungeKutta::euler(10.0),
         solver_name: APCF4, solver: APCF4::new(10.0),
         solver_name: APCV4, solver: APCV4::new().h0(10.0),
-        solver_name: RKV65, solver: RKV65::new().h0(10.0),
-        solver_name: RKV98, solver: RKV98::new().h0(10.0),
-        solver_name: CrankNicolson, solver: CrankNicolson::new(10.0),
-        solver_name: GaussLegendre6, solver: GaussLegendre6::new().h0(10.0)
+        solver_name: RKV65, solver: ExplicitRungeKutta::rkv655e().h0(10.0),
+        solver_name: RKV98, solver: ExplicitRungeKutta::rkv988e().h0(10.0),
+        solver_name: CrankNicolson, solver: ImplicitRungeKutta::crank_nicolson(10.0),
+        solver_name: GaussLegendre6, solver: ImplicitRungeKutta::gauss_legendre_6().h0(10.0)
     }
 }
 
@@ -171,16 +171,16 @@ fn terminate_initial_conditions_trigger() {
         tf: 20.0,
         y0: vector![1.0],
         expected_status: Status::<f64, SVector<f64, 1>, String>::Interrupted("Initial condition trigger".to_string()),
-        solver_name: DOP853, solver: DOP853::new(),
-        solver_name: DOPRI5, solver: DOPRI5::new(),
-        solver_name: RKF, solver: RKF::new().h0(0.1),
-        solver_name: RK4, solver: RK4::new(0.1),
-        solver_name: Euler, solver: Euler::new(0.1),
+        solver_name: DOP853, solver: ExplicitRungeKutta::dop853(),
+        solver_name: DOPRI5, solver: ExplicitRungeKutta::dopri5(),
+        solver_name: RKF, solver: ExplicitRungeKutta::rkf45().h0(0.1),
+        solver_name: RK4, solver: ExplicitRungeKutta::rk4(0.1),
+        solver_name: Euler, solver: ExplicitRungeKutta::euler(0.1),
         solver_name: APCF4, solver: APCF4::new(0.1),
         solver_name: APCV4, solver: APCV4::new().h0(0.1),
-        solver_name: RKV65, solver: RKV65::new().h0(0.1),
-        solver_name: RKV98, solver: RKV98::new().h0(0.1),
-        solver_name: CrankNicolson, solver: CrankNicolson::new(0.1),
-        solver_name: GaussLegendre6, solver: GaussLegendre6::new().h0(0.1)
+        solver_name: RKV65, solver: ExplicitRungeKutta::rkv655e().h0(0.1),
+        solver_name: RKV98, solver: ExplicitRungeKutta::rkv988e().h0(0.1),
+        solver_name: CrankNicolson, solver: ImplicitRungeKutta::crank_nicolson(0.1),
+        solver_name: GaussLegendre6, solver: ImplicitRungeKutta::gauss_legendre_6().h0(0.1)
     }
 }
