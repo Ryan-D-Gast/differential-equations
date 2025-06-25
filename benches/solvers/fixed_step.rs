@@ -3,16 +3,16 @@
 use super::*;
 
 macro_rules! bench_fixed_step {
-    ($name:ident, $solver:ident, $system:expr, $y0:expr, $t0:expr, $t1:expr, $dt:expr) => {
+    ($name:ident, $solver_fn:expr, $solver_name:expr, $system:expr, $y0:expr, $t0:expr, $t1:expr, $dt:expr) => {
         pub fn $name(c: &mut Criterion) {
-            let mut group = c.benchmark_group(stringify!($solver));
+            let mut group = c.benchmark_group($solver_name);
             group.sample_size(10);
             group.bench_with_input(
                 BenchmarkId::new(stringify!($system), "default"),
                 &(),
                 |b, _| {
                     b.iter(|| {
-                        let mut solver = $solver::new($dt);
+                        let mut solver = $solver_fn;
                         let problem = ODEProblem::new($system, $t0, $t1, $y0.clone());
                         black_box(problem.solve(&mut solver).unwrap());
                     });
@@ -26,7 +26,8 @@ macro_rules! bench_fixed_step {
 // Harmonic Oscillator benchmarks
 bench_fixed_step!(
     bench_euler_ho,
-    Euler,
+    ExplicitRungeKutta::euler(0.1),
+    "Euler",
     HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
@@ -35,7 +36,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_midpoint_ho,
-    Midpoint,
+    ExplicitRungeKutta::midpoint(0.1),
+    "Midpoint",
     HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
@@ -44,7 +46,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_heun_ho,
-    Heun,
+    ExplicitRungeKutta::heun(0.1),
+    "Heun",
     HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
@@ -53,7 +56,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_ralston_ho,
-    Ralston,
+    ExplicitRungeKutta::ralston(0.1),
+    "Ralston",
     HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
@@ -62,7 +66,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_rk4_ho,
-    RK4,
+    ExplicitRungeKutta::rk4(0.1),
+    "RK4",
     HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
@@ -71,7 +76,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_three_eights_ho,
-    ThreeEights,
+    ExplicitRungeKutta::three_eighths(0.1),
+    "ThreeEights",
     HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
@@ -80,7 +86,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_apcf4_ho,
-    APCF4,
+    APCF4::new(0.1),
+    "APCF4",
     HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
@@ -91,7 +98,8 @@ bench_fixed_step!(
 // Van der Pol benchmarks
 bench_fixed_step!(
     bench_euler_vdp,
-    Euler,
+    ExplicitRungeKutta::euler(0.01),
+    "Euler",
     VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
@@ -100,7 +108,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_midpoint_vdp,
-    Midpoint,
+    ExplicitRungeKutta::midpoint(0.01),
+    "Midpoint",
     VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
@@ -109,7 +118,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_heun_vdp,
-    Heun,
+    ExplicitRungeKutta::heun(0.01),
+    "Heun",
     VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
@@ -118,7 +128,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_ralston_vdp,
-    Ralston,
+    ExplicitRungeKutta::ralston(0.01),
+    "Ralston",
     VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
@@ -127,7 +138,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_rk4_vdp,
-    RK4,
+    ExplicitRungeKutta::rk4(0.01),
+    "RK4",
     VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
@@ -136,7 +148,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_three_eights_vdp,
-    ThreeEights,
+    ExplicitRungeKutta::three_eighths(0.01),
+    "ThreeEights",
     VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
@@ -145,7 +158,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_apcf4_vdp,
-    APCF4,
+    APCF4::new(0.01),
+    "APCF4",
     VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
@@ -156,7 +170,8 @@ bench_fixed_step!(
 // Lorenz system benchmarks (chaotic)
 bench_fixed_step!(
     bench_euler_lorenz,
-    Euler,
+    ExplicitRungeKutta::euler(0.001),
+    "Euler",
     Lorenz {
         sigma: 10.0,
         rho: 28.0,
@@ -169,7 +184,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_midpoint_lorenz,
-    Midpoint,
+    ExplicitRungeKutta::midpoint(0.001),
+    "Midpoint",
     Lorenz {
         sigma: 10.0,
         rho: 28.0,
@@ -182,7 +198,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_heun_lorenz,
-    Heun,
+    ExplicitRungeKutta::heun(0.001),
+    "Heun",
     Lorenz {
         sigma: 10.0,
         rho: 28.0,
@@ -195,7 +212,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_ralston_lorenz,
-    Ralston,
+    ExplicitRungeKutta::ralston(0.001),
+    "Ralston",
     Lorenz {
         sigma: 10.0,
         rho: 28.0,
@@ -208,7 +226,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_rk4_lorenz,
-    RK4,
+    ExplicitRungeKutta::rk4(0.01),
+    "RK4",
     Lorenz {
         sigma: 10.0,
         rho: 28.0,
@@ -221,7 +240,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_three_eights_lorenz,
-    ThreeEights,
+    ExplicitRungeKutta::three_eighths(0.01),
+    "ThreeEights",
     Lorenz {
         sigma: 10.0,
         rho: 28.0,
@@ -234,7 +254,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_apcf4_lorenz,
-    APCF4,
+    APCF4::new(0.01),
+    "APCF4",
     Lorenz {
         sigma: 10.0,
         rho: 28.0,
@@ -249,7 +270,8 @@ bench_fixed_step!(
 // Exponential system benchmarks (linear)
 bench_fixed_step!(
     bench_euler_exp,
-    Euler,
+    ExplicitRungeKutta::euler(0.1),
+    "Euler",
     Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,
@@ -258,7 +280,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_midpoint_exp,
-    Midpoint,
+    ExplicitRungeKutta::midpoint(0.1),
+    "Midpoint",
     Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,
@@ -267,7 +290,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_heun_exp,
-    Heun,
+    ExplicitRungeKutta::heun(0.1),
+    "Heun",
     Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,
@@ -276,7 +300,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_ralston_exp,
-    Ralston,
+    ExplicitRungeKutta::ralston(0.1),
+    "Ralston",
     Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,
@@ -285,7 +310,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_rk4_exp,
-    RK4,
+    ExplicitRungeKutta::rk4(0.1),
+    "RK4",
     Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,
@@ -294,7 +320,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_three_eights_exp,
-    ThreeEights,
+    ExplicitRungeKutta::three_eighths(0.1),
+    "ThreeEights",
     Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,
@@ -303,7 +330,8 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_apcf4_exp,
-    APCF4,
+    APCF4::new(0.1),
+    "APCF4",
     Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,
@@ -342,8 +370,7 @@ criterion_group!(
     bench_midpoint_exp,
     bench_heun_exp,
     bench_ralston_exp,
-    bench_midpoint_exp,
-    bench_three_eights_exp,
     bench_rk4_exp,
+    bench_three_eights_exp,
     bench_apcf4_exp,
 );

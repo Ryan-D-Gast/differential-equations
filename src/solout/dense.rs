@@ -37,7 +37,7 @@ use super::*;
 /// let t0 = 0.0;
 /// let tf = 10.0;
 /// let y0 = vector![1.0, 0.0];
-/// let mut solver = DOP853::new().rtol(1e-6).atol(1e-8);
+/// let mut solver = ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8);
 ///
 /// // Generate 9 additional points between each solver step (10 total per interval)
 /// let mut dense_output = DenseSolout::new(10);

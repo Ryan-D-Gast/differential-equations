@@ -60,7 +60,7 @@ use crate::{
 /// let t0 = 0.0;
 /// let tf = 1.0;
 /// let y0 = SVector::<f64, 1>::new(100.0);
-/// let mut solver = EM::new(0.01);
+/// let mut solver = ExplicitRungeKutta::three_eighths(0.01);
 /// let gbm = GBM::new(42);
 /// let mut gbm_problem = SDEProblem::new(gbm, t0, tf, y0);
 ///

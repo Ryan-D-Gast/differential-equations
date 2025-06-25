@@ -22,10 +22,9 @@ use std::marker::PhantomData;
 ///
 /// ```
 /// use differential_equations::prelude::*;
-/// use differential_equations::dde::methods::BS23;
 /// use nalgebra::{Vector2, vector};
 ///
-/// let mut bs23 = BS23::new()
+/// let mut rkf45 = ExplicitRungeKutta::rkf45()
 ///    .rtol(1e-6)
 ///    .atol(1e-6);
 ///
@@ -46,7 +45,7 @@ use std::marker::PhantomData;
 ///        lags[0] = 1.0; // Fixed delay of 1.0
 ///     }
 /// }
-/// let solution = DDEProblem::new(Example, t0, tf, y0, phi).solve(&mut bs23).unwrap();
+/// let solution = DDEProblem::new(Example, t0, tf, y0, phi).solve(&mut rkf45).unwrap();
 ///
 /// let (t, y) = solution.last().unwrap();
 /// println!("Solution: ({}, {})", t, y);

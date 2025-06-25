@@ -52,7 +52,7 @@
 //!     let seed = 42;
 //!
 //!     let gbm = GBM::new(mu, sigma, seed);
-//!     let mut solver = EM::new(0.01);
+//!     let mut solver = ExplicitRungeKutta::rk4(0.01);
 //!     let mut problem = SDEProblem::new(gbm, t0, tf, y0);
 //!
 //!     let solution = match problem.solve(&mut solver) {
@@ -80,8 +80,6 @@
 
 mod sde;
 pub use sde::SDE;
-
-pub mod methods;
 
 mod numerical_method;
 pub use numerical_method::SDENumericalMethod;

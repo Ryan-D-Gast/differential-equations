@@ -41,7 +41,7 @@ use super::*;
 /// let t0 = 0.0;
 /// let tf = 10.0;
 /// let y0 = vector![1.0, 0.0];
-/// let mut solver = DOP853::new().rtol(1e-6).atol(1e-8);
+/// let mut solver = ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8);
 ///
 /// // Generate output points with a fixed interval of 0.1
 /// let mut even_output = EvenSolout::new(0.1, t0, tf);

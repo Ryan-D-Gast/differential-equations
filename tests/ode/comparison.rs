@@ -1,10 +1,14 @@
 //! Compares the performance of solvers by the statistics, i.e. number of steps, function evaluations, etc.
 
 use super::systems;
-use differential_equations::ode::ODEProblem;
-use differential_equations::ode::methods::{
-    adams::APCV4,
-    runge_kutta::explicit::{DOP853, DOPRI5, RKF, RKV65, RKV87, RKV98},
+use differential_equations::{
+    methods::ExplicitRungeKutta,
+    ode::{
+        ODEProblem,
+        methods::{
+            adams::APCV4,
+        }
+    },
 };
 use nalgebra::SVector;
 use std::{
@@ -44,7 +48,7 @@ macro_rules! generate_error_vs_steps_lorenz {
             let problem = ODEProblem::new(system, t0, tf, y0);
 
             // Get reference solution with very high accuracy
-            let mut reference_solver = RKV98::new().rtol(1e-14).atol(1e-14);
+            let mut reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
             let reference_sol = problem.solve(&mut reference_solver).unwrap();
             let reference_yf = reference_sol.y.last().unwrap().clone();
 
@@ -112,7 +116,7 @@ macro_rules! generate_error_vs_steps_vanderpol {
             let problem = ODEProblem::new(system, t0, tf, y0);
 
             // Get reference solution with very high accuracy
-            let mut reference_solver = RKV98::new().rtol(1e-14).atol(1e-14);
+            let mut reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
             let reference_sol = problem.solve(&mut reference_solver).unwrap();
             let reference_yf = reference_sol.y.last().unwrap().clone();
 
@@ -181,7 +185,7 @@ macro_rules! generate_error_vs_steps_brusselator {
             let problem = ODEProblem::new(system, t0, tf, y0);
 
             // Get reference solution with very high accuracy
-            let mut reference_solver = RKV98::new().rtol(1e-14).atol(1e-14);
+            let mut reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
             let reference_sol = problem.solve(&mut reference_solver).unwrap();
             let reference_yf = reference_sol.y.last().unwrap().clone();
 
@@ -258,7 +262,7 @@ macro_rules! generate_error_vs_steps_cr3bp {
             let problem = ODEProblem::new(system, t0, tf, y0);
 
             // Get reference solution with very high accuracy
-            let mut reference_solver = RKV98::new().rtol(1e-14).atol(1e-14);
+            let mut reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
             let reference_sol = problem.solve(&mut reference_solver).unwrap();
             let reference_yf = reference_sol.y.last().unwrap().clone();
 
@@ -313,43 +317,43 @@ macro_rules! generate_error_vs_steps_cr3bp {
 #[ignore] // Run via `cargo test --test comparison -- --ignored` to include this test
 fn error_vs_evals() {
     generate_error_vs_steps_lorenz! {
-        DOP853, |tol| DOP853::new().rtol(tol).atol(tol),
-        DOPRI5, |tol| DOPRI5::new().rtol(tol).atol(tol),
-        RKF, |tol| RKF::new().rtol(tol).atol(tol),
+        DOP853, |tol| ExplicitRungeKutta::dop853().rtol(tol).atol(tol),
+        DOPRI5, |tol| ExplicitRungeKutta::dopri5().rtol(tol).atol(tol),
+        RKF, |tol| ExplicitRungeKutta::rkf45().rtol(tol).atol(tol),
         APCV4, |tol| APCV4::new().tol(tol),
-        RKV65, |tol| RKV65::new().rtol(tol).atol(tol),
-        RKV87, |tol| RKV87::new().rtol(tol).atol(tol),
-        RKV98, |tol| RKV98::new().rtol(tol).atol(tol)
+        RKV65, |tol| ExplicitRungeKutta::rkv656e().rtol(tol).atol(tol),
+        RKV87, |tol| ExplicitRungeKutta::rkv877e().rtol(tol).atol(tol),
+        RKV98, |tol| ExplicitRungeKutta::rkv988e().rtol(tol).atol(tol)
     }
 
     generate_error_vs_steps_vanderpol! {
-        DOP853, |tol| DOP853::new().rtol(tol).atol(tol),
-        DOPRI5, |tol| DOPRI5::new().rtol(tol).atol(tol),
-        RKF, |tol| RKF::new().rtol(tol).atol(tol),
+        DOP853, |tol| ExplicitRungeKutta::dop853().rtol(tol).atol(tol),
+        DOPRI5, |tol| ExplicitRungeKutta::dopri5().rtol(tol).atol(tol),
+        RKF, |tol| ExplicitRungeKutta::rkf45().rtol(tol).atol(tol),
         APCV4, |tol| APCV4::new().tol(tol),
-        RKV65, |tol| RKV65::new().rtol(tol).atol(tol),
-        RKV87, |tol| RKV87::new().rtol(tol).atol(tol),
-        RKV98, |tol| RKV98::new().rtol(tol).atol(tol)
+        RKV65, |tol| ExplicitRungeKutta::rkv656e().rtol(tol).atol(tol),
+        RKV87, |tol| ExplicitRungeKutta::rkv877e().rtol(tol).atol(tol),
+        RKV98, |tol| ExplicitRungeKutta::rkv988e().rtol(tol).atol(tol)
     }
 
     generate_error_vs_steps_brusselator! {
-        DOP853, |tol| DOP853::new().rtol(tol).atol(tol),
-        DOPRI5, |tol| DOPRI5::new().rtol(tol).atol(tol),
-        RKF, |tol| RKF::new().rtol(tol).atol(tol),
+        DOP853, |tol| ExplicitRungeKutta::dop853().rtol(tol).atol(tol),
+        DOPRI5, |tol| ExplicitRungeKutta::dopri5().rtol(tol).atol(tol),
+        RKF, |tol| ExplicitRungeKutta::rkf45().rtol(tol).atol(tol),
         APCV4, |tol| APCV4::new().tol(tol),
-        RKV65, |tol| RKV65::new().rtol(tol).atol(tol),
-        RKV87, |tol| RKV87::new().rtol(tol).atol(tol),
-        RKV98, |tol| RKV98::new().rtol(tol).atol(tol)
+        RKV65, |tol| ExplicitRungeKutta::rkv656e().rtol(tol).atol(tol),
+        RKV87, |tol| ExplicitRungeKutta::rkv877e().rtol(tol).atol(tol),
+        RKV98, |tol| ExplicitRungeKutta::rkv988e().rtol(tol).atol(tol)
     }
 
     generate_error_vs_steps_cr3bp! {
-        DOP853, |tol| DOP853::new().rtol(tol).atol(tol),
-        DOPRI5, |tol| DOPRI5::new().rtol(tol).atol(tol),
-        RKF, |tol| RKF::new().rtol(tol).atol(tol),
+        DOP853, |tol| ExplicitRungeKutta::dop853().rtol(tol).atol(tol),
+        DOPRI5, |tol| ExplicitRungeKutta::dopri5().rtol(tol).atol(tol),
+        RKF, |tol| ExplicitRungeKutta::rkf45().rtol(tol).atol(tol),
         APCV4, |tol| APCV4::new().tol(tol),
-        RKV65, |tol| RKV65::new().rtol(tol).atol(tol),
-        RKV87, |tol| RKV87::new().rtol(tol).atol(tol),
-        RKV98, |tol| RKV98::new().rtol(tol).atol(tol)
+        RKV65, |tol| ExplicitRungeKutta::rkv656e().rtol(tol).atol(tol),
+        RKV87, |tol| ExplicitRungeKutta::rkv877e().rtol(tol).atol(tol),
+        RKV98, |tol| ExplicitRungeKutta::rkv988e().rtol(tol).atol(tol)
     }
 
     error_vs_steps_lorenz();

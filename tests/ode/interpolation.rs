@@ -10,9 +10,6 @@ use differential_equations::{
         ODEProblem,
         methods::{
             adams::{APCF4, APCV4},
-            runge_kutta::{
-                implicit::Radau5,
-            },
         }
     }
 };
@@ -81,8 +78,7 @@ fn interpolation() {
         solver_name: APCF4, solver: APCF4::new(0.01),
         solver_name: APCV4, solver: APCV4::new().h0(0.01),
         solver_name: CrankNicolson, solver: ImplicitRungeKutta::crank_nicolson(0.01),
-        solver_name: GaussLegendre6, solver: ImplicitRungeKutta::gauss_legendre_6(),
-        solver_name: Radau5, solver: Radau5::new()
+        solver_name: GaussLegendre6, solver: ImplicitRungeKutta::gauss_legendre_6()
     }
 
     test_interpolation! {

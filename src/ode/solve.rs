@@ -88,7 +88,7 @@ use crate::{
 /// }
 ///
 /// // Solve from t=0 to t=1 with initial condition y=1
-/// let mut method = DOP853::new().rtol(1e-8).atol(1e-10);
+/// let mut method = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-10);
 /// let mut solout = DefaultSolout::new();
 /// let system = ExponentialGrowth;
 /// let y0 = 1.0;

@@ -10,9 +10,6 @@ use differential_equations::{
         ODEProblem,
         methods::{
             adams::{APCF4, APCV4},
-            runge_kutta::{
-                implicit::Radau5,
-            },
         }
     }
 };
@@ -164,10 +161,6 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: ImplicitRungeKutta::gauss_legendre_6(),
-        tolerance: 1e-3,
-
-        solver_name: Radau5,
-        solver: Radau5::new(),
         tolerance: 1e-3
     }
 
@@ -269,10 +262,6 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: ImplicitRungeKutta::gauss_legendre_6(),
-        tolerance: 1e-3,
-
-        solver_name: Radau5,
-        solver: Radau5::new(),
         tolerance: 1e-3
     }
 
@@ -374,10 +363,6 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: ImplicitRungeKutta::gauss_legendre_6(),
-        tolerance: 1e1,
-
-        solver_name: Radau5,
-        solver: Radau5::new(),
         tolerance: 1e1
     }
 
@@ -479,10 +464,6 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: ImplicitRungeKutta::gauss_legendre_6(),
-        tolerance: 1e-3,
-
-        solver_name: Radau5,
-        solver: Radau5::new(),
         tolerance: 1e-3
     }
 
@@ -584,10 +565,6 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: ImplicitRungeKutta::gauss_legendre_6(),
-        tolerance: 1e-3,
-
-        solver_name: Radau5,
-        solver: Radau5::new(),
         tolerance: 1e-3
     }
 }

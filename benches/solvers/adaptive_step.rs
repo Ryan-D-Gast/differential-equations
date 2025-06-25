@@ -4,16 +4,16 @@ use super::*;
 
 /// Adaptive Step NumericalMethod Benchmarking Macro
 macro_rules! bench_adaptive_step {
-    ($name:ident, $solver:ident, $system:expr, $y0:expr, $t0:expr, $t1:expr, $h0:expr, $rtol:expr, $atol:expr) => {
+    ($name:ident, $solver_fn:expr, $solver_name:expr, $system:expr, $y0:expr, $t0:expr, $t1:expr, $h0:expr, $rtol:expr, $atol:expr) => {
         pub fn $name(c: &mut Criterion) {
-            let mut group = c.benchmark_group(stringify!($solver));
+            let mut group = c.benchmark_group($solver_name);
             group.sample_size(10);
             group.bench_with_input(
                 BenchmarkId::new(stringify!($system), "default"),
                 &(),
                 |b, _| {
                     b.iter(|| {
-                        let mut solver = $solver::new().rtol($rtol).atol($atol);
+                        let mut solver = $solver_fn.rtol($rtol).atol($atol);
                         let problem = ODEProblem::new($system, $t0, $t1, $y0.clone());
                         black_box(problem.solve(&mut solver).unwrap());
                     });
@@ -26,16 +26,16 @@ macro_rules! bench_adaptive_step {
 
 /// Dormand-Prince NumericalMethod Benchmarking Macro - compatible with DOP853 and DOPRI5
 macro_rules! bench_dormand_prince {
-    ($name:ident, $solver:ident, $system:expr, $y0:expr, $t0:expr, $t1:expr, $h0:expr, $rtol:expr, $atol:expr) => {
+    ($name:ident, $solver_fn:expr, $solver_name:expr, $system:expr, $y0:expr, $t0:expr, $t1:expr, $h0:expr, $rtol:expr, $atol:expr) => {
         pub fn $name(c: &mut Criterion) {
-            let mut group = c.benchmark_group(stringify!($solver));
+            let mut group = c.benchmark_group($solver_name);
             group.sample_size(10);
             group.bench_with_input(
                 BenchmarkId::new(stringify!($system), "default"),
                 &(),
                 |b, _| {
                     b.iter(|| {
-                        let mut solver = $solver::new().h0($h0).rtol($rtol).atol($atol);
+                        let mut solver = $solver_fn.h0($h0).rtol($rtol).atol($atol);
                         let problem = ODEProblem::new($system, $t0, $t1, $y0.clone());
                         black_box(problem.solve(&mut solver).unwrap());
                     });
@@ -49,7 +49,8 @@ macro_rules! bench_dormand_prince {
 // Benchmark for Harmonic Oscillator with all solvers
 bench_adaptive_step!(
     bench_rkf_ho,
-    RKF,
+    ExplicitRungeKutta::rkf45(),
+    "RKF45",
     HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
@@ -60,7 +61,8 @@ bench_adaptive_step!(
 );
 bench_adaptive_step!(
     bench_cashkarp_ho,
-    CashKarp,
+    ExplicitRungeKutta::cash_karp(),
+    "CashKarp",
     HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
@@ -71,7 +73,8 @@ bench_adaptive_step!(
 );
 bench_dormand_prince!(
     bench_dopri5_ho,
-    DOPRI5,
+    ExplicitRungeKutta::dopri5(),
+    "DOPRI5",
     HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
@@ -82,7 +85,8 @@ bench_dormand_prince!(
 );
 bench_dormand_prince!(
     bench_dop853_ho,
-    DOP853,
+    ExplicitRungeKutta::dop853(),
+    "DOP853",
     HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
@@ -95,7 +99,8 @@ bench_dormand_prince!(
 // Benchmark for Van der Pol with all solvers
 bench_adaptive_step!(
     bench_rkf_vdp,
-    RKF,
+    ExplicitRungeKutta::rkf45(),
+    "RKF45",
     VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
@@ -106,7 +111,8 @@ bench_adaptive_step!(
 );
 bench_adaptive_step!(
     bench_cashkarp_vdp,
-    CashKarp,
+    ExplicitRungeKutta::cash_karp(),
+    "CashKarp",
     VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
@@ -117,7 +123,8 @@ bench_adaptive_step!(
 );
 bench_dormand_prince!(
     bench_dopri5_vdp,
-    DOPRI5,
+    ExplicitRungeKutta::dopri5(),
+    "DOPRI5",
     VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
@@ -128,7 +135,8 @@ bench_dormand_prince!(
 );
 bench_dormand_prince!(
     bench_dop853_vdp,
-    DOP853,
+    ExplicitRungeKutta::dop853(),
+    "DOP853",
     VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
@@ -141,7 +149,8 @@ bench_dormand_prince!(
 // Benchmark for Lorenz system with all solvers
 bench_adaptive_step!(
     bench_rkf_lorenz,
-    RKF,
+    ExplicitRungeKutta::rkf45(),
+    "RKF45",
     Lorenz {
         sigma: 10.0,
         rho: 28.0,
@@ -156,7 +165,8 @@ bench_adaptive_step!(
 );
 bench_adaptive_step!(
     bench_cashkarp_lorenz,
-    CashKarp,
+    ExplicitRungeKutta::cash_karp(),
+    "CashKarp",
     Lorenz {
         sigma: 10.0,
         rho: 28.0,
@@ -171,7 +181,8 @@ bench_adaptive_step!(
 );
 bench_dormand_prince!(
     bench_dopri5_lorenz,
-    DOPRI5,
+    ExplicitRungeKutta::dopri5(),
+    "DOPRI5",
     Lorenz {
         sigma: 10.0,
         rho: 28.0,
@@ -186,7 +197,8 @@ bench_dormand_prince!(
 );
 bench_dormand_prince!(
     bench_dop853_lorenz,
-    DOP853,
+    ExplicitRungeKutta::dop853(),
+    "DOP853",
     Lorenz {
         sigma: 10.0,
         rho: 28.0,
@@ -203,7 +215,8 @@ bench_dormand_prince!(
 // Benchmark for Exponential system with all solvers
 bench_adaptive_step!(
     bench_rkf_exp,
-    RKF,
+    ExplicitRungeKutta::rkf45(),
+    "RKF45",
     Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,
@@ -214,7 +227,8 @@ bench_adaptive_step!(
 );
 bench_adaptive_step!(
     bench_cashkarp_exp,
-    CashKarp,
+    ExplicitRungeKutta::cash_karp(),
+    "CashKarp",
     Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,
@@ -225,7 +239,8 @@ bench_adaptive_step!(
 );
 bench_dormand_prince!(
     bench_dopri5_exp,
-    DOPRI5,
+    ExplicitRungeKutta::dopri5(),
+    "DOPRI5",
     Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,
@@ -236,7 +251,8 @@ bench_dormand_prince!(
 );
 bench_dormand_prince!(
     bench_dop853_exp,
-    DOP853,
+    ExplicitRungeKutta::dop853(),
+    "DOP853",
     Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,

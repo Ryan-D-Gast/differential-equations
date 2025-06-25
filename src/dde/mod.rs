@@ -27,7 +27,7 @@
 //! }
 //!
 //! fn main() {
-//!     let mut solver = DDE45::new().max_delay(20.0);
+//!     let mut solver = ExplicitRungeKutta::cash_karp().max_delay(20.0);
 //!     let dde = MackeyGlass { beta: 0.2, gamma: 0.1, n: 10.0, tau: 20.0 };
 //!     let t0 = 0.0;
 //!     let tf = 200.0;
@@ -68,5 +68,3 @@ pub use dde::DDE;
 
 mod numerical_method;
 pub use numerical_method::DDENumericalMethod;
-
-pub mod methods;

@@ -38,7 +38,7 @@ use crate::{
 /// let t0 = 0.0;
 /// let tf = 1.0;
 /// let y0 = 1.0;
-/// let mut solver = DOP853::new().rtol(1e-8).atol(1e-6);
+/// let mut solver = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-6);
 ///
 /// // Basic usage:
 /// let problem = ODEProblem::new(ode, t0, tf, y0);
@@ -87,7 +87,7 @@ use crate::{
 /// }
 ///
 /// let ode = HarmonicOscillator { k: 1.0 };
-/// let mut method = DOP853::new().rtol(1e-12).atol(1e-12);
+/// let mut method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
 ///
 /// // Basic usage with default output points
 /// let problem = ODEProblem::new(ode, 0.0, 10.0, vector![1.0, 0.0]);

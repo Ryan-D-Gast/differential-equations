@@ -114,7 +114,7 @@ use crate::{
 /// let tf = 1.0;
 /// let y0 = SVector::<f64, 1>::new(100.0);
 /// let mut gbm = GBM::new(42);
-/// let mut solver = EM::new(0.01);
+/// let mut solver = ExplicitRungeKutta::euler(0.01);
 /// let mut solout = DefaultSolout::new();
 ///
 /// // Solve the SDE

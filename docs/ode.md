@@ -146,7 +146,7 @@ The `ODEProblem` trait is used to solve the system using the solver. The trait i
 
 ```rust
 fn main() {
-    let mut method = DOP853::new().rtol(1e-12).atol(1e-12);
+    let mut method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
     let y0 = vector![1.0];
     let t0 = 0.0;
     let tf = 10.0;
