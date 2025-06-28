@@ -36,7 +36,7 @@
 
 A high-performance library for solving differential equations in Rust, including:
 
-- **[Ordinary Differential Equations (ODEs)](./docs/ode.md)** - Fixed-step and adaptive with comprehensive features including event detection, dense output, and customizable and common recipes for solution output.
+- **[Ordinary Differential Equations (ODEs)](./docs/ode.md)** - Fixed-step and adaptive solvers with comprehensive features including event detection, dense output, and customizable and common recipes for solution output.
     - **Initial Value Problems** - Solve problems with known initial conditions
 
 - **[Delay Differential Equations (DDEs)](./docs/dde.md)** - Adaptations of ODE solvers to handle delay differential equations by tracking history for interpolation.
