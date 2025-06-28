@@ -30,7 +30,7 @@ where
     /// * `phi` - Initial history function `phi(t)` returning state `V` for `t <= t0`.
     ///
     /// # Returns
-    /// * Result<NumEvals, Error<T, V>> - Ok(evals) if initialization is successful, Err otherwise.
+    /// * Result<Evals, Error<T, V>> - Ok(evals) if initialization is successful, Err otherwise.
     ///
     fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: &H) -> Result<Evals, Error<T, V>>
     where
@@ -42,7 +42,7 @@ where
     /// * `dde`            - System of DDEs to solve.
     ///
     /// # Returns
-    /// * Result<NumEvals, Error<T, V>> - Ok(evals) if step is successful, Err otherwise.
+    /// * Result<Evals, Error<T, V>> - Ok(evals) if step is successful, Err otherwise.
     ///
     fn step<F>(&mut self, dde: &F, phi: &H) -> Result<Evals, Error<T, V>>
     where

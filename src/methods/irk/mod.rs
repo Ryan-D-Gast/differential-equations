@@ -234,18 +234,4 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
     pub fn dense_stages(&self) -> usize {
         self.dense_stages
     }
-
-    /// Get statistics about Newton iterations
-    pub fn newton_stats(&self) -> (usize, usize, usize) {
-        (self.newton_iterations, self.jacobian_evaluations, self.lu_decompositions)
-    }
-
-    /// Get the average Newton iterations per step
-    pub fn avg_newton_iter(&self) -> f64 {
-        if self.steps == 0 {
-            0.0
-        } else {
-            self.newton_iterations as f64 / self.steps as f64
-        }
-    }
 }

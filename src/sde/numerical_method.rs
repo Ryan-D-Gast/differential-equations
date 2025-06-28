@@ -29,7 +29,7 @@ where
     /// * `y`      - Initial state.
     ///
     /// # Returns
-    /// * Result<NumEvals, Error<T, V>> - Ok with number of evaluations if initialization is successful
+    /// * Result<Evals, Error<T, V>> - Ok with number of evaluations if initialization is successful
     ///
     fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y: &V) -> Result<Evals, Error<T, V>>
     where
@@ -41,7 +41,7 @@ where
     /// * `sde`    - System of SDEs to solve.
     ///
     /// # Returns
-    /// * Result<NumEvals, Error<T, V>> - Ok with number of evaluations if step is successful
+    /// * Result<Evals, Error<T, V>> - Ok with number of evaluations if step is successful
     ///
     fn step<F>(&mut self, sde: &mut F) -> Result<Evals, Error<T, V>>
     where
