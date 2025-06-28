@@ -25,7 +25,8 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         self.y = *y0;
         self.t_prev = self.t;
         self.y_prev = self.y;
-        self.status = Status::Initialized;        self.steps = 0;
+        self.status = Status::Initialized;        
+        self.steps = 0;
         self.stiffness_counter = 0;
         self.non_stiffness_counter = 0;
         self.history = VecDeque::new();
