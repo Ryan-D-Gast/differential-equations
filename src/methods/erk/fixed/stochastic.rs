@@ -6,12 +6,12 @@ use crate::{
     alias::Evals,
     interpolate::Interpolation,
     linalg::component_multiply,
-    sde::{SDENumericalMethod, SDE},
+    sde::{StochasticNumericalMethod, SDE},
     traits::{CallBackData, Real, State},
     utils::validate_step_size_parameters,
 };
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> SDENumericalMethod<T, V, D> for ExplicitRungeKutta<Stochastic, Fixed, T, V, D, O, S, I> {    
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> StochasticNumericalMethod<T, V, D> for ExplicitRungeKutta<Stochastic, Fixed, T, V, D, O, S, I> {    
     fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: SDE<T, V, D>,

@@ -6,7 +6,7 @@ use crate::{
     alias::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     linalg::norm,
-    ode::{ODENumericalMethod, ODE},
+    ode::{OrdinaryNumericalMethod, ODE},
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
     methods::{Ordinary, Adaptive, h_init::InitialStepSize},
@@ -62,8 +62,8 @@ impl<T: Real, V: State<T>, D: CallBackData> AdamsPredictorCorrector<Ordinary, Ad
     }
 }
 
-// Implement ODENumericalMethod Trait for APCV4
-impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for AdamsPredictorCorrector<Ordinary, Adaptive, T, V, D, 4> {
+// Implement OrdinaryNumericalMethod Trait for APCV4
+impl<T: Real, V: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, V, D> for AdamsPredictorCorrector<Ordinary, Adaptive, T, V, D, 4> {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
@@ -331,7 +331,7 @@ impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for Adam
     }
 
     fn h(&self) -> T {
-        // ODENumericalMethod repeats step size 4 times for each step
+        // OrdinaryNumericalMethod repeats step size 4 times for each step
         // so the ODEProblem inquiring is looking for what the next
         // state will be thus the step size is multiplied by 4
         self.h * T::from_f64(4.0).unwrap()

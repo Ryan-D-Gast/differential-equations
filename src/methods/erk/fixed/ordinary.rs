@@ -5,12 +5,12 @@ use crate::{
     Error, Status,
     alias::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
-    ode::{ODENumericalMethod, ODE},
+    ode::{OrdinaryNumericalMethod, ODE},
     traits::{CallBackData, Real, State},
     utils::validate_step_size_parameters,
 };
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> ODENumericalMethod<T, V, D> for ExplicitRungeKutta<Ordinary, Fixed, T, V, D, O, S, I> {    
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> OrdinaryNumericalMethod<T, V, D> for ExplicitRungeKutta<Ordinary, Fixed, T, V, D, O, S, I> {    
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,

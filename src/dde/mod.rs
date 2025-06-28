@@ -67,4 +67,4 @@ mod dde;
 pub use dde::DDE;
 
 mod numerical_method;
-pub use numerical_method::DDENumericalMethod;
+pub use numerical_method::DelayNumericalMethod;

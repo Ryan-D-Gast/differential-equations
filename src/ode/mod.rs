@@ -83,6 +83,6 @@ pub use ode::{
     ODE, // ODE Trait for Differential Equations
 };
 
-// ODENumericalMethod Traits for ODE NumericalMethods.
+// OrdinaryNumericalMethod Traits for ODE NumericalMethods.
 mod numerical_method;
-pub use numerical_method::ODENumericalMethod;
+pub use numerical_method::OrdinaryNumericalMethod;

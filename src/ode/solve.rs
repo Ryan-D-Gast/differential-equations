@@ -3,7 +3,7 @@
 use crate::{
     ControlFlag, Error, Solution, Status,
     interpolate::Interpolation,
-    ode::{ODE, ODENumericalMethod},
+    ode::{ODE, OrdinaryNumericalMethod},
     solout::*,
     traits::{CallBackData, Real, State},
 };
@@ -125,7 +125,7 @@ where
     V: State<T>,
     D: CallBackData,
     F: ODE<T, V, D>,
-    S: ODENumericalMethod<T, V, D> + Interpolation<T, V>,
+    S: OrdinaryNumericalMethod<T, V, D> + Interpolation<T, V>,
     O: Solout<T, V, D>,
 {
     // Initialize the Solution object
@@ -207,7 +207,7 @@ where
         }
     }
 
-    // Set ODENumericalMethod to Solving
+    // Set OrdinaryNumericalMethod to Solving
     solver.set_status(Status::Solving);
     solution.status = Status::Solving;
 

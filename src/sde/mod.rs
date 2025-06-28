@@ -82,7 +82,7 @@ mod sde;
 pub use sde::SDE;
 
 mod numerical_method;
-pub use numerical_method::SDENumericalMethod;
+pub use numerical_method::StochasticNumericalMethod;
 
 mod problem;
 mod solve;

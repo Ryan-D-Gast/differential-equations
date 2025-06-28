@@ -5,7 +5,7 @@ use crate::{
     Error, Status,
     alias::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
-    ode::{ODENumericalMethod, ODE},
+    ode::{OrdinaryNumericalMethod, ODE},
     traits::{CallBackData, Real, State},
     utils::{validate_step_size_parameters},
     methods::{Ordinary, Fixed},
@@ -59,8 +59,8 @@ impl<T: Real, V: State<T>, D: CallBackData> AdamsPredictorCorrector<Ordinary, Fi
     }
 }
 
-// Implement ODENumericalMethod Trait for APCF4
-impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for AdamsPredictorCorrector<Ordinary, Fixed, T, V, D, 4> {
+// Implement OrdinaryNumericalMethod Trait for APCF4
+impl<T: Real, V: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, V, D> for AdamsPredictorCorrector<Ordinary, Fixed, T, V, D, 4> {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,

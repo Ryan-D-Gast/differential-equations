@@ -2,7 +2,7 @@
 
 use crate::{
     Error, Solution,
-    dde::{DDE, numerical_method::DDENumericalMethod, solve_dde},
+    dde::{DDE, numerical_method::DelayNumericalMethod, solve_dde},
     interpolate::Interpolation,
     solout::*,
     traits::{CallBackData, Real, State},
@@ -132,7 +132,7 @@ where
     ///
     pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
     where
-        S: DDENumericalMethod<L, T, V, H, D> + Interpolation<T, V>,
+        S: DelayNumericalMethod<L, T, V, H, D> + Interpolation<T, V>,
         H: Clone, // phi needs to be cloneable for solve_dde
     {
         let mut default_solout = DefaultSolout::new(); // Default solout implementation
@@ -147,10 +147,10 @@ where
         )
     }
 
-    /// Returns a DDEProblem DDENumericalMethod with the provided solout function for outputting points.
+    /// Returns a DDEProblem DelayNumericalMethod with the provided solout function for outputting points.
     ///
     /// # Returns
-    /// * DDEProblem DDENumericalMethod with the provided solout function ready for .solve() method.
+    /// * DDEProblem DelayNumericalMethod with the provided solout function ready for .solve() method.
     ///
     pub fn solout<'a, O: Solout<T, V, D>>(
         &'a self,
@@ -166,7 +166,7 @@ where
     /// * `dt` - Interval between each output point.
     ///
     /// # Returns
-    /// * DDEProblem DDENumericalMethod with Even Solout function ready for .solve() method.
+    /// * DDEProblem DelayNumericalMethod with Even Solout function ready for .solve() method.
     ///
     pub fn even(&self, dt: T) -> DDEProblemSoloutPair<'_, L, T, V, D, F, H, EvenSolout<T>> {
         let even_solout = EvenSolout::new(dt, self.t0, self.tf); // Even solout implementation
@@ -180,7 +180,7 @@ where
     /// * `n` - Number of interpolation points between each step.
     ///
     /// # Returns
-    /// * DDEProblem DDENumericalMethod with Dense Output function ready for .solve() method.
+    /// * DDEProblem DelayNumericalMethod with Dense Output function ready for .solve() method.
     ///
     pub fn dense(&self, n: usize) -> DDEProblemSoloutPair<'_, L, T, V, D, F, H, DenseSolout> {
         let dense_solout = DenseSolout::new(n); // Dense solout implementation
@@ -194,7 +194,7 @@ where
     /// * `points` - Custom output points.
     ///
     /// # Returns
-    /// * DDEProblem DDENumericalMethod with Custom Time Evaluation function ready for .solve() method.
+    /// * DDEProblem DelayNumericalMethod with Custom Time Evaluation function ready for .solve() method.
     ///
     pub fn t_eval(
         &self,
@@ -213,7 +213,7 @@ where
     /// * `direction` - Direction of crossing (positive or negative).
     ///
     /// # Returns
-    /// * DDEProblem DDENumericalMethod with CrossingSolout function ready for .solve() method.
+    /// * DDEProblem DelayNumericalMethod with CrossingSolout function ready for .solve() method.
     ///
     pub fn crossing(
         &self,
@@ -236,7 +236,7 @@ where
     /// * `direction` - Direction of crossing (positive or negative).
     ///
     /// # Returns
-    /// * DDEProblem DDENumericalMethod with HyperplaneCrossingSolout function ready for .solve() method.
+    /// * DDEProblem DelayNumericalMethod with HyperplaneCrossingSolout function ready for .solve() method.
     ///
     pub fn hyperplane_crossing<V1>(
         &self,
@@ -291,14 +291,14 @@ where
     /// Solve the DDEProblem using the provided solout
     ///
     /// # Arguments
-    /// * `solver` - DDENumericalMethod to use for solving the DDEProblem
+    /// * `solver` - DelayNumericalMethod to use for solving the DDEProblem
     ///
     /// # Returns
     /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered.
     ///
     pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
     where
-        S: DDENumericalMethod<L, T, V, H, D> + Interpolation<T, V>,
+        S: DelayNumericalMethod<L, T, V, H, D> + Interpolation<T, V>,
     {
         solve_dde(
             solver,
@@ -349,14 +349,14 @@ where
     /// Solve the DDEProblem using the provided solout
     ///
     /// # Arguments
-    /// * `solver` - DDENumericalMethod to use for solving the DDEProblem
+    /// * `solver` - DelayNumericalMethod to use for solving the DDEProblem
     ///
     /// # Returns
     /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered.
     ///
     pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
     where
-        S: DDENumericalMethod<L, T, V, H, D> + Interpolation<T, V>,
+        S: DelayNumericalMethod<L, T, V, H, D> + Interpolation<T, V>,
     {
         solve_dde(
             solver,
