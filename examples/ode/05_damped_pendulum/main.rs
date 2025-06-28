@@ -21,7 +21,6 @@
 //! - Evaluation at specific time points (t_eval)
 //! - Status checking with simulation results
 
-use differential_equations::ode::methods::runge_kutta::explicit::RKF;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 
@@ -59,7 +58,7 @@ impl ODE<f64, SVector<f64, 2>> for DampedPendulumModel {
 
 fn main() {
     // Initialize method with relative and absolute tolerances
-    let mut method = RKF::new();
+    let mut method = ExplicitRungeKutta::rkf45();
 
     // Initial conditions
     let initial_angle = 1.0; // Initial angle (radians)

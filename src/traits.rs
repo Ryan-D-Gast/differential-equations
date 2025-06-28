@@ -21,7 +21,7 @@ pub trait Real: Copy + RealField {
 
 impl Real for f32 {
     fn infinity() -> Self {
-        std::f32::INFINITY
+        f32::INFINITY
     }
 
     fn to_f64(self) -> f64 {
@@ -31,7 +31,7 @@ impl Real for f32 {
 
 impl Real for f64 {
     fn infinity() -> Self {
-        std::f64::INFINITY
+        f64::INFINITY
     }
 
     fn to_f64(self) -> f64 {
@@ -50,7 +50,7 @@ impl Real for f64 {
 /// * `Complex` - Complex number type from num-complex
 /// * `Struct<T>` - Any struct with all fields of type T using #[derive(State)] from the `derive` module
 ///
-pub trait State<T>:
+pub trait State<T: Real>:
     Clone
     + Copy
     + Debug

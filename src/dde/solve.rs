@@ -3,7 +3,7 @@
 use crate::{
     ControlFlag, Error, Solution, Status,
     dde::DDE,
-    dde::numerical_method::DDENumericalMethod,
+    dde::numerical_method::DelayNumericalMethod,
     interpolate::Interpolation,
     solout::*,
     traits::{CallBackData, Real, State},
@@ -34,7 +34,7 @@ use crate::{
 /// # Arguments
 ///
 /// * `solver`: A mutable reference to a DDE solver instance. The solver must implement
-///   both [`DDENumericalMethod`] (specifically adapted for DDEs, handling the history lookup
+///   both [`DelayNumericalMethod`] (specifically adapted for DDEs, handling the history lookup
 ///   closure in its `init` and `step` methods) and [`Interpolation`] (for dense output
 ///   and event localization).
 /// * `dde`: A reference to the DDE system definition, which must implement the [`DDE`] trait.
@@ -74,7 +74,7 @@ where
     D: CallBackData,
     F: DDE<L, T, V, D>,
     H: Fn(T) -> V + Clone,
-    S: DDENumericalMethod<L, T, V, H, D> + Interpolation<T, V>,
+    S: DelayNumericalMethod<L, T, V, H, D> + Interpolation<T, V>,
     O: Solout<T, V, D>,
 {
     // Initialize the Solution object
@@ -93,7 +93,7 @@ where
     };
 
     // Initialize the solver
-    match solver.init(dde, t0, tf, y0, phi.clone()) {
+    match solver.init(dde, t0, tf, y0, &phi) {
         Ok(evals) => {
             solution.evals += evals.fcn;
             solution.jac_evals += evals.jac;
@@ -115,7 +115,7 @@ where
         ControlFlag::Continue => {}
         ControlFlag::ModifyState(tm, ym) => {
             // Reinitialize the solver with the modified state
-            match solver.init(dde, tm, tf, &ym, phi.clone()) {
+            match solver.init(dde, tm, tf, &ym, &phi) {
                 Ok(evals) => {
                     solution.evals += evals.fcn;
                     solution.jac_evals += evals.jac;
@@ -139,7 +139,7 @@ where
         ControlFlag::Continue => {}
         ControlFlag::ModifyState(tm, ym) => {
             // Reinitialize the solver with the modified state
-            match solver.init(dde, tm, tf, &ym, phi.clone()) {
+            match solver.init(dde, tm, tf, &ym, &phi) {
                 Ok(evals) => {
                     solution.evals += evals.fcn;
                     solution.jac_evals += evals.jac;
@@ -163,13 +163,26 @@ where
     while solving {
         // Check if next step overshoots tf
         if (solver.t() + solver.h() - tf) * integration_direction > T::zero() {
-            solver.set_h(tf - solver.t());
+            // New step size to reach tf
+            let h_new = tf - solver.t();
+
+            // If the new step size is extremely small, consider the integration complete
+            if h_new.abs() < T::default_epsilon() * T::from_f64(10.0).unwrap() {
+                // Set the status to complete and finalize the solution
+                solver.set_status(Status::Complete);
+                solution.status = Status::Complete;
+                solution.timer.complete();
+                return Ok(solution);
+            }
+
+            // Correct step size to reach tf
+            solver.set_h(h_new);
             solving = false;
         }
 
         // Perform a step
         solution.steps += 1;
-        match solver.step(dde) {
+        match solver.step(dde, &phi) {
             Ok(evals) => {
                 solution.evals += evals.fcn;
                 solution.jac_evals += evals.jac;
@@ -200,7 +213,7 @@ where
             ControlFlag::Continue => {}
             ControlFlag::ModifyState(tm, ym) => {
                 // Reinitialize the solver with the modified state
-                match solver.init(dde, tm, tf, &ym, phi.clone()) {
+                match solver.init(dde, tm, tf, &ym, &phi) {
                     Ok(evals) => {
                         solution.evals += evals.fcn;
                         solution.jac_evals += evals.jac;
@@ -312,7 +325,7 @@ where
                         solution.push(tm, ym.clone());
 
                         // Reinitialize the solver with the modified state at the precise time
-                        match solver.init(dde, tm, tf, &ym, phi.clone()) {
+                        match solver.init(dde, tm, tf, &ym, &phi) {
                             Ok(evals) => {
                                 solution.evals += evals.fcn;
                                 solution.jac_evals += evals.jac;

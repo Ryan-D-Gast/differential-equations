@@ -3,7 +3,7 @@
 use crate::{
     ControlFlag, Error, Solution, Status,
     interpolate::Interpolation,
-    ode::{ODE, ODENumericalMethod},
+    ode::{ODE, OrdinaryNumericalMethod},
     solout::*,
     traits::{CallBackData, Real, State},
 };
@@ -88,7 +88,7 @@ use crate::{
 /// }
 ///
 /// // Solve from t=0 to t=1 with initial condition y=1
-/// let mut method = DOP853::new().rtol(1e-8).atol(1e-10);
+/// let mut method = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-10);
 /// let mut solout = DefaultSolout::new();
 /// let system = ExponentialGrowth;
 /// let y0 = 1.0;
@@ -125,7 +125,7 @@ where
     V: State<T>,
     D: CallBackData,
     F: ODE<T, V, D>,
-    S: ODENumericalMethod<T, V, D> + Interpolation<T, V>,
+    S: OrdinaryNumericalMethod<T, V, D> + Interpolation<T, V>,
     O: Solout<T, V, D>,
 {
     // Initialize the Solution object
@@ -207,7 +207,7 @@ where
         }
     }
 
-    // Set ODENumericalMethod to Solving
+    // Set OrdinaryNumericalMethod to Solving
     solver.set_status(Status::Solving);
     solution.status = Status::Solving;
 
@@ -216,8 +216,20 @@ where
     while solving {
         // Check if next step overshoots tf
         if (solver.t() + solver.h() - tf) * integration_direction > T::zero() {
+            // New step size to reach tf
+            let h_new = tf - solver.t();
+
+            // If the new step size is extremely small, consider the integration complete
+            if h_new.abs() < T::default_epsilon() * T::from_f64(10.0).unwrap() {
+                // Set the status to complete and finalize the solution
+                solver.set_status(Status::Complete);
+                solution.status = Status::Complete;
+                solution.timer.complete();
+                return Ok(solution);
+            }
+
             // Correct step size to reach tf
-            solver.set_h(tf - solver.t());
+            solver.set_h(h_new);
             solving = false;
         }
 

@@ -52,7 +52,7 @@
 //!     let tf = 1.0;
 //!     let y0 = vector![1.0];
 //!     let problem = ODEProblem::new(system, t0, tf, y0);
-//!     let mut solver = DOP853::new().rtol(1e-8).atol(1e-6);
+//!     let mut solver = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-6);
 //!     let solution = match problem.solve(&mut solver) {
 //!         Ok(sol) => sol,
 //!         Err(e) => panic!("Error: {:?}", e),
@@ -85,6 +85,13 @@
 // -- Prelude Module & Recommended Imports for Users --
 
 pub mod prelude;
+
+// -- Butcher Tableaus --
+
+mod tableau;
+
+// -- Numerical Methods for Differential Equations --
+pub mod methods;
 
 // -- Types of Differential Equations --
 

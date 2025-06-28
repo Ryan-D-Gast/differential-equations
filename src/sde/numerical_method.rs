@@ -7,20 +7,20 @@ use crate::{
     traits::{CallBackData, Real, State},
 };
 
-/// SDENumericalMethod Trait for SDE NumericalMethods
+/// StochasticNumericalMethod Trait for SDE NumericalMethods
 ///
 /// SDE NumericalMethods implement this trait to solve stochastic differential equations.
 /// This step function is called iteratively to solve the SDE.
 /// By implementing this trait, different functions can use a user provided
 /// SDE solver to solve the SDE that fits their requirements.
 ///
-pub trait SDENumericalMethod<T, V, D = String>
+pub trait StochasticNumericalMethod<T, V, D = String>
 where
     T: Real,
     V: State<T>,
     D: CallBackData,
 {
-    /// Initialize SDENumericalMethod before solving SDE
+    /// Initialize StochasticNumericalMethod before solving SDE
     ///
     /// # Arguments
     /// * `sde`    - System of SDEs to solve.
@@ -29,7 +29,7 @@ where
     /// * `y`      - Initial state.
     ///
     /// # Returns
-    /// * Result<NumEvals, Error<T, V>> - Ok with number of evaluations if initialization is successful
+    /// * Result<Evals, Error<T, V>> - Ok with number of evaluations if initialization is successful
     ///
     fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y: &V) -> Result<Evals, Error<T, V>>
     where
@@ -41,7 +41,7 @@ where
     /// * `sde`    - System of SDEs to solve.
     ///
     /// # Returns
-    /// * Result<NumEvals, Error<T, V>> - Ok with number of evaluations if step is successful
+    /// * Result<Evals, Error<T, V>> - Ok with number of evaluations if step is successful
     ///
     fn step<F>(&mut self, sde: &mut F) -> Result<Evals, Error<T, V>>
     where

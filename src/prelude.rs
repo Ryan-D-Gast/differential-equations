@@ -53,52 +53,29 @@
 // -- Types of Differential Equations --
 
 pub use crate::{
+    // Numerical Methods
+    methods::{
+        ExplicitRungeKutta, // Explicit Runge-Kutta methods for ODEs, DDEs, and SDEs
+        ImplicitRungeKutta, // Implicit Runge-Kutta methods for ODEs
+        AdamsPredictorCorrector, // Adams Predictor-Corrector methods for ODEs
+    },
+
     // Ordinary Differential Equations (ODE) module
     ode::{
         ODE,        // Define the ODE system
         ODEProblem, // Create IVP to solve
-
-        // Re-exporting popular ODE solvers
-        methods::runge_kutta::{
-            explicit::{
-                DOP853, // Adaptive Step Dormand-Prince 8(5,3) NumericalMethod with dense output of order 7
-                DOPRI5, // Adaptive Step Dormand-Prince 5(4) NumericalMethod
-                Euler,  // Fixed Step Euler NumericalMethod
-                RK4,    // Fixed Step Runge-Kutta 4th Order NumericalMethod
-                RKF,    // Fixed Step Runge-Kutta-Fehlberg NumericalMethod
-                RKV65,  // Verner 6(5) adaptive method with dense output of order 5
-                RKV87,  // Verner 8(7) adaptive method with dense output of order 7
-                RKV98,  // Verner 9(8) adaptive method with dense output of order 9
-            },
-            implicit::{
-                GaussLegendre6, // Gauss-Legendre 6th order method (implicit Runge-Kutta)
-            },
-        },
     },
 
     // Delay Differential Equations (DDE) module
     dde::{
         DDE,        // Define the DDE system
         DDEProblem, // Create IVP to solve
-
-        // Re-exporting popular DDE solvers
-        methods::{
-            BS23 as DDE23, // Bogacki-Shampine 2(3) method with adaptive step size and dense output
-            DOPRI5 as DDE45, // Dormand-Prince 5(4) method with adaptive step size
-        },
     },
 
     // Stochastic Differential Equations (SDE) module
     sde::{
         SDE,        // Define the SDE system
         SDEProblem, // Create IVP to solve
-
-        // Re-exporting popular SDE solvers
-        methods::{
-            EM,       // Euler-Maruyama method (strong order 0.5)
-            Milstein, // Milstein method (strong order 1.0)
-            RKM4,     // Stochastic Runge-Kutta Maruyama 4
-        },
     },
 
     // Shared items not specific to a Differential Equation Type

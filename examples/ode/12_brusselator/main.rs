@@ -43,11 +43,11 @@ impl ODE<f64, Vector2<f64>> for BrusselatorSystem {
 
 fn main() {
     // Analytical Jacobian run
-    let mut method_analytical = GaussLegendre6::new()
+    let mut method_analytical = ImplicitRungeKutta::gauss_legendre_6()
         .rtol(1e-6)
         .atol(1e-6)
         .h0(1e-3) // Initial step size suggestion
-        .max_iter(20); // Max Newton iterations
+        .max_newton_iter(20); // Max Newton iterations
 
     // Initial conditions and time span for Brusselator
     let y0 = Vector2::new(1.5, 3.0); 

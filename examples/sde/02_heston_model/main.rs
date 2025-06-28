@@ -119,7 +119,7 @@ fn main() {
     let sde = HestonModel::new(mu, kappa, theta, sigma, rho, seed);
 
     // Create solver with fixed step size
-    let mut solver = Milstein::new(dt);
+    let mut solver = ExplicitRungeKutta::three_eighths(dt);
 
     // Create and solve the problem
     let mut problem = SDEProblem::new(sde, t0, tf, y0);

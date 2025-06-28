@@ -34,7 +34,7 @@ impl ODE for ExponentialGrowth {
 
 fn main() {
     // Initialize the method
-    let mut method = DOP853::new() // Normal refers to default with t-out being all t-steps e.g. no interpolation
+    let mut method = ExplicitRungeKutta::dop853() // Normal refers to default with t-out being all t-steps e.g. no interpolation
         .rtol(1e-12) // Set the relative tolerance, Default is 1e-3 for DOP853
         .atol(1e-12); // Set the absolute tolerance, Default is 1e-6 for DOP853
 

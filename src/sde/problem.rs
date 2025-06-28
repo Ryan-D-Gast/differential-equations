@@ -3,7 +3,7 @@
 use crate::{
     Error, Solution,
     interpolate::Interpolation,
-    sde::{SDENumericalMethod, SDE, solve_sde},
+    sde::{StochasticNumericalMethod, SDE, solve_sde},
     solout::*,
     traits::{CallBackData, Real, State},
 };
@@ -60,7 +60,7 @@ use crate::{
 /// let t0 = 0.0;
 /// let tf = 1.0;
 /// let y0 = SVector::<f64, 1>::new(100.0);
-/// let mut solver = EM::new(0.01);
+/// let mut solver = ExplicitRungeKutta::three_eighths(0.01);
 /// let gbm = GBM::new(42);
 /// let mut gbm_problem = SDEProblem::new(gbm, t0, tf, y0);
 ///
@@ -143,7 +143,7 @@ where
     ///
     pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
     where
-        S: SDENumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: StochasticNumericalMethod<T, V, D> + Interpolation<T, V>,
     {
         let mut default_solout = DefaultSolout::new(); // Default solout implementation
         solve_sde(
@@ -298,14 +298,14 @@ where
     /// Solve the SDE Problem using the provided solout
     ///
     /// # Arguments
-    /// * `solver` - SDENumericalMethod to use for solving the SDE Problem
+    /// * `solver` - StochasticNumericalMethod to use for solving the SDE Problem
     ///
     /// # Returns
     /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered
     ///
     pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
     where
-        S: SDENumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: StochasticNumericalMethod<T, V, D> + Interpolation<T, V>,
     {
         solve_sde(
             solver,
@@ -356,14 +356,14 @@ where
     /// Solve the SDE Problem using the provided solout
     ///
     /// # Arguments
-    /// * `solver` - SDENumericalMethod to use for solving the SDE Problem
+    /// * `solver` - StochasticNumericalMethod to use for solving the SDE Problem
     ///
     /// # Returns
     /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered
     ///
     pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
     where
-        S: SDENumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: StochasticNumericalMethod<T, V, D> + Interpolation<T, V>,
     {
         solve_sde(
             solver,

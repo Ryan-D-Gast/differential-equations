@@ -35,7 +35,7 @@
 //!     let problem = ODEProblem::new(system, t0, tf, y0);
 //!
 //!     // Initialize solver with desired settings or use defaults
-//!     let mut solver = DOP853::new()
+//!     let mut solver = ExplicitRungeKutta::dop853()
 //!         .rtol(1e-8)  // Relative tolerance
 //!         .atol(1e-6); // Absolute tolerance
 //!
@@ -83,9 +83,6 @@ pub use ode::{
     ODE, // ODE Trait for Differential Equations
 };
 
-// ODENumericalMethod Traits for ODE NumericalMethods.
+// OrdinaryNumericalMethod Traits for ODE NumericalMethods.
 mod numerical_method;
-pub use numerical_method::ODENumericalMethod;
-
-// ODENumericalMethod for ODEs
-pub mod methods;
+pub use numerical_method::OrdinaryNumericalMethod;

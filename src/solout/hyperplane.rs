@@ -66,7 +66,7 @@ pub type ExtractorFn<V, P> = fn(&V) -> P;
 ///     1.021881345465263, 0.0, -0.182000000000000, // Position
 ///     0.0, -0.102950816739606, 0.0 // Velocity
 /// ];
-/// let mut solver = DOP853::new().rtol(1e-12).atol(1e-12);
+/// let mut solver = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
 ///
 /// // Function to extract position from state vector
 /// fn extract_position(state: &Vector6<f64>) -> Vector3<f64> {

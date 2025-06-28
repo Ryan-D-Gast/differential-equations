@@ -22,7 +22,7 @@
 //! - Setting up even-interval output points
 //! - Working with solution status information
 
-use differential_equations::{ode::methods::adams::APCV4, prelude::*};
+use differential_equations::prelude::*;
 
 /// SIR (Susceptible, Infected, Recovered) Model
 struct SIRModel {
@@ -93,7 +93,7 @@ impl SIRState<f64> {
 
 fn main() {
     // method with relative and absolute tolerances
-    let mut method = APCV4::new().tol(1e-6);
+    let mut method = AdamsPredictorCorrector::v4().tol(1e-6);
 
     // Initial State
     let y0 = SIRState {

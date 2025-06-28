@@ -3,7 +3,7 @@
 use crate::{
     ControlFlag, Error, Solution, Status,
     interpolate::Interpolation,
-    sde::{SDENumericalMethod, SDE},
+    sde::{StochasticNumericalMethod, SDE},
     solout::*,
     traits::{CallBackData, Real, State},
 };
@@ -114,7 +114,7 @@ use crate::{
 /// let tf = 1.0;
 /// let y0 = SVector::<f64, 1>::new(100.0);
 /// let mut gbm = GBM::new(42);
-/// let mut solver = EM::new(0.01);
+/// let mut solver = ExplicitRungeKutta::euler(0.01);
 /// let mut solout = DefaultSolout::new();
 ///
 /// // Solve the SDE
@@ -142,7 +142,7 @@ where
     V: State<T>,
     D: CallBackData,
     F: SDE<T, V, D>,
-    S: SDENumericalMethod<T, V, D> + Interpolation<T, V>,
+    S: StochasticNumericalMethod<T, V, D> + Interpolation<T, V>,
     O: Solout<T, V, D>,
 {
     // Initialize the Solution object
@@ -224,7 +224,7 @@ where
         }
     }
 
-    // Set SDENumericalMethod to Solving
+    // Set StochasticNumericalMethod to Solving
     solver.set_status(Status::Solving);
     solution.status = Status::Solving;
 
@@ -233,8 +233,20 @@ where
     while solving {
         // Check if next step overshoots tf
         if (solver.t() + solver.h() - tf) * integration_direction > T::zero() {
+            // New step size to reach tf
+            let h_new = tf - solver.t();
+
+            // If the new step size is extremely small, consider the integration complete
+            if h_new.abs() < T::default_epsilon() * T::from_f64(10.0).unwrap() {
+                // Set the status to complete and finalize the solution
+                solver.set_status(Status::Complete);
+                solution.status = Status::Complete;
+                solution.timer.complete();
+                return Ok(solution);
+            }
+
             // Correct step size to reach tf
-            solver.set_h(tf - solver.t());
+            solver.set_h(h_new);
             solving = false;
         }
 

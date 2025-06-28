@@ -81,7 +81,7 @@ fn main() {
     println!("\nComparing solvers:");
 
     // Solve with Runge-Kutta-Maruyama
-    let mut rk_solver = RKM4::new(dt);
+    let mut rk_solver = ExplicitRungeKutta::rk4(dt);
     let mut rk_problem = SDEProblem::new(sde, t0, tf, y0);
     let rk_solution = rk_problem.even(1.0).solve(&mut rk_solver).unwrap();
     println!("\nRunge-Kutta-Maruyama results:");

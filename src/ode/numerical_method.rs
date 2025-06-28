@@ -7,20 +7,20 @@ use crate::{
     traits::{CallBackData, Real, State},
 };
 
-/// ODENumericalMethod Trait for ODE NumericalMethods
+/// OrdinaryNumericalMethod Trait for ODE NumericalMethods
 ///
 /// ODE NumericalMethods implement this trait to solve ordinary differential equations.
 /// This step function is called iteratively to solve the ODE.
 /// By implementing this trait, different functions can use a user provided
 /// ODE solver to solve the ODE that fits their requirements.
 ///
-pub trait ODENumericalMethod<T, V, D = String>
+pub trait OrdinaryNumericalMethod<T, V, D = String>
 where
     T: Real,
     V: State<T>,
     D: CallBackData,
 {
-    /// Initialize ODENumericalMethod before solving ODE
+    /// Initialize OrdinaryNumericalMethod before solving ODE
     ///
     /// # Arguments
     /// * `system` - System of ODEs to solve.

@@ -3,7 +3,7 @@
 use crate::{
     Error, Solution,
     interpolate::Interpolation,
-    ode::{ODE, ODENumericalMethod, solve_ode},
+    ode::{ODE, OrdinaryNumericalMethod, solve_ode},
     solout::*,
     traits::{CallBackData, Real, State},
 };
@@ -38,7 +38,7 @@ use crate::{
 /// let t0 = 0.0;
 /// let tf = 1.0;
 /// let y0 = 1.0;
-/// let mut solver = DOP853::new().rtol(1e-8).atol(1e-6);
+/// let mut solver = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-6);
 ///
 /// // Basic usage:
 /// let problem = ODEProblem::new(ode, t0, tf, y0);
@@ -87,7 +87,7 @@ use crate::{
 /// }
 ///
 /// let ode = HarmonicOscillator { k: 1.0 };
-/// let mut method = DOP853::new().rtol(1e-12).atol(1e-12);
+/// let mut method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
 ///
 /// // Basic usage with default output points
 /// let problem = ODEProblem::new(ode, 0.0, 10.0, vector![1.0, 0.0]);
@@ -149,7 +149,7 @@ where
     ///
     pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
     where
-        S: ODENumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: OrdinaryNumericalMethod<T, V, D> + Interpolation<T, V>,
     {
         let mut default_solout = DefaultSolout::new(); // Default solout implementation
         solve_ode(
@@ -162,10 +162,10 @@ where
         )
     }
 
-    /// Returns an ODEProblem ODENumericalMethod with the provided solout function for outputting points.
+    /// Returns an ODEProblem OrdinaryNumericalMethod with the provided solout function for outputting points.
     ///
     /// # Returns
-    /// * ODEProblem ODENumericalMethod with the provided solout function ready for .solve() method.
+    /// * ODEProblem OrdinaryNumericalMethod with the provided solout function ready for .solve() method.
     ///
     pub fn solout<'a, O: Solout<T, V, D>>(
         &'a self,
@@ -181,7 +181,7 @@ where
     /// * `dt` - Interval between each output point.
     ///
     /// # Returns
-    /// * ODEProblem ODENumericalMethod with Even Solout function ready for .solve() method.
+    /// * ODEProblem OrdinaryNumericalMethod with Even Solout function ready for .solve() method.
     ///
     pub fn even(&self, dt: T) -> ODEProblemSoloutPair<'_, T, V, D, F, EvenSolout<T>> {
         let even_solout = EvenSolout::new(dt, self.t0, self.tf); // Even solout implementation
@@ -195,7 +195,7 @@ where
     /// * `n` - Number of interpolation points between each step.
     ///
     /// # Returns
-    /// * ODEProblem ODENumericalMethod with Dense Output function ready for .solve() method.
+    /// * ODEProblem OrdinaryNumericalMethod with Dense Output function ready for .solve() method.
     ///
     pub fn dense(&self, n: usize) -> ODEProblemSoloutPair<'_, T, V, D, F, DenseSolout> {
         let dense_solout = DenseSolout::new(n); // Dense solout implementation
@@ -209,7 +209,7 @@ where
     /// * `points` - Custom output points.
     ///
     /// # Returns
-    /// * ODEProblem ODENumericalMethod with Custom Time Evaluation function ready for .solve() method.
+    /// * ODEProblem OrdinaryNumericalMethod with Custom Time Evaluation function ready for .solve() method.
     ///
     pub fn t_eval(&self, points: Vec<T>) -> ODEProblemSoloutPair<'_, T, V, D, F, TEvalSolout<T>> {
         let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf); // Custom time evaluation solout implementation
@@ -225,7 +225,7 @@ where
     /// * `direction` - Direction of crossing (positive or negative).
     ///
     /// # Returns
-    /// * ODEProblem ODENumericalMethod with CrossingSolout function ready for .solve() method.
+    /// * ODEProblem OrdinaryNumericalMethod with CrossingSolout function ready for .solve() method.
     ///
     pub fn crossing(
         &self,
@@ -248,7 +248,7 @@ where
     /// * `direction` - Direction of crossing (positive or negative).
     ///
     /// # Returns
-    /// * ODEProblem ODENumericalMethod with HyperplaneCrossingSolout function ready for .solve() method.
+    /// * ODEProblem OrdinaryNumericalMethod with HyperplaneCrossingSolout function ready for .solve() method.
     ///
     pub fn hyperplane_crossing<V1>(
         &self,
@@ -300,14 +300,14 @@ where
     /// Solve the ODEProblem using the provided solout
     ///
     /// # Arguments
-    /// * `solver` - ODENumericalMethod to use for solving the ODEProblem
+    /// * `solver` - OrdinaryNumericalMethod to use for solving the ODEProblem
     ///
     /// # Returns
     /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if an errors or issues such as stiffness are encountered.
     ///
     pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
     where
-        S: ODENumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: OrdinaryNumericalMethod<T, V, D> + Interpolation<T, V>,
     {
         solve_ode(
             solver,
@@ -355,14 +355,14 @@ where
     /// Solve the ODEProblem using the provided solout
     ///
     /// # Arguments
-    /// * `solver` - ODENumericalMethod to use for solving the ODEProblem
+    /// * `solver` - OrdinaryNumericalMethod to use for solving the ODEProblem
     ///
     /// # Returns
     /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if an errors or issues such as stiffness are encountered.
     ///
     pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
     where
-        S: ODENumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: OrdinaryNumericalMethod<T, V, D> + Interpolation<T, V>,
     {
         solve_ode(
             solver,

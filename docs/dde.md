@@ -4,36 +4,11 @@ The `dde` module provides tools for solving delay differential equations (DDEs),
 
 ## Table of Contents
 
-- [Numerical Methods](#numerical-methods)
 - [Defining a DDE](#defining-a-dde)
 - [The History Function](#the-history-function)
 - [Solving an Initial Value Problem (DDEProblem)](#solving-an-initial-value-problem)
 - [Examples](#examples)
 - [Notation](#notation)
-
-## Numerical Methods
-
-The `dde::methods` submodule includes a set of methods for solving DDEs. The solver algorithms and their coefficients are implemented as structs that implement the `DDENumericalMethod` trait (adapted for DDEs). Solver settings can be configured before use with the `problem.solve(&mut method)` method, which controls the solution process.
-
-All currently available DDE solvers feature adaptive step size control.
-
-### Adaptive Step Size
-
-| Solver | Alias in Prelude | Description |
-|--------|------------------|-------------|
-| `BS23`   | `DDE23`          | Bogacki-Shampine 2(3) adaptive method with dense output. Suitable for problems requiring moderate accuracy. |
-| `DOPRI5` | `DDE45`          | Dormand-Prince 5(4) adaptive method with dense output. Based on the 7-stage FSAL ODE solver, suitable for problems requiring higher accuracy. |
-
-**Note:** `dense output` refers to the solver's ability to provide an accurate interpolant for the solution between computed time steps. This is crucial for accurately evaluating delayed terms and for event detection. The order of the interpolant can be found in the documentation for each specific solver.
-
-## Numerical Method Comparison
-
-When choosing between the available DDE solvers:
-
--   **`DDE23` (`BS23`)**: A good general-purpose DDE solver, offering a balance between computational cost and accuracy for many problems. It is a 3rd order method with a 2nd order embedded method for error control.
--   **`DDE45` (`DOPRI5`)**: Preferred for problems requiring higher accuracy or when the underlying ODE part of the DDE is stiff or complex. It is a 5th order method with a 4th order embedded method for error control and uses a more sophisticated 7-stage FSAL (First Same As Last) strategy.
-
-The choice often depends on the specific characteristics of the DDE and the desired precision.
 
 ## Defining a DDE
 
@@ -119,7 +94,7 @@ The `DDEProblem` struct is used to set up and solve the DDE. It requires the DDE
 
 ```rust
 fn main() {
-    let mut method = DDE45::new().rtol(1e-6).atol(1e-8); // Using the DDE45 (DOPRI5) solver
+    let mut method = ExplicitRungeKutta::dopri5().rtol(1e-6).atol(1e-8); // Using the DDE45 (DOPRI5) solver
 
     let t0 = 0.0;
     let tf = 10.0;

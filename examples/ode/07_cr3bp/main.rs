@@ -67,7 +67,7 @@ pub struct StateVector<T> {
 
 fn main() {
     // Initialize method with relative and absolute tolerances
-    let mut method = DOP853::new().rtol(1e-12).atol(1e-12); // DOP853 is one of the most accurate and efficient solvers and highly favored for Orbital Mechanics
+    let mut method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12); // DOP853 is one of the most accurate and efficient solvers and highly favored for Orbital Mechanics
 
     // Initialialize the CR3BP ode
     let ode = Cr3bp {
