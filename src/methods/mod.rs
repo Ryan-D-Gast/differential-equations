@@ -10,9 +10,9 @@ pub use erk::ExplicitRungeKutta;
 mod irk;
 pub use irk::ImplicitRungeKutta;
 
-// --- Adams-Bashforth Methods ---
-// mod ab;
-// pub use ab::AdamsBashforth;
+// --- Adams Predictor-Corrector Methods ---
+mod apc;
+pub use apc::AdamsPredictorCorrector;
 
 // --- Typestate Categories for Differential Equations Types ---
 pub struct Ordinary;

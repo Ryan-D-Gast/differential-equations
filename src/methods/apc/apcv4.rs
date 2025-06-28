@@ -1,105 +1,69 @@
 //! Adams-Predictor-Corrector 4th Order Variable Step Size Method
 
-use super::*;
-use crate::{linalg::norm, ode::methods::h_init};
+use super::AdamsPredictorCorrector;
+use crate::{
+    Error, Status,
+    alias::Evals,
+    interpolate::{Interpolation, cubic_hermite_interpolate},
+    linalg::norm,
+    ode::{ODENumericalMethod, ODE},
+    traits::{CallBackData, Real, State},
+    utils::{constrain_step_size, validate_step_size_parameters},
+    methods::{Ordinary, Adaptive, h_init::InitialStepSize},
+};
 
-///
-/// Adams-Predictor-Corrector 4th Order Variable Step Size Method.
-///
-/// The Adams-Predictor-Corrector method is an explicit method that
-/// uses the previous states to predict the next state. This implementation
-/// uses a variable step size to maintain a desired accuracy.
-/// It is recommended to start with a small step size so that tolerance
-/// can be quickly met and the algorithm can adjust the step size accordingly.
-///
-/// The First 3 steps are calculated using
-/// the Runge-Kutta method of order 4(5) and then the Adams-Predictor-Corrector
-/// method is used to calculate the remaining steps until the final time.
-///
-/// # Example
-///
-/// ```
-/// use differential_equations::prelude::*;
-/// use differential_equations::ode::methods::adams::APCV4;
-/// use nalgebra::{SVector, vector};
-///
-/// struct HarmonicOscillator {
-///     k: f64,
-/// }
-///
-/// impl ODE<f64, SVector<f64, 2>> for HarmonicOscillator {
-///     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
-///         dydt[0] = y[1];
-///         dydt[1] = -self.k * y[0];
-///     }
-/// }
-/// let mut apcv4 = APCV4::new();
-/// let t0 = 0.0;
-/// let tf = 10.0;
-/// let y0 = vector![1.0, 0.0];
-/// let system = HarmonicOscillator { k: 1.0 };
-/// let results = ODEProblem::new(system, t0, tf, y0).solve(&mut apcv4).unwrap();
-/// let expected = vector![-0.83907153, 0.54402111];
-/// assert!((results.y.last().unwrap()[0] - expected[0]).abs() < 1e-6);
-/// assert!((results.y.last().unwrap()[1] - expected[1]).abs() < 1e-6);
-/// ```
-///
-/// # Settings
-/// * `tol` - Tolerance
-/// * `h_max` - Maximum step size
-/// * `max_steps` - Maximum number of steps
-///
-/// ## Warning
-///
-/// This method is not suitable for stiff problems and can results in
-/// extremely small step sizes and long computation times.
-///
-pub struct APCV4<T: Real, V: State<T>, D: CallBackData> {
-    // Initial Step Size
-    pub h0: T,
-
-    // Current Step Size
-    h: T,
-
-    // Current State
-    t: T,
-    y: V,
-    dydt: V,
-
-    // Final Time
-    tf: T,
-
-    // Previous States
-    t_prev: [T; 4],
-    y_prev: [V; 4],
-
-    // Previous step states
-    t_old: T,
-    y_old: V,
-    dydt_old: V,
-
-    // Predictor Correct Derivatives
-    k1: V,
-    k2: V,
-    k3: V,
-    k4: V,
-
-    // Statistic Tracking
-    evals: usize,
-    steps: usize,
-
-    // Status
-    status: Status<T, V, D>,
-
-    // Settings
-    pub tol: T,
-    pub h_max: T,
-    pub h_min: T,
-    pub max_steps: usize,
+impl<T: Real, V: State<T>, D: CallBackData> AdamsPredictorCorrector<Ordinary, Adaptive, T, V, D, 4> {
+    ///// Adams-Predictor-Corrector 4th Order Variable Step Size Method.
+    ///
+    /// The Adams-Predictor-Corrector method is an explicit method that
+    /// uses the previous states to predict the next state. This implementation
+    /// uses a variable step size to maintain a desired accuracy.
+    /// It is recommended to start with a small step size so that tolerance
+    /// can be quickly met and the algorithm can adjust the step size accordingly.
+    ///
+    /// The First 3 steps are calculated using
+    /// the Runge-Kutta method of order 4(5) and then the Adams-Predictor-Corrector
+    /// method is used to calculate the remaining steps until the final time./ Create a Adams-Predictor-Corrector 4th Order Variable Step Size Method instance.
+    /// 
+    /// # Example
+    ///
+    /// ```
+    /// use differential_equations::prelude::*;
+    /// use nalgebra::{SVector, vector};
+    ///
+    /// struct HarmonicOscillator {
+    ///     k: f64,
+    /// }
+    ///
+    /// impl ODE<f64, SVector<f64, 2>> for HarmonicOscillator {
+    ///     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
+    ///         dydt[0] = y[1];
+    ///         dydt[1] = -self.k * y[0];
+    ///     }
+    /// }
+    /// let mut apcv4 = AdamsPredictorCorrector::v4();
+    /// let t0 = 0.0;
+    /// let tf = 10.0;
+    /// let y0 = vector![1.0, 0.0];
+    /// let system = HarmonicOscillator { k: 1.0 };
+    /// let results = ODEProblem::new(system, t0, tf, y0).solve(&mut apcv4).unwrap();
+    /// let expected = vector![-0.83907153, 0.54402111];
+    /// assert!((results.y.last().unwrap()[0] - expected[0]).abs() < 1e-6);
+    /// assert!((results.y.last().unwrap()[1] - expected[1]).abs() < 1e-6);
+    /// ```
+    /// 
+    ///
+    /// ## Warning
+    ///
+    /// This method is not suitable for stiff problems and can results in
+    /// extremely small step sizes and long computation times.```
+    pub fn v4() -> Self {
+        Self::default()
+    }
 }
 
 // Implement ODENumericalMethod Trait for APCV4
-impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for APCV4<T, V, D> {
+impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for AdamsPredictorCorrector<Ordinary, Adaptive, T, V, D, 4> {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
@@ -107,12 +71,13 @@ impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for APCV
         let mut evals = Evals::new();
 
         self.tf = tf;
-
-        // Initialize initial step size if it is zero
+        
+        // If h0 is zero, calculate initial step size
         if self.h0 == T::zero() {
-            self.h0 = h_init(
-                ode, t0, tf, y0, 4, self.tol, self.tol, self.h_min, self.h_max,
-            );
+            // Only use adaptive step size calculation if the method supports it
+            self.h0 = InitialStepSize::<Ordinary>::compute(ode, t0, tf, y0, 4, self.tol, self.tol, self.h_min, self.h_max, &mut evals);
+            evals.fcn += 2;
+
         }
 
         // Check that the initial step size is set
@@ -136,29 +101,29 @@ impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for APCV
         let six = T::from_f64(6.0).unwrap();
         for i in 1..=3 {
             // Compute k1, k2, k3, k4 of Runge-Kutta 4
-            ode.diff(self.t, &self.y, &mut self.k1);
+            ode.diff(self.t, &self.y, &mut self.k[0]);
             ode.diff(
                 self.t + self.h / two,
-                &(self.y + self.k1 * (self.h / two)),
-                &mut self.k2,
+                &(self.y + self.k[0] * (self.h / two)),
+                &mut self.k[1],
             );
             ode.diff(
                 self.t + self.h / two,
-                &(self.y + self.k2 * (self.h / two)),
-                &mut self.k3,
+                &(self.y + self.k[1] * (self.h / two)),
+                &mut self.k[2],
             );
-            ode.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
+            ode.diff(self.t + self.h, &(self.y + self.k[2] * self.h), &mut self.k[3]);
 
             // Update State
-            self.y += (self.k1 + self.k2 * two + self.k3 * two + self.k4) * (self.h / six);
+            self.y += (self.k[0] + self.k[1] * two + self.k[2] * two + self.k[3]) * (self.h / six);
             self.t += self.h;
             self.t_prev[i] = self.t;
             self.y_prev[i] = self.y;
             evals.fcn += 4; // 4 evaluations per Runge-Kutta step
 
             if i == 1 {
-                self.dydt = self.k1;
-                self.dydt_old = self.k1;
+                self.dydt = self.k[0];
+                self.dydt_old = self.k[0];
             }
         }
 
@@ -191,45 +156,45 @@ impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for APCV
             let six = T::from_f64(6.0).unwrap();
 
             // Perform a Runge-Kutta 4 step to finish.
-            ode.diff(self.t, &self.y, &mut self.k1);
+            ode.diff(self.t, &self.y, &mut self.k[0]);
             ode.diff(
                 self.t + self.h / two,
-                &(self.y + self.k1 * (self.h / two)),
-                &mut self.k2,
+                &(self.y + self.k[0] * (self.h / two)),
+                &mut self.k[1],
             );
             ode.diff(
                 self.t + self.h / two,
-                &(self.y + self.k2 * (self.h / two)),
-                &mut self.k3,
+                &(self.y + self.k[1] * (self.h / two)),
+                &mut self.k[2],
             );
-            ode.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
+            ode.diff(self.t + self.h, &(self.y + self.k[2] * self.h), &mut self.k[3]);
             evals.fcn += 4; // 4 evaluations per Runge-Kutta step
 
             // Update State
-            self.y += (self.k1 + self.k2 * two + self.k3 * two + self.k4) * (self.h / six);
+            self.y += (self.k[0] + self.k[1] * two + self.k[2] * two + self.k[3]) * (self.h / six);
             self.t += self.h;
             return Ok(evals);
         }
 
         // Compute derivatives for history
-        ode.diff(self.t_prev[3], &self.y_prev[3], &mut self.k1);
-        ode.diff(self.t_prev[2], &self.y_prev[2], &mut self.k2);
-        ode.diff(self.t_prev[1], &self.y_prev[1], &mut self.k3);
-        ode.diff(self.t_prev[0], &self.y_prev[0], &mut self.k4);
+        ode.diff(self.t_prev[3], &self.y_prev[3], &mut self.k[0]);
+        ode.diff(self.t_prev[2], &self.y_prev[2], &mut self.k[1]);
+        ode.diff(self.t_prev[1], &self.y_prev[1], &mut self.k[2]);
+        ode.diff(self.t_prev[0], &self.y_prev[0], &mut self.k[3]);
 
         let predictor = self.y_prev[3]
-            + (self.k1 * T::from_f64(55.0).unwrap() - self.k2 * T::from_f64(59.0).unwrap()
-                + self.k3 * T::from_f64(37.0).unwrap()
-                - self.k4 * T::from_f64(9.0).unwrap())
+            + (self.k[0] * T::from_f64(55.0).unwrap() - self.k[1] * T::from_f64(59.0).unwrap()
+                + self.k[2] * T::from_f64(37.0).unwrap()
+                - self.k[3] * T::from_f64(9.0).unwrap())
                 * self.h
                 / T::from_f64(24.0).unwrap();
 
         // Corrector step:
-        ode.diff(self.t + self.h, &predictor, &mut self.k4);
+        ode.diff(self.t + self.h, &predictor, &mut self.k[3]);
         let corrector = self.y_prev[3]
-            + (self.k4 * T::from_f64(9.0).unwrap() + self.k1 * T::from_f64(19.0).unwrap()
-                - self.k2 * T::from_f64(5.0).unwrap()
-                + self.k3 * T::from_f64(1.0).unwrap())
+            + (self.k[3] * T::from_f64(9.0).unwrap() + self.k[0] * T::from_f64(19.0).unwrap()
+                - self.k[1] * T::from_f64(5.0).unwrap()
+                + self.k[2] * T::from_f64(1.0).unwrap())
                 * self.h
                 / T::from_f64(24.0).unwrap();
 
@@ -280,28 +245,28 @@ impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for APCV
             let six = T::from_f64(6.0).unwrap();
             for i in 1..=3 {
                 // Compute k1, k2, k3, k4 of Runge-Kutta 4
-                ode.diff(self.t, &self.y, &mut self.k1);
+                ode.diff(self.t, &self.y, &mut self.k[0]);
                 ode.diff(
                     self.t + self.h / two,
-                    &(self.y + self.k1 * (self.h / two)),
-                    &mut self.k2,
+                    &(self.y + self.k[0] * (self.h / two)),
+                    &mut self.k[1],
                 );
                 ode.diff(
                     self.t + self.h / two,
-                    &(self.y + self.k2 * (self.h / two)),
-                    &mut self.k3,
+                    &(self.y + self.k[1] * (self.h / two)),
+                    &mut self.k[2],
                 );
-                ode.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
+                ode.diff(self.t + self.h, &(self.y + self.k[2] * self.h), &mut self.k[3]);
 
                 // Update State
-                self.y += (self.k1 + self.k2 * two + self.k3 * two + self.k4) * (self.h / six);
+                self.y += (self.k[0] + self.k[1] * two + self.k[2] * two + self.k[3]) * (self.h / six);
                 self.t += self.h;
                 self.t_prev[i] = self.t;
                 self.y_prev[i] = self.y;
                 self.evals += 4; // 4 evaluations per Runge-Kutta step
 
                 if i == 1 {
-                    self.dydt = self.k1;
+                    self.dydt = self.k[0];
                 }
             }
         } else {
@@ -325,21 +290,21 @@ impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for APCV
             let six = T::from_f64(6.0).unwrap();
             for i in 1..=3 {
                 // Compute k1, k2, k3, k4 of Runge-Kutta 4
-                ode.diff(self.t, &self.y, &mut self.k1);
+                ode.diff(self.t, &self.y, &mut self.k[0]);
                 ode.diff(
                     self.t + self.h / two,
-                    &(self.y + self.k1 * (self.h / two)),
-                    &mut self.k2,
+                    &(self.y + self.k[0] * (self.h / two)),
+                    &mut self.k[1],
                 );
                 ode.diff(
                     self.t + self.h / two,
-                    &(self.y + self.k2 * (self.h / two)),
-                    &mut self.k3,
+                    &(self.y + self.k[1] * (self.h / two)),
+                    &mut self.k[2],
                 );
-                ode.diff(self.t + self.h, &(self.y + self.k3 * self.h), &mut self.k4);
+                ode.diff(self.t + self.h, &(self.y + self.k[2] * self.h), &mut self.k[3]);
 
                 // Update State
-                self.y += (self.k1 + self.k2 * two + self.k3 * two + self.k4) * (self.h / six);
+                self.y += (self.k[0] + self.k[1] * two + self.k[2] * two + self.k[3]) * (self.h / six);
                 self.t += self.h;
                 self.t_prev[i] = self.t;
                 self.y_prev[i] = self.y;
@@ -386,7 +351,7 @@ impl<T: Real, V: State<T>, D: CallBackData> ODENumericalMethod<T, V, D> for APCV
 }
 
 // Implement the Interpolation trait for APCV4
-impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for APCV4<T, V, D> {
+impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for AdamsPredictorCorrector<Ordinary, Adaptive, T, V, D, 4> {
     fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // Check if t is within the range of the solver
         if t_interp < self.t_old || t_interp > self.t {
@@ -409,68 +374,5 @@ impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for APCV4<T, V, 
         );
 
         Ok(y_interp)
-    }
-}
-
-// Initialize APCV4 with default values and chainable settings
-impl<T: Real, V: State<T>, D: CallBackData> APCV4<T, V, D> {
-    pub fn new() -> Self {
-        APCV4 {
-            ..Default::default()
-        }
-    }
-
-    pub fn h0(mut self, h0: T) -> Self {
-        self.h0 = h0;
-        self
-    }
-
-    pub fn tol(mut self, tol: T) -> Self {
-        self.tol = tol;
-        self
-    }
-
-    pub fn h_min(mut self, h_min: T) -> Self {
-        self.h_min = h_min;
-        self
-    }
-
-    pub fn h_max(mut self, h_max: T) -> Self {
-        self.h_max = h_max;
-        self
-    }
-
-    pub fn max_steps(mut self, max_steps: usize) -> Self {
-        self.max_steps = max_steps;
-        self
-    }
-}
-
-impl<T: Real, V: State<T>, D: CallBackData> Default for APCV4<T, V, D> {
-    fn default() -> Self {
-        APCV4 {
-            h0: T::zero(),
-            h: T::zero(),
-            t: T::zero(),
-            y: V::zeros(),
-            dydt: V::zeros(),
-            t_prev: [T::zero(); 4],
-            y_prev: [V::zeros(), V::zeros(), V::zeros(), V::zeros()],
-            t_old: T::zero(),
-            y_old: V::zeros(),
-            dydt_old: V::zeros(),
-            k1: V::zeros(),
-            k2: V::zeros(),
-            k3: V::zeros(),
-            k4: V::zeros(),
-            tf: T::zero(),
-            evals: 0,
-            steps: 0,
-            status: Status::Uninitialized,
-            tol: T::from_f64(1.0e-6).unwrap(),
-            h_max: T::infinity(),
-            h_min: T::zero(),
-            max_steps: 1_000_000,
-        }
     }
 }

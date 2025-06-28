@@ -4,14 +4,10 @@ use super::systems::{ExponentialGrowth, HarmonicOscillator, LinearEquation, Logi
 use differential_equations::{
     methods::{
         ExplicitRungeKutta,
-        ImplicitRungeKutta
+        ImplicitRungeKutta,
+        AdamsPredictorCorrector
     },
-    ode::{
-        ODEProblem,
-        methods::{
-            adams::{APCF4, APCV4},
-        }
-    }
+    ode::ODEProblem,
 };
 use nalgebra::vector;
 
@@ -114,11 +110,11 @@ fn accuracy() {
         tolerance: 1e3,
 
         solver_name: APCF4,
-        solver: APCF4::new(0.01),
+        solver: AdamsPredictorCorrector::f4(0.01),
         tolerance: 1e3,
 
         solver_name: APCV4,
-        solver: APCV4::new(),
+        solver: AdamsPredictorCorrector::v4(),
         tolerance: 1e3,
 
         solver_name: RKV65,
@@ -215,11 +211,11 @@ fn accuracy() {
         tolerance: 1e-1,
 
         solver_name: APCF4,
-        solver: APCF4::new(-0.01),
+        solver: AdamsPredictorCorrector::f4(-0.01),
         tolerance: 1e-1,
 
         solver_name: APCV4,
-        solver: APCV4::new(),
+        solver: AdamsPredictorCorrector::v4(),
         tolerance: 1e-1,
 
         solver_name: RKV65,
@@ -316,11 +312,11 @@ fn accuracy() {
         tolerance: 1e4,
 
         solver_name: APCF4,
-        solver: APCF4::new(0.01),
+        solver: AdamsPredictorCorrector::f4(0.01),
         tolerance: 1e4,
 
         solver_name: APCV4,
-        solver: APCV4::new(),
+        solver: AdamsPredictorCorrector::v4(),
         tolerance: 1e4,
 
         solver_name: RKV65,
@@ -417,11 +413,11 @@ fn accuracy() {
         tolerance: 1e-1,
 
         solver_name: APCF4,
-        solver: APCF4::new(0.01),
+        solver: AdamsPredictorCorrector::f4(0.01),
         tolerance: 1e-1,
 
         solver_name: APCV4,
-        solver: APCV4::new(),
+        solver: AdamsPredictorCorrector::v4(),
         tolerance: 1e-1,
 
         solver_name: RKV65,
@@ -518,11 +514,11 @@ fn accuracy() {
         tolerance: 1e-2,
 
         solver_name: APCF4,
-        solver: APCF4::new(0.01),
+        solver: AdamsPredictorCorrector::f4(0.01),
         tolerance: 1e-2,
 
         solver_name: APCV4,
-        solver: APCV4::new(),
+        solver: AdamsPredictorCorrector::v4(),
         tolerance: 1e-2,
 
         solver_name: RKV65,

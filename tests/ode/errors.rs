@@ -4,13 +4,11 @@ use differential_equations::{
     ControlFlag, Error, Status,
     methods::{
         ExplicitRungeKutta,
-        ImplicitRungeKutta
+        ImplicitRungeKutta,
+        AdamsPredictorCorrector
     },
     ode::{
         ODE, ODEProblem,
-        methods::{
-            adams::{APCF4, APCV4},
-        },
     },
 };
 use nalgebra::{SVector, vector};
@@ -130,8 +128,8 @@ fn invalid_time_span() {
         solver_name: RKF, solver: ExplicitRungeKutta::rkf45().h0(0.1),
         solver_name: RK4, solver: ExplicitRungeKutta::rk4(0.1),
         solver_name: Euler, solver: ExplicitRungeKutta::euler(0.1),
-        solver_name: APCF4, solver: APCF4::new(0.1),
-        solver_name: APCV4, solver: APCV4::new().h0(0.1),
+        solver_name: APCF4, solver: AdamsPredictorCorrector::f4(0.1),
+        solver_name: APCV4, solver: AdamsPredictorCorrector::v4().h0(0.1),
         solver_name: RKV65, solver: ExplicitRungeKutta::rkv655e().h0(0.1),
         solver_name: RKV98, solver: ExplicitRungeKutta::rkv988e().h0(0.1),
         solver_name: CrankNicolson, solver: ImplicitRungeKutta::crank_nicolson(0.1),
@@ -153,8 +151,8 @@ fn initial_step_size_too_big() {
         solver_name: RKF, solver: ExplicitRungeKutta::rkf45().h0(10.0),
         solver_name: RK4, solver: ExplicitRungeKutta::rk4(10.0),
         solver_name: Euler, solver: ExplicitRungeKutta::euler(10.0),
-        solver_name: APCF4, solver: APCF4::new(10.0),
-        solver_name: APCV4, solver: APCV4::new().h0(10.0),
+        solver_name: APCF4, solver: AdamsPredictorCorrector::f4(10.0),
+        solver_name: APCV4, solver: AdamsPredictorCorrector::v4().h0(10.0),
         solver_name: RKV65, solver: ExplicitRungeKutta::rkv655e().h0(10.0),
         solver_name: RKV98, solver: ExplicitRungeKutta::rkv988e().h0(10.0),
         solver_name: CrankNicolson, solver: ImplicitRungeKutta::crank_nicolson(10.0),
@@ -176,8 +174,8 @@ fn terminate_initial_conditions_trigger() {
         solver_name: RKF, solver: ExplicitRungeKutta::rkf45().h0(0.1),
         solver_name: RK4, solver: ExplicitRungeKutta::rk4(0.1),
         solver_name: Euler, solver: ExplicitRungeKutta::euler(0.1),
-        solver_name: APCF4, solver: APCF4::new(0.1),
-        solver_name: APCV4, solver: APCV4::new().h0(0.1),
+        solver_name: APCF4, solver: AdamsPredictorCorrector::f4(0.1),
+        solver_name: APCV4, solver: AdamsPredictorCorrector::v4().h0(0.1),
         solver_name: RKV65, solver: ExplicitRungeKutta::rkv655e().h0(0.1),
         solver_name: RKV98, solver: ExplicitRungeKutta::rkv988e().h0(0.1),
         solver_name: CrankNicolson, solver: ImplicitRungeKutta::crank_nicolson(0.1),

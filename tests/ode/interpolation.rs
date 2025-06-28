@@ -5,13 +5,9 @@ use differential_equations::{
     methods::{
         ExplicitRungeKutta,
         ImplicitRungeKutta,
+        AdamsPredictorCorrector
     },
-    ode::{
-        ODEProblem,
-        methods::{
-            adams::{APCF4, APCV4},
-        }
-    }
+    ode::ODEProblem,
 };
 use nalgebra::vector;
 use systems::ExponentialGrowth;
@@ -75,8 +71,8 @@ fn interpolation() {
         // These methods use cubic Hermite interpolation
         solver_name: RKF, solver: ExplicitRungeKutta::rkf45(),
         solver_name: RK4, solver: ExplicitRungeKutta::rk4(0.01),
-        solver_name: APCF4, solver: APCF4::new(0.01),
-        solver_name: APCV4, solver: APCV4::new().h0(0.01),
+        solver_name: APCF4, solver: AdamsPredictorCorrector::f4(0.01),
+        solver_name: APCV4, solver: AdamsPredictorCorrector::v4().h0(0.01),
         solver_name: CrankNicolson, solver: ImplicitRungeKutta::crank_nicolson(0.01),
         solver_name: GaussLegendre6, solver: ImplicitRungeKutta::gauss_legendre_6()
     }

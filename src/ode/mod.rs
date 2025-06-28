@@ -86,6 +86,3 @@ pub use ode::{
 // ODENumericalMethod Traits for ODE NumericalMethods.
 mod numerical_method;
 pub use numerical_method::ODENumericalMethod;
-
-// ODENumericalMethod for ODEs
-pub mod methods;

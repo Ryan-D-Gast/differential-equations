@@ -1,9 +1,11 @@
 use crate::systems::{chaotic::*, linear::*, oscillators::*};
 use criterion::{BenchmarkId, Criterion, black_box, criterion_group};
 use differential_equations::{
-    methods::ExplicitRungeKutta,
+    methods::{
+        ExplicitRungeKutta,
+        AdamsPredictorCorrector,
+    },
     ode::{
-        methods::adams::*,
         *,
     },
 };

@@ -86,7 +86,7 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_apcf4_ho,
-    APCF4::new(0.1),
+    AdamsPredictorCorrector::f4(0.1),
     "APCF4",
     HarmonicOscillator,
     vector![1.0, 0.0],
@@ -158,7 +158,7 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_apcf4_vdp,
-    APCF4::new(0.01),
+    AdamsPredictorCorrector::f4(0.01),
     "APCF4",
     VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
@@ -254,7 +254,7 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_apcf4_lorenz,
-    APCF4::new(0.01),
+    AdamsPredictorCorrector::f4(0.01),
     "APCF4",
     Lorenz {
         sigma: 10.0,
@@ -330,7 +330,7 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_apcf4_exp,
-    APCF4::new(0.1),
+    AdamsPredictorCorrector::f4(0.1),
     "APCF4",
     Exponential { lambda: -0.5 },
     vector![1.0],

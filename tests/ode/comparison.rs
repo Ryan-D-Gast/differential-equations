@@ -2,13 +2,11 @@
 
 use super::systems;
 use differential_equations::{
-    methods::ExplicitRungeKutta,
-    ode::{
-        ODEProblem,
-        methods::{
-            adams::APCV4,
-        }
+    methods::{
+        ExplicitRungeKutta,
+        AdamsPredictorCorrector,
     },
+    ode::ODEProblem,
 };
 use nalgebra::SVector;
 use std::{
@@ -320,7 +318,7 @@ fn error_vs_evals() {
         DOP853, |tol| ExplicitRungeKutta::dop853().rtol(tol).atol(tol),
         DOPRI5, |tol| ExplicitRungeKutta::dopri5().rtol(tol).atol(tol),
         RKF, |tol| ExplicitRungeKutta::rkf45().rtol(tol).atol(tol),
-        APCV4, |tol| APCV4::new().tol(tol),
+        APCV4, |tol| AdamsPredictorCorrector::v4().tol(tol),
         RKV65, |tol| ExplicitRungeKutta::rkv656e().rtol(tol).atol(tol),
         RKV87, |tol| ExplicitRungeKutta::rkv877e().rtol(tol).atol(tol),
         RKV98, |tol| ExplicitRungeKutta::rkv988e().rtol(tol).atol(tol)
@@ -330,7 +328,7 @@ fn error_vs_evals() {
         DOP853, |tol| ExplicitRungeKutta::dop853().rtol(tol).atol(tol),
         DOPRI5, |tol| ExplicitRungeKutta::dopri5().rtol(tol).atol(tol),
         RKF, |tol| ExplicitRungeKutta::rkf45().rtol(tol).atol(tol),
-        APCV4, |tol| APCV4::new().tol(tol),
+        APCV4, |tol| AdamsPredictorCorrector::v4().tol(tol),
         RKV65, |tol| ExplicitRungeKutta::rkv656e().rtol(tol).atol(tol),
         RKV87, |tol| ExplicitRungeKutta::rkv877e().rtol(tol).atol(tol),
         RKV98, |tol| ExplicitRungeKutta::rkv988e().rtol(tol).atol(tol)
@@ -340,7 +338,7 @@ fn error_vs_evals() {
         DOP853, |tol| ExplicitRungeKutta::dop853().rtol(tol).atol(tol),
         DOPRI5, |tol| ExplicitRungeKutta::dopri5().rtol(tol).atol(tol),
         RKF, |tol| ExplicitRungeKutta::rkf45().rtol(tol).atol(tol),
-        APCV4, |tol| APCV4::new().tol(tol),
+        APCV4, |tol| AdamsPredictorCorrector::v4().tol(tol),
         RKV65, |tol| ExplicitRungeKutta::rkv656e().rtol(tol).atol(tol),
         RKV87, |tol| ExplicitRungeKutta::rkv877e().rtol(tol).atol(tol),
         RKV98, |tol| ExplicitRungeKutta::rkv988e().rtol(tol).atol(tol)
@@ -350,7 +348,7 @@ fn error_vs_evals() {
         DOP853, |tol| ExplicitRungeKutta::dop853().rtol(tol).atol(tol),
         DOPRI5, |tol| ExplicitRungeKutta::dopri5().rtol(tol).atol(tol),
         RKF, |tol| ExplicitRungeKutta::rkf45().rtol(tol).atol(tol),
-        APCV4, |tol| APCV4::new().tol(tol),
+        APCV4, |tol| AdamsPredictorCorrector::v4().tol(tol),
         RKV65, |tol| ExplicitRungeKutta::rkv656e().rtol(tol).atol(tol),
         RKV87, |tol| ExplicitRungeKutta::rkv877e().rtol(tol).atol(tol),
         RKV98, |tol| ExplicitRungeKutta::rkv988e().rtol(tol).atol(tol)
