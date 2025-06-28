@@ -43,7 +43,7 @@ A high-performance library for solving differential equations in Rust, including
     - **Fixed-Delay Problems** - Solve problems with fixed delays
     - **Variable-Delay Problems** - Solve problems with state driven delays
 
-- **[Stochastic Differential Equations (SDEs)](./docs/sde.md)** - Includes solvers such as Euler-Maruyama, Milstein, and Runge-Kutta methods for stochastic differential equations.
+- **[Stochastic Differential Equations (SDEs)](./docs/sde.md)** - Fixed step explicit Runge-Kutta methods for stochastic differential equations.
     - **Customizable Noise** - User implements noise in SDE implementation
 
 ## Contributing
