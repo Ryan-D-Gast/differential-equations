@@ -1,0 +1,166 @@
+<svg height="600" viewBox="0 0 800 600" width="800" xmlns="http://www.w3.org/2000/svg">
+<rect fill="white" height="600" width="800" x="0" y="0"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="20" text-anchor="middle" x="415" y="30">
+SIR Epidemiological Model
+</text>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="14" text-anchor="middle" x="415" y="576">
+Time (days)
+</text>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="14" text-anchor="middle" transform="rotate(-90, 18, 300)" x="18" y="300">
+Population
+</text>
+<rect fill="none" height="480" stroke="#000000" stroke-width="1.5" width="710" x="60" y="60"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="60" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="60" y="549">
+0.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="60" x2="60" y1="60" y2="65"/>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="126.87756" x2="126.87756" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="126.87756" x2="126.87756" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="126.87756" y="549">
+5.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="126.87756" x2="126.87756" y1="60" y2="65"/>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="193.75513" x2="193.75513" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="193.75513" x2="193.75513" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="193.75513" y="549">
+10.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="193.75513" x2="193.75513" y1="60" y2="65"/>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="260.6327" x2="260.6327" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="260.6327" x2="260.6327" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="260.6327" y="549">
+15.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="260.6327" x2="260.6327" y1="60" y2="65"/>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="327.51025" x2="327.51025" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="327.51025" x2="327.51025" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="327.51025" y="549">
+20.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="327.51025" x2="327.51025" y1="60" y2="65"/>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="394.38782" x2="394.38782" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="394.38782" x2="394.38782" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="394.38782" y="549">
+25.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="394.38782" x2="394.38782" y1="60" y2="65"/>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="461.2654" x2="461.2654" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="461.2654" x2="461.2654" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="461.2654" y="549">
+30.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="461.2654" x2="461.2654" y1="60" y2="65"/>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="528.14294" x2="528.14294" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="528.14294" x2="528.14294" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="528.14294" y="549">
+35.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="528.14294" x2="528.14294" y1="60" y2="65"/>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="595.0205" x2="595.0205" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="595.0205" x2="595.0205" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="595.0205" y="549">
+40.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="595.0205" x2="595.0205" y1="60" y2="65"/>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="661.8981" x2="661.8981" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="661.8981" x2="661.8981" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="661.8981" y="549">
+45.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="661.8981" x2="661.8981" y1="60" y2="65"/>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="728.77563" x2="728.77563" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="728.77563" x2="728.77563" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="728.77563" y="549">
+50.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="728.77563" x2="728.77563" y1="60" y2="65"/>
+<text dominant-baseline="text-after-edge" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="start" x="63" y="57">
+·10
+<tspan dx="-0.2em" dy="-0.4em">
+3
+</tspan>
+</text>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="540" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="540" y2="540"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="540">
+0.0
+</text>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="491.95007" y2="491.95007"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="491.95007" y2="491.95007"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="491.95007" y2="491.95007"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="491.95007">
+0.1
+</text>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="443.90012" y2="443.90012"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="443.90012" y2="443.90012"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="443.90012" y2="443.90012"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="443.90012">
+0.2
+</text>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="395.85016" y2="395.85016"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="395.85016" y2="395.85016"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="395.85016" y2="395.85016"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="395.85016">
+0.3
+</text>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="347.80023" y2="347.80023"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="347.80023" y2="347.80023"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="347.80023" y2="347.80023"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="347.80023">
+0.4
+</text>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="299.7503" y2="299.7503"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="299.7503" y2="299.7503"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="299.7503" y2="299.7503"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="299.7503">
+0.5
+</text>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="251.70035" y2="251.70035"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="251.70035" y2="251.70035"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="251.70035" y2="251.70035"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="251.70035">
+0.6
+</text>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="203.65042" y2="203.65042"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="203.65042" y2="203.65042"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="203.65042" y2="203.65042"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="203.65042">
+0.7
+</text>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="155.6005" y2="155.6005"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="155.6005" y2="155.6005"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="155.6005" y2="155.6005"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="155.6005">
+0.8
+</text>
+<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="107.55051" y2="107.55051"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="107.55051" y2="107.55051"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="107.55051" y2="107.55051"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="107.55051">
+0.9
+</text>
+<defs>
+<clipPath id="plotAreaClip">
+<rect height="480" width="710" x="60" y="60"/>
+</clipPath>
+</defs>
+<g clip-path="url(#plotAreaClip)">
+<path d="M60,64.30557 L73.37551,77.60028 L86.75102,119.700745 L100.12654,221.5653 L113.50205,364.71915 L126.87756,466.5864 L140.25308,511.65576 L153.6286,528.5546 L167.0041,534.9411 L180.37961,537.5424 L193.75513,538.6943 L207.13065,539.24646 L220.50616,539.5341 L233.88167,539.6951 L247.25719,539.7885 L260.6327,539.8445 L274.0082,539.88306 L287.38373,539.90796 L300.75922,539.925 L314.13477,539.93726 L327.51025,539.9464 L340.88577,539.95337 L354.2613,539.9587 L367.63678,539.9627 L381.01233,539.96594 L394.38782,539.9685 L407.76334,539.9706 L421.13882,539.9722 L434.51437,539.97363 L447.8899,539.97473 L461.2654,539.9757 L474.64087,539.97656 L488.01642,539.97723 L501.39194,539.9778 L514.76746,539.9783 L528.14294,539.9787 L541.51843,539.97906 L554.894,539.9794 L568.26953,539.9796 L581.645,539.97986 L595.0205,539.98004 L608.396,539.9802 L621.77155,539.98035 L635.14703,539.98047 L648.5226,539.9806 L661.8981,539.98065 L675.27356,539.9808 L688.6491,539.98083 L702.02466,539.9809 L715.4001,539.98096 L728.77563,539.98096 L742.1511,539.981 L755.5267,539.981 L768.9022,539.9811 L770,539.9811" fill="none" stroke="#0000ff" stroke-width="1"/>
+<path d="M60,535.195 L73.37551,523.2431 L86.75102,485.66537 L100.12654,396.94305 L113.50205,282.07663 L126.87756,221.43622 L140.25308,221.4563 L153.6286,247.48447 L167.0041,279.8 L180.37961,311.39206 L193.75513,340.19427 L207.13065,365.76675 L220.50616,388.25876 L233.88167,407.9803 L247.25719,425.16638 L260.6327,440.00146 L274.0082,453.1623 L287.38373,464.4798 L300.75922,474.26715 L314.13477,482.79926 L327.51025,490.2682 L340.88577,496.80618 L354.2613,502.47485 L367.63678,507.38394 L381.01233,511.64612 L394.38782,515.3505 L407.76334,518.5694 L421.13882,521.3615 L434.51437,523.7737 L447.8899,525.86884 L461.2654,527.71344 L474.64087,529.3364 L488.01642,530.7505 L501.39194,531.95447 L514.76746,532.97394 L528.14294,533.9071 L541.51843,534.72186 L554.894,535.3832 L568.26953,535.99567 L581.645,536.53357 L595.0205,536.9621 L608.396,537.3792 L621.77155,537.7063 L635.14703,538.01495 L648.5226,538.2723 L661.8981,538.49805 L675.27356,538.6951 L688.6491,538.8659 L702.02466,539.01025 L715.4001,539.14594 L728.77563,539.2481 L742.1511,539.3576 L755.5267,539.43243 L768.9022,539.51306 L770,539.51953" fill="none" stroke="#ff0000" stroke-width="1"/>
+<path d="M60,540 L73.37551,538.6572 L86.75102,534.13446 L100.12654,520.9922 L113.50205,492.7048 L126.87756,451.47797 L140.25308,406.38852 L153.6286,363.4615 L167.0041,324.75952 L180.37961,290.5661 L193.75513,260.6121 L207.13065,234.48737 L220.50616,211.70767 L233.88167,191.8252 L247.25719,174.54572 L260.6327,159.65466 L274.0082,146.4552 L287.38373,135.11282 L300.75922,125.30847 L314.13477,116.7641 L327.51025,109.28601 L340.88577,102.74103 L354.2613,97.06705 L367.63678,92.1539 L381.01233,87.88855 L394.38782,84.18158 L407.76334,80.96066 L421.13882,78.16681 L434.51437,75.753296 L447.8899,73.65698 L461.2654,71.81146 L474.64087,70.18759 L488.01642,68.77286 L501.39194,67.5683 L514.76746,66.54837 L528.14294,65.61478 L541.51843,64.79968 L554.894,64.13806 L568.26953,63.52527 L581.645,62.98712 L595.0205,62.558502 L608.396,62.141174 L621.77155,61.813904 L635.14703,61.505157 L648.5226,61.24774 L661.8981,61.02185 L675.27356,60.824707 L688.6491,60.65387 L702.02466,60.50946 L715.4001,60.37372 L728.77563,60.271515 L742.1511,60.161987 L755.5267,60.087128 L768.9022,60.00647 L770,60" fill="none" stroke="#00ff00" stroke-width="1"/>
+</g>
+<rect fill="white" height="74" stroke="#000000" stroke-width="1" width="99.200005" x="660.8" y="70"/>
+<rect fill="#0000ff" height="14.400001" width="15" x="670.8" y="81.8"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="12" text-anchor="start" x="690.8" y="89">
+Susceptible
+</text>
+<rect fill="#ff0000" height="14.400001" width="15" x="670.8" y="99.8"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="12" text-anchor="start" x="690.8" y="107">
+Infected
+</text>
+<rect fill="#00ff00" height="14.400001" width="15" x="670.8" y="117.8"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="12" text-anchor="start" x="690.8" y="125">
+Recovered
+</text>
+</svg>

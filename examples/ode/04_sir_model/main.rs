@@ -23,6 +23,7 @@
 //! - Working with solution status information
 
 use differential_equations::prelude::*;
+use quill::*;
 
 /// SIR (Susceptible, Infected, Recovered) Model
 struct SIRModel {
@@ -147,8 +148,53 @@ fn main() {
             println!("Accepted Steps: {}", solution.accepted_steps);
             println!("Solve time: {:?} seconds", solution.timer.elapsed());
 
-            // Create a CSV file
-            solution.to_csv("examples/ode/04_sir_model/target/sir_model.csv").unwrap();
+            // Plot the solution using quill
+            Plot::builder()
+                .title("SIR Epidemiological Model".to_string())
+                .x_label("Time (days)".to_string())
+                .y_label("Population".to_string())
+                .legend(Legend::TopRightInside)
+                .data(vec![
+                    Series::builder()
+                        .name("Susceptible".to_string())
+                        .color("Blue".to_string())
+                        .data(
+                            solution
+                                .t
+                                .iter()
+                                .zip(solution.y.iter())
+                                .map(|(t, y)| (*t, y.susceptible))
+                                .collect::<Vec<_>>(),
+                        )
+                        .build(),
+                    Series::builder()
+                        .name("Infected".to_string())
+                        .color("Red".to_string())
+                        .data(
+                            solution
+                                .t
+                                .iter()
+                                .zip(solution.y.iter())
+                                .map(|(t, y)| (*t, y.infected))
+                                .collect::<Vec<_>>(),
+                        )
+                        .build(),
+                    Series::builder()
+                        .name("Recovered".to_string())
+                        .color("Green".to_string())
+                        .data(
+                            solution
+                                .t
+                                .iter()
+                                .zip(solution.y.iter())
+                                .map(|(t, y)| (*t, y.recovered))
+                                .collect::<Vec<_>>(),
+                        )
+                        .build(),
+                ])
+                .build()
+                .to_svg("examples/ode/04_sir_model/sir_model.svg")
+                .expect("Failed to save plot as SVG");
         }
         Err(e) => panic!("Error: {:?}", e),
     };

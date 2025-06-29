@@ -18,6 +18,7 @@
 //! - Accessing solution statistics like step counts and evaluations
 
 use differential_equations::prelude::*;
+use quill::*;
 
 // Define the ode
 struct ExponentialGrowth {
@@ -63,6 +64,47 @@ fn main() {
     println!("Accepted Steps: {}", solution.accepted_steps);
     println!("Status: {:?}", solution.status);
 
-    // Create a csv
-    solution.to_csv("./examples/ode/01_exponential_growth/target/exponential_growth.csv").unwrap();
+    // Plot the solution using quill
+    Plot::builder()
+        .title("Exponential Growth ODE Solution".to_string())
+        .x_label("Time (t)".to_string())
+        .y_label("y(t)".to_string())
+        .legend(Legend::TopLeftInside)
+        .data(vec![
+            Series::builder()
+                .name("Numerical Solution".to_string())
+                .color("Blue".to_string())
+                .data(
+                    solution
+                        .t
+                        .iter()
+                        .zip(solution.y.iter())
+                        .map(|(t, y)| (*t, *y))
+                        .collect::<Vec<_>>(),
+                )
+                .marker(Marker::Circle)
+                .line(Line::Solid)
+                .build(),
+            Series::builder()
+                .name("Analytical Solution".to_string())
+                .color("Red".to_string())
+                .data({
+                    let k = 1.0;
+                    let y0 = 1.0;
+                    (0..=100)
+                        .map(|i| {
+                            let t = i as f64 * 0.1;
+                            let analytical = y0 * (k * t).exp();
+                            (t, analytical)
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .marker(Marker::Circle)
+                .marker_size(3.0)
+                .line(Line::None)
+                .build(),
+        ])
+        .build()
+        .to_svg("examples/ode/01_exponential_growth/exponential_growth.svg")
+        .expect("Failed to save plot as SVG");
 }

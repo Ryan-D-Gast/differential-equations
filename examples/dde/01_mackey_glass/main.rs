@@ -13,6 +13,7 @@
 //! This equation was originally proposed as a model for the production of blood cells.
 
 use differential_equations::prelude::*;
+use quill::*;
 
 struct MackeyGlass {
     beta: f64,
@@ -76,8 +77,28 @@ fn main() {
             println!("Rejected steps: {}", solution.rejected_steps);
             println!("Number of output points: {}", solution.t.len());
 
-            // Save the solution to a CSV file
-            solution.to_csv("examples/dde/01_mackey_glass/target/mackey_glass.csv").unwrap();
+            // Plot the solution using quill
+            Plot::builder()
+                .title("Mackey-Glass Delay Differential Equation".to_string())
+                .x_label("Time (t)".to_string())
+                .y_label("y(t)".to_string())
+                .data(vec![
+                    Series::builder()
+                        .name("Mackey-Glass Solution".to_string())
+                        .color("Blue".to_string())
+                        .data(
+                            solution
+                                .t
+                                .iter()
+                                .zip(solution.y.iter())
+                                .map(|(t, y)| (*t, *y))
+                                .collect::<Vec<_>>(),
+                        )
+                        .build(),
+                ])
+                .build()
+                .to_svg("examples/dde/01_mackey_glass/mackey_glass.svg")
+                .expect("Failed to save plot as SVG");
         }
         Err(e) => {
             eprintln!("Error solving DDE: {:?}", e);

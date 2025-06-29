@@ -21,6 +21,7 @@
 
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
+use quill::*;
 
 struct HarmonicOscillator {
     k: f32,
@@ -45,6 +46,39 @@ fn main() {
     let (tf, yf) = solution.last().unwrap();
     println!("Solution: ({:?}, {:?})", tf, yf);
 
-    // Create a csv
-    solution.to_csv("examples/ode/02_harmonic_oscillator/target/harmonic_oscillator.csv").unwrap();
+    // Plot the solution using quill
+    Plot::builder()
+        .title("Harmonic Oscillator Solution".to_string())
+        .x_label("Time (t)".to_string())
+        .y_label("Position and Velocity".to_string())
+        .legend(Legend::TopRightInside)
+        .data(vec![
+            Series::builder()
+                .name("Position (x)".to_string())
+                .color("Blue".to_string())
+                .data(
+                    solution
+                        .t
+                        .iter()
+                        .zip(solution.y.iter())
+                        .map(|(t, y)| (*t as f64, y[0] as f64))
+                        .collect::<Vec<_>>(),
+                )
+                .build(),
+            Series::builder()
+                .name("Velocity (v)".to_string())
+                .color("Red".to_string())
+                .data(
+                    solution
+                        .t
+                        .iter()
+                        .zip(solution.y.iter())
+                        .map(|(t, y)| (*t as f64, y[1] as f64))
+                        .collect::<Vec<_>>(),
+                )
+                .build(),
+        ])
+        .build()
+        .to_svg("examples/ode/02_harmonic_oscillator/harmonic_oscillator.svg")
+        .expect("Failed to save plot as SVG");
 }

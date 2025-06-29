@@ -18,6 +18,7 @@
 
 use differential_equations::prelude::*;
 use nalgebra::Vector3;
+use quill::*;
 
 // Define the Breast Cancer Model DDE struct
 struct BreastCancerModel {
@@ -114,8 +115,53 @@ fn main() {
                 }
             }
 
-            // Create csv
-            solution.to_csv("examples/dde/02_breast_cancer_model/target/breast_cancer_model.csv").unwrap();
+            // Plot the solution using quill
+            Plot::builder()
+                .title("Breast Cancer Model with Delay".to_string())
+                .x_label("Time (t)".to_string())
+                .y_label("Cell Population".to_string())
+                .legend(Legend::TopRightInside)
+                .data(vec![
+                    Series::builder()
+                        .name("Proliferating Cells (u1)".to_string())
+                        .color("Blue".to_string())
+                        .data(
+                            solution
+                                .t
+                                .iter()
+                                .zip(solution.y.iter())
+                                .map(|(t, u)| (*t, u[0]))
+                                .collect::<Vec<_>>(),
+                        )
+                        .build(),
+                    Series::builder()
+                        .name("Quiescent Cells (u2)".to_string())
+                        .color("Red".to_string())
+                        .data(
+                            solution
+                                .t
+                                .iter()
+                                .zip(solution.y.iter())
+                                .map(|(t, u)| (*t, u[1]))
+                                .collect::<Vec<_>>(),
+                        )
+                        .build(),
+                    Series::builder()
+                        .name("Resistant Cells (u3)".to_string())
+                        .color("Green".to_string())
+                        .data(
+                            solution
+                                .t
+                                .iter()
+                                .zip(solution.y.iter())
+                                .map(|(t, u)| (*t, u[2]))
+                                .collect::<Vec<_>>(),
+                        )
+                        .build(),
+                ])
+                .build()
+                .to_svg("examples/dde/02_breast_cancer_model/breast_cancer_model.svg")
+                .expect("Failed to save plot as SVG");
         }
         Err(e) => {
             eprintln!("Error solving DDE: {:?}", e);

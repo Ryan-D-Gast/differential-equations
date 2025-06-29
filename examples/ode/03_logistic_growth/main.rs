@@ -16,6 +16,7 @@
 //! - Accessing solution statistics like step counts and evaluations
 
 use differential_equations::prelude::*;
+use quill::*;
 
 struct LogisticGrowth {
     k: f64,
@@ -66,8 +67,42 @@ fn main() {
             println!("Rejected Steps: {}", solution.rejected_steps);
             println!("Accepted Steps: {}", solution.accepted_steps);
 
-            // Create a CSV file
-            solution.to_csv("examples/ode/03_logistic_growth/target/logistic_growth.csv").unwrap();
+            // Plot the solution using quill
+            Plot::builder()
+                .title("Logistic Growth Model".to_string())
+                .x_label("Time (t)".to_string())
+                .y_label("Population".to_string())
+                .y_range(Range::Manual { min: 0.0, max: 10.0 })
+                .legend(Legend::BottomRightInside)
+                .data(vec![
+                    Series::builder()
+                        .name("Numerical Solution".to_string())
+                        .color("Blue".to_string())
+                        .data(
+                            solution
+                                .t
+                                .iter()
+                                .zip(solution.y.iter())
+                                .map(|(t, y)| (*t, *y))
+                                .collect::<Vec<_>>(),
+                        )
+                        .build(),
+                    Series::builder()
+                        .name("Termination Asymptote".to_string())
+                        .color("Red".to_string())
+                        .data(
+                            solution
+                                .t
+                                .iter()
+                                .map(|t| (*t, 9.0)) // m = 10.0
+                                .collect::<Vec<_>>(),
+                        )
+                        .line(Line::Dashed)
+                        .build(),
+                ])
+                .build()
+                .to_svg("examples/ode/03_logistic_growth/logistic_growth.svg")
+                .expect("Failed to save plot as SVG");
         }
         Err(e) => panic!("Error: {:?}", e),
     };
