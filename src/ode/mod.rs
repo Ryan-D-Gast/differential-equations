@@ -57,17 +57,6 @@
 //! - [`ODE`]: Define your differential equation system by implementing this trait
 //! - [`ODEProblem`]: Set up an initial value problem with your system, time span, and initial conditions
 //!
-//! ## Popular Numerical Methods
-//!
-//! - [`RK4`]: Fixed step 4th order Runge-Kutta method
-//! - [`DOPRI5`]: Adaptive step Dormand-Prince 5(4) method
-//! - [`DOP853`]: Adaptive step Dormand-Prince 8(5,3) method with 7th order interpolant
-//! - [`RKV65`]: Verner 6(5) adaptive method with dense output of order 5
-//! - [`RKV87`]: Verner 8(7) adaptive method with dense output of order 8
-//! - [`RKV98`]: Verner 9(8) adaptive method with dense output of order 9
-//!
-//! Additional solvers are available in the [`solvers`] module.
-//!
 
 // Definitions & Constructors for users to ergonomically solve an ODEProblem problem via the solve_ode function.
 mod problem;

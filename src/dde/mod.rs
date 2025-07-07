@@ -51,11 +51,6 @@
 //! - [`DDE`]: Define your delay differential equation system by implementing this trait
 //! - [`DDEProblem`]: Set up an initial value problem with your system, time span, initial conditions, and history function
 //!
-//! ## Popular Numerical Methods
-//!
-//! - [`BS23`]: Adaptive step Runge-Kutta method for DDEs
-//! - [`DOPRI5`]: Dormand-Prince 5(4) method for DDEs
-//!
 
 mod problem;
 pub use problem::DDEProblem;

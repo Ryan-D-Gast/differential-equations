@@ -1,51 +1,31 @@
 //! Prelude module for the Differential Equations library.
 //!
-//! This prelude re-exports the most commonly used types and solvers
+//! This prelude re-exports all the essential types and methods
 //! for Ordinary Differential Equations (ODEs), Delay Differential Equations (DDEs),
 //! and Stochastic Differential Equations (SDEs).
 //!
 //! ## Solver Naming Conventions
 //!
-//! Some of the solvers, due to having the same name as another solver (e.g., `DOPRI5`
-//! is used for both ODE and DDE), are given aliases for non-ODE versions.
-//! For instance, the DDE version of `DOPRI5` is aliased as `DDE45`.
-//! The convention for aliases is typically `[EquationType][Order(s)]`,
-//! e.g., `DDE45` for a 4th/5th order DDE solver.
+//! Solvers are accessed through their respective method modules using the pattern
+//! `MethodType::SolverName`. For example, `ExplicitRungeKutta::dop853` or
+//! `ImplicitRungeKutta::gauss_legendre6`. This approach provides clear organization
+//! and avoids naming conflicts between different equation types.
 //!
-//! As ODEs are by far the most common type of differential equation, the ODE
-//! version of a solver is given priority in naming (i.e., it keeps the original name).
-//! The original name of any aliased solver can be found by navigating to its module
-//! within the library. This approach allows more solvers to be exposed
-//! in the prelude without naming conflicts.
+//! ## Sample of Available Solvers
 //!
-//! Note that the naming convention for non-aliased solvers is often based on
-//! their historical names. For example, `DOPRI5` is an adaptive step size
-//! solver, and its name reflects its origin.
+//! ### Explicit Runge-Kutta Methods:
+//! - `ExplicitRungeKutta::dop853`: Adaptive Step Dormand-Prince 8(5,3) with dense output of order 7.
+//! - `ExplicitRungeKutta::dopri5`: Adaptive Step Dormand-Prince 5(4) with dense output of order 4.
+//! - `ExplicitRungeKutta::euler`: Fixed Step Euler method.
+//! - `ExplicitRungeKutta::rk4`: Fixed Step Runge-Kutta 4th Order.
+//! - `ExplicitRungeKutta::rkv65e`: Verner's efficient 6(5) adaptive method with dense output of order 5.
+//! - `ExplicitRungeKutta::rkv98e`: Verner's efficient 9(8) adaptive method with dense output of order 9.
 //!
-//! ## Available Solvers
+//! ODEs and DDEs are supported by these methods.
+//! SDEs are supported for fixed step methods such as Euler and RK4.
 //!
-//! ### Ordinary Differential Equations (ODE)
-//!
-//! #### Explicit Runge-Kutta Methods:
-//! - `DOP853`: Adaptive Step Dormand-Prince 8(5,3) with dense output of order 7.
-//! - `DOPRI5`: Adaptive Step Dormand-Prince 5(4).
-//! - `Euler`: Fixed Step Euler method.
-//! - `RK4`: Fixed Step Runge-Kutta 4th Order.
-//! - `RKF`: Fixed Step Runge-Kutta-Fehlberg.
-//! - `RKV65`: Verner 6(5) adaptive method with dense output of order 5.
-//! - `RKV98`: Verner 9(8) adaptive method with dense output of order 9.
-//!
-//! #### Implicit Runge-Kutta Methods:
-//! - `GaussLegendre6`: Gauss-Legendre 6th order method.
-//!
-//! ### Delay Differential Equations (DDE)
-//! - `DDE23` (alias for `BS23`): Bogacki-Shampine 2(3) adaptive method with dense output.
-//! - `DDE45` (alias for `DOPRI5`): Dormand-Prince 5(4) adaptive method with dense output.
-//!
-//! ### Stochastic Differential Equations (SDE)
-//! - `EM`: Euler-Maruyama method (strong order 0.5).
-//! - `Milstein`: Milstein method (strong order 1.0).
-//! - `RKM4`: Stochastic Runge-Kutta Maruyama 4.
+//! ### Implicit Runge-Kutta Methods:
+//! - `ImplicitRungeKutta::gauss_legendre6`: Gauss-Legendre 6th order method.
 //!
 //! For detailed examples, including problem setup and full solution process,
 //! please refer to the `examples` directory in the repository.

@@ -71,12 +71,6 @@
 //! - [`SDE`]: Define your stochastic differential equation system by implementing this trait
 //! - [`SDEProblem`]: Set up an initial value problem with your system, time span, and initial conditions
 //!
-//! ## Popular Numerical Methods
-//!
-//! - [`EM`]: Euler-Maruyama method for SDEs
-//! - [`Milstein`]: Milstein method for SDEs
-//! - [`RKM4`]: Runge-Kutta 4 method for SDEs
-//!
 
 mod sde;
 pub use sde::SDE;
