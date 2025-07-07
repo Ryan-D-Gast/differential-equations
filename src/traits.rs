@@ -16,26 +16,17 @@ use std::{fmt::Debug, ops::{Add, AddAssign, Div, Mul, Sub}};
 ///
 pub trait Real: Copy + RealField {
     fn infinity() -> Self;
-    fn to_f64(self) -> f64;
 }
 
 impl Real for f32 {
     fn infinity() -> Self {
         f32::INFINITY
     }
-
-    fn to_f64(self) -> f64 {
-        f64::from(self)
-    }
 }
 
 impl Real for f64 {
     fn infinity() -> Self {
         f64::INFINITY
-    }
-
-    fn to_f64(self) -> f64 {
-        self
     }
 }
 
