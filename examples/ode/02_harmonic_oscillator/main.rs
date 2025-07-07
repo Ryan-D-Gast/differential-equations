@@ -58,9 +58,7 @@ fn main() {
                 .color("Blue".to_string())
                 .data(
                     solution
-                        .t
                         .iter()
-                        .zip(solution.y.iter())
                         .map(|(t, y)| (*t as f64, y[0] as f64))
                         .collect::<Vec<_>>(),
                 )
@@ -70,9 +68,7 @@ fn main() {
                 .color("Red".to_string())
                 .data(
                     solution
-                        .t
                         .iter()
-                        .zip(solution.y.iter())
                         .map(|(t, y)| (*t as f64, y[1] as f64))
                         .collect::<Vec<_>>(),
                 )

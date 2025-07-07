@@ -127,9 +127,7 @@ fn main() {
                         .color("Blue".to_string())
                         .data(
                             solution
-                                .t
                                 .iter()
-                                .zip(solution.y.iter())
                                 .map(|(t, u)| (*t, u[0]))
                                 .collect::<Vec<_>>(),
                         )
@@ -139,9 +137,7 @@ fn main() {
                         .color("Red".to_string())
                         .data(
                             solution
-                                .t
                                 .iter()
-                                .zip(solution.y.iter())
                                 .map(|(t, u)| (*t, u[1]))
                                 .collect::<Vec<_>>(),
                         )
@@ -151,9 +147,7 @@ fn main() {
                         .color("Green".to_string())
                         .data(
                             solution
-                                .t
                                 .iter()
-                                .zip(solution.y.iter())
                                 .map(|(t, u)| (*t, u[2]))
                                 .collect::<Vec<_>>(),
                         )
