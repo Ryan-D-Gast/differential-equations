@@ -232,6 +232,11 @@ fn create_error_vs_evals_plot<const N: usize>(statistics: &[TestStatistics<N>], 
     
     // Create series for each solver
     let mut series_list: [Option<Series<f64>>; 7] = [None, None, None, None, None, None, None];
+    
+    // Create display names with extra spaces for better plot formatting
+    let display_names: Vec<String> = solver_names.iter()
+        .map(|name| format!("{}   ", name))
+        .collect();
 
     for (i, solver_name) in solver_names.iter().enumerate() {
         let solver_data: Vec<_> = statistics.iter()
@@ -245,7 +250,7 @@ fn create_error_vs_evals_plot<const N: usize>(statistics: &[TestStatistics<N>], 
         data_points.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
         
         let series = Series::builder()
-            .name(solver_name)
+            .name(&display_names[i])
             .color(colors[i % colors.len()].clone())
             .data(data_points)
             .build();
