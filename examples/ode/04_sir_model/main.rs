@@ -150,14 +150,14 @@ fn main() {
 
             // Plot the solution using quill
             Plot::builder()
-                .title("SIR Epidemiological Model".to_string())
-                .x_label("Time (days)".to_string())
-                .y_label("Population".to_string())
+                .title("SIR Epidemiological Model")
+                .x_label("Time (days)")
+                .y_label("Population")
                 .legend(Legend::TopRightInside)
-                .data(vec![
+                .data([
                     Series::builder()
-                        .name("Susceptible".to_string())
-                        .color("Blue".to_string())
+                        .name("Susceptible")
+                        .color("Blue")
                         .data(
                             solution
                                 .iter()
@@ -166,8 +166,8 @@ fn main() {
                         )
                         .build(),
                     Series::builder()
-                        .name("Infected".to_string())
-                        .color("Red".to_string())
+                        .name("Infected")
+                        .color("Red")
                         .data(
                             solution
                                 .iter()
@@ -176,8 +176,8 @@ fn main() {
                         )
                         .build(),
                     Series::builder()
-                        .name("Recovered".to_string())
-                        .color("Green".to_string())
+                        .name("Recovered")
+                        .color("Green")
                         .data(
                             solution
                                 .iter()

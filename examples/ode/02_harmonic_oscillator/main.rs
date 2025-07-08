@@ -48,14 +48,14 @@ fn main() {
 
     // Plot the solution using quill
     Plot::builder()
-        .title("Harmonic Oscillator Solution".to_string())
-        .x_label("Time (t)".to_string())
-        .y_label("Position and Velocity".to_string())
+        .title("Harmonic Oscillator Solution")
+        .x_label("Time (t)")
+        .y_label("Position and Velocity")
         .legend(Legend::TopRightInside)
-        .data(vec![
+        .data([
             Series::builder()
-                .name("Position (x)".to_string())
-                .color("Blue".to_string())
+                .name("Position (x)")
+                .color("Blue")
                 .data(
                     solution
                         .iter()
@@ -64,8 +64,8 @@ fn main() {
                 )
                 .build(),
             Series::builder()
-                .name("Velocity (v)".to_string())
-                .color("Red".to_string())
+                .name("Velocity (v)")
+                .color("Red")
                 .data(
                     solution
                         .iter()

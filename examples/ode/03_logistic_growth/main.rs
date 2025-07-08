@@ -69,15 +69,15 @@ fn main() {
 
             // Plot the solution using quill
             Plot::builder()
-                .title("Logistic Growth Model".to_string())
-                .x_label("Time (t)".to_string())
-                .y_label("Population".to_string())
+                .title("Logistic Growth Model")
+                .x_label("Time (t)")
+                .y_label("Population")
                 .y_range(Range::Manual { min: 0.0, max: 10.0 })
                 .legend(Legend::BottomRightInside)
-                .data(vec![
+                .data([
                     Series::builder()
-                        .name("Numerical Solution".to_string())
-                        .color("Blue".to_string())
+                        .name("Numerical Solution")
+                        .color("Blue")
                         .data(
                             solution
                                 .iter()
@@ -86,8 +86,8 @@ fn main() {
                         )
                         .build(),
                     Series::builder()
-                        .name("Termination Asymptote".to_string())
-                        .color("Red".to_string())
+                        .name("Termination Asymptote")
+                        .color("Red")
                         .data(
                             solution
                                 .t

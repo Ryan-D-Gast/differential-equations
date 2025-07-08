@@ -79,13 +79,13 @@ fn main() {
 
             // Plot the solution using quill
             Plot::builder()
-                .title("Mackey-Glass Delay Differential Equation".to_string())
-                .x_label("Time (t)".to_string())
-                .y_label("y(t)".to_string())
-                .data(vec![
+                .title("Mackey-Glass Delay Differential Equation")
+                .x_label("Time (t)")
+                .y_label("y(t)")
+                .data([
                     Series::builder()
-                        .name("Mackey-Glass Solution".to_string())
-                        .color("Blue".to_string())
+                        .name("Mackey-Glass Solution")
+                        .color("Blue")
                         .data(
                             solution
                                 .iter()

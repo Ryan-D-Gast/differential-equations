@@ -66,14 +66,14 @@ fn main() {
 
     // Plot the solution using quill
     Plot::builder()
-        .title("Exponential Growth ODE Solution".to_string())
-        .x_label("Time (t)".to_string())
-        .y_label("y(t)".to_string())
+        .title("Exponential Growth ODE Solution")
+        .x_label("Time (t)")
+        .y_label("y(t)")
         .legend(Legend::TopLeftInside)
-        .data(vec![
+        .data([
             Series::builder()
-                .name("Numerical Solution".to_string())
-                .color("Blue".to_string())
+                .name("Numerical Solution")
+                .color("Blue")
                 .data(
                     solution
                         .iter()
@@ -84,8 +84,8 @@ fn main() {
                 .line(Line::Solid)
                 .build(),
             Series::builder()
-                .name("Analytical Solution".to_string())
-                .color("Red".to_string())
+                .name("Analytical Solution")
+                .color("Red")
                 .data({
                     let k = 1.0;
                     let y0 = 1.0;

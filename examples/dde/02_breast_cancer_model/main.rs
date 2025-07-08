@@ -117,14 +117,14 @@ fn main() {
 
             // Plot the solution using quill
             Plot::builder()
-                .title("Breast Cancer Model with Delay".to_string())
-                .x_label("Time (t)".to_string())
-                .y_label("Cell Population".to_string())
+                .title("Breast Cancer Model with Delay")
+                .x_label("Time (t)")
+                .y_label("Cell Population")
                 .legend(Legend::TopRightInside)
-                .data(vec![
+                .data([
                     Series::builder()
-                        .name("Proliferating Cells (u1)".to_string())
-                        .color("Blue".to_string())
+                        .name("Proliferating Cells (u1)")
+                        .color("Blue")
                         .data(
                             solution
                                 .iter()
@@ -133,8 +133,8 @@ fn main() {
                         )
                         .build(),
                     Series::builder()
-                        .name("Quiescent Cells (u2)".to_string())
-                        .color("Red".to_string())
+                        .name("Quiescent Cells (u2)")
+                        .color("Red")
                         .data(
                             solution
                                 .iter()
@@ -143,8 +143,8 @@ fn main() {
                         )
                         .build(),
                     Series::builder()
-                        .name("Resistant Cells (u3)".to_string())
-                        .color("Green".to_string())
+                        .name("Resistant Cells (u3)")
+                        .color("Green")
                         .data(
                             solution
                                 .iter()
