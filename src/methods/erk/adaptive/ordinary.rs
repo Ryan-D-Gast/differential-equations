@@ -59,7 +59,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         let mut evals = Evals::new();
 
         // Check step size
-        if self.h.abs() < T::default_epsilon() {
+        if self.h.abs() < self.h_prev.abs() * T::from_f64(1e-14).unwrap() {
             self.status = Status::Error(Error::StepSize {
                 t: self.t, y: self.y
             });
