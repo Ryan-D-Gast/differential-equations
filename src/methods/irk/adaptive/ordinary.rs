@@ -137,19 +137,19 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             // Form Newton matrix M = I - h * (A ⊗ J)
             // where A is the Runge-Kutta matrix and J is the Jacobian
             for i in 0..self.stages {
-                for l in 0..self.stages {
-                    let scale_factor = -self.h * self.a[i][l];
+                for j in 0..self.stages {
+                    let scale_factor = -self.h * self.a[i][j];
                     for r in 0..dim {
                         for c_col in 0..dim {
-                            self.newton_matrix[(i * dim + r, l * dim + c_col)] = 
+                            self.newton_matrix[(i * dim + r, j * dim + c_col)] = 
                                 self.jacobian_matrix[(r, c_col)] * scale_factor;
                         }
                     }
                     
                     // Add identity for diagonal blocks
-                    if i == l {
+                    if i == j {
                         for d_idx in 0..dim {
-                            self.newton_matrix[(i * dim + d_idx, l * dim + d_idx)] += T::one();
+                            self.newton_matrix[(i * dim + d_idx, j * dim + d_idx)] += T::one();
                         }
                     }
                 }
