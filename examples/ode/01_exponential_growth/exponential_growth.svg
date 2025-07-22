@@ -15,55 +15,55 @@ y(t)
 0.0
 </text>
 <line stroke="#000000" stroke-width="1" x1="60" x2="60" y1="60" y2="65"/>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="131" x2="131" y1="60" y2="540"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="131" x2="131" y1="60" y2="540"/>
 <line stroke="#000000" stroke-width="1" x1="131" x2="131" y1="540" y2="535"/>
 <text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="131" y="549">
 1.0
 </text>
 <line stroke="#000000" stroke-width="1" x1="131" x2="131" y1="60" y2="65"/>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="202" x2="202" y1="60" y2="540"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="202" x2="202" y1="60" y2="540"/>
 <line stroke="#000000" stroke-width="1" x1="202" x2="202" y1="540" y2="535"/>
 <text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="202" y="549">
 2.0
 </text>
 <line stroke="#000000" stroke-width="1" x1="202" x2="202" y1="60" y2="65"/>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="273" x2="273" y1="60" y2="540"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="273" x2="273" y1="60" y2="540"/>
 <line stroke="#000000" stroke-width="1" x1="273" x2="273" y1="540" y2="535"/>
 <text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="273" y="549">
 3.0
 </text>
 <line stroke="#000000" stroke-width="1" x1="273" x2="273" y1="60" y2="65"/>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="344" x2="344" y1="60" y2="540"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="344" x2="344" y1="60" y2="540"/>
 <line stroke="#000000" stroke-width="1" x1="344" x2="344" y1="540" y2="535"/>
 <text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="344" y="549">
 4.0
 </text>
 <line stroke="#000000" stroke-width="1" x1="344" x2="344" y1="60" y2="65"/>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="415" x2="415" y1="60" y2="540"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="415" x2="415" y1="60" y2="540"/>
 <line stroke="#000000" stroke-width="1" x1="415" x2="415" y1="540" y2="535"/>
 <text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="415" y="549">
 5.0
 </text>
 <line stroke="#000000" stroke-width="1" x1="415" x2="415" y1="60" y2="65"/>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="486.00003" x2="486.00003" y1="60" y2="540"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="486.00003" x2="486.00003" y1="60" y2="540"/>
 <line stroke="#000000" stroke-width="1" x1="486.00003" x2="486.00003" y1="540" y2="535"/>
 <text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="486.00003" y="549">
 6.0
 </text>
 <line stroke="#000000" stroke-width="1" x1="486.00003" x2="486.00003" y1="60" y2="65"/>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="557" x2="557" y1="60" y2="540"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="557" x2="557" y1="60" y2="540"/>
 <line stroke="#000000" stroke-width="1" x1="557" x2="557" y1="540" y2="535"/>
 <text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="557" y="549">
 7.0
 </text>
 <line stroke="#000000" stroke-width="1" x1="557" x2="557" y1="60" y2="65"/>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="628" x2="628" y1="60" y2="540"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="628" x2="628" y1="60" y2="540"/>
 <line stroke="#000000" stroke-width="1" x1="628" x2="628" y1="540" y2="535"/>
 <text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="628" y="549">
 8.0
 </text>
 <line stroke="#000000" stroke-width="1" x1="628" x2="628" y1="60" y2="65"/>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="699" x2="699" y1="60" y2="540"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="699" x2="699" y1="60" y2="540"/>
 <line stroke="#000000" stroke-width="1" x1="699" x2="699" y1="540" y2="535"/>
 <text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="699" y="549">
 9.0
@@ -85,67 +85,67 @@ y(t)
 <text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="540.0218">
 0.0
 </text>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="496.43588" y2="496.43588"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="496.43588" y2="496.43588"/>
 <line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="496.43588" y2="496.43588"/>
 <line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="496.43588" y2="496.43588"/>
 <text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="496.43588">
 2.0
 </text>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="452.84998" y2="452.84998"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="452.84998" y2="452.84998"/>
 <line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="452.84998" y2="452.84998"/>
 <line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="452.84998" y2="452.84998"/>
 <text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="452.84998">
 4.0
 </text>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="409.26404" y2="409.26404"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="409.26404" y2="409.26404"/>
 <line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="409.26404" y2="409.26404"/>
 <line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="409.26404" y2="409.26404"/>
 <text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="409.26404">
 6.0
 </text>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="365.67816" y2="365.67816"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="365.67816" y2="365.67816"/>
 <line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="365.67816" y2="365.67816"/>
 <line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="365.67816" y2="365.67816"/>
 <text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="365.67816">
 8.0
 </text>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="322.09222" y2="322.09222"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="322.09222" y2="322.09222"/>
 <line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="322.09222" y2="322.09222"/>
 <line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="322.09222" y2="322.09222"/>
 <text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="322.09222">
 10.0
 </text>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="278.50632" y2="278.50632"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="278.50632" y2="278.50632"/>
 <line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="278.50632" y2="278.50632"/>
 <line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="278.50632" y2="278.50632"/>
 <text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="278.50632">
 12.0
 </text>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="234.92041" y2="234.92041"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="234.92041" y2="234.92041"/>
 <line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="234.92041" y2="234.92041"/>
 <line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="234.92041" y2="234.92041"/>
 <text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="234.92041">
 14.0
 </text>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="191.33447" y2="191.33447"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="191.33447" y2="191.33447"/>
 <line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="191.33447" y2="191.33447"/>
 <line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="191.33447" y2="191.33447"/>
 <text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="191.33447">
 16.0
 </text>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="147.74857" y2="147.74857"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="147.74857" y2="147.74857"/>
 <line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="147.74857" y2="147.74857"/>
 <line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="147.74857" y2="147.74857"/>
 <text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="147.74857">
 18.0
 </text>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="104.16266" y2="104.16266"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="104.16266" y2="104.16266"/>
 <line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="104.16266" y2="104.16266"/>
 <line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="104.16266" y2="104.16266"/>
 <text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="104.16266">
 20.0
 </text>
-<line stroke="#d3d3d3" stroke-width="0.5" x1="60" x2="770" y1="60.57675" y2="60.57675"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="60.57675" y2="60.57675"/>
 <line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="60.57675" y2="60.57675"/>
 <line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="60.57675" y2="60.57675"/>
 <text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="60.57675">
