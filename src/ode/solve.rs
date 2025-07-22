@@ -315,10 +315,14 @@ where
                 let max_iterations = 20; // Prevent infinite loops
                 let tol = T::from_f64(1e-10).unwrap(); // Tolerance for convergence
 
+                // Track the initial interval size for relative comparison
+                let initial_interval = (ts - tc).abs();
+
                 // False position method with Illinois adjustment
                 for _ in 0..max_iterations {
-                    // Check if we've reached desired precision
-                    if (ts - tc).abs() <= tol {
+                    // Check if we've reached desired precision (relative to initial interval)
+                    let current_interval = (ts - tc).abs();
+                    if current_interval <= tol * initial_interval {
                         break;
                     }
 
@@ -375,6 +379,18 @@ where
                 // If we found a cutoff point, truncate both vectors
                 if let Some(idx) = cutoff_index {
                     solution.truncate(idx);
+                }
+
+                // Check if event time is very close to the last recorded point and remove it to avoid duplicates
+                if !solution.t.is_empty() {
+                    let last_t = *solution.t.last().unwrap();
+                    let time_diff = (event_time - last_t).abs();
+                    
+                    // Check if the time difference is within a small tolerance
+                    if time_diff <= tol * initial_interval {
+                        // Remove the last point (t, y) to avoid very close duplicates
+                        solution.pop();
+                    }
                 }
 
                 // Now handle the event based on its type
