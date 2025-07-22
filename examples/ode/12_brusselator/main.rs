@@ -1,7 +1,7 @@
 //! # Example 12: Implicit Solver with Brusselator System
 //!
 //! This example demonstrates solving the stiff Brusselator system
-//! using an implicit Runge-Kutta method (GaussLegendre4) with both an
+//! using an implicit Runge-Kutta method (Gauss-Legendre 6th order) with both an
 //! analytically provided Jacobian (by calling `.jacobian()`) and a 
 //! finite-difference approximated Jacobian (default).
 //!

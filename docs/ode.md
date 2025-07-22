@@ -116,15 +116,15 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 | [Exponential Growth](../../examples/ode/01_exponential_growth/main.rs) | Solves a simple exponential growth equation using the `dop853` method. Demonstrates basic usage of `ODEProblem` and `ODE` traits. Manually prints results from `Solution` struct fields. |
 | [Harmonic Oscillator](../../examples/ode/02_harmonic_oscillator/main.rs) | Simulates a harmonic oscillator system using `rk4` method. Uses a condensed setup to demonstrate chaining to solve without intermediate variables. Uses `last` method on solution to conveniently get results and print. |
 | [Logistic Growth](../../examples/ode/03_logistic_growth/main.rs) | Models logistic growth with a carrying capacity. Demonstrates the use of the `event` function to stop the solver based on a condition. In addition shows the use of `even` output for `ODEProblem` setup and `iter` method on the solution for output. |
-| [SIR Model](../../examples/ode/04_sir_model/main.rs) | Simulates the SIR model for infectious diseases. Uses the `APCV4` method to solve the system. Uses struct as the `State` via `derive(State)` and a custom event termination enum. |
-| [Damped Pendulum](../../examples/ode/05_damped_pendulum/main.rs) | Simulates a simple pendulum using the `rkf45` solver. Shows the use of `problem.t_out` to define points to be saved e.g. `t_out = [1.0, 3.0, 7.5, 10.0]` |
-| [Integration](../../examples/ode/06_integration/main.rs) | Demonstrates the differences between `even`, `dense`, `t_out`, and the default solout methods for a simple differential equation with an easily found analytical solution. |
+| [SIR Model](../../examples/ode/04_sir_model/main.rs) | Simulates the SIR model for infectious diseases. Uses the `AdamsPredictorCorrector::v4()` method to solve the system. Uses struct as the `State` via `derive(State)` and a custom event termination enum. |
+| [Damped Pendulum](../../examples/ode/05_damped_pendulum/main.rs) | Simulates a simple pendulum using the `rkf45` solver. Shows the use of `problem.t_eval()` to define specific points to be saved e.g. `t_eval(vec![1.0, 3.0, 7.5, 10.0])` |
+| [Integration](../../examples/ode/06_integration/main.rs) | Demonstrates the differences between `even`, `dense`, `t_eval`, and the default solout methods for a simple differential equation with an easily found analytical solution. |
 | [Cr3bp](../../examples/ode/07_cr3bp/main.rs) | Simulates the Circular Restricted Three-Body Problem (CR3BP) using the `dop853` method. Uses the `hyperplane_crossing` method to log when the spacecraft crosses a 3D plane. |
 | [Damped Oscillator](../../examples/ode/08_damped_oscillator/main.rs) | Demonstrates the use of the `crossing` method to use the CrossingSolout to log instances where a crossing occurs. In this case, the example saves points where the position is at zero. |
 | [Matrix ODE](../../examples/ode/09_matrix_ode/main.rs) | Solves a system of ODEs using a matrix system. Demonstrates how to define a system of equations using matrices. |
 | [Custom Solout](../../examples/ode/10_custom_solout/main.rs) | Demonstrates how to create a custom `Solout` implementation to save points based on a custom condition. In addition inside the Solout struct additional calculations are stored each step and accessible after solving is complete. |
 | [Schrodinger](../../examples/ode/11_schrodinger/main.rs) | Solves the time-dependent Schrödinger equation using the `dop853` method. Demonstrates the use of complex numbers in the ODE system. |
-| [Brusselator](../../examples/ode/12_brusselator/main.rs) | Uses jacobian matrix to help implicit runge-kutta methods. |
+| [Brusselator](../../examples/ode/12_brusselator/main.rs) | Demonstrates solving a stiff system using implicit Runge-Kutta methods (`gauss_legendre_6`) with analytical Jacobian provided to accelerate Newton iterations. |
 
 ## Benchmarks
 

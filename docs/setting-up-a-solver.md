@@ -24,8 +24,8 @@ Here's a quick reference for some of the available solvers:
 | RK4    | 4     | Explicit | No | No | Simple non-stiff problems |
 | DOPRI5 | 5(4)  | Explicit | Yes | Yes | General-purpose non-stiff problems |
 | DOP853 | 8(5)  | Explicit | Yes | Yes | High-precision non-stiff problems |
-| Radau5 | 5     | Implicit | Yes | Yes | Stiff problems |
-| APCV4  | 4     | Explicit | Yes | Yes | Predictor-corrector for mild stiffness |
+| Gauss-Legendre 6 | 6 | Implicit | Yes | Yes | Stiff problems (A-stable) |
+| RKF45  | 5(4)  | Explicit | Yes | Yes | General adaptive problems |
 
 ## Basic Solver Setup
 
