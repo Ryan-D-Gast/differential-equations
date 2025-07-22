@@ -216,13 +216,13 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
             return Ok(evals); // Return to retry step with smaller h
         }
 
-        // Step size controller for adaptive methods (based on err_norm)
-        let order_t = T::from_usize(self.order).unwrap();
-        let err_order_inv = T::one() / order_t;
-        let mut scale_factor = self.safety_factor * err_norm.powf(-err_order_inv);
-        scale_factor = scale_factor.max(self.min_scale).min(self.max_scale);
+        // Step size scale factor
+        let order = T::from_usize(self.order).unwrap();
+        let error_exponent = T::one() / order;
+        let mut scale = self.safety_factor * err_norm.powf(-error_exponent);
         
-        let h_new = self.h * scale_factor;
+        // Clamp scale factor to prevent extreme step size changes
+        scale = scale.max(self.min_scale).min(self.max_scale);
 
         // Step acceptance/rejection logic
         if err_norm <= T::one() { // Step accepted
@@ -233,6 +233,9 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
 
             if let Status::RejectedStep = self.status { // If previous step was rejected
                 self.stiffness_counter = 0;
+
+                // Limit step size growth to avoid oscillations between accepted and rejected steps
+                scale = scale.min(T::one());
             }
             self.status = Status::Solving;
 
@@ -284,8 +287,6 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                     }
                 }
             }
-
-            self.h = constrain_step_size(h_new, self.h_min, self.h_max); // Set next step size
         } else { // Step rejected
             self.status = Status::RejectedStep;
             self.stiffness_counter += 1;
@@ -295,9 +296,14 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 self.status = Status::Error(Error::Stiffness { t: self.t, y: self.y });
                 return Err(Error::Stiffness { t: self.t, y: self.y });
             }
-            // Reduce step size for next attempt
-            self.h = constrain_step_size(h_new, self.h_min, self.h_max);
         }
+        
+        // Update step size
+        self.h *= scale;
+
+        // Ensure step size is within bounds
+        self.h = constrain_step_size(self.h, self.h_min, self.h_max);
+
         Ok(evals)
     }
 

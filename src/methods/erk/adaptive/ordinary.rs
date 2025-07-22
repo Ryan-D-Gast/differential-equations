@@ -121,6 +121,14 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             err_norm = err_norm.max((err.get(n) / tol).abs());
         };
 
+        // Step size scale factor
+        let order = T::from_usize(self.order).unwrap();
+        let error_exponent = T::one() / order;
+        let mut scale = self.safety_factor * err_norm.powf(-error_exponent);
+        
+        // Clamp scale factor to prevent extreme step size changes
+        scale = scale.max(self.min_scale).min(self.max_scale);
+
         // Determine if step is accepted
         if err_norm <= T::one() {
             // Log previous state
@@ -132,6 +140,9 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             if let Status::RejectedStep = self.status {
                 self.stiffness_counter = 0;
                 self.status = Status::Solving;
+
+                // Limit step size growth to avoid oscillations between accepted and rejected steps
+                scale = scale.min(T::one());
             }
 
             // If method has dense output stages, compute them
@@ -177,13 +188,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             }
         }
 
-        // Calculate new step size for adaptive methods
-        let order = T::from_usize(self.order).unwrap();
-        let err_order = T::one() / order;
-
-        // Step size controller
-        let scale = self.safety_factor * err_norm.powf(-err_order);
-        let scale = scale.max(self.min_scale).min(self.max_scale);
+        // Update step size
         self.h *= scale;
 
         // Ensure step size is within bounds

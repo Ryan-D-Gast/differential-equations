@@ -244,11 +244,13 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Ensure error norm is not too small (add a small minimum)
         err_norm = err_norm.max(T::default_epsilon() * T::from_f64(100.0).unwrap());
 
-        // Step size control
-        let order_inv = T::one() / T::from_usize(self.order).unwrap();
-        let mut scale = self.safety_factor * err_norm.powf(-order_inv);
+        // Step size scale factor
+        let order = T::from_usize(self.order).unwrap();
+        let error_exponent = T::one() / order;
+        let mut scale = self.safety_factor * err_norm.powf(-error_exponent);
+        
+        // Clamp scale factor to prevent extreme step size changes
         scale = scale.max(self.min_scale).min(self.max_scale);
-        let h_new = self.h * scale;        
         
         // Determine if step is accepted
         if err_norm <= T::one() {
@@ -272,6 +274,9 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             // Reset stiffness counter if we had rejections before
             if let Status::RejectedStep = self.status {
                 self.stiffness_counter = 0;
+
+                // Limit step size growth to avoid oscillations between accepted and rejected steps
+                scale = scale.min(T::one());
             }
         } else {
             // Step rejected
@@ -288,10 +293,13 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 });
             }
         }        
+
+        // Update step size
+        self.h *= scale;
         
         // Apply the new step size
-        self.h = constrain_step_size(h_new, self.h_min, self.h_max);
-        
+        self.h = constrain_step_size(self.h, self.h_min, self.h_max);
+
         Ok(evals)
     }
 
