@@ -145,7 +145,6 @@ impl Solout<f64, SVector<f64, 2>> for PendulumSolout {
         }
 
         // Continue the integration
-
         ControlFlag::Continue
     }
 }
