@@ -101,10 +101,10 @@ Solution:
 (3.0000, 6.9057)
 (4.0000, 8.5849)
 (4.3944, 9.0000)
-Function evaluations: 359
-Steps: 25
-Rejected Steps: 4        
-Accepted Steps: 21
+Function evaluations: 325
+Steps: 22
+Rejected Steps: 2        
+Accepted Steps: 20
 ```
 
 ## Examples
