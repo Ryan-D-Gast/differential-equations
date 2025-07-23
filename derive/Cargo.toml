@@ -1,6 +1,6 @@
 [package]
 name = "differential-equations-derive"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 authors = ["Ryan D. Gast <ryan.d.gast@gmail.com>"]
 description = "Derives proc macros for the differential-equations crate"
@@ -18,3 +18,8 @@ proc-macro = true
 syn = "2.0.100"
 quote = "1.0.40"
 proc-macro2 = "1.0.95"
+
+[dev-dependencies]
+differential-equations = "0.3.3"
+nalgebra = "0.33.2"
+num-complex = "0.4.6"

@@ -22,13 +22,15 @@
 //! ```
 
 use proc_macro::TokenStream;
-use quote::quote;
 use syn::{parse_macro_input, DeriveInput, Data, Fields};
 
-// TODO: Add support for structs with fields 
-// - [T; N]
-// - SMatrix<T, R, C>
-// - Complex<T>
+mod field_analysis;
+mod code_generation;
+mod implementations;
+
+use field_analysis::analyze_field_type;
+use code_generation::*;
+use implementations::*;
 
 /// Derive macro for the `State` trait.
 /// 
@@ -37,19 +39,29 @@ use syn::{parse_macro_input, DeriveInput, Data, Fields};
 /// - Required arithmetic operations (Add, Sub, AddAssign, Mul<T>, Div<T>)
 /// - Clone, Copy, and Debug
 /// 
-/// It assumes that the struct has at least one field and that all fields have the same type T,
-/// where T implements the required traits.
+/// It supports structs with fields of type T, [T; N], SMatrix<T, R, C>, or Complex<T> where T implements the required traits.
 /// 
 /// # Example
 /// ```rust
+/// use differential_equations_derive::State;
+/// use nalgebra::SMatrix;
+/// use num_complex::Complex;
+/// 
 /// #[derive(State)]
 /// struct MyState<T> {
 ///    x: T,
 ///    y: T,
+///    velocities: [T; 3],
+///    transformation: SMatrix<T, 2, 2>,
+///    impedance: Complex<T>,
 /// }
 /// ```
 /// 
-/// Note that all fields must be of type T, there can be no unused fields of a different type.
+/// Fields can be:
+/// - Single values of type T
+/// - Arrays of type [T; N] where N is a compile-time constant
+/// - Matrices of type SMatrix<T, R, C> where R and C are compile-time constants
+/// - Complex numbers of type Complex<T>
 /// 
 #[proc_macro_derive(State)]
 pub fn derive_state(input: TokenStream) -> TokenStream {
@@ -70,234 +82,45 @@ pub fn derive_state(input: TokenStream) -> TokenStream {
         },
         _ => panic!("State can only be derived for structs"),
     };
+
+    // Analyze field types and calculate total element count
+    let mut total_elements = 0usize;
+    let mut field_info = Vec::new();
     
-    // Count fields
-    let field_count = fields.len();
+    for field in &fields {
+        let field_type_info = analyze_field_type(&field.ty);
+        total_elements += field_type_info.element_count();
+        field_info.push(field_type_info);
+    }
     
-    // Generate the field access expressions based on field type
-    let field_accessors = fields.iter().enumerate().map(|(i, f)| {
-        let field_name = match &f.ident {
-            Some(ident) => quote! { self.#ident },
-            None => {
-                let index = syn::Index::from(i);
-                quote! { self.#index }
-            }
-        };
-        
-        quote! {
-            if i == #i {
-                #field_name
-            }
-        }
-    }).collect::<Vec<_>>();
-
-    // Generate field setters based on field type
-    let field_setters = fields.iter().enumerate().map(|(i, f)| {
-        match &f.ident {
-            Some(ident) => {
-                quote! {
-                    if i == #i {
-                        self.#ident = value;
-                        return;
-                    }
-                }
-            },
-            None => {
-                let index = syn::Index::from(i);
-                quote! {
-                    if i == #i {
-                        self.#index = value;
-                        return;
-                    }
-                }
-            }
-        }
-    }).collect::<Vec<_>>();
-
-    // Generate zeros initialization based on field type
-    let zeros_init = fields.iter().map(|f| {
-        match &f.ident {
-            Some(ident) => {
-                quote! { #ident: T::zero() }
-            },
-            None => quote! { T::zero() }
-        }
-    }).collect::<Vec<_>>();
-
-    // Generate add operation fields
-    let add_fields = fields.iter().enumerate().map(|(i, f)| {
-        match &f.ident {
-            Some(ident) => {
-                quote! { #ident: self.#ident + rhs.#ident }
-            },
-            None => {
-                let index = syn::Index::from(i);
-                quote! { self.#index + rhs.#index }
-            }
-        }
-    }).collect::<Vec<_>>();
-
-    // Generate sub operation fields
-    let sub_fields = fields.iter().enumerate().map(|(i, f)| {
-        match &f.ident {
-            Some(ident) => {
-                quote! { #ident: self.#ident - rhs.#ident }
-            },
-            None => {
-                let index = syn::Index::from(i);
-                quote! { self.#index - rhs.#index }
-            }
-        }
-    }).collect::<Vec<_>>();
-
-    // Generate add_assign operations
-    let add_assign_ops = fields.iter().enumerate().map(|(i, f)| {
-        match &f.ident {
-            Some(ident) => {
-                quote! { self.#ident += rhs.#ident; }
-            },
-            None => {
-                let index = syn::Index::from(i);
-                quote! { self.#index += rhs.#index; }
-            }
-        }
-    }).collect::<Vec<_>>();
-
-    // Generate mul operation fields
-    let mul_fields = fields.iter().enumerate().map(|(i, f)| {
-        match &f.ident {
-            Some(ident) => {
-                quote! { #ident: self.#ident * rhs }
-            },
-            None => {
-                let index = syn::Index::from(i);
-                quote! { self.#index * rhs }
-            }
-        }
-    }).collect::<Vec<_>>();
-
-    // Generate div operation fields
-    let div_fields = fields.iter().enumerate().map(|(i, f)| {
-        match &f.ident {
-            Some(ident) => {
-                quote! { #ident: self.#ident / rhs }
-            },
-            None => {
-                let index = syn::Index::from(i);
-                quote! { self.#index / rhs }
-            }
-        }
-    }).collect::<Vec<_>>();
+    // Generate all the required components
+    let field_get_branches = generate_get_branches(&fields, &field_info);
+    let field_set_branches = generate_set_branches(&fields, &field_info);
+    let zeros_init = generate_zeros_init(&fields, &field_info);
+    let debug_fields = generate_debug_fields(&fields);
     
-    // Generate debug field implementations based on field type
-    let debug_fields = fields.iter().enumerate().map(|(i, f)| {
-        match &f.ident {
-            Some(ident) => {
-                let ident_str = ident.to_string();
-                quote! { .field(#ident_str, &self.#ident) }
-            },
-            None => {
-                let index = syn::Index::from(i);
-                let index_str = i.to_string();
-                quote! { .field(#index_str, &self.#index) }
-            }
-        }
-    }).collect::<Vec<_>>();
+    // Generate all trait implementations
+    let clone_impl = generate_clone_impl(&name);
+    let copy_impl = generate_copy_impl(&name);
+    let debug_impl = generate_debug_impl(&name, &debug_fields);
+    let state_impl = generate_state_impl(&name, total_elements, &field_get_branches, &field_set_branches, &zeros_init, &fields);
+    let add_impl = generate_add_impl(&name, &fields, &field_info);
+    let sub_impl = generate_sub_impl(&name, &fields, &field_info);
+    let add_assign_impl = generate_add_assign_impl(&name, &fields, &field_info);
+    let mul_impl = generate_mul_impl(&name, &fields, &field_info);
+    let div_impl = generate_div_impl(&name, &fields, &field_info);
     
-    // Generate the implementation
-    let expanded = quote! {
-        // Derive Clone and Copy traits directly
-        impl<T: differential_equations::traits::Real> Clone for #name<T> {
-            fn clone(&self) -> Self {
-                *self
-            }
-        }
-        
-        impl<T: differential_equations::traits::Real> Copy for #name<T> {}
-
-        // Implement Debug trait
-        impl<T: differential_equations::traits::Real + std::fmt::Debug> std::fmt::Debug for #name<T> {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                f.debug_struct(stringify!(#name))
-                    #(#debug_fields)*
-                    .finish()
-            }
-        }
-
-        // Implement the State trait
-        impl<T: differential_equations::traits::Real> differential_equations::traits::State<T> for #name<T> {
-            fn len(&self) -> usize {
-                #field_count
-            }
-            
-            fn get(&self, i: usize) -> T {
-                #(#field_accessors else)* {
-                    panic!("Index out of bounds")
-                }
-            }
-            
-            fn set(&mut self, i: usize, value: T) {
-                #(#field_setters)*
-                panic!("Index out of bounds");
-            }
-            
-            fn zeros() -> Self {
-                Self {
-                    #(#zeros_init),*
-                }
-            }
-        }
-
-        // Implement Add
-        impl<T: differential_equations::traits::Real> std::ops::Add for #name<T> {
-            type Output = Self;
-            
-            fn add(self, rhs: Self) -> Self::Output {
-                Self {
-                    #(#add_fields),*
-                }
-            }
-        }
-
-        // Implement Sub
-        impl<T: differential_equations::traits::Real> std::ops::Sub for #name<T> {
-            type Output = Self;
-            
-            fn sub(self, rhs: Self) -> Self::Output {
-                Self {
-                    #(#sub_fields),*
-                }
-            }
-        }
-
-        // Implement AddAssign
-        impl<T: differential_equations::traits::Real> std::ops::AddAssign for #name<T> {
-            fn add_assign(&mut self, rhs: Self) {
-                #(#add_assign_ops)*
-            }
-        }
-
-        // Implement Mul with scalar
-        impl<T: differential_equations::traits::Real> std::ops::Mul<T> for #name<T> {
-            type Output = Self;
-            
-            fn mul(self, rhs: T) -> Self::Output {
-                Self {
-                    #(#mul_fields),*
-                }
-            }
-        }
-
-        // Implement Div with scalar
-        impl<T: differential_equations::traits::Real> std::ops::Div<T> for #name<T> {
-            type Output = Self;
-            
-            fn div(self, rhs: T) -> Self::Output {
-                Self {
-                    #(#div_fields),*
-                }
-            }
-        }
+    // Combine all implementations
+    let expanded = quote::quote! {
+        #clone_impl
+        #copy_impl
+        #debug_impl
+        #state_impl
+        #add_impl
+        #sub_impl
+        #add_assign_impl
+        #mul_impl
+        #div_impl
     };
     
     // Return the generated implementation
