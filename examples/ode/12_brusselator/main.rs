@@ -2,8 +2,6 @@
 //!
 //! This example demonstrates solving the stiff Brusselator system
 //! using an implicit Runge-Kutta method (Gauss-Legendre 6th order) with both an
-//! analytically provided Jacobian (by calling `.jacobian()`) and a 
-//! finite-difference approximated Jacobian (default).
 //!
 //! The Brusselator system is:
 //! dy0/dt = 1 - 4*y0 + y0^2 * y1
@@ -46,13 +44,13 @@ fn main() {
     let mut method_analytical = ImplicitRungeKutta::gauss_legendre_6()
         .rtol(1e-6)
         .atol(1e-6)
-        .h0(1e-3) // Initial step size suggestion
-        .max_newton_iter(20); // Max Newton iterations
+        .h0(1e-3)
+        .max_newton_iter(20);
 
     // Initial conditions and time span for Brusselator
     let y0 = Vector2::new(1.5, 3.0); 
     let t0 = 0.0;
-    let tf = 20.0; // Time span to observe oscillations
+    let tf = 20.0;
 
     // Define the ODE system
     let ode_analytical = BrusselatorSystem;
@@ -62,29 +60,29 @@ fn main() {
 
     // Solve the problem
     match problem_analytical
-        .even(0.5) // Output points every 0.5 time units
+        .even(0.5)
         .solve(&mut method_analytical)
     {
         Ok(solution) => {
-            println!("Solution successfully obtained (Analytical Jacobian).");
+            println!("Solution successfully obtained.");
             println!("Status: {:?}", solution.status);
 
             // Print a few points from the solution
-            println!("Solution points (t, y0, y1) - Analytical Jacobian:");
+            println!("Solution points (t, y0, y1):");
             for (t, y_val) in solution.iter() {
                 println!("t: {:.4}, y0: {:.4}, y1: {:.4}", t, y_val[0], y_val[1]);
             }
             
             // Print statistics
-            println!("\nStatistics (Analytical Jacobian):");
+            println!("\nStatistics:");
             println!("  Function evaluations: {}", solution.evals);
-            println!("  Jacobian evaluations: {}", solution.jac_evals); // Using jac_evals field
+            println!("  Jacobian evaluations: {}", solution.jac_evals);
             println!("  Total steps taken: {}", solution.steps);
             println!("  Accepted steps: {}", solution.accepted_steps);
             println!("  Rejected steps: {}", solution.rejected_steps);
         }
         Err(e) => {
-            eprintln!("An error occurred during analytical Jacobian solution: {:?}", e);
+            eprintln!("An error occurred: {:?}", e);
         }
     }
 }
