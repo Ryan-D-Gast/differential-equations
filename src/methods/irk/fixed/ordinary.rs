@@ -1,8 +1,9 @@
 //! Fixed Runge-Kutta methods for ODEs
 
-use super::{ImplicitRungeKutta, Ordinary, Fixed};
+use super::ImplicitRungeKutta;
 use crate::{
     Error, Status,
+    methods::{Ordinary, Fixed},
     alias::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     ode::{OrdinaryNumericalMethod, ODE},

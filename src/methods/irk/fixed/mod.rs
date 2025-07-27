@@ -4,7 +4,7 @@ mod ordinary;
 //mod delay;
 
 use super::ImplicitRungeKutta;
-use crate::methods::{Fixed, Ordinary};
+use crate::methods::Fixed;
 
 use crate::{
     traits::{CallBackData, Real, State},

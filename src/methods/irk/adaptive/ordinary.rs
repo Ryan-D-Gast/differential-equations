@@ -1,8 +1,9 @@
 //! Adaptive Runge-Kutta methods for ODEs
 
-use super::{ImplicitRungeKutta, Ordinary, Adaptive};
+use super::ImplicitRungeKutta;
 use crate::{
     Error, Status,
+    methods::{Ordinary, Adaptive},
     alias::Evals,
     methods::h_init::InitialStepSize,
     interpolate::{Interpolation, cubic_hermite_interpolate},
