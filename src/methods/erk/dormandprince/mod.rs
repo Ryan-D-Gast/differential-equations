@@ -3,10 +3,8 @@
 mod ordinary;
 mod delay;
 
-use super::ExplicitRungeKutta;
-use crate::methods::{DormandPrince, Ordinary, Delay};
-
 use crate::{
+    methods::{ExplicitRungeKutta, DormandPrince},
     traits::{CallBackData, Real, State},
     tableau::ButcherTableau,
 };

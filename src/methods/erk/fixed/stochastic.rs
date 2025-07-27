@@ -1,8 +1,8 @@
 //! Fixed Runge-Kutta methods for SDEs
 
-use super::{ExplicitRungeKutta, Stochastic, Fixed};
 use crate::{
     Error, Status,
+    methods::{ExplicitRungeKutta, Stochastic, Fixed},
     alias::Evals,
     interpolate::Interpolation,
     linalg::component_multiply,

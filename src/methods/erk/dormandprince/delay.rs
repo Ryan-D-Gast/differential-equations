@@ -1,9 +1,11 @@
 //! Dormand-Prince Runge-Kutta methods for DDEs
 
-use super::{ExplicitRungeKutta, Delay, DormandPrince};
 use crate::{
     Error, Status,
-    methods::h_init::InitialStepSize,
+    methods::{
+        h_init::InitialStepSize,
+        ExplicitRungeKutta, Delay, DormandPrince
+    },
     alias::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     dde::{DelayNumericalMethod, DDE},

@@ -1,8 +1,10 @@
 //! Fixed Runge-Kutta methods for DDEs
 
-use super::{ExplicitRungeKutta, Delay, Fixed};
 use crate::{
     Error, Status,
+    methods::{
+        ExplicitRungeKutta, Delay, Fixed
+    },
     alias::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     dde::{DelayNumericalMethod, DDE},

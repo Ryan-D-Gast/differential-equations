@@ -3,10 +3,8 @@
 mod ordinary;
 //mod delay;
 
-use super::ImplicitRungeKutta;
-use crate::methods::Adaptive;
-
 use crate::{
+    methods::{ImplicitRungeKutta, Adaptive},
     traits::{CallBackData, Real, State},
     tableau::ButcherTableau,
 };

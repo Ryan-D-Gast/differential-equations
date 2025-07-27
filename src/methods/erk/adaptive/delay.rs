@@ -1,9 +1,11 @@
 //! Adaptive Runge-Kutta methods for DDEs
 
-use super::{ExplicitRungeKutta, Delay, Adaptive};
 use crate::{
     Error, Status,
-    methods::h_init::InitialStepSize,
+    methods::{
+        ExplicitRungeKutta, Delay, Adaptive,
+        h_init::InitialStepSize,
+    },
     alias::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     dde::{DelayNumericalMethod, DDE},

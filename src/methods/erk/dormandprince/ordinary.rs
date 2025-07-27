@@ -1,10 +1,12 @@
 //! Dormand-Prince Runge-Kutta methods for ODEs
 
-use super::{ExplicitRungeKutta, Ordinary, DormandPrince};
 use crate::{
     Error, Status,
     alias::Evals,
-    methods::h_init::InitialStepSize,
+    methods::{
+        ExplicitRungeKutta, Ordinary, DormandPrince,
+        h_init::InitialStepSize,
+    },
     interpolate::Interpolation,
     ode::{OrdinaryNumericalMethod, ODE},
     traits::{CallBackData, Real, State},

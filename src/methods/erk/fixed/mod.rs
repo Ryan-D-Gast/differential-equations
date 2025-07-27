@@ -4,10 +4,10 @@ mod ordinary;
 mod delay;
 mod stochastic;
 
-use super::ExplicitRungeKutta;
-use crate::methods::{Fixed, Ordinary, Delay, Stochastic};
-
 use crate::{
+    methods::{
+        ExplicitRungeKutta, Fixed
+    },
     traits::{CallBackData, Real, State},
     tableau::ButcherTableau,
 };
