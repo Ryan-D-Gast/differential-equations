@@ -586,7 +586,7 @@ fn accuracy() {
         y0: vector![1.0, 0.0, 0.0],
         expected_result: vector![0.9851721139, 3.3863953790e-05, 0.0147940222],
 
-        // Implicit methods (should handle stiffness well)
+        // Implicit methods
         solver_name: CrankNicolson,
         solver: ImplicitRungeKutta::crank_nicolson(0.001),
         tolerance: 1e-2,
@@ -599,7 +599,7 @@ fn accuracy() {
         solver: ImplicitRungeKutta::gauss_legendre_6().rtol(1e-6).atol(1e-8),
         tolerance: 1e-3,
 
-        // DIRK methods (should also handle stiffness well)
+        // DIRK methods
         solver_name: SDIRK21,
         solver: DiagonallyImplicitRungeKutta::sdirk21().rtol(1e-6).atol(1e-8),
         tolerance: 1e-2,
@@ -616,7 +616,7 @@ fn accuracy() {
         solver: DiagonallyImplicitRungeKutta::kvaerno423().rtol(1e-6).atol(1e-8),
         tolerance: 1e-2,
 
-        // Explicit methods (will struggle with stiffness - loose tolerances)
+        // Explicit methods
         solver_name: DOP853,
         solver: ExplicitRungeKutta::dop853().rtol(1e-10).atol(1e-12),
         tolerance: 1e-1,
@@ -634,7 +634,7 @@ fn accuracy() {
         y0: vector![1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0057],
         expected_result: vector![4.5208593641e-03, 8.8390563234e-04, 7.9719428657e-04, 7.8113260614e-03, 1.3238525410e-01, 5.3016769232e-01, 5.6313397578e-03, 6.8660242157e-05],
 
-        // Implicit methods (necessary for this stiff problem)
+        // Implicit methods
         solver_name: GaussLegendre4,
         solver: ImplicitRungeKutta::gauss_legendre_4().rtol(1e-4).atol(1e-6),
         tolerance: 1e-1,
