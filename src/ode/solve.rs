@@ -391,7 +391,7 @@ where
                 match final_event {
                     ControlFlag::ModifyState(tm, ym) => {
                         // Record the modified state point
-                        solution.push(tm, ym.clone());
+                        solution.push(tm, ym);
 
                         // Reinitialize the solver with the modified state at the precise time
                         match solver.init(ode, tm, tf, &ym) {

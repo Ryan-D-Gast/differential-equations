@@ -131,7 +131,7 @@ impl<T: Real> ButcherTableau<T, 4> {
     ///
     pub fn esdirk324l2sa() -> Self {
         // Gamma parameter and derived values (computed in f64 for precision)
-        let g = 0.43586652150845899941601945;
+        let g = 0.435_866_521_508_459;
         let g2 = g * g;
         let g3 = g2 * g;
         let g4 = g3 * g;

@@ -257,7 +257,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Compute solution: y_new = y_old + h * sum(b_i * f_i)
         let mut y_new = self.y;
         for i in 0..self.stages {
-            y_new = y_new + self.k[i] * (self.b[i] * self.h);
+            y_new += self.k[i] * (self.b[i] * self.h);
         }
 
         // Compute error estimate using embedded method (bh coefficients)
@@ -266,7 +266,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             // Compute lower order solution for error estimation
             let mut y_low = self.y;
             for i in 0..self.stages {
-                y_low = y_low + self.k[i] * (bh[i] * self.h);
+                y_low += self.k[i] * (bh[i] * self.h);
             }
 
             // Compute error estimate: err = y_high - y_low

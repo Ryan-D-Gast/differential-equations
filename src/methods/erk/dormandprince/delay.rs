@@ -378,9 +378,7 @@ impl<
                                             |acc, cont_i| {
                                                 let factor = if cont_i >= 4 {
                                                     if (ilast - cont_i) % 2 == 1 { s1 } else { s }
-                                                } else {
-                                                    if cont_i % 2 == 1 { s1 } else { s }
-                                                };
+                                                } else if cont_i % 2 == 1 { s1 } else { s };
                                                 acc * factor + self.cont[cont_i]
                                             },
                                         );

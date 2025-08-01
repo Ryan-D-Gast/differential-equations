@@ -85,7 +85,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             // rhs = y_n + h * sum_{j=0}^{stage-1} a[stage][j] * k[j]
             let mut rhs = self.y;
             for j in 0..stage {
-                rhs = rhs + self.k[j] * (self.a[stage][j] * self.h);
+                rhs += self.k[j] * (self.a[stage][j] * self.h);
             }
 
             // Initial guess for stage solution - use previous solution
@@ -195,7 +195,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Compute the solution using the b coefficients: y_new = y_old + h * sum(b_i * k_i)
         let mut y_new = self.y;
         for i in 0..self.stages {
-            y_new = y_new + self.k[i] * (self.b[i] * self.h);
+            y_new += self.k[i] * (self.b[i] * self.h);
         }
 
         // Step is always accepted for fixed step size methods

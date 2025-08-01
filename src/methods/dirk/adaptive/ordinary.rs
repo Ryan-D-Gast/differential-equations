@@ -107,7 +107,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             // rhs = y_n + h * sum_{j=0}^{stage-1} a[stage][j] * k[j]
             let mut rhs = self.y;
             for j in 0..stage {
-                rhs = rhs + self.k[j] * (self.a[stage][j] * self.h);
+                rhs += self.k[j] * (self.a[stage][j] * self.h);
             }
 
             // Initial guess for stage solution - use previous solution
@@ -226,7 +226,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Compute solution: y_new = y_old + h * sum(b_i * k_i)
         let mut y_new = self.y;
         for i in 0..self.stages {
-            y_new = y_new + self.k[i] * (self.b[i] * self.h);
+            y_new += self.k[i] * (self.b[i] * self.h);
         }
 
         // Compute error estimate using embedded method (bh coefficients)
@@ -235,7 +235,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             // Compute lower order solution for error estimation
             let mut y_low = self.y;
             for i in 0..self.stages {
-                y_low = y_low + self.k[i] * (bh[i] * self.h);
+                y_low += self.k[i] * (bh[i] * self.h);
             }
 
             // Compute error estimate: err = y_high - y_low
