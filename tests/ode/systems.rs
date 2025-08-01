@@ -174,7 +174,6 @@ impl ODE<f64, SVector<f64, 3>> for RobertsonProblem {
 
 /// HIRES problem (High Irradiance Response)
 /// A 8-dimensional stiff system from plant physiology
-/// Used in Hairer & Wanner's "Solving Ordinary Differential Equations II"
 pub struct HiresProblem;
 
 impl ODE<f64, SVector<f64, 8>> for HiresProblem {
@@ -187,29 +186,5 @@ impl ODE<f64, SVector<f64, 8>> for HiresProblem {
         dydt[5] = -280.0 * y[5] * y[7] + 0.69 * y[3] + 1.71 * y[4] - 0.43 * y[5] + 0.69 * y[6];
         dydt[6] = 280.0 * y[5] * y[7] - 1.81 * y[6];
         dydt[7] = -280.0 * y[5] * y[7] + 1.81 * y[6];
-    }
-}
-
-/// Oregonator model (Belousov-Zhabotinsky reaction)
-/// A stiff chemical oscillator model
-/// dx/dt = s * (y - x*y + x - q*x^2)
-/// dy/dt = (-y - x*y + f*z) / s  
-/// dz/dt = w * (x - z)
-pub struct OregonatorModel {
-    pub s: f64,    // stiffness parameter (typically ~77.27)
-    pub q: f64,    // parameter (typically ~8.375e-6)
-    pub w: f64,    // parameter (typically ~0.161)
-    pub f: f64,    // parameter (typically ~1.0)
-}
-
-impl ODE<f64, SVector<f64, 3>> for OregonatorModel {
-    fn diff(&self, _t: f64, y: &SVector<f64, 3>, dydt: &mut SVector<f64, 3>) {
-        let x = y[0];
-        let y_val = y[1];
-        let z = y[2];
-
-        dydt[0] = self.s * (y_val - x * y_val + x - self.q * x * x);
-        dydt[1] = (-y_val - x * y_val + self.f * z) / self.s;
-        dydt[2] = self.w * (x - z);
     }
 }

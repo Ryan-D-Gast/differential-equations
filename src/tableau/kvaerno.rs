@@ -6,10 +6,36 @@ use crate::{
 };
 
 impl<T: Real> ButcherTableau<T, 4> {
-    /// Kvaerno(4,2,3)-ESDIRK: 4-stage, 3rd order ESDIRK method with 2nd order embedding
-    /// 
-    /// High-quality 3rd order ESDIRK method with embedded 2nd order method for adaptive stepping.
-    /// L-stable and A-stable with good stability properties.
+    /// Kvaerno(4,2,3): 4-stage, 3rd order DIRK method with embedded 2nd order
+    ///
+    /// # Overview
+    /// This provides a 4-stage, diagonally implicit Runge-Kutta method with:
+    /// - Primary order: 3
+    /// - Embedded order: 2 (for error estimation)
+    /// - Number of stages: 4
+    /// - A-stable
+    ///
+    /// # Notes
+    /// - Developed specifically for stiff differential equations
+    /// - A-stable method suitable for moderately stiff problems
+    /// - The embedded method provides efficient error estimation for adaptive stepping
+    /// - All diagonal elements are identical (γ ≈ 0.4358665215), simplifying LU factorization
+    /// - Good balance between stability and computational efficiency
+    ///
+    /// # Butcher Tableau
+    /// ```text
+    /// 0      | 0      0      0      0
+    /// .8717  | .4359  .4359  0      0
+    /// 1      | .4906  .0736  .4359  0  
+    /// 1      | .3088  1.4906 -1.2352 .4359
+    /// -------|-------------------------
+    /// b³     | .3088  1.4906 -1.2352 .4359
+    /// b²     | .4906  .0736  .4359  0
+    /// ```
+    /// where γ ≈ 0.4358665215
+    ///
+    /// # References
+    /// - Kvaerno, A. (2004). "Singly diagonally implicit Runge-Kutta methods with an explicit first stage"
     /// 
     pub fn kvaerno423() -> Self {
         // Main diagonal entry
@@ -60,10 +86,40 @@ impl<T: Real> ButcherTableau<T, 4> {
 }
 
 impl<T: Real> ButcherTableau<T, 7> {
-    /// Kvaerno(7,4,5)-ESDIRK: 7-stage, 5th order ESDIRK method with 4th order embedding
-    /// 
-    /// High-order ESDIRK method with excellent stability properties. Suitable for 
-    /// problems requiring high accuracy and strong stability.
+    /// Kvaerno(7,4,5): 7-stage, 5th order DIRK method with embedded 4th order
+    ///
+    /// # Overview
+    /// This provides a 7-stage, diagonally implicit Runge-Kutta method with:
+    /// - Primary order: 5
+    /// - Embedded order: 4 (for error estimation)
+    /// - Number of stages: 7
+    /// - A-stable and B-stable
+    ///
+    /// # Notes
+    /// - High-order method designed for stiff differential equations requiring high accuracy
+    /// - A-stable and B-stable for excellent stability properties
+    /// - The embedded 4th order method provides accurate error estimation for adaptive control
+    /// - All diagonal elements are identical (γ = 0.26), enabling efficient LU factorization reuse
+    /// - Particularly effective for smooth solutions where high accuracy is required
+    /// - Higher computational cost per step but fewer steps needed due to high order
+    ///
+    /// # Butcher Tableau
+    /// ```text
+    /// 0      | 0      0      0      0      0      0      0
+    /// .52    | .26    .26    0      0      0      0      0
+    /// 1.2303 | .13    .8403  .26    0      0      0      0
+    /// .8958  | .2237  .4768  -.0647 .26    0      0      0
+    /// .4364  | .1665  .1045  .0363  -.1309 .26    0      0
+    /// 1      | .1386  .0000  -.0425 .0245  .6194  .26    0
+    /// 1      | .1366  .0000  -.0550 -.0412 .6299  .0696  .26
+    /// -------|--------------------------------------------
+    /// b⁵     | .1366  .0000  -.0550 -.0412 .6299  .0696  .26
+    /// b⁴     | .1386  .0000  -.0425 .0245  .6194  .26    0
+    /// ```
+    /// where γ = 0.26 exactly
+    ///
+    /// # References
+    /// - Kvaerno, A. (2004). "Singly diagonally implicit Runge-Kutta methods with an explicit first stage"
     /// 
     pub fn kvaerno745() -> Self {
         // Main diagonal entry

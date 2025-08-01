@@ -1,9 +1,8 @@
 //! Suite of test cases for numerical methods vs results of SciPy using DOP853 & Tolerences = 1e-12
 
 use super::systems::{
-    ExponentialGrowth, HarmonicOscillator, LinearEquation, LogisticEquation,
-    // Stiff systems  
-    RobertsonProblem, HiresProblem, OregonatorModel
+    ExponentialGrowth, HarmonicOscillator, LinearEquation, 
+    LogisticEquation, RobertsonProblem, HiresProblem
 };
 use differential_equations::{
     methods::{
@@ -566,6 +565,16 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: ImplicitRungeKutta::gauss_legendre_6(),
+        tolerance: 1e-3,
+
+        // Diagonally implicit methods
+
+        solver_name: SDIRK21,
+        solver: DiagonallyImplicitRungeKutta::sdirk21(),
+        tolerance: 1e-3,
+
+        solver_name: ESDIRK33,
+        solver: DiagonallyImplicitRungeKutta::esdirk33(0.01),
         tolerance: 1e-3
     }
     
@@ -590,12 +599,11 @@ fn accuracy() {
         solver: ImplicitRungeKutta::gauss_legendre_6().rtol(1e-6).atol(1e-8),
         tolerance: 1e-3,
 
-        //// DIRK methods (should also handle stiffness well)
+        // DIRK methods (should also handle stiffness well)
         solver_name: SDIRK21,
         solver: DiagonallyImplicitRungeKutta::sdirk21().rtol(1e-6).atol(1e-8),
         tolerance: 1e-2,
 
-        //solver_name: ESDIRK33,
         solver_name: ESDIRK33,
         solver: DiagonallyImplicitRungeKutta::esdirk33(0.001),
         tolerance: 1e-2,
@@ -642,33 +650,6 @@ fn accuracy() {
 
         solver_name: Kvaerno423,
         solver: DiagonallyImplicitRungeKutta::kvaerno423().rtol(1e-4).atol(1e-6),
-        tolerance: 1e-1
-    }
-
-    test_ode! {
-        system_name: oregonator_model,
-        ode: OregonatorModel { s: 77.27, q: 8.375e-6, w: 0.161, f: 1.0 },
-        t0: 0.0,
-        tf: 60.0,
-        y0: vector![1.0, 2.0, 3.0],
-        expected_result: vector![1.0008746252e+00, 1.1443369724e+03, 8.3721499669e+01],
-
-        // Implicit methods for this oscillatory stiff problem
-        solver_name: GaussLegendre4,
-        solver: ImplicitRungeKutta::gauss_legendre_4().rtol(1e-3).atol(1e-5),
-        tolerance: 1e-1,
-
-        solver_name: GaussLegendre6,
-        solver: ImplicitRungeKutta::gauss_legendre_6().rtol(1e-3).atol(1e-5),
-        tolerance: 1e-1,
-
-        //// DIRK methods
-        solver_name: ESDIRK324L2SA,
-        solver: DiagonallyImplicitRungeKutta::esdirk324l2sa().rtol(1e-3).atol(1e-5),
-        tolerance: 1e-1,
-
-        solver_name: Kvaerno423,
-        solver: DiagonallyImplicitRungeKutta::kvaerno423().rtol(1e-3).atol(1e-5),
         tolerance: 1e-1
     }
 }

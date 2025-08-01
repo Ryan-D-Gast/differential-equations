@@ -7,10 +7,31 @@ use crate::{
 
 impl<T: Real> ButcherTableau<T, 2> {
     /// SDIRK-2-1: 2-stage, 2nd order SDIRK method with 1st order embedding
-    /// 
-    /// This is a simple 2-stage singly diagonally implicit method with
-    /// A-stability and an embedded 1st order method for error estimation.
-    /// Good for basic adaptive stepping.
+    ///
+    /// # Overview
+    /// This provides a 2-stage, singly diagonally implicit Runge-Kutta method with:
+    /// - Primary order: 2
+    /// - Embedded order: 1 (for error estimation)
+    /// - Number of stages: 2
+    /// - A-stable and B-stable
+    ///
+    /// # Notes
+    /// - This is a simple SDIRK method where all diagonal entries are equal (γ = 1)
+    /// - Good for basic adaptive stepping with stiff problems
+    /// - The embedded method provides basic error estimation for step size control
+    /// - Particularly useful as a starting method for more complex stiff systems
+    ///
+    /// # Butcher Tableau
+    /// ```text
+    /// 1    | 1    0
+    /// 0    | -1   1
+    /// -----|--------
+    ///      | 1/2  1/2  (2nd order)
+    ///      | 1    0    (1st order embedding)
+    /// ```
+    ///
+    /// # References
+    /// - Hairer, E., Wanner, G. (1996). "Solving Ordinary Differential Equations II: Stiff and Differential-Algebraic Problems"
     /// 
     pub fn sdirk21() -> Self {
         let c = [1.0, 0.0];
@@ -39,9 +60,34 @@ impl<T: Real> ButcherTableau<T, 2> {
 
 impl<T: Real> ButcherTableau<T, 3> {
     /// ESDIRK-3-3: 3-stage, 3rd order ESDIRK method
-    /// 
-    /// This method pairs with SSPRK(3,3)-Shu-Osher-ERK to make a 3rd order IMEX method.
-    /// Has an explicit first stage (ESDIRK property) making it efficient.
+    ///
+    /// # Overview
+    /// This provides a 3-stage, explicit singly diagonally implicit Runge-Kutta method with:
+    /// - Primary order: 3
+    /// - Number of stages: 3
+    /// - A-stable
+    ///
+    /// # Notes
+    /// - This method pairs with SSPRK(3,3)-Shu-Osher-ERK to make a 3rd order IMEX method
+    /// - Has an explicit first stage (ESDIRK property) making it computationally efficient
+    /// - The first stage being explicit reduces the computational cost per step
+    /// - Suitable for problems with both stiff and non-stiff components
+    ///
+    /// # Butcher Tableau
+    /// ```text
+    /// 0      | 0      0      0
+    /// 1      | 4γ+2β  1-4γ-2β 0
+    /// 1/2    | α₃₁    γ      β
+    /// -------|------------------
+    ///        | 1/6    1/6    2/3
+    /// ```
+    /// where:
+    /// - β = √3/6 + 1/2 ≈ 0.7886751346
+    /// - γ = (-1/8)(√3 + 1) ≈ -0.3416407865
+    /// - α₃₁ = 1/2 - β - γ ≈ 0.0529656519
+    ///
+    /// # References
+    /// - Conde, S., et al. (2017). "Implicit and implicit-explicit strong stability preserving Runge-Kutta methods"
     /// 
     pub fn esdirk33() -> Self {
         // Parameters (computed in f64 for precision)
@@ -73,10 +119,17 @@ impl<T: Real> ButcherTableau<T, 3> {
 }
 
 impl<T: Real> ButcherTableau<T, 4> {
-    /// ESDIRK3(2)4L[2]SA: 4-stage, 3rd order ESDIRK method with 2nd order embedding
-    /// 
-    /// This method is a high-quality 3rd order ESDIRK method with an embedded 2nd order method
-    /// for adaptive step size control. It is L-stable and suitable for stiff problems.
+    /// ESDIRK3(2)4L[2]SA: 4-stage, 3rd order ESDIRK method with embedded 2nd order
+    ///
+    /// # Overview
+    /// This provides a 4-stage, explicit singly diagonally implicit Runge-Kutta method with:
+    /// - Primary order: 3
+    /// - Embedded order: 2 (for error estimation)
+    /// - Number of stages: 4
+    /// - A-stable and B-stable
+    ///
+    /// # References
+    /// - Kennedy, C.A. and Carpenter, M.H. (2003). "Additive Runge-Kutta schemes for convection-diffusion-reaction equations"
     /// 
     pub fn esdirk324l2sa() -> Self {
         // Gamma parameter and derived values (computed in f64 for precision)
