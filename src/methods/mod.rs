@@ -28,9 +28,7 @@ pub struct Fixed;
 pub struct Adaptive;
 
 /// Explicit Adaptive-step methods by Dormand-Prince
-/// 
-/// Note that technically, Dormand-Prince is a specific adaptive method, but we keep it as a separate category 
-/// because the there are optimizations for the primary stages, error estimation, and dense output interpolation
-/// that can not be generalized to all adaptive methods and thus requires it's own category. 
-/// Non Dormand-Prince adaptive methods might also be implemented in this category that share the same optimizations.
 pub struct DormandPrince;
+
+/// Implicit Runge-Kutta methods using Radau collocation
+pub struct Radau;

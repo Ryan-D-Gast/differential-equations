@@ -72,7 +72,7 @@ pub struct ImplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const
     pub max_scale: T,
 
     // Iteration tracking
-    jacobian_matrix: nalgebra::DMatrix<T>,    // Jacobian matrix J = df/dy
+    stage_jacobians: [nalgebra::DMatrix<T>; S], // Stage-specific Jacobian matrices J_i = df/dy(t + c_i*h, z_i)
     newton_matrix: nalgebra::DMatrix<T>,      // Newton system matrix M = I - h*(A⊗J)
     rhs_newton: nalgebra::DVector<T>,         // Right-hand side vector for Newton system
     delta_k_vec: nalgebra::DVector<T>,        // Solution vector for Newton system
@@ -138,7 +138,7 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
             dense_stages: I,
             family: PhantomData,
             equation: PhantomData,
-            jacobian_matrix: nalgebra::DMatrix::zeros(0, 0),
+            stage_jacobians: core::array::from_fn(|_| nalgebra::DMatrix::zeros(0, 0)),
             newton_matrix: nalgebra::DMatrix::zeros(0, 0),
             rhs_newton: nalgebra::DVector::zeros(0),
             delta_k_vec: nalgebra::DVector::zeros(0),
