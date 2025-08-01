@@ -596,8 +596,9 @@ fn accuracy() {
         tolerance: 1e-2,
 
         //solver_name: ESDIRK33,
-        //solver: DiagonallyImplicitRungeKutta::esdirk33(0.01),
-        //tolerance: 1e-2,
+        solver_name: ESDIRK33,
+        solver: DiagonallyImplicitRungeKutta::esdirk33(0.001),
+        tolerance: 1e-2,
 
         solver_name: ESDIRK324L2SA,
         solver: DiagonallyImplicitRungeKutta::esdirk324l2sa().rtol(1e-6).atol(1e-8),
