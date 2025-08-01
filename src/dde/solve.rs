@@ -95,8 +95,7 @@ where
     // Initialize the solver
     match solver.init(dde, t0, tf, y0, &phi) {
         Ok(evals) => {
-            solution.evals += evals.fcn;
-            solution.jac_evals += evals.jac;
+            solution.evals += evals;
         }
         Err(e) => return Err(e),
     }
@@ -117,8 +116,7 @@ where
             // Reinitialize the solver with the modified state
             match solver.init(dde, tm, tf, &ym, &phi) {
                 Ok(evals) => {
-                    solution.evals += evals.fcn;
-                    solution.jac_evals += evals.jac;
+                    solution.evals += evals;
                 }
                 Err(e) => return Err(e),
             }
@@ -141,8 +139,7 @@ where
             // Reinitialize the solver with the modified state
             match solver.init(dde, tm, tf, &ym, &phi) {
                 Ok(evals) => {
-                    solution.evals += evals.fcn;
-                    solution.jac_evals += evals.jac;
+                    solution.evals += evals;
                 }
                 Err(e) => return Err(e),
             }
@@ -181,17 +178,16 @@ where
         }
 
         // Perform a step
-        solution.steps += 1;
         match solver.step(dde, &phi) {
             Ok(evals) => {
-                solution.evals += evals.fcn;
-                solution.jac_evals += evals.jac;
+                solution.evals += evals;
+                solution.steps.accepted += 1;
 
                 if let Status::RejectedStep = solver.status() {
-                    solution.rejected_steps += 1;
+                    solution.steps.rejected += 1;
                     continue;
                 } else {
-                    solution.accepted_steps += 1;
+                    solution.steps.accepted += 1;
                 }
             }
             Err(e) => {
@@ -215,8 +211,7 @@ where
                 // Reinitialize the solver with the modified state
                 match solver.init(dde, tm, tf, &ym, &phi) {
                     Ok(evals) => {
-                        solution.evals += evals.fcn;
-                        solution.jac_evals += evals.jac;
+                        solution.evals += evals;
                     }
                     Err(e) => return Err(e),
                 }
@@ -343,8 +338,7 @@ where
                         // Reinitialize the solver with the modified state at the precise time
                         match solver.init(dde, tm, tf, &ym, &phi) {
                             Ok(evals) => {
-                                solution.evals += evals.fcn;
-                                solution.jac_evals += evals.jac;
+                                solution.evals += evals;
                             }
                             Err(e) => return Err(e),
                         }

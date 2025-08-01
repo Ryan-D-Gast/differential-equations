@@ -2,7 +2,7 @@
 
 use crate::{
     Error, Status,
-    alias::Evals,
+    stats::Evals,
     methods::{
         ExplicitRungeKutta, Ordinary, DormandPrince,
         h_init::InitialStepSize,
@@ -40,7 +40,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         self.y = *y0;
         ode.diff(self.t, &self.y, &mut self.k[0]);
         self.dydt = self.k[0];
-        evals.fcn += 1;
+        evals.function += 1;
 
         // Initialize previous state
         self.t_prev = self.t;
@@ -109,7 +109,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         let t_new = self.t + self.h;
 
         // Number of function evaluations
-        evals.fcn += self.stages - 1; // We already have k[0]
+        evals.function += self.stages - 1; // We already have k[0]
 
         // Error estimation
         let er = self.er.unwrap();
@@ -155,7 +155,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         if err <= T::one() {
             // Calculate the new derivative at the new point
             ode.diff(t_new, &y_new, &mut self.dydt);
-            evals.fcn += 1;
+            evals.function += 1;
 
             // stiffness detection
             let n_stiff_threshold = 100;
@@ -219,7 +219,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                         y_stage = self.y + y_stage * self.h;
 
                         ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
-                        evals.fcn += 1;
+                        evals.function += 1;
                     }
                 }
 

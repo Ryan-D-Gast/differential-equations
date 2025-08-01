@@ -3,7 +3,7 @@
 use crate::{
     Error, Status,
     methods::{ExplicitRungeKutta, Ordinary, Fixed},
-    alias::Evals,
+    stats::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     ode::{OrdinaryNumericalMethod, ODE},
     traits::{CallBackData, Real, State},
@@ -35,7 +35,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         self.t = t0;
         self.y = *y0;
         ode.diff(self.t, &self.y, &mut self.dydt);
-        evals.fcn += 1;
+        evals.function += 1;
 
         // Initialize previous state
         self.t_prev = self.t;
@@ -78,7 +78,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
             ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
         }
-        evals.fcn += self.stages - 1; // We already have k[0]
+        evals.function += self.stages - 1; // We already have k[0]
 
         // Store current state before update for interpolation
         self.t_prev = self.t;
@@ -102,7 +102,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
                 ode.diff(self.t + self.c[self.stages + i] * self.h, &y_stage, &mut self.k[self.stages + i]);
             }
-            evals.fcn += I - S;
+            evals.function += I - S;
         }
 
         // Update state
@@ -116,7 +116,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         } else {
             // Otherwise, compute the new derivative
             ode.diff(self.t, &self.y, &mut self.dydt);
-            evals.fcn += 1;
+            evals.function += 1;
         }
         
         self.status = Status::Solving;        

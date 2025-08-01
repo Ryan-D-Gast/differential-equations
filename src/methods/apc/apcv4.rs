@@ -3,7 +3,7 @@
 use super::AdamsPredictorCorrector;
 use crate::{
     Error, Status,
-    alias::Evals,
+    stats::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     linalg::norm,
     ode::{OrdinaryNumericalMethod, ODE},
@@ -76,7 +76,7 @@ impl<T: Real, V: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, V, D> for
         if self.h0 == T::zero() {
             // Only use adaptive step size calculation if the method supports it
             self.h0 = InitialStepSize::<Ordinary>::compute(ode, t0, tf, y0, 4, self.tol, self.tol, self.h_min, self.h_max, &mut evals);
-            evals.fcn += 2;
+            evals.function += 2;
 
         }
 
@@ -119,7 +119,7 @@ impl<T: Real, V: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, V, D> for
             self.t += self.h;
             self.t_prev[i] = self.t;
             self.y_prev[i] = self.y;
-            evals.fcn += 4; // 4 evaluations per Runge-Kutta step
+            evals.function += 4; // 4 evaluations per Runge-Kutta step
 
             if i == 1 {
                 self.dydt = self.k[0];
@@ -168,7 +168,7 @@ impl<T: Real, V: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, V, D> for
                 &mut self.k[2],
             );
             ode.diff(self.t + self.h, &(self.y + self.k[2] * self.h), &mut self.k[3]);
-            evals.fcn += 4; // 4 evaluations per Runge-Kutta step
+            evals.function += 4; // 4 evaluations per Runge-Kutta step
 
             // Update State
             self.y += (self.k[0] + self.k[1] * two + self.k[2] * two + self.k[3]) * (self.h / six);
@@ -199,7 +199,7 @@ impl<T: Real, V: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, V, D> for
                 / T::from_f64(24.0).unwrap();
 
         // Track number of evaluations
-        evals.fcn += 5;
+        evals.function += 5;
 
         // Calculate sigma for step size adjustment
         let sigma = T::from_f64(19.0).unwrap() * norm(corrector - predictor)

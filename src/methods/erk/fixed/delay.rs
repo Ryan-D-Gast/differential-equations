@@ -5,7 +5,7 @@ use crate::{
     methods::{
         ExplicitRungeKutta, Delay, Fixed
     },
-    alias::Evals,
+    stats::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     dde::{DelayNumericalMethod, DDE},
     traits::{CallBackData, Real, State},
@@ -58,7 +58,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
 
         // Calculate initial derivative
         dde.diff(self.t, &self.y, &yd, &mut self.dydt);
-        evals.fcn += 1;
+        evals.function += 1;
         self.dydt_prev = self.dydt;        // Store initial state in history
         self.history.push_back((self.t, self.y, self.dydt));
 
@@ -138,7 +138,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 }
                 dde.diff(self.t + self.c[i] * self.h, &y_stage, &yd, &mut self.k[i]);
             }
-            evals.fcn += self.stages - 1; // k[0] was already available
+            evals.function += self.stages - 1; // k[0] was already available
 
             // Compute solution
             let mut y_next = self.y;
@@ -176,7 +176,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 self.lagvals(self.t + self.h, &lags, &mut yd, phi);
             }
             dde.diff(self.t + self.h, &y_next_candidate_iter, &yd, &mut dydt_next_candidate_iter);
-            evals.fcn += 1;
+            evals.function += 1;
         } // End of DDE iteration loop
 
         // Handle DDE iteration failure: reduce step size and retry
@@ -211,7 +211,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 self.lagvals(self.t, &lags, &mut yd, phi);
             }
             dde.diff(self.t, &self.y, &yd, &mut self.dydt);
-            evals.fcn += 1;
+            evals.function += 1;
         }
 
         // Compute additional stages for dense output if available
@@ -229,7 +229,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 }
                 dde.diff(self.t_prev + self.c[self.stages + i] * self.h, &y_stage_dense, &yd, &mut self.k[self.stages + i]);
             }
-            evals.fcn += I - S; // Account for function evaluations for dense stages
+            evals.function += I - S; // Account for function evaluations for dense stages
         }
 
         // Update continuous output buffer and remove old entries if max_delay is set

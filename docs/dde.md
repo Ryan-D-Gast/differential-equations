@@ -126,8 +126,8 @@ fn main() {
             for (t, u_vec) in solution.iter() {
                 println!("(t: {:.4}, u1: {:.4}, u2: {:.4}, u3: {:.4})", t, u_vec[0], u_vec[1], u_vec[2]);
             }
-            println!("Function evaluations: {}", solution.evals);
-            println!("Steps: {}", solution.steps);
+            println!("Function evaluations: {}", solution.evals.function);
+            println!("Steps: {}", solution.steps.total());
         }
         Err(e) => panic!("Error: {:?}", e),
     }

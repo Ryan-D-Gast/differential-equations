@@ -105,7 +105,7 @@ fn main() {
     println!("Final price: {:.4}", solution.y.last().unwrap()[0]);
     
     // Print some statistics
-    println!("Function evaluations: {}", solution.evals);
+    println!("Function evaluations: {}", solution.evals.function);
     println!("Number of time steps: {}", solution.t.len());
     println!("Solution time: {:.6} seconds", solution.timer.elapsed());
 }

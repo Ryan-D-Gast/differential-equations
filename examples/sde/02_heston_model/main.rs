@@ -136,8 +136,8 @@ fn main() {
     println!("  Final price: {:.4}", final_price);
     println!("  Final variance: {:.4}", final_variance);
     println!("  Final volatility: {:.4}%", final_volatility * 100.0);
-    println!("  Function evaluations: {}", solution.evals);
-    println!("  Total steps: {}", solution.steps);
+    println!("  Function evaluations: {}", solution.evals.function);
+    println!("  Total steps: {}", solution.steps.total());
     println!("  Solution time: {:.6} seconds", solution.timer.elapsed());
 
     // Print some intermediate values (e.g., every quarter)

@@ -4,7 +4,7 @@ use super::{Ordinary, Delay};
 use crate::{
     ode::ODE,
     traits::{CallBackData, Real, State},  
-    alias::Evals,
+    stats::Evals,
     dde::DDE,
 };
 
@@ -64,7 +64,7 @@ impl InitialStepSize<Ordinary> {
         let mut f0 = V::zeros();
         let mut f1 = V::zeros();        // Compute initial derivative f(t0, y0)
         ode.diff(t0, y0, &mut f0);
-        evals.fcn += 1;
+        evals.function += 1;
 
         // Compute weighted norm of the initial derivative and solution
         let mut dnf = T::zero();
@@ -92,7 +92,7 @@ impl InitialStepSize<Ordinary> {
         // Perform an explicit Euler step
         let y1 = *y0 + f0 * h;        // Evaluate derivative at new point
         ode.diff(t0 + h, &y1, &mut f1);
-        evals.fcn += 1;
+        evals.function += 1;
 
         // Estimate the second derivative
         let mut der2 = T::zero();
@@ -259,7 +259,7 @@ impl InitialStepSize<Delay> {
         }
 
         dde.diff(t1, &y1, &yd_init, &mut f1);
-        evals.fcn += 1;
+        evals.function += 1;
 
         let mut der2 = T::zero();
         for n in 0..n_dim {

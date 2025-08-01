@@ -1,48 +1,11 @@
 //! Solution of differential equations
 
 use crate::{
-    Status,
-    traits::{CallBackData, Real, State},
+    stats::{Evals, Steps, Timer}, traits::{CallBackData, Real, State}, Status
 };
-use std::time::Instant;
 
 #[cfg(feature = "polars")]
 use polars::prelude::*;
-
-/// Timer for tracking solution time
-#[derive(Debug, Clone)]
-pub enum Timer<T: Real> {
-    Off,
-    Running(Instant),
-    Completed(T),
-}
-
-impl<T: Real> Timer<T> {
-    /// Starts the timer
-    pub fn start(&mut self) {
-        *self = Timer::Running(Instant::now());
-    }
-
-    /// Returns the elapsed time in seconds
-    pub fn elapsed(&self) -> T {
-        match self {
-            Timer::Off => T::zero(),
-            Timer::Running(start_time) => T::from_f64(start_time.elapsed().as_secs_f64()).unwrap(),
-            Timer::Completed(t) => *t,
-        }
-    }
-
-    /// Complete the running timer and convert it to a completed state
-    pub fn complete(&mut self) {
-        match self {
-            Timer::Off => {}
-            Timer::Running(start_time) => {
-                *self = Timer::Completed(T::from_f64(start_time.elapsed().as_secs_f64()).unwrap());
-            }
-            Timer::Completed(_) => {}
-        }
-    }
-}
 
 /// Solution of returned by differential equation solvers
 ///
@@ -72,20 +35,11 @@ where
     /// Status of the solver.
     pub status: Status<T, V, D>,
 
-    /// Number of function evaluations.
-    pub evals: usize,
+    /// Number of function, jacobian, etc evaluations.
+    pub evals: Evals,
 
-    /// Number of Jacobian evaluations.
-    pub jac_evals: usize,
-
-    /// Total number of steps taken by the solver.
-    pub steps: usize,
-
-    /// Number of rejected steps where the solution step-size had to be reduced.
-    pub rejected_steps: usize,
-
-    /// Number of accepted steps where the solution moved closer to tf.
-    pub accepted_steps: usize,
+    /// Number of steps taken during the solution.
+    pub steps: Steps,
 
     /// Timer for tracking solution time - Running during solving, Completed after finalization
     pub timer: Timer<T>,
@@ -115,11 +69,8 @@ where
             t: Vec::with_capacity(100),
             y: Vec::with_capacity(100),
             status: Status::Uninitialized,
-            evals: 0,
-            steps: 0,
-            jac_evals: 0,
-            rejected_steps: 0,
-            accepted_steps: 0,
+            evals: Evals::new(),
+            steps: Steps::new(),
             timer: Timer::Off,
         }
     }

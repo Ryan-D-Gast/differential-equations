@@ -144,7 +144,7 @@ pub mod utils;
 pub mod linalg;
 
 // Alias for primative types for readability
-pub mod alias;
+pub mod stats;
 
 // Derive Macros for Differential Equations
 pub mod derive {

@@ -63,7 +63,7 @@ pub use crate::{
         CrossingDirection,
         Solout, // Trait for defining a custom output behavior
     },
-    alias::Evals,
+    stats::Evals,
     control::ControlFlag,
     derive::State,
     error::Error,

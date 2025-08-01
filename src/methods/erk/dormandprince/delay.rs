@@ -6,7 +6,7 @@ use crate::{
         h_init::InitialStepSize,
         ExplicitRungeKutta, Delay, DormandPrince
     },
-    alias::Evals,
+    stats::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     dde::{DelayNumericalMethod, DDE},
     traits::{CallBackData, Real, State},
@@ -63,7 +63,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         // Calculate initial derivative
         dde.diff(self.t, &self.y, &yd, &mut self.k[0]);
         self.dydt = self.k[0];
-        evals.fcn += 1;
+        evals.function += 1;
         self.dydt_prev = self.dydt;
 
         // Store initial state in history
@@ -150,7 +150,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 }
                 dde.diff(self.t + self.c[i] * self.h, &y_stage, &yd, &mut self.k[i]);
             }
-            evals.fcn += self.stages - 1; // k[0] was already available
+            evals.function += self.stages - 1; // k[0] was already available
 
             // Store the last stage for stiffness detection
             ysti = y_stage;
@@ -258,7 +258,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 self.lagvals(t_new, &lags, &mut yd, phi);
             }
             dde.diff(t_new, &y_new, &yd, &mut self.dydt);
-            evals.fcn += 1;            // Stiffness detection (every 100 steps)
+            evals.function += 1;            // Stiffness detection (every 100 steps)
             let n_stiff_threshold = 100;
             if self.steps % n_stiff_threshold == 0 {
                 let mut stdnum = T::zero();
@@ -396,7 +396,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                             }
                         }
                         dde.diff(self.t + self.c[i] * self.h, &y_stage, &yd, &mut self.k[i]);
-                        evals.fcn += 1;
+                        evals.function += 1;
                     }
                 }
 

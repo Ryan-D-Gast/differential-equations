@@ -6,7 +6,7 @@ use crate::{
         ExplicitRungeKutta, Delay, Adaptive,
         h_init::InitialStepSize,
     },
-    alias::Evals,
+    stats::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     dde::{DelayNumericalMethod, DDE},
     traits::{CallBackData, Real, State},
@@ -61,7 +61,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
 
         // Calculate initial derivative
         dde.diff(self.t, &self.y, &yd, &mut self.dydt);
-        evals.fcn += 1;
+        evals.function += 1;
         self.dydt_prev = self.dydt;        // Store initial state in history
         self.history.push_back((self.t, self.y, self.dydt));
 
@@ -69,7 +69,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         if self.h0 == T::zero() {
             // Adaptive step method
             self.h0 = InitialStepSize::<Delay>::compute(dde, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max, phi, &self.k[0], &mut evals);
-            evals.fcn += 2; // h_init performs 2 function evaluations
+            evals.function += 2; // h_init performs 2 function evaluations
         }
 
         // Validate and set initial step size h
@@ -149,7 +149,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 }
                 dde.diff(self.t + self.c[i] * self.h, &y_stage, &yd, &mut self.k[i]);
             }
-            evals.fcn += self.stages - 1; // k[0] was already available
+            evals.function += self.stages - 1; // k[0] was already available
 
             // Adaptive methods: compute high and low order solutions for error estimation
             let mut y_high = self.y; // Higher order solution
@@ -201,7 +201,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 self.lagvals(self.t + self.h, &lags, &mut yd, phi);
             }
             dde.diff(self.t + self.h, &y_next_candidate_iter, &yd, &mut dydt_next_candidate_iter);
-            evals.fcn += 1;
+            evals.function += 1;
         } // End of DDE iteration loop
 
         // Handle DDE iteration failure: reduce step size and retry
@@ -256,7 +256,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                     }
                     dde.diff(self.t + self.c[self.stages + i] * self.h, &y_stage_dense, &yd, &mut self.k[self.stages + i]);
                 }
-                evals.fcn += I - S; // Account for function evaluations for dense stages
+                evals.function += I - S; // Account for function evaluations for dense stages
             }
 
             // Update state to t + h
@@ -274,7 +274,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 }
                 // Otherwise, compute the new derivative
                 dde.diff(self.t, &self.y, &yd, &mut self.dydt);
-                evals.fcn += 1;
+                evals.function += 1;
             }
 
             // Update continuous output buffer and remove old entries if max_delay is set

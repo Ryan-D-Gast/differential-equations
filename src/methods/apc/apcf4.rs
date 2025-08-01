@@ -3,7 +3,7 @@
 use super::AdamsPredictorCorrector;
 use crate::{
     Error, Status,
-    alias::Evals,
+    stats::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     ode::{OrdinaryNumericalMethod, ODE},
     traits::{CallBackData, Real, State},
@@ -105,7 +105,7 @@ impl<T: Real, V: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, V, D> for
             self.t += self.h;
             self.t_prev[i] = self.t;
             self.y_prev[i] = self.y;
-            evals.fcn += 4; // 4 evaluations per Runge-Kutta step
+            evals.function += 4; // 4 evaluations per Runge-Kutta step
 
             if i == 1 {
                 self.dydt = self.k[0];
@@ -153,7 +153,7 @@ impl<T: Real, V: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, V, D> for
         self.t += self.h;
         self.y = corrector;
         ode.diff(self.t, &self.y, &mut self.dydt);
-        evals.fcn += 6; // 6 evaluations for predictor-corrector step
+        evals.function += 6; // 6 evaluations for predictor-corrector step
 
         // Shift history: drop the oldest and add the new state at the end.
         self.t_prev.copy_within(1..4, 0);

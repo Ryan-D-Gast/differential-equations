@@ -68,9 +68,9 @@ where
         ControlFlag::Continue
     }
     
-    /// Jacobian matrix J = df/dy
+    /// jacobian matrix J = df/dy
     /// 
-    /// The Jacobian matrix is a matrix of partial derivatives of a vector-valued function.
+    /// The jacobian matrix is a matrix of partial derivatives of a vector-valued function.
     /// It describes the local behavior of the system of equations and can be used to improve
     /// the efficiency of certain solvers by providing information about the local behavior
     /// of the system of equations.
@@ -81,7 +81,7 @@ where
     /// # Arguments
     /// * `t` - Independent variable grid point.
     /// * `y` - Dependent variable vector.
-    /// * `j` - Jacobian matrix. This matrix should be pre-sized by the caller to `dim x dim` where `dim = y.len()`.
+    /// * `j` - jacobian matrix. This matrix should be pre-sized by the caller to `dim x dim` where `dim = y.len()`.
     /// 
     fn jacobian(&self, t: T, y: &V, j: &mut DMatrix<T>) {
         // Default implementation using forward finite differences
@@ -96,7 +96,7 @@ where
         // Use sqrt of machine epsilon for finite differences
         let eps = T::default_epsilon().sqrt();
         
-        // For each column of the Jacobian
+        // For each column of the jacobian
         for j_col in 0..dim {
             // Get the original value
             let y_original_j = y.get(j_col);

@@ -52,7 +52,7 @@ macro_rules! generate_error_vs_steps_lorenz {
 
                     statistics.push(TestStatistics {
                         name: stringify!($solver_name).to_string(),
-                        evals: sol.evals,
+                        evals: sol.evals.function,
                         error,
                     });
                 }
@@ -97,7 +97,7 @@ macro_rules! generate_error_vs_steps_vanderpol {
 
                     statistics.push(TestStatistics {
                         name: stringify!($solver_name).to_string(),
-                        evals: sol.evals,
+                        evals: sol.evals.function,
                         error,
                     });
                 }
@@ -143,7 +143,7 @@ macro_rules! generate_error_vs_steps_brusselator {
 
                     statistics.push(TestStatistics {
                         name: stringify!($solver_name).to_string(),
-                        evals: sol.evals,
+                        evals: sol.evals.function,
                         error,
                     });
                 }
@@ -197,7 +197,7 @@ macro_rules! generate_error_vs_steps_cr3bp {
 
                     statistics.push(TestStatistics {
                         name: stringify!($solver_name).to_string(),
-                        evals: sol.evals,
+                        evals: sol.evals.function,
                         error,
                     });
                 }

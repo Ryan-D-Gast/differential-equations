@@ -71,10 +71,10 @@ fn main() {
             }
 
             // Print summary statistics
-            println!("Function evaluations: {}", solution.evals);
-            println!("Solver steps: {}", solution.steps);
-            println!("Accepted steps: {}", solution.accepted_steps);
-            println!("Rejected steps: {}", solution.rejected_steps);
+            println!("Function evaluations: {}", solution.evals.function);
+            println!("Solver steps: {}", solution.steps.total());
+            println!("Accepted steps: {}", solution.steps.accepted);
+            println!("Rejected steps: {}", solution.steps.rejected);
             println!("Number of output points: {}", solution.t.len());
 
             // Plot the solution using quill

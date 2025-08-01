@@ -3,7 +3,7 @@
 use crate::{
     Error, Status,
     methods::{ExplicitRungeKutta, Stochastic, Fixed},
-    alias::Evals,
+    stats::Evals,
     interpolate::Interpolation,
     linalg::component_multiply,
     sde::{StochasticNumericalMethod, SDE},
@@ -43,7 +43,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         sde.drift(self.t, &self.y, &mut self.dydt);
         let mut diffusion = V::zeros();
         sde.diffusion(self.t, &self.y, &mut diffusion);
-        evals.fcn += 2; // 1 for drift + 1 for diffusion
+        evals.function += 2; // 1 for drift + 1 for diffusion
 
         // Initialize previous state
         self.t_prev = self.t;
@@ -91,7 +91,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
             sde.drift(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
         }
-        evals.fcn += self.stages - 1; // We already have k[0]
+        evals.function += self.stages - 1; // We already have k[0]
 
         // Compute deterministic part using RK weights
         let mut drift_increment = V::zeros();
@@ -102,7 +102,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Compute diffusion term at current state
         let mut diffusion = V::zeros();
         sde.diffusion(self.t, &self.y, &mut diffusion);
-        evals.fcn += 1;
+        evals.function += 1;
 
         // Generate noise increments
         let mut dw = V::zeros();
@@ -125,7 +125,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         } else {
             // Otherwise, compute the new derivative
             sde.drift(self.t, &self.y, &mut self.dydt);
-            evals.fcn += 1;
+            evals.function += 1;
         }
         
         self.status = Status::Solving;        

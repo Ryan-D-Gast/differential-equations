@@ -17,7 +17,7 @@ where
     pub y: Vec<V>,             // State vectors at each time point
     pub status: Status<T, V, D>, // Solver status (success, error, or interrupted)
     pub evals: usize,          // Number of function evaluations
-    pub jac_evals: usize,      // Number of Jacobian evaluations
+    pub jacobian_evals: usize,      // Number of jacobian evaluations
     pub steps: usize,          // Total number of steps taken
     pub rejected_steps: usize, // Number of rejected steps
     pub accepted_steps: usize, // Number of accepted steps
@@ -37,10 +37,10 @@ let times = &solution.t;
 let states = &solution.y;
 
 // Get performance statistics
-println!("Function evaluations: {}", solution.evals);
-println!("Steps taken: {}", solution.steps);
-println!("Rejected steps: {}", solution.rejected_steps);
-println!("Accepted steps: {}", solution.accepted_steps);
+println!("Function evaluations: {}", solution.evals.function);
+println!("Steps taken: {}", solution.steps.total());
+println!("Rejected steps: {}", solution.steps.rejected);
+println!("Accepted steps: {}", solution.steps.accepted);
 println!("Solve time: {:?} seconds", solution.timer.elapsed());
 ```
 
@@ -183,9 +183,9 @@ fn main() {
         Ok(solution) => {
             // Print summary statistics
             println!("Solution contains {} points", solution.t.len());
-            println!("Function evaluations: {}", solution.evals);
+            println!("Function evaluations: {}", solution.evals.function);
             println!("Steps: {} (accepted: {}, rejected: {})",
-                solution.steps, solution.accepted_steps, solution.rejected_steps);
+                solution.steps.total(), solution.steps.accepted, solution.steps.rejected);
             println!("Solve time: {:?} seconds", solution.timer.elapsed());
             
             // Calculate maximum position
