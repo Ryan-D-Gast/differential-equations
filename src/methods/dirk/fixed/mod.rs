@@ -41,5 +41,5 @@ impl_dirk_fixed_step_constructor!(
     3,
     3,
     3,
-    "ESDIRK-3-3: 3-stage, 3rd order ESDIRK method. Pairs with SSPRK(3,3) for IMEX."
+    "ESDIRK-3-3: 3-stage, 3rd order ESDIRK method."
 );
