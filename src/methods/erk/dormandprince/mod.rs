@@ -1,18 +1,20 @@
 //! Runge-Kutta solvers with support for dense output, embedded error estimation, and fixed steps.
 
-mod ordinary;
 mod delay;
+mod ordinary;
 
 use crate::{
-    methods::{ExplicitRungeKutta, DormandPrince},
-    traits::{CallBackData, Real, State},
+    methods::{DormandPrince, ExplicitRungeKutta},
     tableau::ButcherTableau,
+    traits::{CallBackData, Real, State},
 };
 
 // Macro for adaptive step constructors
 macro_rules! impl_erk_dormand_prince_constructor {
     ($method_name:ident, $order_val:expr, $s_val:expr, $m_val:expr, $doc:expr) => {
-        impl<E, T: Real, V: State<T>, D: CallBackData> ExplicitRungeKutta<E, DormandPrince, T, V, D, $order_val, $s_val, $m_val> {
+        impl<E, T: Real, V: State<T>, D: CallBackData>
+            ExplicitRungeKutta<E, DormandPrince, T, V, D, $order_val, $s_val, $m_val>
+        {
             #[doc = $doc]
             pub fn $method_name() -> Self {
                 let tableau = ButcherTableau::<T, $s_val, $m_val>::$method_name();
@@ -31,7 +33,7 @@ macro_rules! impl_erk_dormand_prince_constructor {
                     bh,
                     er,
                     bi,
-                    fsal, 
+                    fsal,
                     ..Default::default()
                 }
             }
@@ -40,5 +42,17 @@ macro_rules! impl_erk_dormand_prince_constructor {
 }
 
 // Adaptive step methods (embedded error estimation, cubic Hermite interpolation)
-impl_erk_dormand_prince_constructor!(dop853, 8, 12, 16, "Creates the DOP853 method (8th order, 12 stages, 4 dense output stages).");
-impl_erk_dormand_prince_constructor!(dopri5, 5, 7, 7, "Creates the DOPRI5 method (5th order, 7 stages).");
+impl_erk_dormand_prince_constructor!(
+    dop853,
+    8,
+    12,
+    16,
+    "Creates the DOP853 method (8th order, 12 stages, 4 dense output stages)."
+);
+impl_erk_dormand_prince_constructor!(
+    dopri5,
+    5,
+    7,
+    7,
+    "Creates the DOPRI5 method (5th order, 7 stages)."
+);

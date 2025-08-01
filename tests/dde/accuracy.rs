@@ -2,10 +2,7 @@
 //! Expected results should be verified against a trusted solver.
 
 use super::systems::MackeyGlass;
-use differential_equations::{
-    dde::DDEProblem,
-    methods::ExplicitRungeKutta,
-};
+use differential_equations::{dde::DDEProblem, methods::ExplicitRungeKutta};
 use nalgebra::vector;
 use std::fs;
 

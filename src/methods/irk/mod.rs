@@ -7,9 +7,7 @@ use crate::{
     Status,
     traits::{CallBackData, Real, State},
 };
-use std::{
-    marker::PhantomData
-};
+use std::marker::PhantomData;
 
 /// Implicit Runge-Kutta solver that can handle:
 /// - Fixed-step methods with Newton iteration for stage equations
@@ -28,7 +26,16 @@ use std::{
 /// * `const O`: Order of the method
 /// * `const S`: Number of stages in the method
 /// * `const I`: Total number of stages including interpolation (equal to S for methods without dense output)
-pub struct ImplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> {
+pub struct ImplicitRungeKutta<
+    E,
+    F,
+    T: Real,
+    V: State<T>,
+    D: CallBackData,
+    const O: usize,
+    const S: usize,
+    const I: usize,
+> {
     // Initial Step Size
     pub h0: T,
 
@@ -47,18 +54,18 @@ pub struct ImplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const
     dydt_prev: V,
 
     // Stage values
-    k: [V; I],           // Stage derivatives
-    y_stages: [V; S],    // Stage values (Y_i = y_n + h * sum(a_ij * k_j))
+    k: [V; I],        // Stage derivatives
+    y_stages: [V; S], // Stage values (Y_i = y_n + h * sum(a_ij * k_j))
 
     // Constants from Butcher tableau
-    c: [T; S],                    // Stage time coefficients
-    a: [[T; S]; S],              // Runge-Kutta matrix (typically dense for implicit methods)
-    b: [T; S],                   // Weights for final solution
-    bh: Option<[T; S]>,          // Lower order coefficients for embedded methods
+    c: [T; S],          // Stage time coefficients
+    a: [[T; S]; S],     // Runge-Kutta matrix (typically dense for implicit methods)
+    b: [T; S],          // Weights for final solution
+    bh: Option<[T; S]>, // Lower order coefficients for embedded methods
 
     // Newton iteration settings
-    pub newton_tol: T,           // Tolerance for Newton iteration convergence
-    pub max_newton_iter: usize,  // Maximum Newton iterations per stage
+    pub newton_tol: T,          // Tolerance for Newton iteration convergence
+    pub max_newton_iter: usize, // Maximum Newton iterations per stage
 
     // Settings
     pub rtol: T,
@@ -73,10 +80,10 @@ pub struct ImplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const
 
     // Iteration tracking
     stage_jacobians: [nalgebra::DMatrix<T>; S], // Stage-specific jacobian matrices J_i = df/dy(t + c_i*h, z_i)
-    newton_matrix: nalgebra::DMatrix<T>,      // Newton system matrix M = I - h*(A⊗J)
-    rhs_newton: nalgebra::DVector<T>,         // Right-hand side vector for Newton system
-    delta_k_vec: nalgebra::DVector<T>,        // Solution vector for Newton system
-    jacobian_age: usize,                      // Age of current jacobian (for reuse)
+    newton_matrix: nalgebra::DMatrix<T>,        // Newton system matrix M = I - h*(A⊗J)
+    rhs_newton: nalgebra::DVector<T>,           // Right-hand side vector for Newton system
+    delta_k_vec: nalgebra::DVector<T>,          // Solution vector for Newton system
+    jacobian_age: usize,                        // Age of current jacobian (for reuse)
     stiffness_counter: usize,
     steps: usize,
     newton_iterations: usize,    // Total Newton iterations
@@ -85,7 +92,7 @@ pub struct ImplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const
 
     // Status
     status: Status<T, V, D>,
-    
+
     // Method info
     order: usize,
     stages: usize,
@@ -98,7 +105,9 @@ pub struct ImplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const
     equation: PhantomData<E>,
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> Default for ImplicitRungeKutta<E, F, T, V, D, O, S, I> {
+impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Default for ImplicitRungeKutta<E, F, T, V, D, O, S, I>
+{
     fn default() -> Self {
         Self {
             h0: T::zero(),
@@ -147,7 +156,9 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
     }
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> ImplicitRungeKutta<E, F, T, V, D, O, S, I> {
+impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    ImplicitRungeKutta<E, F, T, V, D, O, S, I>
+{
     /// Set the relative tolerance for error control
     pub fn rtol(mut self, rtol: T) -> Self {
         self.rtol = rtol;

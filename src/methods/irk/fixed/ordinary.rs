@@ -2,20 +2,22 @@
 
 use crate::{
     Error, Status,
-    methods::{ImplicitRungeKutta, Ordinary, Fixed},
-    stats::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
-    ode::{OrdinaryNumericalMethod, ODE},
+    methods::{Fixed, ImplicitRungeKutta, Ordinary},
+    ode::{ODE, OrdinaryNumericalMethod},
+    stats::Evals,
     traits::{CallBackData, Real, State},
     utils::validate_step_size_parameters,
 };
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> OrdinaryNumericalMethod<T, V, D> for ImplicitRungeKutta<Ordinary, Fixed, T, V, D, O, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    OrdinaryNumericalMethod<T, V, D> for ImplicitRungeKutta<Ordinary, Fixed, T, V, D, O, S, I>
+{
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
     {
-        let mut evals = Evals::new();        
+        let mut evals = Evals::new();
 
         // Check bounds
         match validate_step_size_parameters::<T, V, D>(self.h0, self.h_min, self.h_max, t0, tf) {
@@ -23,7 +25,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
-        
+
         // Initialize Statistics
         self.stiffness_counter = 0;
         self.newton_iterations = 0;
@@ -65,10 +67,12 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Check max steps
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
-                t: self.t, y: self.y
+                t: self.t,
+                y: self.y,
             });
             return Err(Error::MaxSteps {
-                t: self.t, y: self.y
+                t: self.t,
+                y: self.y,
             });
         }
         self.steps += 1;
@@ -77,13 +81,13 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         let dim = self.y.len();
         for i in 0..self.stages {
             self.y_stages[i] = self.y;
-        }        
-        
+        }
+
         // Newton iteration to solve the implicit system
         // We solve F(z) = z - y_n - h*A*f(z) = 0 where z = [z1; z2; ...; zs]
         let mut newton_converged = false;
         let mut newton_iter = 0;
-        
+
         // Initialize increment norm for convergence tracking
         let mut increment_norm = T::infinity();
 
@@ -94,7 +98,11 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
             // Evaluate f at current stage guesses and compute residual
             for i in 0..self.stages {
-                ode.diff(self.t + self.c[i] * self.h, &self.y_stages[i], &mut self.k[i]);
+                ode.diff(
+                    self.t + self.c[i] * self.h,
+                    &self.y_stages[i],
+                    &mut self.k[i],
+                );
             }
             evals.function += self.stages;
 
@@ -103,12 +111,12 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             for i in 0..self.stages {
                 // Start with z_i - y_n
                 let mut residual = self.y_stages[i] - self.y;
-                
+
                 // Subtract h*sum(a_ij * f_j)
                 for j in 0..self.stages {
                     residual = residual - self.k[j] * (self.a[i][j] * self.h);
                 }
-                
+
                 // Calculate infinity norm of residual for convergence check
                 for row_idx in 0..dim {
                     let res_val = residual.get(row_idx);
@@ -135,10 +143,14 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 // Evaluate jacobian at each stage point
                 // Use pre-allocated stage_jacobians array to avoid dynamic allocation
                 for i in 0..self.stages {
-                    ode.jacobian(self.t + self.c[i] * self.h, &self.y_stages[i], &mut self.stage_jacobians[i]);
+                    ode.jacobian(
+                        self.t + self.c[i] * self.h,
+                        &self.y_stages[i],
+                        &mut self.stage_jacobians[i],
+                    );
                     evals.jacobian += 1;
                 }
-                
+
                 // Form Newton matrix: I - h * (A ⊗ J) using stage-specific jacobians
                 self.newton_matrix.fill(T::zero());
                 for i in 0..self.stages {
@@ -147,22 +159,22 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                         // Use the jacobian from stage j
                         for r in 0..dim {
                             for c_col in 0..dim {
-                                self.newton_matrix[(i * dim + r, j * dim + c_col)] = 
+                                self.newton_matrix[(i * dim + r, j * dim + c_col)] =
                                     self.stage_jacobians[j][(r, c_col)] * scale_factor;
                             }
                         }
                     }
-                    
+
                     // Add identity matrix for diagonal blocks
                     for d_idx in 0..dim {
                         self.newton_matrix[(i * dim + d_idx, i * dim + d_idx)] += T::one();
                     }
                 }
-                
+
                 self.jacobian_age = 0;
             }
             self.jacobian_age += 1;
-            
+
             // Solve Newton system: (I - h*A⊗J) * delta_z = -F(z)
             let lu_decomp = nalgebra::LU::new(self.newton_matrix.clone());
             if let Some(solution) = lu_decomp.solve(&self.rhs_newton) {
@@ -174,7 +186,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 newton_converged = false;
                 break;
             }
-            
+
             // Update stage values: z_i += delta_z_i and calculate increment norm
             increment_norm = T::zero();
             for i in 0..self.stages {
@@ -188,8 +200,8 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             }
 
             // Final convergence check will be at start of next iteration
-        }        
-          
+        }
+
         // Check if Newton iteration failed to converge
         if !newton_converged {
             self.status = Status::Error(Error::Stiffness {
@@ -201,13 +213,17 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 y: self.y,
             });
         }
-        
+
         // Compute final stage derivatives with converged stage values
         for i in 0..self.stages {
-            ode.diff(self.t + self.c[i] * self.h, &self.y_stages[i], &mut self.k[i]);
+            ode.diff(
+                self.t + self.c[i] * self.h,
+                &self.y_stages[i],
+                &mut self.k[i],
+            );
         }
-        evals.function += self.stages;        
-        
+        evals.function += self.stages;
+
         // Compute the solution using the b coefficients: y_new = y_old + h * sum(b_i * f_i)
         let mut y_new = self.y;
         for i in 0..self.stages {
@@ -230,40 +246,58 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Compute the derivative for the next step
         ode.diff(self.t, &self.y, &mut self.dydt);
         evals.function += 1;
-        
+
         Ok(evals)
     }
 
-    fn t(&self) -> T { self.t }
-    fn y(&self) -> &V { &self.y }
-    fn t_prev(&self) -> T { self.t_prev }
-    fn y_prev(&self) -> &V { &self.y_prev }
-    fn h(&self) -> T { self.h }
-    fn set_h(&mut self, h: T) { self.h = h; }
-    fn status(&self) -> &Status<T, V, D> { &self.status }
-    fn set_status(&mut self, status: Status<T, V, D>) { self.status = status; }
+    fn t(&self) -> T {
+        self.t
+    }
+    fn y(&self) -> &V {
+        &self.y
+    }
+    fn t_prev(&self) -> T {
+        self.t_prev
+    }
+    fn y_prev(&self) -> &V {
+        &self.y_prev
+    }
+    fn h(&self) -> T {
+        self.h
+    }
+    fn set_h(&mut self, h: T) {
+        self.h = h;
+    }
+    fn status(&self) -> &Status<T, V, D> {
+        &self.status
+    }
+    fn set_status(&mut self, status: Status<T, V, D>) {
+        self.status = status;
+    }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> Interpolation<T, V> for ImplicitRungeKutta<Ordinary, Fixed, T, V, D, O, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Interpolation<T, V> for ImplicitRungeKutta<Ordinary, Fixed, T, V, D, O, S, I>
+{
     fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // Check if t is within bounds
         if t_interp < self.t_prev || t_interp > self.t {
             return Err(Error::OutOfBounds {
                 t_interp,
                 t_prev: self.t_prev,
-                t_curr: self.t
+                t_curr: self.t,
             });
         }
 
         // Use cubic Hermite interpolation
         let y_interp = cubic_hermite_interpolate(
-            self.t_prev, 
-            self.t, 
-            &self.y_prev, 
-            &self.y, 
-            &self.dydt_prev, 
-            &self.dydt, 
-            t_interp
+            self.t_prev,
+            self.t,
+            &self.y_prev,
+            &self.y,
+            &self.dydt_prev,
+            &self.dydt,
+            t_interp,
         );
 
         Ok(y_interp)

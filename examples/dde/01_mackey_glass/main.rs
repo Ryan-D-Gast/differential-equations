@@ -82,18 +82,11 @@ fn main() {
                 .title("Mackey-Glass Delay Differential Equation")
                 .x_label("Time (t)")
                 .y_label("y(t)")
-                .data([
-                    Series::builder()
-                        .name("Mackey-Glass Solution")
-                        .color("Blue")
-                        .data(
-                            solution
-                                .iter()
-                                .map(|(t, y)| (*t, *y))
-                                .collect::<Vec<_>>(),
-                        )
-                        .build(),
-                ])
+                .data([Series::builder()
+                    .name("Mackey-Glass Solution")
+                    .color("Blue")
+                    .data(solution.iter().map(|(t, y)| (*t, *y)).collect::<Vec<_>>())
+                    .build()])
                 .build()
                 .to_svg("examples/dde/01_mackey_glass/mackey_glass.svg")
                 .expect("Failed to save plot as SVG");

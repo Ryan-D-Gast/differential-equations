@@ -2,11 +2,7 @@
 
 use super::systems;
 use differential_equations::{
-    methods::{
-        ExplicitRungeKutta,
-        ImplicitRungeKutta,
-        AdamsPredictorCorrector
-    },
+    methods::{AdamsPredictorCorrector, ExplicitRungeKutta, ImplicitRungeKutta},
     ode::ODEProblem,
 };
 use nalgebra::vector;

@@ -29,7 +29,16 @@ use std::marker::PhantomData;
 /// * `const O`: Order of the method
 /// * `const S`: Number of stages in the method
 /// * `const I`: Number of dense output stages (for interpolation)
-pub struct DiagonallyImplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> {
+pub struct DiagonallyImplicitRungeKutta<
+    E,
+    F,
+    T: Real,
+    V: State<T>,
+    D: CallBackData,
+    const O: usize,
+    const S: usize,
+    const I: usize,
+> {
     // Initial Step Size
     pub h0: T,
 
@@ -48,14 +57,14 @@ pub struct DiagonallyImplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackD
     dydt_prev: V,
 
     // Stage values - DIRK solves one stage at a time
-    k: [V; I],           // Stage derivatives
-    z_stage: V,          // Current stage solution being solved
+    k: [V; I],  // Stage derivatives
+    z_stage: V, // Current stage solution being solved
 
     // Constants from Butcher tableau
-    c: [T; S],                    // Stage time coefficients
-    a: [[T; S]; S],              // Coefficient matrix (lower triangular for DIRK)
-    b: [T; S],                   // Solution weights
-    bh: Option<[T; S]>,          // Lower order weights for embedded methods
+    c: [T; S],          // Stage time coefficients
+    a: [[T; S]; S],     // Coefficient matrix (lower triangular for DIRK)
+    b: [T; S],          // Solution weights
+    bh: Option<[T; S]>, // Lower order weights for embedded methods
 
     // Tolerances for adaptive stepping
     pub rtol: T,
@@ -71,7 +80,7 @@ pub struct DiagonallyImplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackD
     // Newton solver parameters
     pub newton_tol: T,
     pub max_newton_iter: usize,
-    
+
     // Adaptive step control
     pub max_steps: usize,
     pub max_rejects: usize,
@@ -85,14 +94,14 @@ pub struct DiagonallyImplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackD
 
     // Linear algebra workspace for Newton solver (per stage)
     stage_jacobian: nalgebra::DMatrix<T>,
-    newton_matrix: nalgebra::DMatrix<T>,    // I - h*a_ii*J for current stage
-    rhs_newton: nalgebra::DVector<T>,       // Newton RHS for current stage
-    delta_z: nalgebra::DVector<T>,          // Newton correction for current stage
+    newton_matrix: nalgebra::DMatrix<T>, // I - h*a_ii*J for current stage
+    rhs_newton: nalgebra::DVector<T>,    // Newton RHS for current stage
+    delta_z: nalgebra::DVector<T>,       // Newton correction for current stage
     jacobian_age: usize,
 
     // Status
     status: Status<T, V, D>,
-    
+
     // Method info
     order: usize,
     stages: usize,
@@ -104,7 +113,9 @@ pub struct DiagonallyImplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackD
     equation: PhantomData<E>,
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> Default for DiagonallyImplicitRungeKutta<E, F, T, V, D, O, S, I> {
+impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Default for DiagonallyImplicitRungeKutta<E, F, T, V, D, O, S, I>
+{
     fn default() -> Self {
         let dim = 1; // Will be resized during init
         Self {
@@ -154,7 +165,9 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
 }
 
 // Builder methods for configuration
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> DiagonallyImplicitRungeKutta<E, F, T, V, D, O, S, I> {
+impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    DiagonallyImplicitRungeKutta<E, F, T, V, D, O, S, I>
+{
     /// Set the relative tolerance for error control
     pub fn rtol(mut self, rtol: T) -> Self {
         self.rtol = rtol;

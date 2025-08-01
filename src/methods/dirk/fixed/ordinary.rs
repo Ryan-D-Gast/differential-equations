@@ -2,15 +2,18 @@
 
 use crate::{
     Error, Status,
-    methods::{DiagonallyImplicitRungeKutta, Ordinary, Fixed},
-    stats::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
-    ode::{OrdinaryNumericalMethod, ODE},
+    methods::{DiagonallyImplicitRungeKutta, Fixed, Ordinary},
+    ode::{ODE, OrdinaryNumericalMethod},
+    stats::Evals,
     traits::{CallBackData, Real, State},
     utils::validate_step_size_parameters,
 };
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> OrdinaryNumericalMethod<T, V, D> for DiagonallyImplicitRungeKutta<Ordinary, Fixed, T, V, D, O, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    OrdinaryNumericalMethod<T, V, D>
+    for DiagonallyImplicitRungeKutta<Ordinary, Fixed, T, V, D, O, S, I>
+{
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
@@ -64,10 +67,12 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Check max steps
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
-                t: self.t, y: self.y
+                t: self.t,
+                y: self.y,
             });
             return Err(Error::MaxSteps {
-                t: self.t, y: self.y
+                t: self.t,
+                y: self.y,
             });
         }
         self.steps += 1;
@@ -136,7 +141,8 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                     let scale_factor = -self.h * self.a[stage][stage];
                     for r in 0..dim {
                         for c_col in 0..dim {
-                            self.newton_matrix[(r, c_col)] = self.stage_jacobian[(r, c_col)] * scale_factor;
+                            self.newton_matrix[(r, c_col)] =
+                                self.stage_jacobian[(r, c_col)] * scale_factor;
                         }
                         // Add identity matrix
                         self.newton_matrix[(r, r)] += T::one();
@@ -200,10 +206,10 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         self.y_prev = self.y;
         self.dydt_prev = self.dydt;
         self.h_prev = self.h;
-        
+
         self.t += self.h;
         self.y = y_new;
-        
+
         // Compute the derivative for the next step
         ode.diff(self.t, &self.y, &mut self.dydt);
         evals.function += 1;
@@ -211,36 +217,54 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         Ok(evals)
     }
 
-    fn t(&self) -> T { self.t }
-    fn y(&self) -> &V { &self.y }
-    fn t_prev(&self) -> T { self.t_prev }
-    fn y_prev(&self) -> &V { &self.y_prev }
-    fn h(&self) -> T { self.h }
-    fn set_h(&mut self, h: T) { self.h = h; }
-    fn status(&self) -> &Status<T, V, D> { &self.status }
-    fn set_status(&mut self, status: Status<T, V, D>) { self.status = status; }
+    fn t(&self) -> T {
+        self.t
+    }
+    fn y(&self) -> &V {
+        &self.y
+    }
+    fn t_prev(&self) -> T {
+        self.t_prev
+    }
+    fn y_prev(&self) -> &V {
+        &self.y_prev
+    }
+    fn h(&self) -> T {
+        self.h
+    }
+    fn set_h(&mut self, h: T) {
+        self.h = h;
+    }
+    fn status(&self) -> &Status<T, V, D> {
+        &self.status
+    }
+    fn set_status(&mut self, status: Status<T, V, D>) {
+        self.status = status;
+    }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> Interpolation<T, V> for DiagonallyImplicitRungeKutta<Ordinary, Fixed, T, V, D, O, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Interpolation<T, V> for DiagonallyImplicitRungeKutta<Ordinary, Fixed, T, V, D, O, S, I>
+{
     fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // Check if t is within bounds
         if t_interp < self.t_prev || t_interp > self.t {
             return Err(Error::OutOfBounds {
                 t_interp,
                 t_prev: self.t_prev,
-                t_curr: self.t
+                t_curr: self.t,
             });
         }
 
         // Otherwise use cubic Hermite interpolation
         let y_interp = cubic_hermite_interpolate(
-            self.t_prev, 
-            self.t, 
-            &self.y_prev, 
-            &self.y, 
-            &self.dydt_prev, 
-            &self.dydt, 
-            t_interp
+            self.t_prev,
+            self.t,
+            &self.y_prev,
+            &self.y,
+            &self.dydt_prev,
+            &self.dydt,
+            t_interp,
         );
 
         Ok(y_interp)

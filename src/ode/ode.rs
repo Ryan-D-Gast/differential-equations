@@ -67,52 +67,52 @@ where
     fn event(&self, t: T, y: &V) -> ControlFlag<T, V, D> {
         ControlFlag::Continue
     }
-    
+
     /// jacobian matrix J = df/dy
-    /// 
+    ///
     /// The jacobian matrix is a matrix of partial derivatives of a vector-valued function.
     /// It describes the local behavior of the system of equations and can be used to improve
     /// the efficiency of certain solvers by providing information about the local behavior
     /// of the system of equations.
-    /// 
+    ///
     /// By default, this method uses a finite difference approximation.
     /// Users can override this with an analytical implementation for better efficiency.
-    /// 
+    ///
     /// # Arguments
     /// * `t` - Independent variable grid point.
     /// * `y` - Dependent variable vector.
     /// * `j` - jacobian matrix. This matrix should be pre-sized by the caller to `dim x dim` where `dim = y.len()`.
-    /// 
+    ///
     fn jacobian(&self, t: T, y: &V, j: &mut DMatrix<T>) {
         // Default implementation using forward finite differences
         let dim = y.len();
         let mut y_perturbed = y.clone();
         let mut f_perturbed = V::zeros();
         let mut f_origin = V::zeros();
-        
+
         // Compute the unperturbed derivative
         self.diff(t, y, &mut f_origin);
-        
+
         // Use sqrt of machine epsilon for finite differences
         let eps = T::default_epsilon().sqrt();
-        
+
         // For each column of the jacobian
         for j_col in 0..dim {
             // Get the original value
             let y_original_j = y.get(j_col);
-            
+
             // Calculate perturbation size (max of component magnitude or 1.0)
             let perturbation = eps * y_original_j.abs().max(T::one());
-            
+
             // Perturb the component
             y_perturbed.set(j_col, y_original_j + perturbation);
-            
+
             // Evaluate function with perturbed value
             self.diff(t, &y_perturbed, &mut f_perturbed);
-            
+
             // Restore original value
             y_perturbed.set(j_col, y_original_j);
-            
+
             // Compute finite difference approximation for this column
             for i_row in 0..dim {
                 j[(i_row, j_col)] = (f_perturbed.get(i_row) - f_origin.get(i_row)) / perturbation;

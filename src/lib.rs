@@ -14,12 +14,12 @@
 //!   - Fixed and adaptive step methods
 //!   - Event detection
 //!   - Customizable output control
-//! 
+//!
 //! - **[Delay Differential Equations (DDE)](crate::dde)**
 //!   - Constant delays
 //!   - State-dependent delays
 //!   - Same features as ODEs
-//! 
+//!
 //! - **[Stochastic Differential Equations (SDE)](crate::sde)**
 //!   - Drift-diffusion equations
 //!   - User controlled random number generation

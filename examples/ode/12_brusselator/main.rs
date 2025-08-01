@@ -48,7 +48,7 @@ fn main() {
         .max_newton_iter(20);
 
     // Initial conditions and time span for Brusselator
-    let y0 = Vector2::new(1.5, 3.0); 
+    let y0 = Vector2::new(1.5, 3.0);
     let t0 = 0.0;
     let tf = 20.0;
 
@@ -59,10 +59,7 @@ fn main() {
     let problem_analytical = ODEProblem::new(ode_analytical, t0, tf, y0);
 
     // Solve the problem
-    match problem_analytical
-        .even(0.5)
-        .solve(&mut method)
-    {
+    match problem_analytical.even(0.5).solve(&mut method) {
         Ok(solution) => {
             println!("Solution successfully obtained.");
             println!("Status: {:?}", solution.status);
@@ -72,7 +69,7 @@ fn main() {
             for (t, y_val) in solution.iter() {
                 println!("t: {:.4}, y0: {:.4}, y1: {:.4}", t, y_val[0], y_val[1]);
             }
-            
+
             // Print statistics
             println!("\nStatistics:");
             println!("  Function evaluations: {}", solution.evals.function);

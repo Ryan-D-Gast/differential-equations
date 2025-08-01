@@ -3,7 +3,7 @@
 use crate::{
     Error, Solution,
     interpolate::Interpolation,
-    sde::{StochasticNumericalMethod, SDE, solve_sde},
+    sde::{SDE, StochasticNumericalMethod, solve_sde},
     solout::*,
     traits::{CallBackData, Real, State},
 };
@@ -205,7 +205,10 @@ where
     /// # Returns
     /// * SDE Problem with Custom Time Evaluation function ready for .solve() method
     ///
-    pub fn t_eval(&mut self, points: Vec<T>) -> SDEProblemSoloutPair<'_, T, V, D, F, TEvalSolout<T>> {
+    pub fn t_eval(
+        &mut self,
+        points: Vec<T>,
+    ) -> SDEProblemSoloutPair<'_, T, V, D, F, TEvalSolout<T>> {
         let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf); // Custom time evaluation solout implementation
         SDEProblemSoloutPair::new(self, t_eval_solout)
     }
@@ -271,7 +274,7 @@ where
     O: Solout<T, V, D>,
 {
     pub sde_problem: &'a mut SDEProblem<T, V, D, F>, // Reference to the SDE Problem struct
-    pub solout: &'a mut O,                       // Reference to the solout implementation
+    pub solout: &'a mut O,                           // Reference to the solout implementation
 }
 
 impl<'a, T, V, D, F, O> SDEProblemMutRefSoloutPair<'a, T, V, D, F, O>

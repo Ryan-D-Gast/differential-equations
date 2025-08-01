@@ -2,7 +2,10 @@
 
 use nalgebra::{RealField, SMatrix};
 use num_complex::Complex;
-use std::{fmt::Debug, ops::{Add, AddAssign, Div, Mul, Sub}};
+use std::{
+    fmt::Debug,
+    ops::{Add, AddAssign, Div, Mul, Sub},
+};
 
 /// Real Number Trait
 ///

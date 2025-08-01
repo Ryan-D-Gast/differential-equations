@@ -290,7 +290,7 @@ where
             evt @ (ControlFlag::ModifyState(_, _) | ControlFlag::Terminate(_)) => {
                 // Store the initial event that was detected
                 let initial_event = evt;
-                
+
                 // Update last event point
                 ts = solver.t();
 
@@ -302,7 +302,7 @@ where
                 let mut f_low: T = T::from_f64(-1.0).unwrap(); // Continue represented as -1
                 let mut f_high: T = T::from_f64(1.0).unwrap(); // Event represented as +1
                 let mut t_guess: T;
-                
+
                 // The final event we'll detect (might change during root finding)
                 let mut final_event = initial_event.clone();
 
@@ -349,7 +349,7 @@ where
                         // Any non-continue flag indicates we've found an event
                         evt @ (ControlFlag::ModifyState(_, _) | ControlFlag::Terminate(_)) => {
                             final_event = evt; // Update the event we found
-                            ts = t_guess;      // Update the event time
+                            ts = t_guess; // Update the event time
                             side_count = 0;
                             f_low = T::from_f64(-1.0).unwrap(); // Reset low point influence
                         }
@@ -359,7 +359,7 @@ where
                 // Get the final event point
                 let event_time = ts;
                 let event_state = solver.interpolate(ts).unwrap();
-                
+
                 // Remove points after the event point incase solout wrote them
                 // Find the cutoff index based on integration direction
                 let cutoff_index = if integration_direction > T::zero() {
@@ -369,7 +369,7 @@ where
                     // Backward integration - find first index where t < event_time
                     solution.t.iter().position(|&t| t < event_time)
                 };
-                
+
                 // If we found a cutoff point, truncate both vectors
                 if let Some(idx) = cutoff_index {
                     solution.truncate(idx);
@@ -379,7 +379,7 @@ where
                 if !solution.t.is_empty() {
                     let last_t = *solution.t.last().unwrap();
                     let time_diff = (event_time - last_t).abs();
-                    
+
                     // Check if the time difference is within a small tolerance
                     if time_diff <= tol * initial_interval {
                         // Remove the last point (t, y) to avoid very close duplicates
@@ -392,7 +392,7 @@ where
                     ControlFlag::ModifyState(tm, ym) => {
                         // Record the modified state point
                         solution.push(tm, ym.clone());
-                        
+
                         // Reinitialize the solver with the modified state at the precise time
                         match solver.init(ode, tm, tf, &ym) {
                             Ok(evals) => {
@@ -400,18 +400,18 @@ where
                             }
                             Err(e) => return Err(e),
                         }
-                        
+
                         // Update tc to the event time
                         tc = event_time;
                     }
                     ControlFlag::Terminate(reason) => {
                         // Add the event point
                         solution.push(event_time, event_state);
-                        
+
                         // Set solution parameters
                         solution.status = Status::Interrupted(reason);
                         solution.timer.complete();
-                        
+
                         return Ok(solution);
                     }
                     ControlFlag::Continue => {

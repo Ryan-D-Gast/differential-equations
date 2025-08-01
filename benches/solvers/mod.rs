@@ -1,13 +1,8 @@
 use crate::systems::{chaotic::*, linear::*, oscillators::*};
 use criterion::{BenchmarkId, Criterion, black_box, criterion_group};
 use differential_equations::{
-    methods::{
-        ExplicitRungeKutta,
-        AdamsPredictorCorrector,
-    },
-    ode::{
-        *,
-    },
+    methods::{AdamsPredictorCorrector, ExplicitRungeKutta},
+    ode::*,
 };
 use nalgebra::vector;
 

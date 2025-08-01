@@ -1,15 +1,13 @@
 //! Suite of test cases for numerical methods vs results of SciPy using DOP853 & Tolerences = 1e-12
 
 use super::systems::{
-    ExponentialGrowth, HarmonicOscillator, LinearEquation, 
-    LogisticEquation, RobertsonProblem, HiresProblem
+    ExponentialGrowth, HarmonicOscillator, HiresProblem, LinearEquation, LogisticEquation,
+    RobertsonProblem,
 };
 use differential_equations::{
     methods::{
-        ExplicitRungeKutta,
+        AdamsPredictorCorrector, DiagonallyImplicitRungeKutta, ExplicitRungeKutta,
         ImplicitRungeKutta,
-        DiagonallyImplicitRungeKutta,
-        AdamsPredictorCorrector
     },
     ode::ODEProblem,
 };
@@ -577,7 +575,7 @@ fn accuracy() {
         solver: DiagonallyImplicitRungeKutta::esdirk33(0.01),
         tolerance: 1e-3
     }
-    
+
     test_ode! {
         system_name: robertson_stiff_problem,
         ode: RobertsonProblem,

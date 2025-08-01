@@ -1,11 +1,11 @@
 //! Initial step size picker
 
-use super::{Ordinary, Delay};
+use super::{Delay, Ordinary};
 use crate::{
-    ode::ODE,
-    traits::{CallBackData, Real, State},  
-    stats::Evals,
     dde::DDE,
+    ode::ODE,
+    stats::Evals,
+    traits::{CallBackData, Real, State},
 };
 
 /// Initial step size estimator using typestates for different equation types
@@ -62,7 +62,7 @@ impl InitialStepSize<Ordinary> {
 
         // Storage for derivatives
         let mut f0 = V::zeros();
-        let mut f1 = V::zeros();        // Compute initial derivative f(t0, y0)
+        let mut f1 = V::zeros(); // Compute initial derivative f(t0, y0)
         ode.diff(t0, y0, &mut f0);
         evals.function += 1;
 
@@ -90,7 +90,7 @@ impl InitialStepSize<Ordinary> {
         h *= posneg;
 
         // Perform an explicit Euler step
-        let y1 = *y0 + f0 * h;        // Evaluate derivative at new point
+        let y1 = *y0 + f0 * h; // Evaluate derivative at new point
         ode.diff(t0 + h, &y1, &mut f1);
         evals.function += 1;
 
@@ -122,7 +122,7 @@ impl InitialStepSize<Ordinary> {
         h = (h.abs() * T::from_f64(100.0).unwrap())
             .min(h1)
             .min(h_max)
-            .max(h_min);        // Return with proper sign
+            .max(h_min); // Return with proper sign
         h * posneg
     }
 }
@@ -167,7 +167,8 @@ impl InitialStepSize<Delay> {
         f0: &V,
         evals: &mut Evals,
     ) -> T
-    where        T: Real,
+    where
+        T: Real,
         V: State<T>,
         D: CallBackData,
         F: DDE<L, T, V, D>,
@@ -194,7 +195,8 @@ impl InitialStepSize<Delay> {
             dny = dny.sqrt();
         }
 
-        let mut h = if dnf <= T::from_f64(1.0e-10).unwrap() || dny <= T::from_f64(1.0e-10).unwrap() {
+        let mut h = if dnf <= T::from_f64(1.0e-10).unwrap() || dny <= T::from_f64(1.0e-10).unwrap()
+        {
             T::from_f64(1.0e-6).unwrap()
         } else {
             (dny / dnf) * T::from_f64(0.01).unwrap()

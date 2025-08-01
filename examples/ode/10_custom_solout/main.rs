@@ -65,7 +65,7 @@ impl PendulumSolout {
             last_output_time: -f64::INFINITY,
             energy_values: Vec::new(),
             oscillation_count: 0,
-            boost_amount: 0.05,  // Default boost amount (5% increase in velocity)
+            boost_amount: 0.05, // Default boost amount (5% increase in velocity)
         }
     }
 
@@ -107,29 +107,30 @@ impl Solout<f64, SVector<f64, 2>> for PendulumSolout {
         let dt = t_curr - self.last_output_time;
 
         // Detect zero crossings
-        let angle_crossed_zero = self.last_angle.signum() != current_angle.signum() && current_angle.signum() != 0.0;
-        
+        let angle_crossed_zero =
+            self.last_angle.signum() != current_angle.signum() && current_angle.signum() != 0.0;
+
         if angle_crossed_zero {
             self.oscillation_count += 1;
-            
+
             // Apply a boost to the angular velocity when crossing zero
             // Create a new state vector with the boosted velocity
             let mut boosted_state = *y_curr;
-            
+
             // Add a boost in the direction the pendulum is moving
             // This preserves the direction of motion while increasing speed
             boosted_state[1] = y_curr[1] * (1.0 + self.boost_amount);
-            
+
             // Calculate and store energy before adding the boost
             self.energy_values.push(self.calculate_energy(y_curr));
-            
+
             // Add current state to solution before applying the boost
             solution.push(t_curr, *y_curr);
-            
+
             // Update tracking variables
             self.last_output_time = t_curr;
             self.last_angle = current_angle;
-            
+
             // Return ModifyState to update the solver with our boosted state
             return ControlFlag::ModifyState(t_curr, boosted_state);
         }

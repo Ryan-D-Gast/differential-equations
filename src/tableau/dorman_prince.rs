@@ -1,9 +1,6 @@
 //! Dormand-Prince Runge-Kutta methods with dense output interpolation.
 
-use crate::{
-    tableau::ButcherTableau,
-    traits::Real,
-};
+use crate::{tableau::ButcherTableau, traits::Real};
 
 impl<T: Real> ButcherTableau<T, 7> {
     /// Dormand-Prince 5(4) Tableau with dense output interpolation.
@@ -16,7 +13,7 @@ impl<T: Real> ButcherTableau<T, 7> {
     /// - Built-in dense output of order 4
     ///
     /// # Efficiency
-    /// The DOPRI5 method is popular due to its efficient balance between accuracy and 
+    /// The DOPRI5 method is popular due to its efficient balance between accuracy and
     /// computational cost. It is particularly good for non-stiff problems.
     ///
     /// # Interpolation
@@ -35,7 +32,7 @@ impl<T: Real> ButcherTableau<T, 7> {
     /// # References
     /// - Dormand, J. R. & Prince, P. J. (1980), "A family of embedded Runge-Kutta formulae",
     ///   Journal of Computational and Applied Mathematics, 6(1), pp. 19-26
-    /// - Hairer, E., Nørsett, S. P. & Wanner, G. (1993), "Solving Ordinary Differential Equations I: 
+    /// - Hairer, E., Nørsett, S. P. & Wanner, G. (1993), "Solving Ordinary Differential Equations I:
     ///   Nonstiff Problems", Springer Series in Computational Mathematics, Vol. 8, Springer-Verlag
     pub fn dopri5() -> Self {
         let mut c = [0.0; 7];
@@ -131,8 +128,8 @@ impl<T: Real> ButcherTableau<T, 12, 16> {
     /// - Built-in dense output of order 7
     ///
     /// # Efficiency
-    /// The DOP853 method is a high-order Runge-Kutta method that provides excellent 
-    /// accuracy and efficiency for non-stiff problems. It's particularly suitable when 
+    /// The DOP853 method is a high-order Runge-Kutta method that provides excellent
+    /// accuracy and efficiency for non-stiff problems. It's particularly suitable when
     /// high precision is required.
     ///
     /// # Interpolation
@@ -151,7 +148,7 @@ impl<T: Real> ButcherTableau<T, 12, 16> {
     ///   precision is required
     ///
     /// # References
-    /// - Hairer, E., Nørsett, S. P. & Wanner, G. (1993), "Solving Ordinary Differential Equations I: 
+    /// - Hairer, E., Nørsett, S. P. & Wanner, G. (1993), "Solving Ordinary Differential Equations I:
     ///   Nonstiff Problems", Springer Series in Computational Mathematics, Vol. 8, Springer-Verlag
     /// - Dormand, J. R. & Prince, P. J. (1980), "A family of embedded Runge-Kutta formulae",
     ///   Journal of Computational and Applied Mathematics, 6(1), pp. 19-26
@@ -293,7 +290,7 @@ impl<T: Real> ButcherTableau<T, 12, 16> {
         a[13][12] = -8.298E-3;
 
         c[14] = 0.2E+00;
-        
+
         a[14][0] = 3.183_464_816_350_214E-2;
         a[14][5] = 2.830_090_967_236_677_6E-2;
         a[14][6] = 5.354_198_830_743_856_6E-2;
@@ -304,7 +301,7 @@ impl<T: Real> ButcherTableau<T, 12, 16> {
         a[14][13] = 1.413_124_436_746_325E-1;
 
         c[15] = 7.777_777_777_777_778E-1;
-        
+
         a[15][0] = -4.288_963_015_837_919_4E-1;
         a[15][5] = -4.697_621_415_361_164;
         a[15][6] = 7.683_421_196_062_599;
@@ -326,7 +323,7 @@ impl<T: Real> ButcherTableau<T, 12, 16> {
         bi7[4][13] = 1.814_850_552_085_472_7E1;
         bi7[4][14] = -9.194_632_392_478_356;
         bi7[4][15] = -4.436_036_387_594_894;
-        
+
         bi7[5][0] = 1.042_750_864_257_913_4E1;
         bi7[5][5] = 2.422_834_917_752_581_7E2;
         bi7[5][6] = 1.652_004_517_172_702_8E2;
@@ -339,7 +336,7 @@ impl<T: Real> ButcherTableau<T, 12, 16> {
         bi7[5][13] = -3.113_940_321_956_517_8E1;
         bi7[5][14] = -9.352_924_358_844_48;
         bi7[5][15] = 3.581_684_148_639_408E1;
-        
+
         bi7[6][0] = 1.998_505_324_200_243_3E1;
         bi7[6][5] = -3.870_373_087_493_518E2;
         bi7[6][6] = -1.891_781_381_951_675_8E2;
@@ -352,7 +349,7 @@ impl<T: Real> ButcherTableau<T, 12, 16> {
         bi7[6][13] = -6.019_669_523_126_412E1;
         bi7[6][14] = 8.432_040_550_667_716E1;
         bi7[6][15] = 1.199_229_113_618_279E1;
-        
+
         bi7[7][0] = -2.569_393_346_270_375E1;
         bi7[7][5] = -1.541_897_486_902_364_3E2;
         bi7[7][6] = -2.315_293_791_760_455E2;

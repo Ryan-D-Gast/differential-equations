@@ -291,7 +291,7 @@ where
                         // Any non-continue flag indicates we've found an event
                         evt @ (ControlFlag::ModifyState(_, _) | ControlFlag::Terminate(_)) => {
                             final_event = evt; // Update the event we found
-                            ts = t_guess;      // Update the event time
+                            ts = t_guess; // Update the event time
                             side_count = 0;
                             f_low = T::from_f64(-1.0).unwrap(); // Reset low point influence
                         }
@@ -321,7 +321,7 @@ where
                 if !solution.t.is_empty() {
                     let last_t = *solution.t.last().unwrap();
                     let time_diff = (event_time - last_t).abs();
-                    
+
                     // Check if the time difference is within a small tolerance
                     if time_diff <= tol * initial_interval {
                         // Remove the last point (t, y) to avoid very close duplicates

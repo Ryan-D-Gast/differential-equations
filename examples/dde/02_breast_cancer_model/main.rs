@@ -8,7 +8,7 @@
 //! du₁/dt = (v₀ / (1 + β₀ * u₃(t-τ)²)) * (p₀ - q₀) * u₁ - d₀ * u₁
 //! du₂/dt = (v₀ / (1 + β₀ * u₃(t-τ)²)) * (1 - p₀ + q₀) * u₁ + (v₁ / (1 + β₁ * u₃(t-τ)²)) * (p₁ - q₁) * u₂ - d₁ * u₂
 //! du₃/dt = (v₁ / (1 + β₁ * u₃(t-τ)²)) * (1 - p₁ + q₁) * u₂ - d₂ * u₃
-//! 
+//!
 //! Source: [https://www.nature.com/articles/srep02473]
 //!
 //! where:
@@ -125,32 +125,17 @@ fn main() {
                     Series::builder()
                         .name("Proliferating Cells (u1)")
                         .color("Blue")
-                        .data(
-                            solution
-                                .iter()
-                                .map(|(t, u)| (*t, u[0]))
-                                .collect::<Vec<_>>(),
-                        )
+                        .data(solution.iter().map(|(t, u)| (*t, u[0])).collect::<Vec<_>>())
                         .build(),
                     Series::builder()
                         .name("Quiescent Cells (u2)")
                         .color("Red")
-                        .data(
-                            solution
-                                .iter()
-                                .map(|(t, u)| (*t, u[1]))
-                                .collect::<Vec<_>>(),
-                        )
+                        .data(solution.iter().map(|(t, u)| (*t, u[1])).collect::<Vec<_>>())
                         .build(),
                     Series::builder()
                         .name("Resistant Cells (u3)")
                         .color("Green")
-                        .data(
-                            solution
-                                .iter()
-                                .map(|(t, u)| (*t, u[2]))
-                                .collect::<Vec<_>>(),
-                        )
+                        .data(solution.iter().map(|(t, u)| (*t, u[2])).collect::<Vec<_>>())
                         .build(),
                 ])
                 .build()

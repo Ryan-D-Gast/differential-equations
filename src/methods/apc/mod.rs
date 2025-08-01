@@ -1,15 +1,13 @@
 //! Adams Predictor Correction (APC) methods
 
-mod apcv4;
 mod apcf4;
+mod apcv4;
 
 use crate::{
     Status,
     traits::{CallBackData, Real, State},
 };
-use std::{
-    marker::PhantomData
-};
+use std::marker::PhantomData;
 
 pub struct AdamsPredictorCorrector<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize> {
     // Initial Step Size
@@ -61,7 +59,9 @@ pub struct AdamsPredictorCorrector<E, F, T: Real, V: State<T>, D: CallBackData, 
     equation: PhantomData<E>,
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize> Default for AdamsPredictorCorrector<E, F, T, V, D, S> {
+impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize> Default
+    for AdamsPredictorCorrector<E, F, T, V, D, S>
+{
     fn default() -> Self {
         Self {
             h0: T::zero(),
@@ -90,7 +90,9 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize> Default for Ad
     }
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize> AdamsPredictorCorrector<E, F, T, V, D, S> {
+impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize>
+    AdamsPredictorCorrector<E, F, T, V, D, S>
+{
     /// Set the tolerance for error control
     pub fn tol(mut self, rtol: T) -> Self {
         self.tol = rtol;

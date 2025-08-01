@@ -1,18 +1,15 @@
 //! Explicit Runge-Kutta (ERK) methods
 
 mod adaptive;
-mod fixed;
 mod dormandprince;
+mod fixed;
 
 use crate::{
-    methods::Delay,
     Status,
+    methods::Delay,
     traits::{CallBackData, Real, State},
 };
-use std::{
-    collections::VecDeque, 
-    marker::PhantomData
-};
+use std::{collections::VecDeque, marker::PhantomData};
 
 /// Runge-Kutta solver that can handle:
 /// - Fixed-step methods with cubic Hermite interpolation
@@ -29,7 +26,16 @@ use std::{
 /// * `const O`: Order of the method
 /// * `const S`: Number of stages in the method
 /// * `const I`: Total number of stages including interpolation (equal to S for methods without dense output)
-pub struct ExplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> {
+pub struct ExplicitRungeKutta<
+    E,
+    F,
+    T: Real,
+    V: State<T>,
+    D: CallBackData,
+    const O: usize,
+    const S: usize,
+    const I: usize,
+> {
     // Domain of problem
     t0: T,
 
@@ -57,11 +63,11 @@ pub struct ExplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const
     c: [T; I],
     a: [[T; I]; I],
     b: [T; S],
-    bh: Option<[T; S]>,  // Lower order coefficients for embedded methods
-    er: Option<[T; S]>,  // Error estimation coefficients
+    bh: Option<[T; S]>, // Lower order coefficients for embedded methods
+    er: Option<[T; S]>, // Error estimation coefficients
 
     // Interpolation coefficients
-    bi: Option<[[T; I]; I]>,  // Optional for methods without dense output
+    bi: Option<[[T; I]; I]>, // Optional for methods without dense output
     cont: [V; O],
 
     // Settings
@@ -82,7 +88,7 @@ pub struct ExplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const
 
     // Status
     status: Status<T, V, D>,
-    
+
     // Method info
     order: usize,
     stages: usize,
@@ -97,10 +103,12 @@ pub struct ExplicitRungeKutta<E, F, T: Real, V: State<T>, D: CallBackData, const
 
     // DDE (Delay) support
     history: VecDeque<(T, V, V)>, // (t, y, dydt)
-    max_delay: Option<T>, // Minimum delay for DDEs so that buffer can be emptied
+    max_delay: Option<T>,         // Minimum delay for DDEs so that buffer can be emptied
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> Default for ExplicitRungeKutta<E, F, T, V, D, O, S, I> {
+impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Default for ExplicitRungeKutta<E, F, T, V, D, O, S, I>
+{
     fn default() -> Self {
         Self {
             t0: T::zero(),
@@ -146,7 +154,9 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
     }
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> ExplicitRungeKutta<E, F, T, V, D, O, S, I> {
+impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    ExplicitRungeKutta<E, F, T, V, D, O, S, I>
+{
     /// Set the relative tolerance for error control
     pub fn rtol(mut self, rtol: T) -> Self {
         self.rtol = rtol;
@@ -223,7 +233,9 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
     }
 }
 
-impl<F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> ExplicitRungeKutta<Delay, F, T, V, D, O, S, I> {
+impl<F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    ExplicitRungeKutta<Delay, F, T, V, D, O, S, I>
+{
     /// Set the maximum delay for DDEs
     pub fn max_delay(mut self, max_delay: T) -> Self {
         self.max_delay = Some(max_delay);

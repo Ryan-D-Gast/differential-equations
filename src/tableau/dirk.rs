@@ -1,9 +1,6 @@
 //! Diagonally Implicit Runge-Kutta (DIRK) tableau
 
-use crate::{
-    tableau::ButcherTableau,
-    traits::Real
-};
+use crate::{tableau::ButcherTableau, traits::Real};
 
 impl<T: Real> ButcherTableau<T, 2> {
     /// SDIRK-2-1: 2-stage, 2nd order SDIRK method with 1st order embedding
@@ -32,13 +29,10 @@ impl<T: Real> ButcherTableau<T, 2> {
     ///
     /// # References
     /// - Hairer, E., Wanner, G. (1996). "Solving Ordinary Differential Equations II: Stiff and Differential-Algebraic Problems"
-    /// 
+    ///
     pub fn sdirk21() -> Self {
         let c = [1.0, 0.0];
-        let a = [
-            [1.0, 0.0],
-            [-1.0, 1.0]
-        ];
+        let a = [[1.0, 0.0], [-1.0, 1.0]];
         let b = [0.5, 0.5];
         let bh = [1.0, 0.0]; // 1st order embedding
 
@@ -88,7 +82,7 @@ impl<T: Real> ButcherTableau<T, 3> {
     ///
     /// # References
     /// - Conde, S., et al. (2017). "Implicit and implicit-explicit strong stability preserving Runge-Kutta methods"
-    /// 
+    ///
     pub fn esdirk33() -> Self {
         // Parameters (computed in f64 for precision)
         let sqrt3 = 3.0_f64.sqrt();
@@ -98,10 +92,14 @@ impl<T: Real> ButcherTableau<T, 3> {
         let c = [0.0, 1.0, 0.5];
         let a = [
             [0.0, 0.0, 0.0],
-            [4.0 * gamma + 2.0 * beta, 1.0 - 4.0 * gamma - 2.0 * beta, 0.0],
-            [0.5 - beta - gamma, gamma, beta]
+            [
+                4.0 * gamma + 2.0 * beta,
+                1.0 - 4.0 * gamma - 2.0 * beta,
+                0.0,
+            ],
+            [0.5 - beta - gamma, gamma, beta],
         ];
-        let b = [1.0/6.0, 1.0/6.0, 2.0/3.0];
+        let b = [1.0 / 6.0, 1.0 / 6.0, 2.0 / 3.0];
 
         let c = c.map(|x| T::from_f64(x).unwrap());
         let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
@@ -130,7 +128,7 @@ impl<T: Real> ButcherTableau<T, 4> {
     ///
     /// # References
     /// - Kennedy, C.A. and Carpenter, M.H. (2003). "Additive Runge-Kutta schemes for convection-diffusion-reaction equations"
-    /// 
+    ///
     pub fn esdirk324l2sa() -> Self {
         // Gamma parameter and derived values (computed in f64 for precision)
         let g = 0.43586652150845899941601945;
@@ -138,27 +136,27 @@ impl<T: Real> ButcherTableau<T, 4> {
         let g3 = g2 * g;
         let g4 = g3 * g;
         let g5 = g4 * g;
-        
+
         let c3 = 3.0 / 5.0;
-        
+
         // Compute coefficients in f64
         let a32 = c3 * (c3 - 2.0 * g) / (4.0 * g);
         let a31 = c3 - g - a32;
-        
+
         let b2 = (-2.0 + 3.0 * c3 + 6.0 * g * (1.0 - c3)) / (12.0 * g * (c3 - 2.0 * g));
         let b3 = (1.0 - 6.0 * g + 6.0 * g2) / (3.0 * c3 * (c3 - 2.0 * g));
         let b1 = 1.0 - g - b2 - b3;
-        
+
         // Embedding coefficients
-        let d2_term1 = c3 * (-1.0 + 6.0 * g - 24.0 * g3 + 12.0 * g4 - 6.0 * g5) / 
-                      (4.0 * g * (2.0 * g - c3) * (1.0 - 6.0 * g + 6.0 * g2));
-        let d2_term2 = (3.0 - 27.0 * g + 68.0 * g2 - 55.0 * g3 + 21.0 * g4 - 6.0 * g5) /
-                      (2.0 * (2.0 * g - c3) * (1.0 - 6.0 * g + 6.0 * g2));
+        let d2_term1 = c3 * (-1.0 + 6.0 * g - 24.0 * g3 + 12.0 * g4 - 6.0 * g5)
+            / (4.0 * g * (2.0 * g - c3) * (1.0 - 6.0 * g + 6.0 * g2));
+        let d2_term2 = (3.0 - 27.0 * g + 68.0 * g2 - 55.0 * g3 + 21.0 * g4 - 6.0 * g5)
+            / (2.0 * (2.0 * g - c3) * (1.0 - 6.0 * g + 6.0 * g2));
         let d2 = d2_term1 + d2_term2;
-        
-        let d3 = -g * (-2.0 + 21.0 * g - 68.0 * g2 + 79.0 * g3 - 33.0 * g4 + 12.0 * g5) /
-                 (c3 * (c3 - 2.0 * g) * (1.0 - 6.0 * g + 6.0 * g2));
-        
+
+        let d3 = -g * (-2.0 + 21.0 * g - 68.0 * g2 + 79.0 * g3 - 33.0 * g4 + 12.0 * g5)
+            / (c3 * (c3 - 2.0 * g) * (1.0 - 6.0 * g + 6.0 * g2));
+
         let d4 = -3.0 * g2 * (-1.0 + 4.0 * g - 2.0 * g2 + g3) / (1.0 - 6.0 * g + 6.0 * g2);
         let d1 = 1.0 - d2 - d3 - d4;
 
@@ -167,7 +165,7 @@ impl<T: Real> ButcherTableau<T, 4> {
             [0.0, 0.0, 0.0, 0.0],
             [g, g, 0.0, 0.0],
             [a31, a32, g, 0.0],
-            [b1, b2, b3, g]
+            [b1, b2, b3, g],
         ];
         let b = [b1, b2, b3, g];
         let bh = [d1, d2, d3, d4]; // 2nd order embedding

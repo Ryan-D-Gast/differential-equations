@@ -47,7 +47,9 @@ impl ODE<f64, Complex<f64>> for ScalarSchrodingerEquation {
 
 fn main() {
     // Initialize the numerical method
-    let mut method = DiagonallyImplicitRungeKutta::kvaerno745().rtol(1e-8).atol(1e-8);
+    let mut method = DiagonallyImplicitRungeKutta::kvaerno745()
+        .rtol(1e-8)
+        .atol(1e-8);
 
     // Define the system parameters
     let energy = 1.0; // Energy eigenvalue

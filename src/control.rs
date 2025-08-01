@@ -1,6 +1,6 @@
 //! Control flow for solving process. Control flags and data return from events, solout functions, etc.
 
-use crate::traits::{Real, State, CallBackData};
+use crate::traits::{CallBackData, Real, State};
 
 /// Control flag for solver execution flow
 ///

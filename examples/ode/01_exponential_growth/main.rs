@@ -74,12 +74,7 @@ fn main() {
             Series::builder()
                 .name("Numerical Solution")
                 .color("Blue")
-                .data(
-                    solution
-                        .iter()
-                        .map(|(t, y)| (*t, *y))
-                        .collect::<Vec<_>>(),
-                )
+                .data(solution.iter().map(|(t, y)| (*t, *y)).collect::<Vec<_>>())
                 .marker(Marker::Circle)
                 .line(Line::Solid)
                 .build(),

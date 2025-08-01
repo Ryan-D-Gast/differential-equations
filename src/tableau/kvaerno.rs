@@ -1,9 +1,6 @@
 //! Kvaerno Diagonally Implicit Runge-Kutta (DIRK) methods
 
-use crate::{
-    tableau::ButcherTableau,
-    traits::Real
-};
+use crate::{tableau::ButcherTableau, traits::Real};
 
 impl<T: Real> ButcherTableau<T, 4> {
     /// Kvaerno(4,2,3): 4-stage, 3rd order DIRK method with embedded 2nd order
@@ -36,38 +33,33 @@ impl<T: Real> ButcherTableau<T, 4> {
     ///
     /// # References
     /// - Kvaerno, A. (2004). "Singly diagonally implicit Runge-Kutta methods with an explicit first stage"
-    /// 
+    ///
     pub fn kvaerno423() -> Self {
         // Main diagonal entry
         let gamma = 0.4358665215;
 
-        let c = [
-            0.0,
-            0.871733043,
-            1.0,
-            1.0
-        ];
+        let c = [0.0, 0.871733043, 1.0, 1.0];
 
         let a = [
             [0.0, 0.0, 0.0, 0.0],
             [gamma, gamma, 0.0, 0.0],
             [0.490563388419108, 0.073570090080892, gamma, 0.0],
-            [0.308809969973036, 1.490563388254106, -1.235239879727145, gamma]
+            [
+                0.308809969973036,
+                1.490563388254106,
+                -1.235239879727145,
+                gamma,
+            ],
         ];
 
         let b = [
             0.308809969973036,
-            1.490563388254106, 
+            1.490563388254106,
             -1.235239879727145,
-            gamma
+            gamma,
         ];
 
-        let bh = [
-            0.490563388419108,
-            0.073570090080892,
-            gamma,
-            0.0
-        ];
+        let bh = [0.490563388419108, 0.073570090080892, gamma, 0.0];
 
         let c = c.map(|x| T::from_f64(x).unwrap());
         let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
@@ -120,7 +112,7 @@ impl<T: Real> ButcherTableau<T, 7> {
     ///
     /// # References
     /// - Kvaerno, A. (2004). "Singly diagonally implicit Runge-Kutta methods with an explicit first stage"
-    /// 
+    ///
     pub fn kvaerno745() -> Self {
         // Main diagonal entry
         let gamma = 0.26;
@@ -132,17 +124,49 @@ impl<T: Real> ButcherTableau<T, 7> {
             0.895765984350076,
             0.436393609858648,
             1.0,
-            1.0
+            1.0,
         ];
 
         let a = [
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
             [gamma, gamma, 0.0, 0.0, 0.0, 0.0, 0.0],
             [0.13, 0.84033320996790809, gamma, 0.0, 0.0, 0.0, 0.0],
-            [0.22371961478320505, 0.47675532319799699, -0.06470895363112615, gamma, 0.0, 0.0, 0.0],
-            [0.16648564323248321, 0.10450018841591720, 0.03631482272098715, -0.13090704451073998, gamma, 0.0, 0.0],
-            [0.13855640231268224, 0.0, -0.04245337201752043, 0.02446657898003141, 0.61943039072480676, gamma, 0.0],
-            [0.13659751177640291, 0.0, -0.05496908796538376, -0.04118626728321046, 0.62993304899016403, 0.06962479448202728, gamma]
+            [
+                0.22371961478320505,
+                0.47675532319799699,
+                -0.06470895363112615,
+                gamma,
+                0.0,
+                0.0,
+                0.0,
+            ],
+            [
+                0.16648564323248321,
+                0.10450018841591720,
+                0.03631482272098715,
+                -0.13090704451073998,
+                gamma,
+                0.0,
+                0.0,
+            ],
+            [
+                0.13855640231268224,
+                0.0,
+                -0.04245337201752043,
+                0.02446657898003141,
+                0.61943039072480676,
+                gamma,
+                0.0,
+            ],
+            [
+                0.13659751177640291,
+                0.0,
+                -0.05496908796538376,
+                -0.04118626728321046,
+                0.62993304899016403,
+                0.06962479448202728,
+                gamma,
+            ],
         ];
 
         let b = [
@@ -152,7 +176,7 @@ impl<T: Real> ButcherTableau<T, 7> {
             -0.04118626728321046,
             0.62993304899016403,
             0.06962479448202728,
-            gamma
+            gamma,
         ];
 
         let bh = [
@@ -162,7 +186,7 @@ impl<T: Real> ButcherTableau<T, 7> {
             0.02446657898003141,
             0.61943039072480676,
             gamma,
-            0.0
+            0.0,
         ];
 
         let c = c.map(|x| T::from_f64(x).unwrap());

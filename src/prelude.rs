@@ -33,24 +33,28 @@
 // -- Types of Differential Equations --
 
 pub use crate::{
+    control::ControlFlag,
+    // Delay Differential Equations (DDE) module
+    dde::{
+        DDE,        // Define the DDE system
+        DDEProblem, // Create IVP to solve
+    },
+
+    derive::State,
+    error::Error,
+    interpolate::Interpolation,
     // Numerical Methods
     methods::{
-        ExplicitRungeKutta, // Explicit Runge-Kutta methods for ODEs, DDEs, and SDEs
-        ImplicitRungeKutta, // Implicit Runge-Kutta methods for ODEs
+        AdamsPredictorCorrector,      // Adams Predictor-Corrector methods for ODEs
         DiagonallyImplicitRungeKutta, // Diagonally Implicit Runge-Kutta methods for ODEs
-        AdamsPredictorCorrector, // Adams Predictor-Corrector methods for ODEs
+        ExplicitRungeKutta,           // Explicit Runge-Kutta methods for ODEs, DDEs, and SDEs
+        ImplicitRungeKutta,           // Implicit Runge-Kutta methods for ODEs
     },
 
     // Ordinary Differential Equations (ODE) module
     ode::{
         ODE,        // Define the ODE system
         ODEProblem, // Create IVP to solve
-    },
-
-    // Delay Differential Equations (DDE) module
-    dde::{
-        DDE,        // Define the DDE system
-        DDEProblem, // Create IVP to solve
     },
 
     // Stochastic Differential Equations (SDE) module
@@ -64,20 +68,11 @@ pub use crate::{
         CrossingDirection,
         Solout, // Trait for defining a custom output behavior
     },
-    stats::Evals,
-    control::ControlFlag,
-    derive::State,
-    error::Error,
-    interpolate::Interpolation,
     solution::Solution,
+    stats::Evals,
     status::Status,
 };
 
 // -- re-export of nalgebra Types and Macros --
 
-pub use nalgebra::{
-    DMatrix,
-    SMatrix,
-    SVector,
-    vector,
-};
+pub use nalgebra::{DMatrix, SMatrix, SVector, vector};

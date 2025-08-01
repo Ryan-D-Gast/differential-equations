@@ -3,16 +3,16 @@
 use crate::traits::Real;
 use std::{
     ops::{Add, AddAssign},
-    time::Instant
+    time::Instant,
 };
 
 /// Number of evaluations
-/// 
+///
 /// # Fields
 /// * `function` - Number of function evaluations
 /// * `jacobian` - Number of jacobian evaluations
 /// * `newton` - Number of Newton iterations
-/// 
+///
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Evals {
     pub function: usize,
@@ -22,7 +22,7 @@ pub struct Evals {
 
 impl Evals {
     /// Create a new Evals struct
-    /// 
+    ///
     /// # Arguments
     /// * `diff` - Number of differntial equation function evaluations
     /// * `jacobian`  - Number of jacobian evaluations
@@ -57,7 +57,7 @@ impl AddAssign for Evals {
 }
 
 /// Number of Steps
-/// 
+///
 /// # Fields
 /// * `accepted` - Number of accepted steps
 /// * `rejected` - Number of rejected steps
