@@ -13,6 +13,10 @@ mod lobatto;
 mod gauss_legendre;
 mod radau;
 
+// Diagonally Implicit Runge-Kutta methods
+pub mod dirk;
+pub mod kvaerno;
+
 /// Butcher Tableau structure for Runge-Kutta methods.
 /// 
 /// A Butcher tableau encodes the coefficients of a Runge-Kutta method and provides the

@@ -10,6 +10,10 @@ pub use erk::ExplicitRungeKutta;
 mod irk;
 pub use irk::ImplicitRungeKutta;
 
+// --- Diagonally Implicit Runge-Kutta Methods ---
+mod dirk;
+pub use dirk::DiagonallyImplicitRungeKutta;
+
 // --- Adams Predictor-Corrector Methods ---
 mod apc;
 pub use apc::AdamsPredictorCorrector;

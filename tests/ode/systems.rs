@@ -151,3 +151,65 @@ impl ODE<f64, SVector<f64, 6>> for Cr3bp {
         dydt[5] = -(1.0 - mu) * rz / r13.powi(3) - mu * rz / r23.powi(3);
     }
 }
+
+/// Robertson chemical kinetics problem (classic stiff test)
+/// A stiff system arising from chemical kinetics with vastly different time scales
+/// dy1/dt = -0.04 * y1 + 1e4 * y2 * y3
+/// dy2/dt = 0.04 * y1 - 1e4 * y2 * y3 - 3e7 * y2^2
+/// dy3/dt = 3e7 * y2^2
+/// Conservation: y1 + y2 + y3 = 1
+pub struct RobertsonProblem;
+
+impl ODE<f64, SVector<f64, 3>> for RobertsonProblem {
+    fn diff(&self, _t: f64, y: &SVector<f64, 3>, dydt: &mut SVector<f64, 3>) {
+        let y1 = y[0];
+        let y2 = y[1];
+        let y3 = y[2];
+
+        dydt[0] = -0.04 * y1 + 1.0e4 * y2 * y3;
+        dydt[1] = 0.04 * y1 - 1.0e4 * y2 * y3 - 3.0e7 * y2 * y2;
+        dydt[2] = 3.0e7 * y2 * y2;
+    }
+}
+
+/// HIRES problem (High Irradiance Response)
+/// A 8-dimensional stiff system from plant physiology
+/// Used in Hairer & Wanner's "Solving Ordinary Differential Equations II"
+pub struct HiresProblem;
+
+impl ODE<f64, SVector<f64, 8>> for HiresProblem {
+    fn diff(&self, _t: f64, y: &SVector<f64, 8>, dydt: &mut SVector<f64, 8>) {
+        dydt[0] = -1.71 * y[0] + 0.43 * y[1] + 8.32 * y[2] + 0.0007;
+        dydt[1] = 1.71 * y[0] - 8.75 * y[1];
+        dydt[2] = -10.03 * y[2] + 0.43 * y[3] + 0.035 * y[4];
+        dydt[3] = 8.32 * y[1] + 1.71 * y[2] - 1.12 * y[3];
+        dydt[4] = -1.745 * y[4] + 0.43 * y[5] + 0.43 * y[6];
+        dydt[5] = -280.0 * y[5] * y[7] + 0.69 * y[3] + 1.71 * y[4] - 0.43 * y[5] + 0.69 * y[6];
+        dydt[6] = 280.0 * y[5] * y[7] - 1.81 * y[6];
+        dydt[7] = -280.0 * y[5] * y[7] + 1.81 * y[6];
+    }
+}
+
+/// Oregonator model (Belousov-Zhabotinsky reaction)
+/// A stiff chemical oscillator model
+/// dx/dt = s * (y - x*y + x - q*x^2)
+/// dy/dt = (-y - x*y + f*z) / s  
+/// dz/dt = w * (x - z)
+pub struct OregonatorModel {
+    pub s: f64,    // stiffness parameter (typically ~77.27)
+    pub q: f64,    // parameter (typically ~8.375e-6)
+    pub w: f64,    // parameter (typically ~0.161)
+    pub f: f64,    // parameter (typically ~1.0)
+}
+
+impl ODE<f64, SVector<f64, 3>> for OregonatorModel {
+    fn diff(&self, _t: f64, y: &SVector<f64, 3>, dydt: &mut SVector<f64, 3>) {
+        let x = y[0];
+        let y_val = y[1];
+        let z = y[2];
+
+        dydt[0] = self.s * (y_val - x * y_val + x - self.q * x * x);
+        dydt[1] = (-y_val - x * y_val + self.f * z) / self.s;
+        dydt[2] = self.w * (x - z);
+    }
+}

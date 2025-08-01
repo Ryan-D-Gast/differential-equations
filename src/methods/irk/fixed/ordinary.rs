@@ -255,7 +255,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             });
         }
 
-        // Otherwise use cubic Hermite interpolation
+        // Use cubic Hermite interpolation
         let y_interp = cubic_hermite_interpolate(
             self.t_prev, 
             self.t, 

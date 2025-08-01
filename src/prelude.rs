@@ -37,6 +37,7 @@ pub use crate::{
     methods::{
         ExplicitRungeKutta, // Explicit Runge-Kutta methods for ODEs, DDEs, and SDEs
         ImplicitRungeKutta, // Implicit Runge-Kutta methods for ODEs
+        DiagonallyImplicitRungeKutta, // Diagonally Implicit Runge-Kutta methods for ODEs
         AdamsPredictorCorrector, // Adams Predictor-Corrector methods for ODEs
     },
 
