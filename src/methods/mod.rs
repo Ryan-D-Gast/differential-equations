@@ -33,6 +33,3 @@ pub struct Adaptive;
 
 /// Explicit Adaptive-step methods by Dormand-Prince
 pub struct DormandPrince;
-
-/// Implicit Runge-Kutta methods using Radau collocation
-pub struct Radau;
