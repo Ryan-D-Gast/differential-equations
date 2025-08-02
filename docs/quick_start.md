@@ -117,10 +117,10 @@ fn main() {
 
             // Print solver statistics
             println!("\nSolver Statistics:");
-            println!("  Function evaluations: {}", solution.evals);
-            println!("  Steps taken: {}", solution.steps);
-            println!("  Accepted steps: {}", solution.accepted_steps);
-            println!("  Rejected steps: {}", solution.rejected_steps);
+            println!("  Function evaluations: {}", solution.evals.function);
+            println!("  Steps taken: {}", solution.steps.total());
+            println!("  Accepted steps: {}", solution.steps.accepted);
+            println!("  Rejected steps: {}", solution.steps.rejected);
         }
         Err(e) => eprintln!("An error occurred: {:?}", e),
     }

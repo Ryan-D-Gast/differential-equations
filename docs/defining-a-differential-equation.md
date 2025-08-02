@@ -4,7 +4,7 @@ This guide explains how to define differential equations in this library using t
 
 ## Overview
 
-Differential equations in this library are defined by implementing traits that specify the derivative functions, event handling, and optionally Jacobian matrices. The primary trait for ordinary differential equations is `ODE`.
+Differential equations in this library are defined by implementing traits that specify the derivative functions, event handling, and optionally jacobian matrices. The primary trait for ordinary differential equations is `ODE`.
 
 ## The ODE Trait
 
@@ -140,8 +140,8 @@ For stiff systems or when using implicit solvers, you can implement the `jacobia
 
 ```rust
 fn jacobian(&self, t: T, y: &V, j: &mut DMatrix<T>) {
-    // Fill the Jacobian matrix j with partial derivatives
-    // For a system y' = f(t,y), the Jacobian is J_ij = ∂f_i/∂y_j
+    // Fill the jacobian matrix j with partial derivatives
+    // For a system y' = f(t,y), the jacobian is J_ij = ∂f_i/∂y_j
 }
 ```
 

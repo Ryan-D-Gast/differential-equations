@@ -3,7 +3,7 @@
 use crate::{
     ControlFlag, Error, Solution, Status,
     interpolate::Interpolation,
-    sde::{StochasticNumericalMethod, SDE},
+    sde::{SDE, StochasticNumericalMethod},
     solout::*,
     traits::{CallBackData, Real, State},
 };
@@ -165,8 +165,7 @@ where
     // Clear statistics in case it was used before and reset solver and check for errors
     match solver.init(sde, t0, tf, y0) {
         Ok(evals) => {
-            solution.evals += evals.fcn;
-            solution.jac_evals += evals.jac;
+            solution.evals += evals;
         }
         Err(e) => return Err(e),
     }
@@ -187,8 +186,7 @@ where
             // Reinitialize the solver with the modified state
             match solver.init(sde, tm, tf, &ym) {
                 Ok(evals) => {
-                    solution.evals += evals.fcn;
-                    solution.jac_evals += evals.jac;
+                    solution.evals += evals;
                 }
                 Err(e) => return Err(e),
             }
@@ -211,8 +209,7 @@ where
             // Reinitialize the solver with the modified state
             match solver.init(sde, tm, tf, &ym) {
                 Ok(evals) => {
-                    solution.evals += evals.fcn;
-                    solution.jac_evals += evals.jac;
+                    solution.evals += evals;
                 }
                 Err(e) => return Err(e),
             }
@@ -251,12 +248,11 @@ where
         }
 
         // Perform a step
-        solution.steps += 1;
         match solver.step(sde) {
             Ok(evals) => {
                 // Update function evaluations
-                solution.evals += evals.fcn;
-                solution.jac_evals += evals.jac;
+                solution.evals += evals;
+                solution.steps.accepted += 1;
             }
             Err(e) => {
                 // Set solver status to error and return error
@@ -280,8 +276,7 @@ where
                 // Reinitialize the solver with the modified state
                 match solver.init(sde, tm, tf, &ym) {
                     Ok(evals) => {
-                        solution.evals += evals.fcn;
-                        solution.jac_evals += evals.jac;
+                        solution.evals += evals;
                     }
                     Err(e) => return Err(e),
                 }
@@ -362,7 +357,7 @@ where
                         // Any non-continue flag indicates we've found an event
                         evt @ (ControlFlag::ModifyState(_, _) | ControlFlag::Terminate(_)) => {
                             final_event = evt; // Update the event we found
-                            ts = t_guess;      // Update the event time
+                            ts = t_guess; // Update the event time
                             side_count = 0;
                             f_low = T::from_f64(-1.0).unwrap(); // Reset low point influence
                         }
@@ -392,7 +387,7 @@ where
                 if !solution.t.is_empty() {
                     let last_t = *solution.t.last().unwrap();
                     let time_diff = (event_time - last_t).abs();
-                    
+
                     // Check if the time difference is within a small tolerance
                     if time_diff <= tol * initial_interval {
                         // Remove the last point (t, y) to avoid very close duplicates
@@ -404,13 +399,12 @@ where
                 match final_event {
                     ControlFlag::ModifyState(tm, ym) => {
                         // Record the modified state point
-                        solution.push(tm, ym.clone());
+                        solution.push(tm, ym);
 
                         // Reinitialize the solver with the modified state at the precise time
                         match solver.init(sde, tm, tf, &ym) {
                             Ok(evals) => {
-                                solution.evals += evals.fcn;
-                                solution.jac_evals += evals.jac;
+                                solution.evals += evals;
                             }
                             Err(e) => return Err(e),
                         }

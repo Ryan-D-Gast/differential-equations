@@ -210,9 +210,9 @@ fn main() {
             println!("...");
             
             // Print statistics
-            println!("Function evaluations: {}", solution.evals);
-            println!("Steps: {}", solution.steps);
-            println!("Accepted steps: {}", solution.accepted_steps);
+            println!("Function evaluations: {}", solution.evals.function);
+            println!("Steps: {}", solution.steps.total());
+            println!("Accepted steps: {}", solution.steps.accepted);
         },
         Err(e) => println!("Error: {:?}", e),
     }

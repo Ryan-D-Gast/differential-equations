@@ -2,47 +2,12 @@
 
 use crate::{
     Status,
+    stats::{Evals, Steps, Timer},
     traits::{CallBackData, Real, State},
 };
-use std::time::Instant;
 
 #[cfg(feature = "polars")]
 use polars::prelude::*;
-
-/// Timer for tracking solution time
-#[derive(Debug, Clone)]
-pub enum Timer<T: Real> {
-    Off,
-    Running(Instant),
-    Completed(T),
-}
-
-impl<T: Real> Timer<T> {
-    /// Starts the timer
-    pub fn start(&mut self) {
-        *self = Timer::Running(Instant::now());
-    }
-
-    /// Returns the elapsed time in seconds
-    pub fn elapsed(&self) -> T {
-        match self {
-            Timer::Off => T::zero(),
-            Timer::Running(start_time) => T::from_f64(start_time.elapsed().as_secs_f64()).unwrap(),
-            Timer::Completed(t) => *t,
-        }
-    }
-
-    /// Complete the running timer and convert it to a completed state
-    pub fn complete(&mut self) {
-        match self {
-            Timer::Off => {}
-            Timer::Running(start_time) => {
-                *self = Timer::Completed(T::from_f64(start_time.elapsed().as_secs_f64()).unwrap());
-            }
-            Timer::Completed(_) => {}
-        }
-    }
-}
 
 /// Solution of returned by differential equation solvers
 ///
@@ -72,20 +37,11 @@ where
     /// Status of the solver.
     pub status: Status<T, V, D>,
 
-    /// Number of function evaluations.
-    pub evals: usize,
+    /// Number of function, jacobian, etc evaluations.
+    pub evals: Evals,
 
-    /// Number of Jacobian evaluations.
-    pub jac_evals: usize,
-
-    /// Total number of steps taken by the solver.
-    pub steps: usize,
-
-    /// Number of rejected steps where the solution step-size had to be reduced.
-    pub rejected_steps: usize,
-
-    /// Number of accepted steps where the solution moved closer to tf.
-    pub accepted_steps: usize,
+    /// Number of steps taken during the solution.
+    pub steps: Steps,
 
     /// Timer for tracking solution time - Running during solving, Completed after finalization
     pub timer: Timer<T>,
@@ -115,11 +71,8 @@ where
             t: Vec::with_capacity(100),
             y: Vec::with_capacity(100),
             status: Status::Uninitialized,
-            evals: 0,
-            steps: 0,
-            jac_evals: 0,
-            rejected_steps: 0,
-            accepted_steps: 0,
+            evals: Evals::new(),
+            steps: Steps::new(),
             timer: Timer::Off,
         }
     }
@@ -297,9 +250,9 @@ where
     }
 
     /// Creates a Polars DataFrame of the solution.
-    /// 
+    ///
     /// Requires feature "polars" to be enabled.
-    /// 
+    ///
     /// Note that the columns will be named t, y0, y1, ..., yN.
     ///
     /// # Returns
@@ -325,7 +278,7 @@ where
     }
 
     /// Creates a Polars DataFrame with column names.
-    /// 
+    ///
     /// Requires feature "polars" to be enabled.
     ///
     /// # Arguments
@@ -336,20 +289,28 @@ where
     /// * `Result<DataFrame, PolarsError>` - Result of creating the DataFrame.
     ///
     #[cfg(feature = "polars")]
-    pub fn to_named_polars(&self, t_name: &str, y_names: Vec<&str>) -> Result<DataFrame, PolarsError> {
+    pub fn to_named_polars(
+        &self,
+        t_name: &str,
+        y_names: Vec<&str>,
+    ) -> Result<DataFrame, PolarsError> {
         let t = self.t.iter().map(|x| x.to_f64()).collect::<Vec<f64>>();
         let mut columns = vec![Column::new(t_name.into(), t)];
-        
+
         let n = self.y[0].len();
-        
+
         // Validate that we have enough names for all state variables
         if y_names.len() != n {
             return Err(PolarsError::ComputeError(
-                format!("Expected {} column names for state variables, but got {}", 
-                        n, y_names.len()).into()
+                format!(
+                    "Expected {} column names for state variables, but got {}",
+                    n,
+                    y_names.len()
+                )
+                .into(),
             ));
         }
-        
+
         for (i, name) in y_names.iter().enumerate() {
             columns.push(Column::new(
                 (*name).into(),
@@ -359,7 +320,7 @@ where
                     .collect::<Vec<f64>>(),
             ));
         }
-    
+
         DataFrame::new(columns)
     }
 }

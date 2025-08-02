@@ -2,8 +2,8 @@
 
 use crate::{
     Error, Status,
-    alias::Evals,
     dde::DDE,
+    stats::Evals,
     traits::{CallBackData, Real, State},
 };
 

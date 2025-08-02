@@ -2,18 +2,18 @@
 
 use crate::{
     Error, Status,
-    alias::Evals,
-    methods::{
-        ExplicitRungeKutta, Ordinary, DormandPrince,
-        h_init::InitialStepSize,
-    },
     interpolate::Interpolation,
-    ode::{OrdinaryNumericalMethod, ODE},
+    methods::{DormandPrince, ExplicitRungeKutta, Ordinary, h_init::InitialStepSize},
+    ode::{ODE, OrdinaryNumericalMethod},
+    stats::Evals,
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> OrdinaryNumericalMethod<T, V, D> for ExplicitRungeKutta<Ordinary, DormandPrince, T, V, D, O, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    OrdinaryNumericalMethod<T, V, D>
+    for ExplicitRungeKutta<Ordinary, DormandPrince, T, V, D, O, S, I>
+{
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
@@ -23,7 +23,10 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // If h0 is zero, calculate initial step size
         if self.h0 == T::zero() {
             // Use adaptive step size calculation for Dormand-Prince methods
-            self.h0 = InitialStepSize::<Ordinary>::compute(ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max, &mut evals);
+            self.h0 = InitialStepSize::<Ordinary>::compute(
+                ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max,
+                &mut evals,
+            );
         }
 
         // Check bounds
@@ -40,7 +43,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         self.y = *y0;
         ode.diff(self.t, &self.y, &mut self.k[0]);
         self.dydt = self.k[0];
-        evals.fcn += 1;
+        evals.function += 1;
 
         // Initialize previous state
         self.t_prev = self.t;
@@ -62,20 +65,24 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Check if step-size is becoming too small
         if self.h.abs() < self.h_prev.abs() * T::from_f64(1e-14).unwrap() {
             self.status = Status::Error(Error::StepSize {
-                t: self.t, y: self.y
+                t: self.t,
+                y: self.y,
             });
             return Err(Error::StepSize {
-                t: self.t, y: self.y
+                t: self.t,
+                y: self.y,
             });
         }
 
         // Check max steps
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
-                t: self.t, y: self.y
+                t: self.t,
+                y: self.y,
             });
             return Err(Error::MaxSteps {
-                t: self.t, y: self.y
+                t: self.t,
+                y: self.y,
             });
         }
         self.steps += 1;
@@ -90,7 +97,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             }
             y_stage = self.y + y_stage * self.h;
 
-            ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);        
+            ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
         }
 
         // The last stage will be used for stiffness detection
@@ -109,7 +116,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         let t_new = self.t + self.h;
 
         // Number of function evaluations
-        evals.fcn += self.stages - 1; // We already have k[0]
+        evals.function += self.stages - 1; // We already have k[0]
 
         // Error estimation
         let er = self.er.unwrap();
@@ -147,7 +154,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         let order = T::from_usize(self.order).unwrap();
         let error_exponent = T::one() / order;
         let mut scale = self.safety_factor * err.powf(-error_exponent);
-        
+
         // Clamp scale factor to prevent extreme step size changes
         scale = scale.max(self.min_scale).min(self.max_scale);
 
@@ -155,14 +162,14 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         if err <= T::one() {
             // Calculate the new derivative at the new point
             ode.diff(t_new, &y_new, &mut self.dydt);
-            evals.fcn += 1;
+            evals.function += 1;
 
             // stiffness detection
             let n_stiff_threshold = 100;
             if self.steps % n_stiff_threshold == 0 {
                 let mut stdnum = T::zero();
                 let mut stden = T::zero();
-                let sqr = yseg - self.k[S-1];
+                let sqr = yseg - self.k[S - 1];
                 for i in 0..sqr.len() {
                     stdnum += sqr.get(i).powi(2);
                 }
@@ -211,7 +218,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                     // First dense output coefficient, k{i=order+1}, is the derivative at the new point
                     self.k[self.stages] = self.dydt;
 
-                    for i in S+1..I {
+                    for i in S + 1..I {
                         let mut y_stage = V::zeros();
                         for j in 0..i {
                             y_stage += self.k[j] * self.a[i][j];
@@ -219,7 +226,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                         y_stage = self.y + y_stage * self.h;
 
                         ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
-                        evals.fcn += 1;
+                        evals.function += 1;
                     }
                 }
 
@@ -261,22 +268,40 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // Ensure step size is within bounds
         self.h = constrain_step_size(self.h, self.h_min, self.h_max);
-        
+
         Ok(evals)
     }
 
-    fn t(&self) -> T { self.t }
-    fn y(&self) -> &V { &self.y }
-    fn t_prev(&self) -> T { self.t_prev }
-    fn y_prev(&self) -> &V { &self.y_prev }
-    fn h(&self) -> T { self.h }
-    fn set_h(&mut self, h: T) { self.h = h; }
-    fn status(&self) -> &Status<T, V, D> { &self.status }
-    fn set_status(&mut self, status: Status<T, V, D>) { self.status = status; }
+    fn t(&self) -> T {
+        self.t
+    }
+    fn y(&self) -> &V {
+        &self.y
+    }
+    fn t_prev(&self) -> T {
+        self.t_prev
+    }
+    fn y_prev(&self) -> &V {
+        &self.y_prev
+    }
+    fn h(&self) -> T {
+        self.h
+    }
+    fn set_h(&mut self, h: T) {
+        self.h = h;
+    }
+    fn status(&self) -> &Status<T, V, D> {
+        &self.status
+    }
+    fn set_status(&mut self, status: Status<T, V, D>) {
+        self.status = status;
+    }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> Interpolation<T, V> for ExplicitRungeKutta<Ordinary, DormandPrince, T, V, D, O, S, I> {
-    fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {        
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Interpolation<T, V> for ExplicitRungeKutta<Ordinary, DormandPrince, T, V, D, O, S, I>
+{
+    fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // Check if interpolation is out of bounds
         if t_interp < self.t_prev || t_interp > self.t {
             return Err(Error::OutOfBounds {
@@ -284,15 +309,15 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 t_prev: self.t_prev,
                 t_curr: self.t,
             });
-        }        
-        
+        }
+
         // Evaluate the interpolation polynomial at the requested time
         let s = (t_interp - self.t_prev) / self.h_prev;
-        let s1 = T::one() - s;        
-        
+        let s1 = T::one() - s;
+
         // Functional implementation of: cont[0] + (cont[1] + (cont[2] + (cont[3] + conpar*s1)*s)*s1)*s
         let ilast = self.cont.len() - 1;
-        let poly = (1..ilast).rev().fold(self.cont[ilast], |acc, i| {            
+        let poly = (1..ilast).rev().fold(self.cont[ilast], |acc, i| {
             let factor = if i >= 4 {
                 // For the higher-order part (conpar), alternate s and s1 based on index parity
                 if (ilast - i) % 2 == 1 { s1 } else { s }
@@ -302,7 +327,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             };
             acc * factor + self.cont[i]
         });
-        
+
         // Final multiplication by s for the outermost level
         let y_interp = self.cont[0] + poly * s;
 

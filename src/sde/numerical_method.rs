@@ -3,7 +3,7 @@
 use crate::{
     Error, Status,
     sde::SDE,
-    alias::Evals,
+    stats::Evals,
     traits::{CallBackData, Real, State},
 };
 

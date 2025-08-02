@@ -2,18 +2,17 @@
 
 use crate::{
     Error, Status,
-    methods::{
-        ExplicitRungeKutta, Ordinary, Adaptive,
-        h_init::InitialStepSize,
-    },
-    alias::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
-    ode::{OrdinaryNumericalMethod, ODE},
+    methods::{Adaptive, ExplicitRungeKutta, Ordinary, h_init::InitialStepSize},
+    ode::{ODE, OrdinaryNumericalMethod},
+    stats::Evals,
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> OrdinaryNumericalMethod<T, V, D> for ExplicitRungeKutta<Ordinary, Adaptive, T, V, D, O, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    OrdinaryNumericalMethod<T, V, D> for ExplicitRungeKutta<Ordinary, Adaptive, T, V, D, O, S, I>
+{
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
@@ -23,9 +22,11 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // If h0 is zero, calculate initial step size
         if self.h0 == T::zero() {
             // Only use adaptive step size calculation if the method supports it
-            self.h0 = InitialStepSize::<Ordinary>::compute(ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max, &mut evals);
-            evals.fcn += 2;
-
+            self.h0 = InitialStepSize::<Ordinary>::compute(
+                ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max,
+                &mut evals,
+            );
+            evals.function += 2;
         }
 
         // Check bounds
@@ -41,7 +42,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         self.t = t0;
         self.y = *y0;
         ode.diff(self.t, &self.y, &mut self.dydt);
-        evals.fcn += 1;
+        evals.function += 1;
 
         // Initialize previous state
         self.t_prev = self.t;
@@ -63,20 +64,24 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Check step size
         if self.h.abs() < self.h_prev.abs() * T::from_f64(1e-14).unwrap() {
             self.status = Status::Error(Error::StepSize {
-                t: self.t, y: self.y
+                t: self.t,
+                y: self.y,
             });
             return Err(Error::StepSize {
-                t: self.t, y: self.y
+                t: self.t,
+                y: self.y,
             });
         }
 
         // Check max steps
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
-                t: self.t, y: self.y
+                t: self.t,
+                y: self.y,
             });
             return Err(Error::MaxSteps {
-                t: self.t, y: self.y
+                t: self.t,
+                y: self.y,
             });
         }
         self.steps += 1;
@@ -94,8 +99,8 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
             ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
         }
-        evals.fcn += self.stages - 1; // We already have k[0]
- 
+        evals.function += self.stages - 1; // We already have k[0]
+
         // For adaptive methods with error estimation
         // Compute higher order solution
         let mut y_high = self.y;
@@ -121,13 +126,13 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         for n in 0..self.y.len() {
             let tol = self.atol + self.rtol * self.y.get(n).abs().max(y_high.get(n).abs());
             err_norm = err_norm.max((err.get(n) / tol).abs());
-        };
+        }
 
         // Step size scale factor
         let order = T::from_usize(self.order).unwrap();
         let error_exponent = T::one() / order;
         let mut scale = self.safety_factor * err_norm.powf(-error_exponent);
-        
+
         // Clamp scale factor to prevent extreme step size changes
         scale = scale.max(self.min_scale).min(self.max_scale);
 
@@ -156,9 +161,13 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                         y_stage += self.k[j] * (self.a[self.stages + i][j] * self.h);
                     }
 
-                    ode.diff(self.t + self.c[self.stages + i] * self.h, &y_stage, &mut self.k[self.stages + i]);
+                    ode.diff(
+                        self.t + self.c[self.stages + i] * self.h,
+                        &y_stage,
+                        &mut self.k[self.stages + i],
+                    );
                 }
-                evals.fcn += I - S;
+                evals.function += I - S;
             }
 
             // Update state with the higher-order solution
@@ -172,7 +181,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             } else {
                 // Otherwise, compute the new derivative
                 ode.diff(self.t, &self.y, &mut self.dydt);
-                evals.fcn += 1;
+                evals.function += 1;
             }
         } else {
             // Step rejected
@@ -182,10 +191,12 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             // Check for stiffness
             if self.stiffness_counter >= self.max_rejects {
                 self.status = Status::Error(Error::Stiffness {
-                    t: self.t, y: self.y
+                    t: self.t,
+                    y: self.y,
                 });
                 return Err(Error::Stiffness {
-                    t: self.t, y: self.y
+                    t: self.t,
+                    y: self.y,
                 });
             }
         }
@@ -195,28 +206,46 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // Ensure step size is within bounds
         self.h = constrain_step_size(self.h, self.h_min, self.h_max);
-        
+
         Ok(evals)
     }
 
-    fn t(&self) -> T { self.t }
-    fn y(&self) -> &V { &self.y }
-    fn t_prev(&self) -> T { self.t_prev }
-    fn y_prev(&self) -> &V { &self.y_prev }
-    fn h(&self) -> T { self.h }
-    fn set_h(&mut self, h: T) { self.h = h; }
-    fn status(&self) -> &Status<T, V, D> { &self.status }
-    fn set_status(&mut self, status: Status<T, V, D>) { self.status = status; }
+    fn t(&self) -> T {
+        self.t
+    }
+    fn y(&self) -> &V {
+        &self.y
+    }
+    fn t_prev(&self) -> T {
+        self.t_prev
+    }
+    fn y_prev(&self) -> &V {
+        &self.y_prev
+    }
+    fn h(&self) -> T {
+        self.h
+    }
+    fn set_h(&mut self, h: T) {
+        self.h = h;
+    }
+    fn status(&self) -> &Status<T, V, D> {
+        &self.status
+    }
+    fn set_status(&mut self, status: Status<T, V, D>) {
+        self.status = status;
+    }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> Interpolation<T, V> for ExplicitRungeKutta<Ordinary, Adaptive, T, V, D, O, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Interpolation<T, V> for ExplicitRungeKutta<Ordinary, Adaptive, T, V, D, O, S, I>
+{
     fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // Check if t is within bounds
         if t_interp < self.t_prev || t_interp > self.t {
             return Err(Error::OutOfBounds {
                 t_interp,
                 t_prev: self.t_prev,
-                t_curr: self.t
+                t_curr: self.t,
             });
         }
 
@@ -224,7 +253,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         if self.bi.is_some() {
             // Calculate the normalized distance within the step [0, 1]
             let s = (t_interp - self.t_prev) / self.h_prev;
-            
+
             // Get the interpolation coefficients
             let bi = self.bi.as_ref().unwrap();
 
@@ -253,13 +282,13 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         } else {
             // Otherwise use cubic Hermite interpolation
             let y_interp = cubic_hermite_interpolate(
-                self.t_prev, 
-                self.t, 
-                &self.y_prev, 
-                &self.y, 
-                &self.dydt_prev, 
-                &self.dydt, 
-                t_interp
+                self.t_prev,
+                self.t,
+                &self.y_prev,
+                &self.y,
+                &self.dydt_prev,
+                &self.dydt,
+                t_interp,
             );
 
             Ok(y_interp)

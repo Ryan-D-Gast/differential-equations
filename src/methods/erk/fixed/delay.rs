@@ -2,22 +2,30 @@
 
 use crate::{
     Error, Status,
-    methods::{
-        ExplicitRungeKutta, Delay, Fixed
-    },
-    alias::Evals,
+    dde::{DDE, DelayNumericalMethod},
     interpolate::{Interpolation, cubic_hermite_interpolate},
-    dde::{DelayNumericalMethod, DDE},
+    methods::{Delay, ExplicitRungeKutta, Fixed},
+    stats::Evals,
     traits::{CallBackData, Real, State},
     utils::validate_step_size_parameters,
 };
 use std::collections::VecDeque;
 
-impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const O: usize, const S: usize, const I: usize> DelayNumericalMethod<L, T, V, H, D> for ExplicitRungeKutta<Delay, Fixed, T, V, D, O, S, I> {
+impl<
+    const L: usize,
+    T: Real,
+    V: State<T>,
+    H: Fn(T) -> V,
+    D: CallBackData,
+    const O: usize,
+    const S: usize,
+    const I: usize,
+> DelayNumericalMethod<L, T, V, H, D> for ExplicitRungeKutta<Delay, Fixed, T, V, D, O, S, I>
+{
     fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: &H) -> Result<Evals, Error<T, V>>
     where
         F: DDE<L, T, V, D>,
-    {        
+    {
         // Initialize solver state
         let mut evals = Evals::new();
         self.t0 = t0;
@@ -58,8 +66,8 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
 
         // Calculate initial derivative
         dde.diff(self.t, &self.y, &yd, &mut self.dydt);
-        evals.fcn += 1;
-        self.dydt_prev = self.dydt;        // Store initial state in history
+        evals.function += 1;
+        self.dydt_prev = self.dydt; // Store initial state in history
         self.history.push_back((self.t, self.y, self.dydt));
 
         // Calculate initial step size h0 if not provided
@@ -86,8 +94,14 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
 
         // Check maximum number of steps
         if self.steps >= self.max_steps {
-            self.status = Status::Error(Error::MaxSteps { t: self.t, y: self.y });
-            return Err(Error::MaxSteps { t: self.t, y: self.y });
+            self.status = Status::Error(Error::MaxSteps {
+                t: self.t,
+                y: self.y,
+            });
+            return Err(Error::MaxSteps {
+                t: self.t,
+                y: self.y,
+            });
         }
         self.steps += 1;
 
@@ -96,7 +110,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         let mut yd = [V::zeros(); L];
 
         // Store current derivative as k[0] for RK computations
-        self.k[0] = self.dydt;        // DDE: Determine if iterative approach for lag handling is needed
+        self.k[0] = self.dydt; // DDE: Determine if iterative approach for lag handling is needed
         let mut min_lag_abs = T::infinity();
         if L > 0 {
             // Predict y at t+h using Euler step to estimate lags at t+h
@@ -138,7 +152,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 }
                 dde.diff(self.t + self.c[i] * self.h, &y_stage, &yd, &mut self.k[i]);
             }
-            evals.fcn += self.stages - 1; // k[0] was already available
+            evals.function += self.stages - 1; // k[0] was already available
 
             // Compute solution
             let mut y_next = self.y;
@@ -151,20 +165,26 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 let mut dde_iteration_error = T::zero();
                 let n_dim = self.y.len();
                 for i_dim in 0..n_dim {
-                    let scale = T::from_f64(1e-10).unwrap() + y_prev_candidate_iter.get(i_dim).abs().max(y_next.get(i_dim).abs());
+                    let scale = T::from_f64(1e-10).unwrap()
+                        + y_prev_candidate_iter
+                            .get(i_dim)
+                            .abs()
+                            .max(y_next.get(i_dim).abs());
                     if scale > T::zero() {
                         let diff_val = y_next.get(i_dim) - y_prev_candidate_iter.get(i_dim);
                         dde_iteration_error += (diff_val / scale).powi(2);
                     }
                 }
                 if n_dim > 0 {
-                    dde_iteration_error = (dde_iteration_error / T::from_usize(n_dim).unwrap()).sqrt();
+                    dde_iteration_error =
+                        (dde_iteration_error / T::from_usize(n_dim).unwrap()).sqrt();
                 }
 
                 if dde_iteration_error <= T::from_f64(1e-6).unwrap() {
                     break; // DDE iteration converged
                 }
-                if iter_idx == max_iter - 1 { // Last iteration
+                if iter_idx == max_iter - 1 {
+                    // Last iteration
                     dde_iteration_failed = dde_iteration_error > T::from_f64(1e-6).unwrap();
                 }
             }
@@ -175,8 +195,13 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 dde.lags(self.t + self.h, &y_next_candidate_iter, &mut lags);
                 self.lagvals(self.t + self.h, &lags, &mut yd, phi);
             }
-            dde.diff(self.t + self.h, &y_next_candidate_iter, &yd, &mut dydt_next_candidate_iter);
-            evals.fcn += 1;
+            dde.diff(
+                self.t + self.h,
+                &y_next_candidate_iter,
+                &yd,
+                &mut dydt_next_candidate_iter,
+            );
+            evals.function += 1;
         } // End of DDE iteration loop
 
         // Handle DDE iteration failure: reduce step size and retry
@@ -184,7 +209,10 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
             let sign = self.h.signum();
             self.h = (self.h.abs() * T::from_f64(0.5).unwrap()).max(self.h_min.abs()) * sign;
             // Ensure step size is not smaller than a fraction of the minimum lag, if applicable
-            if L > 0 && min_lag_abs > T::zero() && self.h.abs() < T::from_f64(2.0).unwrap() * min_lag_abs {
+            if L > 0
+                && min_lag_abs > T::zero()
+                && self.h.abs() < T::from_f64(2.0).unwrap() * min_lag_abs
+            {
                 self.h = min_lag_abs * sign; // Or some factor of min_lag_abs
             }
             self.status = Status::RejectedStep; // Indicate step rejection due to DDE iteration
@@ -199,7 +227,7 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         // Update state to t + h
         self.t += self.h;
         self.y = y_next_candidate_iter;
-        
+
         // Calculate new derivative for next step
         if self.fsal {
             // If FSAL (First Same As Last) is enabled, we can reuse the last derivative
@@ -211,32 +239,48 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
                 self.lagvals(self.t, &lags, &mut yd, phi);
             }
             dde.diff(self.t, &self.y, &yd, &mut self.dydt);
-            evals.fcn += 1;
+            evals.function += 1;
         }
 
         // Compute additional stages for dense output if available
         if self.bi.is_some() {
-            for i in 0..(I - S) { // I is total stages, S is main method stages
+            for i in 0..(I - S) {
+                // I is total stages, S is main method stages
                 let mut y_stage_dense = self.y_prev; // Use previous state as base
                 // Sum up contributions from previous k values for this dense stage
-                for j in 0..self.stages + i { // self.stages is S
+                for j in 0..self.stages + i {
+                    // self.stages is S
                     y_stage_dense += self.k[j] * (self.a[self.stages + i][j] * self.h);
                 }
                 // Evaluate lags and derivative for the dense stage
                 if L > 0 {
-                    dde.lags(self.t_prev + self.c[self.stages + i] * self.h, &y_stage_dense, &mut lags);
-                    self.lagvals(self.t_prev + self.c[self.stages + i] * self.h, &lags, &mut yd, phi);
+                    dde.lags(
+                        self.t_prev + self.c[self.stages + i] * self.h,
+                        &y_stage_dense,
+                        &mut lags,
+                    );
+                    self.lagvals(
+                        self.t_prev + self.c[self.stages + i] * self.h,
+                        &lags,
+                        &mut yd,
+                        phi,
+                    );
                 }
-                dde.diff(self.t_prev + self.c[self.stages + i] * self.h, &y_stage_dense, &yd, &mut self.k[self.stages + i]);
+                dde.diff(
+                    self.t_prev + self.c[self.stages + i] * self.h,
+                    &y_stage_dense,
+                    &yd,
+                    &mut self.k[self.stages + i],
+                );
             }
-            evals.fcn += I - S; // Account for function evaluations for dense stages
+            evals.function += I - S; // Account for function evaluations for dense stages
         }
 
         // Update continuous output buffer and remove old entries if max_delay is set
         self.history.push_back((self.t, self.y, self.dydt));
         if let Some(max_delay) = self.max_delay {
             let cutoff_time = self.t - max_delay;
-            while let Some((t_front, _, _)) = self.history.get(1){
+            while let Some((t_front, _, _)) = self.history.get(1) {
                 if *t_front < cutoff_time {
                     self.history.pop_front();
                 } else {
@@ -249,24 +293,47 @@ impl<const L: usize, T: Real, V: State<T>, H: Fn(T) -> V, D: CallBackData, const
         Ok(evals)
     }
 
-    fn t(&self) -> T { self.t }
-    fn y(&self) -> &V { &self.y }
-    fn t_prev(&self) -> T { self.t_prev }
-    fn y_prev(&self) -> &V { &self.y_prev }
-    fn h(&self) -> T { self.h }
-    fn set_h(&mut self, h: T) { self.h = h; }
-    fn status(&self) -> &Status<T, V, D> { &self.status }
-    fn set_status(&mut self, status: Status<T, V, D>) { self.status = status; }
+    fn t(&self) -> T {
+        self.t
+    }
+    fn y(&self) -> &V {
+        &self.y
+    }
+    fn t_prev(&self) -> T {
+        self.t_prev
+    }
+    fn y_prev(&self) -> &V {
+        &self.y_prev
+    }
+    fn h(&self) -> T {
+        self.h
+    }
+    fn set_h(&mut self, h: T) {
+        self.h = h;
+    }
+    fn status(&self) -> &Status<T, V, D> {
+        &self.status
+    }
+    fn set_status(&mut self, status: Status<T, V, D>) {
+        self.status = status;
+    }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> ExplicitRungeKutta<Delay, Fixed, T, V, D, O, S, I> {    
-    pub fn lagvals<const L: usize, H>(&mut self, t_stage: T, lags: &[T; L], yd: &mut [V; L], phi: &H) 
-    where 
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    ExplicitRungeKutta<Delay, Fixed, T, V, D, O, S, I>
+{
+    pub fn lagvals<const L: usize, H>(
+        &mut self,
+        t_stage: T,
+        lags: &[T; L],
+        yd: &mut [V; L],
+        phi: &H,
+    ) where
         H: Fn(T) -> V,
     {
         for i in 0..L {
             let t_delayed = t_stage - lags[i];
-            
+
             // Check if delayed time falls within the history period (t_delayed <= t0)
             if (t_delayed - self.t0) * self.h.signum() <= T::default_epsilon() {
                 yd[i] = phi(t_delayed);
@@ -274,7 +341,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             } else if (t_delayed - self.t_prev) * self.h.signum() > T::default_epsilon() {
                 if self.bi.is_some() {
                     let s = (t_delayed - self.t_prev) / self.h;
-                    
+
                     let bi_coeffs = self.bi.as_ref().unwrap();
 
                     let mut cont = [T::zero(); I];
@@ -297,16 +364,17 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                     yd[i] = y_interp;
                 } else {
                     yd[i] = cubic_hermite_interpolate(
-                        self.t_prev, 
-                        self.t, 
-                        &self.y_prev, 
-                        &self.y, 
-                        &self.dydt_prev, 
-                        &self.dydt, 
-                        t_delayed
+                        self.t_prev,
+                        self.t,
+                        &self.y_prev,
+                        &self.y,
+                        &self.dydt_prev,
+                        &self.dydt,
+                        t_delayed,
                     );
-                }            // If t_delayed is before t_prev and after t0, we need to search in the history
-            } else {                // Search through history to find appropriate interpolation points
+                } // If t_delayed is before t_prev and after t0, we need to search in the history
+            } else {
+                // Search through history to find appropriate interpolation points
                 let mut found_interpolation = false;
                 let buffer = &self.history;
                 // Find two consecutive points that sandwich t_delayed using iterators
@@ -315,7 +383,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                     for curr_entry in buffer_iter {
                         let (t_left, y_left, dydt_left) = prev_entry;
                         let (t_right, y_right, dydt_right) = curr_entry;
-                        
+
                         // Check if t_delayed is between these two points
                         let is_between = if self.h.signum() > T::zero() {
                             // Forward integration: t_left <= t_delayed <= t_right
@@ -324,24 +392,19 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                             // Backward integration: t_right <= t_delayed <= t_left
                             *t_right <= t_delayed && t_delayed <= *t_left
                         };
-                        
+
                         if is_between {
                             // Use cubic Hermite interpolation between these points
                             yd[i] = cubic_hermite_interpolate(
-                                *t_left,
-                                *t_right,
-                                y_left,
-                                y_right,
-                                dydt_left,
-                                dydt_right,
-                                t_delayed
+                                *t_left, *t_right, y_left, y_right, dydt_left, dydt_right,
+                                t_delayed,
                             );
                             found_interpolation = true;
                             break;
                         }
                         prev_entry = curr_entry;
                     }
-                }// If not found in history, this indicates insufficient history in buffer
+                } // If not found in history, this indicates insufficient history in buffer
                 if !found_interpolation {
                     // Debug: show buffer contents
                     let buffer = &self.history;
@@ -353,18 +416,24 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                             println!("  ... ({} more entries) ...", buffer.len() - 10);
                         }
                     }
-                    panic!("Insufficient history in history for t_delayed = {} (t_prev = {}, t = {}). Buffer may need to retain more points or there's a logic error in determining interpolation intervals.", t_delayed, self.t_prev, self.t);
+                    panic!(
+                        "Insufficient history in history for t_delayed = {} (t_prev = {}, t = {}). Buffer may need to retain more points or there's a logic error in determining interpolation intervals.",
+                        t_delayed, self.t_prev, self.t
+                    );
                 }
             }
         }
     }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> Interpolation<T, V> for ExplicitRungeKutta<Delay, Fixed, T, V, D, O, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Interpolation<T, V> for ExplicitRungeKutta<Delay, Fixed, T, V, D, O, S, I>
+{
     /// Interpolates the solution at a given time `t_interp`.
     fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         let posneg = self.h.signum();
-        if (t_interp - self.t_prev) * posneg < T::zero() || (t_interp - self.t) * posneg > T::zero() {
+        if (t_interp - self.t_prev) * posneg < T::zero() || (t_interp - self.t) * posneg > T::zero()
+        {
             return Err(Error::OutOfBounds {
                 t_interp,
                 t_prev: self.t_prev,
@@ -376,7 +445,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         if self.bi.is_some() {
             // Calculate the normalized distance within the step [0, 1]
             let s = (t_interp - self.t_prev) / self.h_prev;
-            
+
             // Get the interpolation coefficients
             let bi = self.bi.as_ref().unwrap();
 
@@ -405,17 +474,16 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         } else {
             // Otherwise use cubic Hermite interpolation
             let y_interp = cubic_hermite_interpolate(
-                self.t_prev, 
-                self.t, 
-                &self.y_prev, 
-                &self.y, 
-                &self.dydt_prev, 
-                &self.dydt, 
-                t_interp
+                self.t_prev,
+                self.t,
+                &self.y_prev,
+                &self.y,
+                &self.dydt_prev,
+                &self.dydt,
+                t_interp,
             );
 
             Ok(y_interp)
         }
     }
-
 }

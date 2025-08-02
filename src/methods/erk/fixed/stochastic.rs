@@ -2,16 +2,18 @@
 
 use crate::{
     Error, Status,
-    methods::{ExplicitRungeKutta, Stochastic, Fixed},
-    alias::Evals,
     interpolate::Interpolation,
     linalg::component_multiply,
-    sde::{StochasticNumericalMethod, SDE},
+    methods::{ExplicitRungeKutta, Fixed, Stochastic},
+    sde::{SDE, StochasticNumericalMethod},
+    stats::Evals,
     traits::{CallBackData, Real, State},
     utils::validate_step_size_parameters,
 };
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> StochasticNumericalMethod<T, V, D> for ExplicitRungeKutta<Stochastic, Fixed, T, V, D, O, S, I> {    
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    StochasticNumericalMethod<T, V, D> for ExplicitRungeKutta<Stochastic, Fixed, T, V, D, O, S, I>
+{
     fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: SDE<T, V, D>,
@@ -38,12 +40,12 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Initialize State
         self.t = t0;
         self.y = *y0;
-        
+
         // Calculate initial drift and diffusion
         sde.drift(self.t, &self.y, &mut self.dydt);
         let mut diffusion = V::zeros();
         sde.diffusion(self.t, &self.y, &mut diffusion);
-        evals.fcn += 2; // 1 for drift + 1 for diffusion
+        evals.function += 2; // 1 for drift + 1 for diffusion
 
         // Initialize previous state
         self.t_prev = self.t;
@@ -65,10 +67,12 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Check max steps
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
-                t: self.t, y: self.y
+                t: self.t,
+                y: self.y,
             });
             return Err(Error::MaxSteps {
-                t: self.t, y: self.y
+                t: self.t,
+                y: self.y,
             });
         }
         self.steps += 1;
@@ -91,7 +95,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
             sde.drift(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
         }
-        evals.fcn += self.stages - 1; // We already have k[0]
+        evals.function += self.stages - 1; // We already have k[0]
 
         // Compute deterministic part using RK weights
         let mut drift_increment = V::zeros();
@@ -102,7 +106,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Compute diffusion term at current state
         let mut diffusion = V::zeros();
         sde.diffusion(self.t, &self.y, &mut diffusion);
-        evals.fcn += 1;
+        evals.function += 1;
 
         // Generate noise increments
         let mut dw = V::zeros();
@@ -117,7 +121,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Update state
         self.t += self.h;
         self.y = y_next;
-        
+
         // Calculate new drift for next step
         if self.fsal {
             // If FSAL (First Same As Last) is enabled, we can reuse the last derivative
@@ -125,34 +129,52 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         } else {
             // Otherwise, compute the new derivative
             sde.drift(self.t, &self.y, &mut self.dydt);
-            evals.fcn += 1;
+            evals.function += 1;
         }
-        
-        self.status = Status::Solving;        
+
+        self.status = Status::Solving;
         Ok(evals)
     }
 
-    fn t(&self) -> T { self.t }
-    fn y(&self) -> &V { &self.y }
-    fn t_prev(&self) -> T { self.t_prev }
-    fn y_prev(&self) -> &V { &self.y_prev }
-    fn h(&self) -> T { self.h }
-    fn set_h(&mut self, h: T) { self.h = h; }
-    fn status(&self) -> &Status<T, V, D> { &self.status }
-    fn set_status(&mut self, status: Status<T, V, D>) { self.status = status; }
+    fn t(&self) -> T {
+        self.t
+    }
+    fn y(&self) -> &V {
+        &self.y
+    }
+    fn t_prev(&self) -> T {
+        self.t_prev
+    }
+    fn y_prev(&self) -> &V {
+        &self.y_prev
+    }
+    fn h(&self) -> T {
+        self.h
+    }
+    fn set_h(&mut self, h: T) {
+        self.h = h;
+    }
+    fn status(&self) -> &Status<T, V, D> {
+        &self.status
+    }
+    fn set_status(&mut self, status: Status<T, V, D>) {
+        self.status = status;
+    }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize> Interpolation<T, V> for ExplicitRungeKutta<Stochastic, Fixed, T, V, D, O, S, I> {
+impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Interpolation<T, V> for ExplicitRungeKutta<Stochastic, Fixed, T, V, D, O, S, I>
+{
     fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // Check if t is within bounds
         if t_interp < self.t_prev || t_interp > self.t {
             return Err(Error::OutOfBounds {
                 t_interp,
                 t_prev: self.t_prev,
-                t_curr: self.t
+                t_curr: self.t,
             });
-        }       
-        
+        }
+
         // For stochastic methods, we typically use linear interpolation
         // since the exact path between points involves the Wiener process
         // which is not deterministic

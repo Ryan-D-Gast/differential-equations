@@ -26,18 +26,21 @@
 //!
 //! ### Implicit Runge-Kutta Methods:
 //! - `ImplicitRungeKutta::gauss_legendre6`: Gauss-Legendre 6th order method.
+//! 
+//! ### Diagonally Implicit Runge-Kutta Methods:
+//! - `DiagonallyImplicitRungeKutta::kvaerno745': Kvaerno 7(4,5) 7th order method.
 //!
 //! For detailed examples, including problem setup and full solution process,
-//! please refer to the `examples` directory in the repository.
-
-// -- Types of Differential Equations --
+//! please refer to the [examples directory](https://github.com/Ryan-D-Gast/differential-equations/tree/master/examples).
+//! 
 
 pub use crate::{
     // Numerical Methods
     methods::{
-        ExplicitRungeKutta, // Explicit Runge-Kutta methods for ODEs, DDEs, and SDEs
-        ImplicitRungeKutta, // Implicit Runge-Kutta methods for ODEs
-        AdamsPredictorCorrector, // Adams Predictor-Corrector methods for ODEs
+        AdamsPredictorCorrector,      // Adams Predictor-Corrector methods for ODEs
+        DiagonallyImplicitRungeKutta, // Diagonally Implicit Runge-Kutta methods for ODEs
+        ExplicitRungeKutta,           // Explicit Runge-Kutta methods for ODEs, DDEs, and SDEs
+        ImplicitRungeKutta,           // Implicit Runge-Kutta methods for ODEs
     },
 
     // Ordinary Differential Equations (ODE) module
@@ -63,20 +66,15 @@ pub use crate::{
         CrossingDirection,
         Solout, // Trait for defining a custom output behavior
     },
-    alias::Evals,
-    control::ControlFlag,
     derive::State,
     error::Error,
     interpolate::Interpolation,
+    control::ControlFlag,
     solution::Solution,
+    stats::Evals,
     status::Status,
 };
 
 // -- re-export of nalgebra Types and Macros --
 
-pub use nalgebra::{
-    DMatrix,
-    SMatrix,
-    SVector,
-    vector,
-};
+pub use nalgebra::{DMatrix, SMatrix, SVector, vector};

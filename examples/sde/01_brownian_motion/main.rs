@@ -78,7 +78,7 @@ fn main() {
     println!("Simulation completed:");
     println!("  Number of time steps: {}", solution.t.len());
     println!("  Final position: {}", solution.y.last().unwrap());
-    println!("  Function evaluations: {}", solution.evals);
-    println!("  Total steps: {}", solution.steps);
+    println!("  Function evaluations: {}", solution.evals.function);
+    println!("  Total steps: {}", solution.steps.total());
     println!("  Solution time: {:.6} seconds", solution.timer.elapsed());
 }

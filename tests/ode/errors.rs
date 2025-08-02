@@ -2,14 +2,8 @@
 
 use differential_equations::{
     ControlFlag, Error, Status,
-    methods::{
-        ExplicitRungeKutta,
-        ImplicitRungeKutta,
-        AdamsPredictorCorrector
-    },
-    ode::{
-        ODE, ODEProblem,
-    },
+    methods::{AdamsPredictorCorrector, ExplicitRungeKutta, ImplicitRungeKutta},
+    ode::{ODE, ODEProblem},
 };
 use nalgebra::{SVector, vector};
 

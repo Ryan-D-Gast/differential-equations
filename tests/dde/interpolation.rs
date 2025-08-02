@@ -1,10 +1,7 @@
 //! Suite of test cases for checking the interpolation of DDE solvers.
 
 use super::systems::ExponentialGrowth;
-use differential_equations::{
-    dde::DDEProblem,
-    methods::ExplicitRungeKutta,
-};
+use differential_equations::{dde::DDEProblem, methods::ExplicitRungeKutta};
 use nalgebra::vector;
 
 macro_rules! test_dde_interpolation {

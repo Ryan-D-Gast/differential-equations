@@ -58,7 +58,7 @@ fn main() {
 
     // Set up and solve the ODEProblem
     let matrix_problem = ODEProblem::new(ode, t0, tf, y0);
-    let result = matrix_problem.dense(100).solve(&mut method);
+    let result = matrix_problem.dense(5).solve(&mut method);
 
     match result {
         Ok(solution) => {
@@ -72,8 +72,8 @@ fn main() {
                 }
             }
 
-            println!("Steps: {}", solution.steps);
-            println!("Function evaluations: {}", solution.evals);
+            println!("Steps: {}", solution.steps.total());
+            println!("Function evaluations: {}", solution.evals.function);
         }
         Err(e) => println!("Error solving the ODEProblem: {:?}", e),
     }

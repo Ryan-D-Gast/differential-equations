@@ -88,7 +88,7 @@ fn main() {
     for (t, y) in rk_solution.iter() {
         println!("  t = {:.2}, y = {:.6}", t, y);
     }
-    println!("  Function evaluations: {}", rk_solution.evals);
+    println!("  Function evaluations: {}", rk_solution.evals.function);
     println!(
         "  Solution time: {:.6} seconds",
         rk_solution.timer.elapsed()

@@ -9,7 +9,7 @@
 //!
 //! Initial conditions: y0(0) = 1.5, y1(0) = 3.0
 //!
-//! The Jacobian matrix J is:
+//! The jacobian matrix J is:
 //! J = [[-4 + 2*y0*y1,     y0^2],
 //!      [ 3 - 2*y0*y1,    -y0^2]]
 
@@ -40,15 +40,15 @@ impl ODE<f64, Vector2<f64>> for BrusselatorSystem {
 }
 
 fn main() {
-    // Analytical Jacobian run
-    let mut method_analytical = ImplicitRungeKutta::gauss_legendre_6()
+    // Analytical jacobian run
+    let mut method = ImplicitRungeKutta::gauss_legendre_6()
         .rtol(1e-6)
         .atol(1e-6)
         .h0(1e-3)
         .max_newton_iter(20);
 
     // Initial conditions and time span for Brusselator
-    let y0 = Vector2::new(1.5, 3.0); 
+    let y0 = Vector2::new(1.5, 3.0);
     let t0 = 0.0;
     let tf = 20.0;
 
@@ -59,10 +59,7 @@ fn main() {
     let problem_analytical = ODEProblem::new(ode_analytical, t0, tf, y0);
 
     // Solve the problem
-    match problem_analytical
-        .even(0.5)
-        .solve(&mut method_analytical)
-    {
+    match problem_analytical.even(0.5).solve(&mut method) {
         Ok(solution) => {
             println!("Solution successfully obtained.");
             println!("Status: {:?}", solution.status);
@@ -72,14 +69,15 @@ fn main() {
             for (t, y_val) in solution.iter() {
                 println!("t: {:.4}, y0: {:.4}, y1: {:.4}", t, y_val[0], y_val[1]);
             }
-            
+
             // Print statistics
             println!("\nStatistics:");
-            println!("  Function evaluations: {}", solution.evals);
-            println!("  Jacobian evaluations: {}", solution.jac_evals);
-            println!("  Total steps taken: {}", solution.steps);
-            println!("  Accepted steps: {}", solution.accepted_steps);
-            println!("  Rejected steps: {}", solution.rejected_steps);
+            println!("  Function evaluations: {}", solution.evals.function);
+            println!("  jacobian evaluations: {}", solution.evals.jacobian);
+            println!("  Newton iterations: {}", solution.evals.newton);
+            println!("  Total steps taken: {}", solution.steps.total());
+            println!("  Accepted steps: {}", solution.steps.accepted);
+            println!("  Rejected steps: {}", solution.steps.rejected);
         }
         Err(e) => {
             eprintln!("An error occurred: {:?}", e);

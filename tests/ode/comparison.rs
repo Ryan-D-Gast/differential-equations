@@ -1,14 +1,11 @@
 //! Compares the performance of solvers by the statistics, i.e. number of steps, function evaluations, etc.
 
 use super::systems;
-use differential_equations::{
-    methods::ExplicitRungeKutta,
-    ode::ODEProblem,
-};
+use differential_equations::{methods::ExplicitRungeKutta, ode::ODEProblem};
 use nalgebra::SVector;
+use quill::*;
 use std::fs;
 use systems::{BrusselatorSystem, Cr3bp, LorenzSystem, VanDerPolOscillator};
-use quill::*;
 
 struct TestStatistics<const N: usize> {
     name: String,
@@ -52,7 +49,7 @@ macro_rules! generate_error_vs_steps_lorenz {
 
                     statistics.push(TestStatistics {
                         name: stringify!($solver_name).to_string(),
-                        evals: sol.evals,
+                        evals: sol.evals.function,
                         error,
                     });
                 }
@@ -97,7 +94,7 @@ macro_rules! generate_error_vs_steps_vanderpol {
 
                     statistics.push(TestStatistics {
                         name: stringify!($solver_name).to_string(),
-                        evals: sol.evals,
+                        evals: sol.evals.function,
                         error,
                     });
                 }
@@ -143,7 +140,7 @@ macro_rules! generate_error_vs_steps_brusselator {
 
                     statistics.push(TestStatistics {
                         name: stringify!($solver_name).to_string(),
-                        evals: sol.evals,
+                        evals: sol.evals.function,
                         error,
                     });
                 }
@@ -197,7 +194,7 @@ macro_rules! generate_error_vs_steps_cr3bp {
 
                     statistics.push(TestStatistics {
                         name: stringify!($solver_name).to_string(),
-                        evals: sol.evals,
+                        evals: sol.evals.function,
                         error,
                     });
                 }
@@ -208,18 +205,22 @@ macro_rules! generate_error_vs_steps_cr3bp {
     };
 }
 
-fn create_error_vs_evals_plot<const N: usize>(statistics: &[TestStatistics<N>], problem_name: &str) {
+fn create_error_vs_evals_plot<const N: usize>(
+    statistics: &[TestStatistics<N>],
+    problem_name: &str,
+) {
     // Create directory for plots
     fs::create_dir_all("target/tests/ode/comparison/plots").expect("Failed to create directory");
-    
+
     // Get unique solver names
-    let mut solver_names: Vec<String> = statistics.iter()
+    let mut solver_names: Vec<String> = statistics
+        .iter()
         .map(|s| s.name.clone())
         .collect::<std::collections::HashSet<_>>()
         .into_iter()
         .collect();
     solver_names.sort();
-    
+
     // Define colors for different solvers
     let colors = [
         Color::Blue,
@@ -229,35 +230,38 @@ fn create_error_vs_evals_plot<const N: usize>(statistics: &[TestStatistics<N>], 
         Color::Brown,
         Color::Pink,
     ];
-    
+
     // Create series for each solver
     let mut series_list: [Option<Series<f64>>; 7] = [None, None, None, None, None, None, None];
-    
+
     // Create display names with extra spaces for better plot formatting
-    let display_names: Vec<String> = solver_names.iter()
+    let display_names: Vec<String> = solver_names
+        .iter()
         .map(|name| format!("{}   ", name))
         .collect();
 
     for (i, solver_name) in solver_names.iter().enumerate() {
-        let solver_data: Vec<_> = statistics.iter()
+        let solver_data: Vec<_> = statistics
+            .iter()
             .filter(|s| s.name == *solver_name)
             .collect();
-        
+
         // Sort by number of evaluations
-        let mut data_points: Vec<(f64, f64)> = solver_data.iter()
+        let mut data_points: Vec<(f64, f64)> = solver_data
+            .iter()
             .map(|s| (s.evals as f64, s.error))
             .collect();
         data_points.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-        
+
         let series = Series::builder()
             .name(&display_names[i])
             .color(colors[i % colors.len()].clone())
             .data(data_points)
             .build();
-        
+
         series_list[i] = Some(series);
     }
-    
+
     // Convert to actual array of Series
     let final_series_list: [Series<f64>; 6] = [
         series_list[0].take().unwrap(),
@@ -267,16 +271,20 @@ fn create_error_vs_evals_plot<const N: usize>(statistics: &[TestStatistics<N>], 
         series_list[4].take().unwrap(),
         series_list[5].take().unwrap(),
     ];
-    
+
     // Capitalize first letter for the title
-    let title_problem_name = format!("{}{}", 
+    let title_problem_name = format!(
+        "{}{}",
         problem_name.chars().next().unwrap().to_uppercase(),
         &problem_name[1..]
     );
-    
+
     // Create and save the plot
     Plot::builder()
-        .title(&format!("{} - Error vs Function Evaluations", title_problem_name))
+        .title(&format!(
+            "{} - Error vs Function Evaluations",
+            title_problem_name
+        ))
         .x_label("Number of Function Evaluations")
         .y_label("Error")
         .y_scale(Scale::Log)
@@ -285,7 +293,10 @@ fn create_error_vs_evals_plot<const N: usize>(statistics: &[TestStatistics<N>], 
         .legend(Legend::TopRightInside)
         .data(final_series_list)
         .build()
-        .to_svg(&format!("target/tests/ode/comparison/plots/error_vs_evals_{}.svg", problem_name))
+        .to_svg(&format!(
+            "target/tests/ode/comparison/plots/error_vs_evals_{}.svg",
+            problem_name
+        ))
         .expect("Failed to save plot as SVG");
 }
 

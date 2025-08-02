@@ -3,12 +3,12 @@
 use super::AdamsPredictorCorrector;
 use crate::{
     Error, Status,
-    alias::Evals,
     interpolate::{Interpolation, cubic_hermite_interpolate},
-    ode::{OrdinaryNumericalMethod, ODE},
+    methods::{Fixed, Ordinary},
+    ode::{ODE, OrdinaryNumericalMethod},
+    stats::Evals,
     traits::{CallBackData, Real, State},
-    utils::{validate_step_size_parameters},
-    methods::{Ordinary, Fixed},
+    utils::validate_step_size_parameters,
 };
 
 impl<T: Real, V: State<T>, D: CallBackData> AdamsPredictorCorrector<Ordinary, Fixed, T, V, D, 4> {
@@ -60,7 +60,9 @@ impl<T: Real, V: State<T>, D: CallBackData> AdamsPredictorCorrector<Ordinary, Fi
 }
 
 // Implement OrdinaryNumericalMethod Trait for APCF4
-impl<T: Real, V: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, V, D> for AdamsPredictorCorrector<Ordinary, Fixed, T, V, D, 4> {
+impl<T: Real, V: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, V, D>
+    for AdamsPredictorCorrector<Ordinary, Fixed, T, V, D, 4>
+{
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: ODE<T, V, D>,
@@ -98,14 +100,18 @@ impl<T: Real, V: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, V, D> for
                 &(self.y + self.k[1] * (self.h / two)),
                 &mut self.k[2],
             );
-            ode.diff(self.t + self.h, &(self.y + self.k[2] * self.h), &mut self.k[3]);
+            ode.diff(
+                self.t + self.h,
+                &(self.y + self.k[2] * self.h),
+                &mut self.k[3],
+            );
 
             // Update State
             self.y += (self.k[0] + self.k[1] * two + self.k[2] * two + self.k[3]) * (self.h / six);
             self.t += self.h;
             self.t_prev[i] = self.t;
             self.y_prev[i] = self.y;
-            evals.fcn += 4; // 4 evaluations per Runge-Kutta step
+            evals.function += 4; // 4 evaluations per Runge-Kutta step
 
             if i == 1 {
                 self.dydt = self.k[0];
@@ -153,7 +159,7 @@ impl<T: Real, V: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, V, D> for
         self.t += self.h;
         self.y = corrector;
         ode.diff(self.t, &self.y, &mut self.dydt);
-        evals.fcn += 6; // 6 evaluations for predictor-corrector step
+        evals.function += 6; // 6 evaluations for predictor-corrector step
 
         // Shift history: drop the oldest and add the new state at the end.
         self.t_prev.copy_within(1..4, 0);
@@ -196,7 +202,9 @@ impl<T: Real, V: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, V, D> for
     }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V> for AdamsPredictorCorrector<Ordinary, Fixed, T, V, D, 4> {
+impl<T: Real, V: State<T>, D: CallBackData> Interpolation<T, V>
+    for AdamsPredictorCorrector<Ordinary, Fixed, T, V, D, 4>
+{
     fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
         // Check if t is within bounds
         if t_interp < self.t_prev[0] || t_interp > self.t {

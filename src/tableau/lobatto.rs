@@ -1,9 +1,6 @@
 //! Lobatto Implicit Runge-Kutta Methods
 
-use crate::{
-    tableau::ButcherTableau,
-    traits::Real,
-};
+use crate::{tableau::ButcherTableau, traits::Real};
 
 impl<T: Real> ButcherTableau<T, 2> {
     /// Butcher Tableau for the Lobatto IIIC method of order 2.

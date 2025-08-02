@@ -47,7 +47,11 @@ impl ODE<f64, SIRState<f64>, PopulationMonitor> for SIRModel {
         dydt.recovered = self.gamma * i; // Recovered
     }
 
-    fn event(&self, _t: f64, y: &SIRState<f64>) -> ControlFlag<f64, SIRState<f64>, PopulationMonitor> {
+    fn event(
+        &self,
+        _t: f64,
+        y: &SIRState<f64>,
+    ) -> ControlFlag<f64, SIRState<f64>, PopulationMonitor> {
         let i = y.infected; // Infected
 
         // Check the PopulationMonitor
@@ -142,10 +146,10 @@ fn main() {
             }
 
             // Print the statistics
-            println!("Function evaluations: {}", solution.evals);
-            println!("Steps: {}", solution.steps);
-            println!("Rejected Steps: {}", solution.rejected_steps);
-            println!("Accepted Steps: {}", solution.accepted_steps);
+            println!("Function evaluations: {}", solution.evals.function);
+            println!("Steps: {}", solution.steps.total());
+            println!("Rejected Steps: {}", solution.steps.rejected);
+            println!("Accepted Steps: {}", solution.steps.accepted);
             println!("Solve time: {:?} seconds", solution.timer.elapsed());
 
             // Plot the solution using quill

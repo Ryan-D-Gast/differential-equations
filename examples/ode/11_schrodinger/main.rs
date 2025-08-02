@@ -47,7 +47,9 @@ impl ODE<f64, Complex<f64>> for ScalarSchrodingerEquation {
 
 fn main() {
     // Initialize the numerical method
-    let mut method = ExplicitRungeKutta::dopri5().rtol(1e-8).atol(1e-8);
+    let mut method = DiagonallyImplicitRungeKutta::kvaerno745()
+        .rtol(1e-8)
+        .atol(1e-8);
 
     // Define the system parameters
     let energy = 1.0; // Energy eigenvalue
@@ -100,10 +102,10 @@ fn main() {
             }
 
             println!("\nSimulation statistics:");
-            println!("Function evaluations: {}", solution.evals);
-            println!("Steps: {}", solution.steps);
-            println!("Rejected Steps: {}", solution.rejected_steps);
-            println!("Accepted Steps: {}", solution.accepted_steps);
+            println!("Function evaluations: {}", solution.evals.function);
+            println!("Steps: {}", solution.steps.total());
+            println!("Rejected Steps: {}", solution.steps.rejected);
+            println!("Accepted Steps: {}", solution.steps.accepted);
 
             // Verify that probability is conserved (should remain at 1.0)
             let final_psi = solution.y.last().unwrap();

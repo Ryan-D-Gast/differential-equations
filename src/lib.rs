@@ -14,12 +14,12 @@
 //!   - Fixed and adaptive step methods
 //!   - Event detection
 //!   - Customizable output control
-//! 
+//!
 //! - **[Delay Differential Equations (DDE)](crate::dde)**
 //!   - Constant delays
 //!   - State-dependent delays
 //!   - Same features as ODEs
-//! 
+//!
 //! - **[Stochastic Differential Equations (SDE)](crate::sde)**
 //!   - Drift-diffusion equations
 //!   - User controlled random number generation
@@ -144,7 +144,7 @@ pub mod utils;
 pub mod linalg;
 
 // Alias for primative types for readability
-pub mod alias;
+pub mod stats;
 
 // Derive Macros for Differential Equations
 pub mod derive {

@@ -1,6 +1,6 @@
 [package]
 name = "differential-equations"
-version = "0.3.4"
+version = "0.3.5"
 authors = ["Ryan D. Gast <ryan.d.gast@gmail.com>"]
 description = "A Rust library for solving differential equations."
 edition = "2024"
@@ -33,7 +33,7 @@ default = []
 polars = ["dep:polars"]
 
 [dependencies]
-nalgebra = "^0.33.2" # Linear algebra library for matrix operations
+nalgebra = "^0.34.0" # Linear algebra library for matrix operations
 num-complex = "^0.4.6" # Complex number support
 differential-equations-derive = "0.1.2" # Derives State trait on structs
 polars = { version = "^0.47.1", optional = true } # DataFrame integration for the solution

@@ -71,10 +71,10 @@ fn main() {
             }
 
             // Print summary statistics
-            println!("Function evaluations: {}", solution.evals);
-            println!("Solver steps: {}", solution.steps);
-            println!("Accepted steps: {}", solution.accepted_steps);
-            println!("Rejected steps: {}", solution.rejected_steps);
+            println!("Function evaluations: {}", solution.evals.function);
+            println!("Solver steps: {}", solution.steps.total());
+            println!("Accepted steps: {}", solution.steps.accepted);
+            println!("Rejected steps: {}", solution.steps.rejected);
             println!("Number of output points: {}", solution.t.len());
 
             // Plot the solution using quill
@@ -82,18 +82,11 @@ fn main() {
                 .title("Mackey-Glass Delay Differential Equation")
                 .x_label("Time (t)")
                 .y_label("y(t)")
-                .data([
-                    Series::builder()
-                        .name("Mackey-Glass Solution")
-                        .color("Blue")
-                        .data(
-                            solution
-                                .iter()
-                                .map(|(t, y)| (*t, *y))
-                                .collect::<Vec<_>>(),
-                        )
-                        .build(),
-                ])
+                .data([Series::builder()
+                    .name("Mackey-Glass Solution")
+                    .color("Blue")
+                    .data(solution.iter().map(|(t, y)| (*t, *y)).collect::<Vec<_>>())
+                    .build()])
                 .build()
                 .to_svg("examples/dde/01_mackey_glass/mackey_glass.svg")
                 .expect("Failed to save plot as SVG");
