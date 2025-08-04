@@ -12,6 +12,7 @@
 //! in science, finance, and mathematics.
 
 use differential_equations::prelude::*;
+use quill::*;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
 
@@ -53,7 +54,7 @@ fn main() {
     // --- Problem Configuration ---
     let t0 = 0.0;
     let tf = 5.0;
-    let y0 = 0.0;
+    let y0 = 1.0;
     let sigma = 0.5;
     let seed = 42;
     let sde = BrownianMotion::new(sigma, seed);
@@ -74,4 +75,19 @@ fn main() {
     println!("  Function evaluations: {}", solution.evals.function);
     println!("  Total steps: {}", solution.steps.total());
     println!("  Solution time: {:.6} seconds", solution.timer.elapsed());
+
+    // --- Generate Plot ---
+    Plot::builder()
+        .title("Standard Brownian Motion")
+        .x_label("Time (t)")
+        .y_label("Position (X)")
+        .y_range(Range::Manual { min: 0.0, max: 1.4 })
+        .data([Series::builder()
+            .name("Brownian Path")
+            .color("Blue")
+            .data(solution.iter().map(|(t, y)| (*t, *y)).collect::<Vec<_>>())
+            .build()])
+        .build()
+        .to_svg("examples/sde/01_brownian_motion/brownian_motion.svg")
+        .expect("Failed to save plot as SVG");
 }
