@@ -18,8 +18,6 @@
 
 use differential_equations::prelude::*;
 
-/// Define the ode for integration.
-/// In this example, we will integrate a simple function: y' = t.
 #[derive(Clone)]
 struct IntegrationODE;
 
@@ -30,18 +28,15 @@ impl ODE for IntegrationODE {
 }
 
 fn main() {
-    // Define the initial value problem.
+    // --- Problem Configuration ---
     let ode = IntegrationODE;
     let t0 = 0.0;
     let tf = 5.0;
     let y0 = 0.0;
-
     let problem = ODEProblem::new(ode, t0, tf, y0);
 
-    // Create a method (RKF in this case).
+    // --- Solve the ODE ---
     let mut method = ExplicitRungeKutta::rkf45();
-
-    // Solve the ODEProblem.
     let solution = problem.solve(&mut method).unwrap();
 
     // Print the results.

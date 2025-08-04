@@ -21,8 +21,6 @@ use differential_equations::prelude::*;
 use nalgebra::{Matrix2, SMatrix};
 use std::f64::consts::PI;
 
-/// Matrix Differential Equation ODE
-/// dM/dt = AM - MA (matrix commutator)
 struct MatrixODE {
     omega: f64,
 }
@@ -47,19 +45,19 @@ fn main() {
     // Create a method
     let mut method = ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-6);
 
-    // Initial condition: rotation matrix at 45 degrees
+    // --- Problem Configuration ---
     let angle = PI / 4.0;
-    let y0 = Matrix2::new(angle.cos(), -angle.sin(), angle.sin(), angle.cos());
-
-    // Solve from t=0 to t=10
+    let y0 = Matrix2::new(angle.cos(), -angle.sin(), angle.sin(), angle.cos()); // rotation matrix at 45 degrees
     let t0 = 0.0;
     let tf = 10.0;
     let ode = MatrixODE { omega: 0.1 };
 
-    // Set up and solve the ODEProblem
+    // --- Solve the ODE ---
     let matrix_problem = ODEProblem::new(ode, t0, tf, y0);
-    let result = matrix_problem.dense(5).solve(&mut method);
-
+    let result = matrix_problem
+        // Dense output means for every step, 5 evenly spaced points will be outputted
+        .dense(5)
+        .solve(&mut method);
     match result {
         Ok(solution) => {
             println!("Solution at selected points:");

@@ -22,42 +22,35 @@
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 
-/// Damped Harmonic Oscillator ODE
 struct DampedOscillator {
-    damping: f64,         // Damping coefficient
-    spring_constant: f64, // Spring constant
+    damping: f64,
+    spring_constant: f64,
 }
 
 impl ODE<f64, SVector<f64, 2>> for DampedOscillator {
     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
-        // Pure function, no state updates
         dydt[0] = y[1];
         dydt[1] = -self.damping * y[1] - self.spring_constant * y[0];
     }
 }
 
 fn main() {
-    // Initialize the method
-    let mut method = ExplicitRungeKutta::dopri5().rtol(1e-8).atol(1e-8);
-
-    // Define the ode parameters
+    // --- Problem Configuration ---
     let damping = 0.5;
     let spring_constant = 1.0;
     let ode = DampedOscillator {
         damping,
         spring_constant,
     };
-
-    // Define the initial conditions
-    let y0 = vector![1.0, 0.0]; // Initial position and velocity
+    let y0 = vector![1.0, 0.0];
     let t0 = 0.0;
     let tf = 20.0;
-
-    // Create the ODEProblem
     let damped_oscillator_problem = ODEProblem::new(ode, t0, tf, y0);
 
-    // Solve the ODEProblem
+    // --- Solve the ODE ---
+    let mut method = ExplicitRungeKutta::dopri5().rtol(1e-8).atol(1e-8);
     match damped_oscillator_problem
+        // Detect zero-crossing of the component of index 0 (x=position) at the value 0.0 from both positive and negative directions
         .crossing(0, 0.0, CrossingDirection::Both)
         .solve(&mut method)
     {

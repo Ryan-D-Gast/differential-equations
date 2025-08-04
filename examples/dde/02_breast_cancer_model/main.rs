@@ -20,7 +20,6 @@ use differential_equations::prelude::*;
 use nalgebra::Vector3;
 use quill::*;
 
-// Define the Breast Cancer Model DDE struct
 struct BreastCancerModel {
     p0: f64,
     q0: f64,
@@ -36,9 +35,7 @@ struct BreastCancerModel {
     tau: f64,
 }
 
-// Implement the DDE trait for the 3-component state vector
 impl DDE<1, f64, Vector3<f64>> for BreastCancerModel {
-    // Define the differential equations
     fn diff(&self, _t: f64, u: &Vector3<f64>, ud: &[Vector3<f64>; 1], dudt: &mut Vector3<f64>) {
         let hist3 = ud[0][2];
 
@@ -59,7 +56,8 @@ impl DDE<1, f64, Vector3<f64>> for BreastCancerModel {
 
 fn main() {
     // --- Solver Configuration ---
-    let mut solver = ExplicitRungeKutta::rkv766e().max_delay(1.0); // DDE version of the rkv766e solver
+    let mut solver = ExplicitRungeKutta::rkv766e()
+        .max_delay(1.0);
 
     // --- Problem Definition ---
     let tau = 1.0;
@@ -77,16 +75,10 @@ fn main() {
         beta1: 1.0,
         tau,
     };
-
-    // Define initial conditions and time span
     let t0 = 0.0;
-    let tf = 10.0; // Adjust time span as needed
+    let tf = 10.0;
     let y0 = Vector3::new(1.0, 1.0, 1.0);
-
-    // Define the initial history function phi(t) for t <= t0
     let phi = |_t: f64| -> Vector3<f64> { y0 };
-
-    // Create the DDEProblem
     let problem = DDEProblem::new(dde, t0, tf, y0, phi);
 
     // --- Solve the Problem ---
@@ -98,24 +90,22 @@ fn main() {
         Ok(solution) => {
             println!("Solver finished with status: {:?}", solution.status);
 
-            // Print summary statistics
+            // Print statistics
             println!("Function evaluations: {}", solution.evals.function);
             println!("Solver steps: {}", solution.steps.total());
             println!("Accepted steps: {}", solution.steps.accepted);
             println!("Rejected steps: {}", solution.steps.rejected);
             println!("Number of output points: {}", solution.t.len());
 
-            // Print every 5th point to not clutter standard out
-            for (i, (t, u)) in solution.iter().enumerate() {
-                if i % 5 == 0 {
-                    println!(
-                        "t: {:.4}, u1: {:.4}, u2: {:.4}, u3: {:.4}",
-                        t, u[0], u[1], u[2]
-                    );
-                }
+            // Print the solution
+            for (t, u) in solution.iter() {
+                println!(
+                    "t: {:.4}, u1: {:.4}, u2: {:.4}, u3: {:.4}",
+                    t, u[0], u[1], u[2]
+                );
             }
 
-            // Plot the solution using quill
+            // Plotting
             Plot::builder()
                 .title("Breast Cancer Model with Delay")
                 .x_label("Time (t)")

@@ -15,14 +15,13 @@ use differential_equations::prelude::*;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
 
-/// Struct representing Brownian motion with volatility parameter σ
 struct BrownianMotion {
-    sigma: f64,              // Volatility parameter
-    rng: rand::rngs::StdRng, // Random number generator
+    sigma: f64,
+    rng: rand::rngs::StdRng,
 }
 
 impl BrownianMotion {
-    /// Create a new BrownianMotion with specified volatility and random seed
+    /// Create a new BrownianMotion with specified volatility and seed for reproducibility
     fn new(sigma: f64, seed: u64) -> Self {
         Self {
             sigma,
@@ -51,30 +50,24 @@ impl SDE for BrownianMotion {
 }
 
 fn main() {
-    // Parameters
+    // --- Problem Configuration ---
     let t0 = 0.0;
     let tf = 5.0;
-    let dt = 0.01;
-    let y0 = 0.0; // Initial position at origin
-    let sigma = 0.5; // Volatility parameter
-    let seed = 42; // Seed for reproducibility
-
-    // Create SDE system with seed for reproducibility
+    let y0 = 0.0;
+    let sigma = 0.5;
+    let seed = 42;
     let sde = BrownianMotion::new(sigma, seed);
 
-    // Create solver
+    // --- Solve the SDE ---
+    let dt = 0.01;
     let mut solver = ExplicitRungeKutta::euler(dt);
+    let mut problem = SDEProblem::new(sde, t0, tf, y0);
+    let solution = problem.solve(&mut solver).unwrap();
 
     println!("Simulating Brownian motion with σ = {}", sigma);
     println!("Time interval: [{}, {}], Step size: {}", t0, tf, dt);
     println!("Initial position: {}", y0);
     println!("Random seed: {}", seed);
-
-    // Create and solve the problem
-    let mut problem = SDEProblem::new(sde, t0, tf, y0);
-    let solution = problem.solve(&mut solver).unwrap();
-
-    // Print solution statistics
     println!("Simulation completed:");
     println!("  Number of time steps: {}", solution.t.len());
     println!("  Final position: {}", solution.y.last().unwrap());

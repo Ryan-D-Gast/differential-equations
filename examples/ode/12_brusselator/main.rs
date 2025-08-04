@@ -16,7 +16,6 @@
 use differential_equations::prelude::*;
 use nalgebra::{DMatrix, Vector2};
 
-// Define the ODE system: Brusselator
 struct BrusselatorSystem;
 
 impl ODE<f64, Vector2<f64>> for BrusselatorSystem {
@@ -40,31 +39,24 @@ impl ODE<f64, Vector2<f64>> for BrusselatorSystem {
 }
 
 fn main() {
-    // Analytical jacobian run
+    // --- Problem Configuration ---
+    let y0 = Vector2::new(1.5, 3.0);
+    let t0 = 0.0;
+    let tf = 20.0;
+    let ode = BrusselatorSystem;
+    let problem = ODEProblem::new(ode, t0, tf, y0);
+
+    // --- Solve the ODE ---
     let mut method = ImplicitRungeKutta::gauss_legendre_6()
         .rtol(1e-6)
         .atol(1e-6)
         .h0(1e-3)
-        .max_newton_iter(20);
-
-    // Initial conditions and time span for Brusselator
-    let y0 = Vector2::new(1.5, 3.0);
-    let t0 = 0.0;
-    let tf = 20.0;
-
-    // Define the ODE system
-    let ode_analytical = BrusselatorSystem;
-
-    // Create the ODE problem
-    let problem_analytical = ODEProblem::new(ode_analytical, t0, tf, y0);
-
-    // Solve the problem
-    match problem_analytical.even(0.5).solve(&mut method) {
+        .max_newton_iter(20); // Set maximum Newton iterations, only for implicit methods
+    match problem.even(0.5).solve(&mut method) {
         Ok(solution) => {
+            // Print the solution
             println!("Solution successfully obtained.");
             println!("Status: {:?}", solution.status);
-
-            // Print a few points from the solution
             println!("Solution points (t, y0, y1):");
             for (t, y_val) in solution.iter() {
                 println!("t: {:.4}, y0: {:.4}, y1: {:.4}", t, y_val[0], y_val[1]);

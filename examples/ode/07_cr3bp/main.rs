@@ -25,33 +25,24 @@ use differential_equations::derive::State;
 use differential_equations::prelude::*;
 use nalgebra::{Vector3, vector};
 
-/// Circular Restricted Three Body Problem (CR3BP)
 pub struct Cr3bp {
-    pub mu: f64, // CR3BP mass ratio
+    pub mu: f64,
 }
 
 impl ODE<f64, StateVector<f64>> for Cr3bp {
-    /// Differential equation for the initial value Circular Restricted Three
-    /// Body Problem (CR3BP).
-    /// All parameters are in non-dimensional form.
     fn diff(&self, _t: f64, sv: &StateVector<f64>, dsdt: &mut StateVector<f64>) {
-        // Mass ratio
-        let mu = self.mu;
+        // Distances to the primary and secondary bodies
+        let r13 = ((sv.x + self.mu).powi(2) + sv.y.powi(2) + sv.z.powi(2)).sqrt();
+        let r23 = ((sv.x - 1.0 + self.mu).powi(2) + sv.y.powi(2) + sv.z.powi(2)).sqrt();
 
-        // Distance to primary body
-        let r13 = ((sv.x + mu).powi(2) + sv.y.powi(2) + sv.z.powi(2)).sqrt();
-        // Distance to secondary body
-        let r23 = ((sv.x - 1.0 + mu).powi(2) + sv.y.powi(2) + sv.z.powi(2)).sqrt();
-
-        // Computing three-body dynamics
         dsdt.x = sv.vx;
         dsdt.y = sv.vy;
         dsdt.z = sv.vz;
         dsdt.vx = sv.x + 2.0 * sv.vy
-            - (1.0 - mu) * (sv.x + mu) / r13.powi(3)
-            - mu * (sv.x - 1.0 + mu) / r23.powi(3);
-        dsdt.vy = sv.y - 2.0 * sv.vx - (1.0 - mu) * sv.y / r13.powi(3) - mu * sv.y / r23.powi(3);
-        dsdt.vz = -(1.0 - mu) * sv.z / r13.powi(3) - mu * sv.z / r23.powi(3);
+            - (1.0 - self.mu) * (sv.x + self.mu) / r13.powi(3)
+            - self.mu * (sv.x - 1.0 + self.mu) / r23.powi(3);
+        dsdt.vy = sv.y - 2.0 * sv.vx - (1.0 - self.mu) * sv.y / r13.powi(3) - self.mu * sv.y / r23.powi(3);
+        dsdt.vz = -(1.0 - self.mu) * sv.z / r13.powi(3) - self.mu * sv.z / r23.powi(3);
     }
 }
 
@@ -66,15 +57,12 @@ pub struct StateVector<T> {
 }
 
 fn main() {
-    // Initialize method with relative and absolute tolerances
-    let mut method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12); // DOP853 is one of the most accurate and efficient solvers and highly favored for Orbital Mechanics
-
-    // Initialialize the CR3BP ode
+    // --- Problem Configuration ---
     let ode = Cr3bp {
-        mu: 0.012150585609624,
-    }; // Earth-Moon ode
-
-    // Initial conditions
+        mu: 0.012150585609624, // Earth-Moon mass ratio
+    };
+    
+    // Near rectilinear orbit around the Moon system
     let sv = StateVector {
         x: 1.021881345465263,
         y: 0.0,
@@ -85,17 +73,18 @@ fn main() {
     };
     let t0 = 0.0;
     let tf = 3.0 * 1.509263667286943; // Period of the orbit (sv(t0) ~= sv(tf / 3.0))
-
     let cr3bp_problem = ODEProblem::new(ode, t0, tf, sv);
 
+    // Defines a function to extract the state vector into a Vector3 for hyperplane crossing detection
     fn extractor(sv: &StateVector<f64>) -> Vector3<f64> {
         vector![sv.x, sv.y, sv.z]
     }
 
-    // Solve the ode with even output at interval dt: 1.0
+    let mut method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
     match cr3bp_problem
+        // Detect crossing of the hyperplane centered at x = 1.0, y = 0.0, z = 0.0  facing the direction of the norm of the vector [0.5, 0.5, 0.0]
         .hyperplane_crossing(vector![1.0, 0.0, 0.0], vector![0.5, 0.5, 0.0], extractor, CrossingDirection::Both)
-        .solve(&mut method) // Solve the ode and return the solution
+        .solve(&mut method)
     {
         Ok(solution) => {
             // Print the solution

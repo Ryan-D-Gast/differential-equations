@@ -46,7 +46,7 @@ fn main() {
     let (tf, yf) = solution.last().unwrap();
     println!("Solution: ({:?}, {:?})", tf, yf);
 
-    // Plot the solution using quill
+    // Plotting
     Plot::builder()
         .title("Harmonic Oscillator Solution")
         .x_label("Time (t)")

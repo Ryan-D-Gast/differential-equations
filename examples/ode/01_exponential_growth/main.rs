@@ -20,39 +20,43 @@
 use differential_equations::prelude::*;
 use quill::*;
 
-// Define the ode
+// Differential equations are defined using structs that implement the ODE trait
 struct ExponentialGrowth {
     k: f64,
 }
 
-// Implement the ODE trait for the ExponentialGrowth ode
-// Notice instead of ODE<f64, 1, 1> which matches the defaults for the generic parameters, we can just use ODE
 impl ODE for ExponentialGrowth {
+    // Define the differential equation dy/dt = k*y
     fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
         *dydt = self.k * y;
     }
 }
 
 fn main() {
-    // Initialize the method
+    // Numerical methods have default settings, which can be customized via chaining methods
+    // Here we use the DOP853 method, which is a high-order Runge-Kutta method
     let mut method = ExplicitRungeKutta::dop853()
-        .rtol(1e-12) // Set the relative tolerance, Default is 1e-3 for DOP853
-        .atol(1e-12); // Set the absolute tolerance, Default is 1e-6 for DOP853
+        // Set the relative and absolute tolerances 
+        .rtol(1e-12)
+        .atol(1e-12);
 
-    // Initialize the initial value problem
+    // Define the ODE problem with initial conditions, this is known as a "initial value problem"
     let y0 = 1.0;
     let t0 = 0.0;
     let tf = 10.0;
     let ode = ExponentialGrowth { k: 1.0 };
     let exponential_growth_problem = ODEProblem::new(ode, t0, tf, y0);
 
-    // Solve the initial value problem
+    // ODE Problems are solved by chaining the solve method with the numerical method
     let solution = match exponential_growth_problem.solve(&mut method) {
-        Ok(solution) => solution,
+        Ok(solution) => {
+            // The solution struct contains the output (t,y) points, statistics, and other metadata
+            solution
+        },
         Err(e) => panic!("Error: {:?}", e),
     };
 
-    // Print the solution using the fields of the Solution struct, which is returned by the solve method
+    // Print the solution using the fields of the Solution struct
     println!(
         "Solution: ({:?}, {:?})",
         solution.t.last().unwrap(),
@@ -64,7 +68,7 @@ fn main() {
     println!("Accepted Steps: {}", solution.steps.accepted);
     println!("Status: {:?}", solution.status);
 
-    // Plot the solution using quill
+    // Plot the solution using the quill library
     Plot::builder()
         .title("Exponential Growth ODE Solution")
         .x_label("Time (t)")

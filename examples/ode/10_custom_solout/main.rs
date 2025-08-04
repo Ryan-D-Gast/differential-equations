@@ -25,15 +25,13 @@ use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 use std::f64::consts::PI;
 
-/// Pendulum ode
 struct Pendulum {
-    g: f64, // Gravitational constant
-    l: f64, // Length of pendulum
+    g: f64,
+    l: f64,
 }
 
 impl ODE<f64, SVector<f64, 2>> for Pendulum {
     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
-        // y[0] = theta (angle), y[1] = omega (angular velocity)
         dydt[0] = y[1];
         dydt[1] = -self.g / self.l * y[0].sin();
     }
@@ -151,43 +149,35 @@ impl Solout<f64, SVector<f64, 2>> for PendulumSolout {
 }
 
 fn main() {
-    // Create pendulum ode
+    // --- Problem Configuration ---
     let g = 9.81;
     let l = 1.0;
     let pendulum = Pendulum { g, l };
-
-    // Initial conditions: angle = 30 degrees, angular velocity = 0
     let theta0 = 30.0 * PI / 180.0; // convert to radians
     let y0 = vector![theta0, 0.0];
-
-    // Integration parameters
     let t0 = 0.0;
     let tf = 10.0;
-
-    // Create custom solout
-    let mut solout = PendulumSolout::new(g, l, 0.1).with_boost(0.05);
-
-    // Create solver and solve the ODEProblem
-    // Note DOP853 is so accurate the energy will remain almost constant. Other solvers will show some energy change due to lower accuracy.
-    // This is why DOP853 is used a majority of the time for high accuracy simulations.
-    let mut solver = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8);
     let problem = ODEProblem::new(pendulum, t0, tf, y0);
 
-    let result = problem.solout(&mut solout).solve(&mut solver).unwrap();
+    // --- Solout and Solver Configuration ---
+    let mut solout = PendulumSolout::new(g, l, 0.1).with_boost(0.05);
+    let mut solver = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8);
 
-    // Display results
+    // --- Solve the ODE with custom solout ---
+    let result = problem
+        // The custom solout is applied to the problem here
+        .solout(&mut solout)
+        .solve(&mut solver)
+        .unwrap();
+
+    // Print the results
     println!("Pendulum simulation results:");
     println!("Number of output points: {}", result.t.len());
     println!("Number of oscillations: {}", solout.oscillation_count / 2); // Divide by 2 because we count both crossings
-
     println!("\n Time   | Angle (rad) | Angular Vel | Energy");
     println!("------------------------------------------------");
     for (i, (t, y)) in result.iter().enumerate() {
-        let energy = if i < solout.energy_values.len() {
-            solout.energy_values[i]
-        } else {
-            0.0 // For t0/tf points that might not have energy calculated
-        };
+        let energy = solout.energy_values[i];
 
         println!(
             "{:6.3}  | {:11.6} | {:11.6} | {:11.6}",

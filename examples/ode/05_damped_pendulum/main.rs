@@ -24,30 +24,27 @@
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 
-/// Damped Pendulum Model
-///
-/// This struct defines the parameters for the damped pendulum model.
 struct DampedPendulumModel {
-    g: f64, // Acceleration due to gravity (m/s^2)
-    l: f64, // Length of the pendulum (m)
-    b: f64, // Damping coefficient (kg/s)
-    m: f64, // Mass of the pendulum bob (kg)
+    g: f64,
+    l: f64,
+    b: f64,
+    m: f64,
 }
 
 impl ODE<f64, SVector<f64, 2>> for DampedPendulumModel {
     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
-        let theta = y[0]; // Angle (radians)
-        let omega = y[1]; // Angular velocity (radians/s)
+        let theta = y[0];
+        let omega = y[1];
 
-        dydt[0] = omega; // dtheta/dt = omega
-        dydt[1] = -(self.b / self.m) * omega - (self.g / self.l) * theta.sin(); // domega/dt = -(b/m)*omega - (g/l)*sin(theta)
+        dydt[0] = omega;
+        dydt[1] = -(self.b / self.m) * omega - (self.g / self.l) * theta.sin();
     }
 
     fn event(&self, _t: f64, y: &SVector<f64, 2>) -> ControlFlag<f64, SVector<f64, 2>> {
         let theta = y[0];
         let omega = y[1];
 
-        // Terminate the simulation when the pendulum is close to equilibrium (theta and omega are close to 0)
+        // If the pendulum is close to equilibrium (theta and omega are near zero), terminate the simulation
         if theta.abs() < 0.01 && omega.abs() < 0.01 {
             ControlFlag::Terminate("Pendulum reached equilibrium".to_string())
         } else {
@@ -57,35 +54,27 @@ impl ODE<f64, SVector<f64, 2>> for DampedPendulumModel {
 }
 
 fn main() {
-    // Initialize method with relative and absolute tolerances
-    let mut method = ExplicitRungeKutta::rkf45();
-
-    // Initial conditions
+    // --- Problem Configuration ---
     let initial_angle = 1.0; // Initial angle (radians)
     let initial_velocity = 0.0; // Initial angular velocity (radians/s)
-
     let y0 = vector![initial_angle, initial_velocity];
     let t0 = 0.0;
     let tf = 100.0;
 
-    // Pendulum parameters
     let g = 9.81; // Acceleration due to gravity (m/s^2)
     let l = 1.0; // Length of the pendulum (m)
     let b = 0.2; // Damping coefficient (kg/s)
     let m = 1.0; // Mass of the pendulum bob (kg)
-
     let ode = DampedPendulumModel { g, l, b, m };
     let pendulum_problem = ODEProblem::new(ode, t0, tf, y0);
 
-    // t-out points
+    // --- Numerically Solve the ODE ---
+    let mut method = ExplicitRungeKutta::rkf45();
     let t_out = vec![0.0, 1.0, 3.0, 4.5, 6.9, 10.0];
-
-    // Solve the ode with even output at interval dt: 0.1
     match pendulum_problem.t_eval(t_out).solve(&mut method) {
         Ok(solution) => {
-            // Check if the solver stopped due to the event command
+            // Check if the solver stopped early due to the event condition
             if let Status::Interrupted(ref reason) = solution.status {
-                // State the reason why the solver stopped
                 println!("NumericalMethod stopped: {:?}", reason);
             }
 

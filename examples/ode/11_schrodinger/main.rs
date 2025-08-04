@@ -26,45 +26,35 @@
 use differential_equations::prelude::*;
 use num_complex::Complex;
 
-/// Time-dependent Schrödinger equation for a single quantum state
-/// This models a single energy eigenstate with energy E
 struct ScalarSchrodingerEquation {
     energy: f64, // Energy of the quantum state
 }
 
-// Implementation for a scalar complex state
+// Complex numbers can be used as state variables in ODEs
 impl ODE<f64, Complex<f64>> for ScalarSchrodingerEquation {
     fn diff(&self, _t: f64, psi: &Complex<f64>, dpsi_dt: &mut Complex<f64>) {
         // Schrödinger equation: i * hbar * d/dt |psi⟩ = H |psi⟩
         // With H|psi⟩ = E|psi⟩ for an energy eigenstate:
         // d/dt |psi⟩ = -i * E |psi⟩ / hbar
         // Using hbar = 1 for simplicity: d/dt |psi⟩ = -i * E |psi⟩
-
         let i = Complex::new(0.0, 1.0);
         *dpsi_dt = -i * self.energy * (*psi);
     }
 }
 
 fn main() {
-    // Initialize the numerical method
+    // --- Problem Configuration ---
+    let energy = 1.0; // Energy eigenvalue
+    let ode = ScalarSchrodingerEquation { energy };
+    let psi0 = Complex::new(1.0, 0.0); // Initial state with amplitude 1 and phase 0
+    let t0 = 0.0;
+    let tf = 10.0; // Simulate for 10 time units
+    let schrodinger_problem = ODEProblem::new(ode, t0, tf, psi0);
+
+    // --- Solve the ODE ---
     let mut method = DiagonallyImplicitRungeKutta::kvaerno745()
         .rtol(1e-8)
         .atol(1e-8);
-
-    // Define the system parameters
-    let energy = 1.0; // Energy eigenvalue
-    let ode = ScalarSchrodingerEquation { energy };
-
-    // Define initial condition - starting with a simple phase
-    let psi0 = Complex::new(1.0, 0.0); // Initial state with amplitude 1 and phase 0
-
-    let t0 = 0.0;
-    let tf = 10.0; // Simulate for 10 time units
-
-    // Create the ODEProblem
-    let schrodinger_problem = ODEProblem::new(ode, t0, tf, psi0);
-
-    // Solve the ODEProblem
     match schrodinger_problem.even(0.5).solve(&mut method) {
         Ok(solution) => {
             println!("Solution:");

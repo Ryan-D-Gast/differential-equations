@@ -18,16 +18,14 @@ use differential_equations::prelude::*;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
 
-/// Struct representing Ornstein-Uhlenbeck process
 struct OrnsteinUhlenbeck {
-    theta: f64, // Mean reversion speed
-    mu: f64,    // Long-term mean
-    sigma: f64, // Volatility
+    theta: f64,
+    mu: f64,
+    sigma: f64,
     rng: rand::rngs::StdRng,
 }
 
 impl OrnsteinUhlenbeck {
-    /// Create a new Ornstein-Uhlenbeck process with specified parameters and seed
     fn new(theta: f64, mu: f64, sigma: f64, seed: u64) -> Self {
         Self {
             theta,
@@ -38,19 +36,15 @@ impl OrnsteinUhlenbeck {
     }
 }
 
-/// Implementation of the SDE trait for Ornstein-Uhlenbeck process
 impl SDE for OrnsteinUhlenbeck {
-    /// Mean-reverting drift term: θ(μ-X)
     fn drift(&self, _t: f64, y: &f64, dydt: &mut f64) {
         *dydt = self.theta * (self.mu - *y);
     }
 
-    /// Constant volatility: σ
     fn diffusion(&self, _t: f64, _y: &f64, dydw: &mut f64) {
         *dydw = self.sigma;
     }
 
-    /// Generate noise for the process
     fn noise(&mut self, dt: f64, dw: &mut f64) {
         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
         *dw = normal.sample(&mut self.rng);
@@ -58,41 +52,42 @@ impl SDE for OrnsteinUhlenbeck {
 }
 
 fn main() {
-    // Parameters
-    let t0 = 0.0;
-    let tf = 10.0;
-    let dt = 0.01;
-    let y0 = 5.0; // Initial value, far from mean
+    // --- Problem Configuration ---
+
+    // Ornstein-Uhlenbeck process parameters
     let theta = 0.5; // Mean reversion speed
     let mu = 1.0; // Long-term mean
     let sigma = 0.3; // Volatility parameter
     let seed = 42; // Seed for reproducibility
+
+    // Time settings
+    let t0 = 0.0;
+    let tf = 10.0;
+    let y0 = 5.0; // Initial value, far from mean
+
+    // Create the Ornstein-Uhlenbeck SDE problem
+    let sde = OrnsteinUhlenbeck::new(theta, mu, sigma, seed);
+    let mut problem = SDEProblem::new(sde, t0, tf, y0);
+
+    // --- Solve the SDE ---
+    let dt = 0.01;
+    let mut solver = ExplicitRungeKutta::rk4(dt);
+    let solution = problem.even(1.0).solve(&mut solver).unwrap();
+
+    // --- Print the results ---
+    let final_value = *solution.y.last().unwrap();
 
     println!("Simulating Ornstein-Uhlenbeck process with parameters:");
     println!("θ = {}, μ = {}, σ = {}", theta, mu, sigma);
     println!("Time interval: [{}, {}], Step size: {}", t0, tf, dt);
     println!("Initial value: {}", y0);
     println!("Random seed: {}", seed);
-
-    // Create SDE system
-    let sde = OrnsteinUhlenbeck::new(theta, mu, sigma, seed);
-
-    // Compare both solvers
-    println!("\nComparing solvers:");
-
-    // Solve with Runge Kutta 4
-    let mut rk_solver = ExplicitRungeKutta::rk4(dt);
-    let mut rk_problem = SDEProblem::new(sde, t0, tf, y0);
-    let rk_solution = rk_problem.even(1.0).solve(&mut rk_solver).unwrap();
-    println!("\nResults:");
-    for (t, y) in rk_solution.iter() {
-        println!("  t = {:.2}, y = {:.6}", t, y);
-    }
-    println!("  Function evaluations: {}", rk_solution.evals.function);
-    println!(
-        "  Solution time: {:.6} seconds",
-        rk_solution.timer.elapsed()
-    );
+    println!("Simulation completed:");
+    println!("  Number of time steps: {}", solution.t.len());
+    println!("  Final value: {:.6}", final_value);
+    println!("  Function evaluations: {}", solution.evals.function);
+    println!("  Total steps: {}", solution.steps.total());
+    println!("  Solution time: {:.6} seconds", solution.timer.elapsed());
 
     // Expected mean and variance (analytical solution for long-time behavior)
     // For OU process, mean → μ and variance → σ²/(2θ) as t → ∞
@@ -104,4 +99,16 @@ fn main() {
         "  Expected standard deviation: {:.6}",
         expected_variance.sqrt()
     );
+
+    println!("\nIntermediate values:");
+    let intervals = [2.5, 5.0, 7.5];
+    for &time in &intervals {
+        let idx = solution.t.iter().position(|&t| t >= time).unwrap_or(0);
+        let value = solution.y[idx];
+        println!(
+            "  t = {:.2}: y = {:.6}",
+            solution.t[idx],
+            value
+        );
+    }
 }

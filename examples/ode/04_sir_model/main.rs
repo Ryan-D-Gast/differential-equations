@@ -38,13 +38,13 @@ struct SIRModel {
 //    that contains the state variables of the SIR model. This struct implements the State trait, which allows us to use it with the ODE solver.
 impl ODE<f64, SIRState<f64>, PopulationMonitor> for SIRModel {
     fn diff(&self, _t: f64, y: &SIRState<f64>, dydt: &mut SIRState<f64>) {
-        let s = y.susceptible; // Susceptible
-        let i = y.infected; // Infected
-        let _r = y.recovered; // Recovered
+        let s = y.susceptible;
+        let i = y.infected;
+        let _r = y.recovered;
 
-        dydt.susceptible = -self.beta * s * i / self.population; // Susceptible
-        dydt.infected = self.beta * s * i / self.population - self.gamma * i; // Infected
-        dydt.recovered = self.gamma * i; // Recovered
+        dydt.susceptible = -self.beta * s * i / self.population;
+        dydt.infected = self.beta * s * i / self.population - self.gamma * i;
+        dydt.recovered = self.gamma * i;
     }
 
     fn event(
@@ -52,9 +52,7 @@ impl ODE<f64, SIRState<f64>, PopulationMonitor> for SIRModel {
         _t: f64,
         y: &SIRState<f64>,
     ) -> ControlFlag<f64, SIRState<f64>, PopulationMonitor> {
-        let i = y.infected; // Infected
-
-        // Check the PopulationMonitor
+        let i = y.infected;
 
         // Terminate the simulation when the number of infected individuals falls below 1
         if i < 1.0 {
@@ -97,25 +95,20 @@ impl SIRState<f64> {
 }
 
 fn main() {
-    // method with relative and absolute tolerances
+    // v4 refers to an adaptive step size 4th order Adams-Bashforth-Moulton method.
     let mut method = AdamsPredictorCorrector::v4().tol(1e-6);
 
-    // Initial State
+    // Define the SIR model parameters and initial conditions
     let y0 = SIRState {
         susceptible: 990.0,
         infected: 10.0,
         recovered: 0.0,
     };
-    let population = y0.population(); // Total population
-
-    // Simulation time
     let t0 = 0.0;
     let tf = 100.0;
-
-    // SIR model parameters
+    let population = y0.population();
     let beta = 1.42; // Transmission rate
     let gamma = 0.14; // Recovery rate
-
     let ode = SIRModel {
         beta,
         gamma,
@@ -123,15 +116,14 @@ fn main() {
     };
     let sir_problem = ODEProblem::new(ode, t0, tf, y0);
 
-    // Solve the ode with even output at interval dt: 1.0
+    // Solve the SIR model problem with even output points every 1.0 time unit
     match sir_problem
-        .even(1.0)  // sets t-out at interval dt: 1.0
-        .solve(&mut method) // Solve the ode and return the solution
+        .even(1.0)
+        .solve(&mut method)
     {
         Ok(solution) => {
-            // Check if the solver stopped due to the event command
+            // Check for event termination
             if let Status::Interrupted(ref reason) = solution.status {
-                // State the reason why the solver stopped
                 println!("solver stopped: {}", reason);
             }
 
@@ -152,7 +144,7 @@ fn main() {
             println!("Accepted Steps: {}", solution.steps.accepted);
             println!("Solve time: {:?} seconds", solution.timer.elapsed());
 
-            // Plot the solution using quill
+            // Plotting
             Plot::builder()
                 .title("SIR Epidemiological Model")
                 .x_label("Time (days)")

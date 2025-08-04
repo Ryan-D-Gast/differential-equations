@@ -28,6 +28,9 @@ impl ODE for LogisticGrowth {
         *dydt = self.k * y * (1.0 - y / self.m);
     }
 
+    // Define the event function to stop the solver when y reaches 90% of carrying capacity
+    // This is useful for models where we want to stop at a certain threshold because we are
+    // searching for when or where the solution reaches a specific value.
     fn event(&self, _t: f64, y: &f64) -> ControlFlag {
         if *y > 0.9 * self.m {
             ControlFlag::Terminate("Reached 90% of carrying capacity".to_string())
@@ -44,9 +47,12 @@ fn main() {
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
     let logistic_growth_problem = ODEProblem::new(ode, t0, tf, y0);
+
+    // Between a problem and the calling of solve, output settings can be adjusted.
+    // Here we set the output interval to 2.0 seconds via the even method.
     match logistic_growth_problem
-        .even(0.1)  // sets t-out at interval dt: 2.0
-        .solve(&mut method) // Solve the ode and return the solution
+        .even(2.0)
+        .solve(&mut method)
     {
         Ok(solution) => {
             // Check if the solver stopped due to the event command
@@ -55,7 +61,7 @@ fn main() {
                 println!("Numerical Method stopped: {}", reason);
             }
 
-            // Print the solution
+            // The output points, (t, y), can be iterated over
             println!("Solution:");
             for (t, y) in solution.iter() {
                 println!("({:.4}, {:.4})", t, y);
@@ -67,7 +73,7 @@ fn main() {
             println!("Rejected Steps: {}", solution.steps.rejected);
             println!("Accepted Steps: {}", solution.steps.accepted);
 
-            // Plot the solution using quill
+            // Plotting
             Plot::builder()
                 .title("Logistic Growth Model")
                 .x_label("Time (t)")
@@ -89,10 +95,11 @@ fn main() {
                         .name("Termination Asymptote")
                         .color("Red")
                         .data(
+                            // Create a horizontal line at y = 9.0
                             solution
                                 .t
                                 .iter()
-                                .map(|t| (*t, 9.0)) // m = 10.0
+                                .map(|t| (*t, 9.0))
                                 .collect::<Vec<_>>(),
                         )
                         .line(Line::Dashed)
