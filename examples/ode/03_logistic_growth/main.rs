@@ -16,7 +16,7 @@
 //! - Accessing solution statistics like step counts and evaluations
 
 use differential_equations::prelude::*;
-use quill::*;
+use quill::prelude::*;
 
 struct LogisticGrowth {
     k: f64,

@@ -15,7 +15,7 @@
 //! This equation was originally proposed as a model for the production of blood cells.
 
 use differential_equations::prelude::*;
-use quill::*;
+use quill::prelude::*;
 
 struct MackeyGlass {
     beta: f64,

@@ -21,7 +21,7 @@
 
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
-use quill::*;
+use quill::prelude::*;
 
 struct HarmonicOscillator {
     k: f32,

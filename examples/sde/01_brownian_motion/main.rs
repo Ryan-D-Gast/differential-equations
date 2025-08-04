@@ -12,7 +12,7 @@
 //! in science, finance, and mathematics.
 
 use differential_equations::prelude::*;
-use quill::*;
+use quill::prelude::*;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
 

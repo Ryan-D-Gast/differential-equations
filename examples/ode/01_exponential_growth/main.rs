@@ -18,7 +18,7 @@
 //! - Accessing solution statistics like step counts and evaluations
 
 use differential_equations::prelude::*;
-use quill::*;
+use quill::prelude::*;
 
 // Differential equations are defined using structs that implement the ODE trait
 struct ExponentialGrowth {

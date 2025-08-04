@@ -18,7 +18,7 @@
 
 use differential_equations::prelude::*;
 use nalgebra::Vector3;
-use quill::*;
+use quill::prelude::*;
 
 struct BreastCancerModel {
     p0: f64,

@@ -23,7 +23,7 @@
 //! - Working with solution status information
 
 use differential_equations::prelude::*;
-use quill::*;
+use quill::prelude::*;
 
 /// SIR (Susceptible, Infected, Recovered) Model
 struct SIRModel {

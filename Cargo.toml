@@ -39,7 +39,7 @@ differential-equations-derive = "0.1.2" # Derives State trait on structs
 polars = { version = "^0.47.1", optional = true } # DataFrame integration for the solution
 
 [dev-dependencies]
-quill = "0.1.6" # Plotting for examples
+quill = "0.2.0" # Plotting for examples
 criterion = { version = "0.5.1", features = ["html_reports"] } # Benchmarking library
 rand = "0.9.0" # Random number generation for SDE examples
 rand_distr = "0.5.1" # Random distributions for SDE examples

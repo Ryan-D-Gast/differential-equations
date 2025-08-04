@@ -3,7 +3,7 @@
 use super::systems;
 use differential_equations::{methods::ExplicitRungeKutta, ode::ODEProblem};
 use nalgebra::SVector;
-use quill::*;
+use quill::prelude::*;
 use std::fs;
 use systems::{BrusselatorSystem, Cr3bp, LorenzSystem, VanDerPolOscillator};
 
