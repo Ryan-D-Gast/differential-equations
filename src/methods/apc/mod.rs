@@ -9,7 +9,7 @@ use crate::{
 };
 use std::marker::PhantomData;
 
-pub struct AdamsPredictorCorrector<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize> {
+pub struct AdamsPredictorCorrector<E, F, T: Real, Y: State<T>, D: CallBackData, const S: usize> {
     // Initial Step Size
     pub h0: T,
 
@@ -18,30 +18,30 @@ pub struct AdamsPredictorCorrector<E, F, T: Real, V: State<T>, D: CallBackData, 
 
     // Current State
     t: T,
-    y: V,
-    dydt: V,
+    y: Y,
+    dydt: Y,
 
     // Final Time
     tf: T,
 
     // Previous States
     t_prev: [T; S],
-    y_prev: [V; S],
+    y_prev: [Y; S],
 
     // Previous step states
     t_old: T,
-    y_old: V,
-    dydt_old: V,
+    y_old: Y,
+    dydt_old: Y,
 
     // Predictor Correct Derivatives
-    k: [V; S],
+    k: [Y; S],
 
     // Statistic Tracking
     evals: usize,
     steps: usize,
 
     // Status
-    status: Status<T, V, D>,
+    status: Status<T, Y, D>,
 
     // Settings
     pub tol: T,
@@ -59,22 +59,22 @@ pub struct AdamsPredictorCorrector<E, F, T: Real, V: State<T>, D: CallBackData, 
     equation: PhantomData<E>,
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize> Default
-    for AdamsPredictorCorrector<E, F, T, V, D, S>
+impl<E, F, T: Real, Y: State<T>, D: CallBackData, const S: usize> Default
+    for AdamsPredictorCorrector<E, F, T, Y, D, S>
 {
     fn default() -> Self {
         Self {
             h0: T::zero(),
             h: T::zero(),
             t: T::zero(),
-            y: V::zeros(),
-            dydt: V::zeros(),
+            y: Y::zeros(),
+            dydt: Y::zeros(),
             t_prev: [T::zero(); S],
-            y_prev: [V::zeros(); S],
+            y_prev: [Y::zeros(); S],
             t_old: T::zero(),
-            y_old: V::zeros(),
-            dydt_old: V::zeros(),
-            k: [V::zeros(); S],
+            y_old: Y::zeros(),
+            dydt_old: Y::zeros(),
+            k: [Y::zeros(); S],
             tf: T::zero(),
             evals: 0,
             steps: 0,
@@ -90,8 +90,8 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize> Default
     }
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const S: usize>
-    AdamsPredictorCorrector<E, F, T, V, D, S>
+impl<E, F, T: Real, Y: State<T>, D: CallBackData, const S: usize>
+    AdamsPredictorCorrector<E, F, T, Y, D, S>
 {
     /// Set the tolerance for error control
     pub fn tol(mut self, rtol: T) -> Self {

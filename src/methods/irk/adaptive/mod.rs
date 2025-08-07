@@ -12,8 +12,8 @@ use crate::{
 // Macro for adaptive step constructors
 macro_rules! impl_irk_adaptive_step_constructor {
     ($method_name:ident, $order_val:expr, $s_val:expr, $m_val:expr, $doc:expr) => {
-        impl<E, T: Real, V: State<T>, D: CallBackData>
-            ImplicitRungeKutta<E, Adaptive, T, V, D, $order_val, $s_val, $m_val>
+        impl<E, T: Real, Y: State<T>, D: CallBackData>
+            ImplicitRungeKutta<E, Adaptive, T, Y, D, $order_val, $s_val, $m_val>
         {
             #[doc = $doc]
             pub fn $method_name() -> Self {

@@ -24,10 +24,10 @@ use nalgebra::DMatrix;
 /// Note that the event and jacobian functions are optional and can be left out when implementing.
 ///
 #[allow(unused_variables)]
-pub trait ODE<T = f64, V = f64, D = String>
+pub trait ODE<T = f64, Y = f64, D = String>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
 {
     /// Differential Equation dydt = f(t, y)
@@ -49,7 +49,7 @@ where
     /// * `y`    - Dependent variable point.
     /// * `dydt` - Derivative point.
     ///
-    fn diff(&self, t: T, y: &V, dydt: &mut V);
+    fn diff(&self, t: T, y: &Y, dydt: &mut Y);
 
     /// Event function to detect significant conditions during integration.
     ///
@@ -64,7 +64,7 @@ where
     /// # Returns
     /// * `ControlFlag` - Command to continue or stop solver.
     ///
-    fn event(&self, t: T, y: &V) -> ControlFlag<T, V, D> {
+    fn event(&self, t: T, y: &Y) -> ControlFlag<T, Y, D> {
         ControlFlag::Continue
     }
 
@@ -83,12 +83,12 @@ where
     /// * `y` - Dependent variable vector.
     /// * `j` - jacobian matrix. This matrix should be pre-sized by the caller to `dim x dim` where `dim = y.len()`.
     ///
-    fn jacobian(&self, t: T, y: &V, j: &mut DMatrix<T>) {
+    fn jacobian(&self, t: T, y: &Y, j: &mut DMatrix<T>) {
         // Default implementation using forward finite differences
         let dim = y.len();
         let mut y_perturbed = *y;
-        let mut f_perturbed = V::zeros();
-        let mut f_origin = V::zeros();
+        let mut f_perturbed = Y::zeros();
+        let mut f_origin = Y::zeros();
 
         // Compute the unperturbed derivative
         self.diff(t, y, &mut f_origin);

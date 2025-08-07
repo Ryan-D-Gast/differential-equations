@@ -12,10 +12,10 @@ use crate::{
 /// where `y` is the state vector, `t` is time, and `y(t - tau_i)` represents
 /// the state at some past time (a delay).
 ///
-pub trait DDE<const L: usize, T = f64, V = f64, D = String>
+pub trait DDE<const L: usize, T = f64, Y = f64, D = String>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
 {
     /// Computes the time derivative `dy/dt` of the system state.
@@ -33,7 +33,7 @@ where
     /// # Panics
     /// The history function call can panic if the request time is greater than or equal to the current time `t`.
     ///
-    fn diff(&self, t: T, y: &V, yd: &[V; L], dydt: &mut V);
+    fn diff(&self, t: T, y: &Y, yd: &[Y; L], dydt: &mut Y);
 
     /// Computes the desired lagging values, tau, for the system.
     ///
@@ -55,7 +55,7 @@ where
     /// * `y`: A reference to the current state vector `y(t)`.
     /// * `lags`: A mutable reference to an array of lags, where the computed lags should be stored.
     ///
-    fn lags(&self, t: T, y: &V, lags: &mut [T; L]);
+    fn lags(&self, t: T, y: &Y, lags: &mut [T; L]);
 
     /// Optional event function to detect specific conditions and potentially terminate integration.
     ///
@@ -78,7 +78,7 @@ where
     ///
     /// The default implementation always returns [`ControlFlag::Continue`], meaning no events
     /// are detected unless this method is overridden.
-    fn event(&self, _t: T, _y: &V) -> ControlFlag<T, V, D> {
+    fn event(&self, _t: T, _y: &Y) -> ControlFlag<T, Y, D> {
         ControlFlag::Continue
     }
 }

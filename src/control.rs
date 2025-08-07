@@ -8,16 +8,16 @@ use crate::traits::{CallBackData, Real, State};
 /// Used by both event functions and solout functions to control solver execution.
 ///
 #[derive(Debug, Clone)]
-pub enum ControlFlag<T = f64, V = f64, D = String>
+pub enum ControlFlag<T = f64, Y = f64, D = String>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
 {
     /// Continue to next step
     Continue,
     /// Modify State and continue to next step
-    ModifyState(T, V),
+    ModifyState(T, Y),
     /// Terminate solver with the given reason/data
     Terminate(D),
 }

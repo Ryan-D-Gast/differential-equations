@@ -11,12 +11,12 @@ use crate::{
     utils::validate_step_size_parameters,
 };
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    StochasticNumericalMethod<T, V, D> for ExplicitRungeKutta<Stochastic, Fixed, T, V, D, O, S, I>
+impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    StochasticNumericalMethod<T, Y, D> for ExplicitRungeKutta<Stochastic, Fixed, T, Y, D, O, S, I>
 {
-    fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
+    fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: SDE<T, V, D>,
+        F: SDE<T, Y, D>,
     {
         let mut evals = Evals::new();
 
@@ -29,7 +29,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         }
 
         // Check bounds
-        match validate_step_size_parameters::<T, V, D>(self.h0, self.h_min, self.h_max, t0, tf) {
+        match validate_step_size_parameters::<T, Y, D>(self.h0, self.h_min, self.h_max, t0, tf) {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
@@ -43,7 +43,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // Calculate initial drift and diffusion
         sde.drift(self.t, &self.y, &mut self.dydt);
-        let mut diffusion = V::zeros();
+        let mut diffusion = Y::zeros();
         sde.diffusion(self.t, &self.y, &mut diffusion);
         evals.function += 2; // 1 for drift + 1 for diffusion
 
@@ -58,9 +58,9 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         Ok(evals)
     }
 
-    fn step<F>(&mut self, sde: &mut F) -> Result<Evals, Error<T, V>>
+    fn step<F>(&mut self, sde: &mut F) -> Result<Evals, Error<T, Y>>
     where
-        F: SDE<T, V, D>,
+        F: SDE<T, Y, D>,
     {
         let mut evals = Evals::new();
 
@@ -98,18 +98,18 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         evals.function += self.stages - 1; // We already have k[0]
 
         // Compute deterministic part using RK weights
-        let mut drift_increment = V::zeros();
+        let mut drift_increment = Y::zeros();
         for i in 0..self.stages {
             drift_increment += self.k[i] * (self.b[i] * self.h);
         }
 
         // Compute diffusion term at current state
-        let mut diffusion = V::zeros();
+        let mut diffusion = Y::zeros();
         sde.diffusion(self.t, &self.y, &mut diffusion);
         evals.function += 1;
 
         // Generate noise increments
-        let mut dw = V::zeros();
+        let mut dw = Y::zeros();
         sde.noise(self.h, &mut dw);
 
         // Compute stochastic increment (Euler-Maruyama style)
@@ -139,13 +139,13 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
     fn t(&self) -> T {
         self.t
     }
-    fn y(&self) -> &V {
+    fn y(&self) -> &Y {
         &self.y
     }
     fn t_prev(&self) -> T {
         self.t_prev
     }
-    fn y_prev(&self) -> &V {
+    fn y_prev(&self) -> &Y {
         &self.y_prev
     }
     fn h(&self) -> T {
@@ -154,18 +154,18 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
     fn set_h(&mut self, h: T) {
         self.h = h;
     }
-    fn status(&self) -> &Status<T, V, D> {
+    fn status(&self) -> &Status<T, Y, D> {
         &self.status
     }
-    fn set_status(&mut self, status: Status<T, V, D>) {
+    fn set_status(&mut self, status: Status<T, Y, D>) {
         self.status = status;
     }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    Interpolation<T, V> for ExplicitRungeKutta<Stochastic, Fixed, T, V, D, O, S, I>
+impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Interpolation<T, Y> for ExplicitRungeKutta<Stochastic, Fixed, T, Y, D, O, S, I>
 {
-    fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
+    fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         // Check if t is within bounds
         if t_interp < self.t_prev || t_interp > self.t {
             return Err(Error::OutOfBounds {

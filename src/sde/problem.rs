@@ -91,29 +91,29 @@ use crate::{
 /// * `seed(u64)` - Set a specific random seed for reproducible simulations
 ///
 #[derive(Clone, Debug)]
-pub struct SDEProblem<T, V, D, F>
+pub struct SDEProblem<T, Y, D, F>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: SDE<T, V, D>,
+    F: SDE<T, Y, D>,
 {
     // SDE Problem Fields
     pub sde: F, // SDE containing the Stochastic Differential Equation and Optional Terminate Function
     pub t0: T,  // Initial Time
     pub tf: T,  // Final Time
-    pub y0: V,  // Initial State Vector
+    pub y0: Y,  // Initial State Vector
 
     // Phantom Data for Users event output
     _event_output_type: std::marker::PhantomData<D>,
 }
 
-impl<T, V, D, F> SDEProblem<T, V, D, F>
+impl<T, Y, D, F> SDEProblem<T, Y, D, F>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: SDE<T, V, D>,
+    F: SDE<T, Y, D>,
 {
     /// Create a new Stochastic Differential Equation Problem
     ///
@@ -126,7 +126,7 @@ where
     /// # Returns
     /// * SDE Problem ready to be solved
     ///
-    pub fn new(sde: F, t0: T, tf: T, y0: V) -> Self {
+    pub fn new(sde: F, t0: T, tf: T, y0: Y) -> Self {
         SDEProblem {
             sde,
             t0,
@@ -139,11 +139,11 @@ where
     /// Solve the SDE Problem using a default solout, e.g. outputting solutions at calculated steps
     ///
     /// # Returns
-    /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered
+    /// * `Result<Solution<T, Y, D>, Error<T, Y>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered
     ///
-    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
+    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, Y, D>, Error<T, Y>>
     where
-        S: StochasticNumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: StochasticNumericalMethod<T, Y, D> + Interpolation<T, Y>,
     {
         let mut default_solout = DefaultSolout::new(); // Default solout implementation
         solve_sde(
@@ -161,10 +161,10 @@ where
     /// # Returns
     /// * SDE Problem with the provided solout function ready for .solve() method
     ///
-    pub fn solout<'a, O: Solout<T, V, D>>(
+    pub fn solout<'a, O: Solout<T, Y, D>>(
         &'a mut self,
         solout: &'a mut O,
-    ) -> SDEProblemMutRefSoloutPair<'a, T, V, D, F, O> {
+    ) -> SDEProblemMutRefSoloutPair<'a, T, Y, D, F, O> {
         SDEProblemMutRefSoloutPair::new(self, solout)
     }
 
@@ -177,7 +177,7 @@ where
     /// # Returns
     /// * SDE Problem with Even Solout function ready for .solve() method
     ///
-    pub fn even(&mut self, dt: T) -> SDEProblemSoloutPair<'_, T, V, D, F, EvenSolout<T>> {
+    pub fn even(&mut self, dt: T) -> SDEProblemSoloutPair<'_, T, Y, D, F, EvenSolout<T>> {
         let even_solout = EvenSolout::new(dt, self.t0, self.tf); // Even solout implementation
         SDEProblemSoloutPair::new(self, even_solout)
     }
@@ -191,7 +191,7 @@ where
     /// # Returns
     /// * SDE Problem with Dense Output function ready for .solve() method
     ///
-    pub fn dense(&mut self, n: usize) -> SDEProblemSoloutPair<'_, T, V, D, F, DenseSolout> {
+    pub fn dense(&mut self, n: usize) -> SDEProblemSoloutPair<'_, T, Y, D, F, DenseSolout> {
         let dense_solout = DenseSolout::new(n); // Dense solout implementation
         SDEProblemSoloutPair::new(self, dense_solout)
     }
@@ -208,7 +208,7 @@ where
     pub fn t_eval(
         &mut self,
         points: Vec<T>,
-    ) -> SDEProblemSoloutPair<'_, T, V, D, F, TEvalSolout<T>> {
+    ) -> SDEProblemSoloutPair<'_, T, Y, D, F, TEvalSolout<T>> {
         let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf); // Custom time evaluation solout implementation
         SDEProblemSoloutPair::new(self, t_eval_solout)
     }
@@ -229,7 +229,7 @@ where
         component_idx: usize,
         threshold: T,
         direction: CrossingDirection,
-    ) -> SDEProblemSoloutPair<'_, T, V, D, F, CrossingSolout<T>> {
+    ) -> SDEProblemSoloutPair<'_, T, Y, D, F, CrossingSolout<T>> {
         let crossing_solout =
             CrossingSolout::new(component_idx, threshold).with_direction(direction); // Crossing solout implementation
         SDEProblemSoloutPair::new(self, crossing_solout)
@@ -247,15 +247,15 @@ where
     /// # Returns
     /// * SDE Problem with HyperplaneCrossingSolout function ready for .solve() method
     ///
-    pub fn hyperplane_crossing<V1>(
+    pub fn hyperplane_crossing<Y1>(
         &mut self,
-        point: V1,
-        normal: V1,
-        extractor: fn(&V) -> V1,
+        point: Y1,
+        normal: Y1,
+        extractor: fn(&Y) -> Y1,
         direction: CrossingDirection,
-    ) -> SDEProblemSoloutPair<'_, T, V, D, F, HyperplaneCrossingSolout<T, V1, V>>
+    ) -> SDEProblemSoloutPair<'_, T, Y, D, F, HyperplaneCrossingSolout<T, Y1, Y>>
     where
-        V1: State<T>,
+        Y1: State<T>,
     {
         let solout =
             HyperplaneCrossingSolout::new(point, normal, extractor).with_direction(direction);
@@ -265,25 +265,25 @@ where
 }
 
 /// SDEProblemMutRefSoloutPair serves as an intermediate between the SDEProblem struct and a custom solout provided by the user
-pub struct SDEProblemMutRefSoloutPair<'a, T, V, D, F, O>
+pub struct SDEProblemMutRefSoloutPair<'a, T, Y, D, F, O>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: SDE<T, V, D>,
-    O: Solout<T, V, D>,
+    F: SDE<T, Y, D>,
+    O: Solout<T, Y, D>,
 {
-    pub sde_problem: &'a mut SDEProblem<T, V, D, F>, // Reference to the SDE Problem struct
+    pub sde_problem: &'a mut SDEProblem<T, Y, D, F>, // Reference to the SDE Problem struct
     pub solout: &'a mut O,                           // Reference to the solout implementation
 }
 
-impl<'a, T, V, D, F, O> SDEProblemMutRefSoloutPair<'a, T, V, D, F, O>
+impl<'a, T, Y, D, F, O> SDEProblemMutRefSoloutPair<'a, T, Y, D, F, O>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: SDE<T, V, D>,
-    O: Solout<T, V, D>,
+    F: SDE<T, Y, D>,
+    O: Solout<T, Y, D>,
 {
     /// Create a new SDEProblemMutRefSoloutPair
     ///
@@ -291,7 +291,7 @@ where
     /// * `sde_problem` - Reference to the SDE Problem struct
     /// * `solout` - Reference to the solout implementation
     ///
-    pub fn new(sde_problem: &'a mut SDEProblem<T, V, D, F>, solout: &'a mut O) -> Self {
+    pub fn new(sde_problem: &'a mut SDEProblem<T, Y, D, F>, solout: &'a mut O) -> Self {
         SDEProblemMutRefSoloutPair {
             sde_problem,
             solout,
@@ -304,11 +304,11 @@ where
     /// * `solver` - StochasticNumericalMethod to use for solving the SDE Problem
     ///
     /// # Returns
-    /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered
+    /// * `Result<Solution<T, Y, D>, Error<T, Y>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered
     ///
-    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
+    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, Y, D>, Error<T, Y>>
     where
-        S: StochasticNumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: StochasticNumericalMethod<T, Y, D> + Interpolation<T, Y>,
     {
         solve_sde(
             solver,
@@ -323,25 +323,25 @@ where
 
 /// SDEProblemSoloutPair serves as an intermediate between the SDEProblem struct and solve_sde when a predefined solout is used
 #[derive(Debug)]
-pub struct SDEProblemSoloutPair<'a, T, V, D, F, O>
+pub struct SDEProblemSoloutPair<'a, T, Y, D, F, O>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: SDE<T, V, D>,
-    O: Solout<T, V, D>,
+    F: SDE<T, Y, D>,
+    O: Solout<T, Y, D>,
 {
-    pub sde_problem: &'a mut SDEProblem<T, V, D, F>, // Reference to the SDE Problem struct
+    pub sde_problem: &'a mut SDEProblem<T, Y, D, F>, // Reference to the SDE Problem struct
     pub solout: O,                                   // Solout implementation
 }
 
-impl<'a, T, V, D, F, O> SDEProblemSoloutPair<'a, T, V, D, F, O>
+impl<'a, T, Y, D, F, O> SDEProblemSoloutPair<'a, T, Y, D, F, O>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: SDE<T, V, D>,
-    O: Solout<T, V, D>,
+    F: SDE<T, Y, D>,
+    O: Solout<T, Y, D>,
 {
     /// Create a new SDEProblemSoloutPair
     ///
@@ -349,7 +349,7 @@ where
     /// * `sde_problem` - Reference to the SDE Problem struct
     /// * `solout` - Solout implementation
     ///
-    pub fn new(sde_problem: &'a mut SDEProblem<T, V, D, F>, solout: O) -> Self {
+    pub fn new(sde_problem: &'a mut SDEProblem<T, Y, D, F>, solout: O) -> Self {
         SDEProblemSoloutPair {
             sde_problem,
             solout,
@@ -362,11 +362,11 @@ where
     /// * `solver` - StochasticNumericalMethod to use for solving the SDE Problem
     ///
     /// # Returns
-    /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered
+    /// * `Result<Solution<T, Y, D>, Error<T, Y>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered
     ///
-    pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
+    pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, Y, D>, Error<T, Y>>
     where
-        S: StochasticNumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: StochasticNumericalMethod<T, Y, D> + Interpolation<T, Y>,
     {
         solve_sde(
             solver,

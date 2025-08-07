@@ -146,18 +146,18 @@ Solver Statistics:
   Rejected steps: 4
 ```
 
-## Understanding Generics: `T` and `V`
+## Understanding Generics: `T` and `Y`
 
-The `ODE` trait and related components like `ODEProblem` are defined with generics `<T, V,...>`:
+The `ODE` trait and related components like `ODEProblem` are defined with generics `<T, Y,...>`:
 
 *   `T`: Represents the floating-point type used for calculations (e.g., `f64` or `f32`). This type applies to time and the components of the state vector.
-*   `V`: Represents the type of the state vector. This can be:
+*   `Y`: Represents the type of the state vector. This can be:
     *   A simple float (`f64` or `f32`) for a single ODE.
     *   An `nalgebra::SVector<T, N>` for a system of N ODEs, where `N` is the number of equations.
     *   A custom struct (deriving the `State` trait) with fields of type `T`.
 
-By default, if generics are omitted when implementing the `ODE` trait, they are assumed to be `f64` for both `T` and `V`. This implies a single ODE where both the state and time are `f64`.
+By default, if generics are omitted when implementing the `ODE` trait, they are assumed to be `f64` for both `T` and `Y`. This implies a single ODE where both the state and time are `f64`.
 
-In the `LogisticGrowth` example, `ODE<f64, SVector<f64, 1>>` explicitly defines `T` as `f64` and `V` as an `SVector` containing one `f64` element. While `f64` could have been used directly for `V` in this single-equation case, using `SVector<f64, 1>` provides clarity and is consistent with how systems of multiple ODEs (e.g., `SVector<f64, N>`) would be defined.
+In the `LogisticGrowth` example, `ODE<f64, SVector<f64, 1>>` explicitly defines `T` as `f64` and `Y` as an `SVector` containing one `f64` element. While `f64` could have been used directly for `Y` in this single-equation case, using `SVector<f64, 1>` provides clarity and is consistent with how systems of multiple ODEs (e.g., `SVector<f64, N>`) would be defined.
 
 This generic setup provides flexibility, allowing you to define simple or complex systems of differential equations tailored to your specific numerical precision and state representation needs.

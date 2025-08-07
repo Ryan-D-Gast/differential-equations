@@ -6,10 +6,10 @@ use crate::{
 };
 
 /// Interpolation trait implemented by Solvers to allow Solout to access interpolated values between t_prev and t_curr
-pub trait Interpolation<T, V>
+pub trait Interpolation<T, Y>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
 {
     /// Interpolate between previous and current step
     ///
@@ -23,7 +23,7 @@ where
     /// # Returns
     /// * Interpolated State Vector.
     ///
-    fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>>;
+    fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>>;
 }
 
 /// Cubic Hermite Interpolation
@@ -40,15 +40,15 @@ where
 /// # Returns
 /// * Interpolated State Vector.
 ///
-pub fn cubic_hermite_interpolate<T: Real, V: State<T>>(
+pub fn cubic_hermite_interpolate<T: Real, Y: State<T>>(
     t0: T,
     t1: T,
-    y0: &V,
-    y1: &V,
-    k0: &V,
-    k1: &V,
+    y0: &Y,
+    y1: &Y,
+    k0: &Y,
+    k1: &Y,
     t: T,
-) -> V {
+) -> Y {
     let two = T::from_f64(2.0).unwrap();
     let three = T::from_f64(3.0).unwrap();
     let h = t1 - t0;

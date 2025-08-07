@@ -24,7 +24,7 @@ use std::marker::PhantomData;
 /// * `E`: Equation type (e.g., Ordinary, Delay, Stochastic)
 /// * `F`: Family type (e.g., Adaptive, Fixed)
 /// * `T`: Real number type (f32, f64)
-/// * `V`: State vector type
+/// * `Y`: State vector type
 /// * `D`: Callback data type
 /// * `const O`: Order of the method
 /// * `const S`: Number of stages in the method
@@ -33,7 +33,7 @@ pub struct DiagonallyImplicitRungeKutta<
     E,
     F,
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
     const O: usize,
     const S: usize,
@@ -47,18 +47,18 @@ pub struct DiagonallyImplicitRungeKutta<
 
     // Current State
     t: T,
-    y: V,
-    dydt: V,
+    y: Y,
+    dydt: Y,
 
     // Previous State
     h_prev: T,
     t_prev: T,
-    y_prev: V,
-    dydt_prev: V,
+    y_prev: Y,
+    dydt_prev: Y,
 
     // Stage values - DIRK solves one stage at a time
-    k: [V; I],  // Stage derivatives
-    z_stage: V, // Current stage solution being solved
+    k: [Y; I],  // Stage derivatives
+    z_stage: Y, // Current stage solution being solved
 
     // Constants from Butcher tableau
     c: [T; S],          // Stage time coefficients
@@ -100,7 +100,7 @@ pub struct DiagonallyImplicitRungeKutta<
     jacobian_age: usize,
 
     // Status
-    status: Status<T, V, D>,
+    status: Status<T, Y, D>,
 
     // Method info
     order: usize,
@@ -113,8 +113,8 @@ pub struct DiagonallyImplicitRungeKutta<
     equation: PhantomData<E>,
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    Default for DiagonallyImplicitRungeKutta<E, F, T, V, D, O, S, I>
+impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Default for DiagonallyImplicitRungeKutta<E, F, T, Y, D, O, S, I>
 {
     fn default() -> Self {
         let dim = 1; // Will be resized during init
@@ -122,14 +122,14 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
             h0: T::zero(),
             h: T::zero(),
             t: T::zero(),
-            y: V::zeros(),
-            dydt: V::zeros(),
+            y: Y::zeros(),
+            dydt: Y::zeros(),
             h_prev: T::zero(),
             t_prev: T::zero(),
-            y_prev: V::zeros(),
-            dydt_prev: V::zeros(),
-            k: [V::zeros(); I],
-            z_stage: V::zeros(),
+            y_prev: Y::zeros(),
+            dydt_prev: Y::zeros(),
+            k: [Y::zeros(); I],
+            z_stage: Y::zeros(),
             c: [T::zero(); S],
             a: [[T::zero(); S]; S],
             b: [T::zero(); S],
@@ -165,8 +165,8 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
 }
 
 // Builder methods for configuration
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    DiagonallyImplicitRungeKutta<E, F, T, V, D, O, S, I>
+impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    DiagonallyImplicitRungeKutta<E, F, T, Y, D, O, S, I>
 {
     /// Set the relative tolerance for error control
     pub fn rtol(mut self, rtol: T) -> Self {

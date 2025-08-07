@@ -73,23 +73,23 @@ pub struct EvenSolout<T: Real> {
     last_output_t: Option<T>,
 }
 
-impl<T, V, D> Solout<T, V, D> for EvenSolout<T>
+impl<T, Y, D> Solout<T, Y, D> for EvenSolout<T>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
 {
     fn solout<I>(
         &mut self,
         t_curr: T,
         t_prev: T,
-        y_curr: &V,
-        y_prev: &V,
+        y_curr: &Y,
+        y_prev: &Y,
         interpolator: &mut I,
-        solution: &mut Solution<T, V, D>,
-    ) -> ControlFlag<T, V, D>
+        solution: &mut Solution<T, Y, D>,
+    ) -> ControlFlag<T, Y, D>
     where
-        I: Interpolation<T, V>,
+        I: Interpolation<T, Y>,
     {
         // Determine the alignment offset (remainder when divided by dt)
         let offset = self.t0 % self.dt;

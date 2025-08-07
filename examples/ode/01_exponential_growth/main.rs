@@ -36,7 +36,7 @@ fn main() {
     // Numerical methods have default settings, which can be customized via chaining methods
     // Here we use the DOP853 method, which is a high-order Runge-Kutta method
     let mut method = ExplicitRungeKutta::dop853()
-        // Set the relative and absolute tolerances 
+        // Set the relative and absolute tolerances
         .rtol(1e-12)
         .atol(1e-12);
 
@@ -52,7 +52,7 @@ fn main() {
         Ok(solution) => {
             // The solution struct contains the output (t,y) points, statistics, and other metadata
             solution
-        },
+        }
         Err(e) => panic!("Error: {:?}", e),
     };
 

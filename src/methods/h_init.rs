@@ -39,11 +39,11 @@ impl InitialStepSize<Ordinary> {
     /// # Returns
     ///
     /// The estimated initial step size
-    pub fn compute<T, F, V, D>(
+    pub fn compute<T, F, Y, D>(
         ode: &F,
         t0: T,
         tf: T,
-        y0: &V,
+        y0: &Y,
         order: usize,
         rtol: T,
         atol: T,
@@ -53,16 +53,16 @@ impl InitialStepSize<Ordinary> {
     ) -> T
     where
         T: Real,
-        V: State<T>,
-        F: ODE<T, V, D>,
+        Y: State<T>,
+        F: ODE<T, Y, D>,
         D: CallBackData,
     {
         // Direction of integration
         let posneg = (tf - t0).signum();
 
         // Storage for derivatives
-        let mut f0 = V::zeros();
-        let mut f1 = V::zeros(); // Compute initial derivative f(t0, y0)
+        let mut f0 = Y::zeros();
+        let mut f1 = Y::zeros(); // Compute initial derivative f(t0, y0)
         ode.diff(t0, y0, &mut f0);
         evals.function += 1;
 
@@ -153,25 +153,25 @@ impl InitialStepSize<Delay> {
     /// # Returns
     ///
     /// The estimated initial step size
-    pub fn compute<const L: usize, T, V, D, F>(
+    pub fn compute<const L: usize, T, Y, D, F>(
         dde: &F,
         t0: T,
         tf: T,
-        y0: &V,
+        y0: &Y,
         order: usize,
         rtol: T,
         atol: T,
         h_min: T,
         h_max: T,
-        phi: &impl Fn(T) -> V,
-        f0: &V,
+        phi: &impl Fn(T) -> Y,
+        f0: &Y,
         evals: &mut Evals,
     ) -> T
     where
         T: Real,
-        V: State<T>,
+        Y: State<T>,
         D: CallBackData,
-        F: DDE<L, T, V, D>,
+        F: DDE<L, T, Y, D>,
     {
         let posneg_init = (tf - t0).signum();
         let n_dim = y0.len();
@@ -206,10 +206,10 @@ impl InitialStepSize<Delay> {
 
         let mut y1 = *y0 + *f0 * h;
         let mut t1 = t0 + h;
-        let mut f1 = V::zeros();
+        let mut f1 = Y::zeros();
 
         let mut current_lags_init = [T::zero(); L];
-        let mut yd_init = [V::zeros(); L];
+        let mut yd_init = [Y::zeros(); L];
 
         // Ensure initial step's delayed points are valid
         if L > 0 {

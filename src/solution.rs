@@ -22,20 +22,20 @@ use polars::prelude::*;
 /// * `timer`          - Timer for tracking solution time.
 ///
 #[derive(Debug, Clone)]
-pub struct Solution<T, V, D>
+pub struct Solution<T, Y, D>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
 {
     /// Outputted independent variable points.
     pub t: Vec<T>,
 
     /// Outputted dependent variable points.
-    pub y: Vec<V>,
+    pub y: Vec<Y>,
 
     /// Status of the solver.
-    pub status: Status<T, V, D>,
+    pub status: Status<T, Y, D>,
 
     /// Number of function, jacobian, etc evaluations.
     pub evals: Evals,
@@ -48,10 +48,10 @@ where
 }
 
 // Initial methods for the solution
-impl<T, V, D> Default for Solution<T, V, D>
+impl<T, Y, D> Default for Solution<T, Y, D>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
 {
     fn default() -> Self {
@@ -59,10 +59,10 @@ where
     }
 }
 
-impl<T, V, D> Solution<T, V, D>
+impl<T, Y, D> Solution<T, Y, D>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
 {
     /// Creates a new Solution object.
@@ -79,10 +79,10 @@ where
 }
 
 // Methods used during solving
-impl<T, V, D> Solution<T, V, D>
+impl<T, Y, D> Solution<T, Y, D>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
 {
     /// Puhes a new point to the solution, e.g. t and y vecs.
@@ -91,7 +91,7 @@ where
     /// * `t` - The time point.
     /// * `y` - The state vector.
     ///
-    pub fn push(&mut self, t: T, y: V) {
+    pub fn push(&mut self, t: T, y: Y) {
         self.t.push(t);
         self.y.push(y);
     }
@@ -101,7 +101,7 @@ where
     /// # Returns
     /// * `Option<(T, SMatrix<T, R, C>)>` - The last point in the solution.
     ///
-    pub fn pop(&mut self) -> Option<(T, V)> {
+    pub fn pop(&mut self) -> Option<(T, Y)> {
         if self.t.is_empty() || self.y.is_empty() {
             return None;
         }
@@ -122,10 +122,10 @@ where
 }
 
 // Post-processing methods for the solution
-impl<T, V, D> Solution<T, V, D>
+impl<T, Y, D> Solution<T, Y, D>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
 {
     /// Simplifies the Solution into a tuple of vectors in form (t, y).
@@ -133,18 +133,18 @@ where
     /// evals, steps, rejected_steps, and accepted_steps will be discarded.
     ///
     /// # Returns
-    /// * `(Vec<T>, Vec<V)` - Tuple of time and state vectors.
+    /// * `(Vec<T>, Vec<Y)` - Tuple of time and state vectors.
     ///
-    pub fn into_tuple(self) -> (Vec<T>, Vec<V>) {
+    pub fn into_tuple(self) -> (Vec<T>, Vec<Y>) {
         (self.t, self.y)
     }
 
     /// Returns the last accepted step of the solution in form (t, y).
     ///
     /// # Returns
-    /// * `Result<(T, V), Box<dyn std::error::Error>>` - Result of time and state vector.
+    /// * `Result<(T, Y), Box<dyn std::error::Error>>` - Result of time and state vector.
     ///
-    pub fn last(&self) -> Result<(&T, &V), Box<dyn std::error::Error>> {
+    pub fn last(&self) -> Result<(&T, &Y), Box<dyn std::error::Error>> {
         let t = self.t.last().ok_or("No t steps available")?;
         let y = self.y.last().ok_or("No y vectors available")?;
         Ok((t, y))
@@ -153,10 +153,10 @@ where
     /// Returns an iterator over the solution.
     ///
     /// # Returns
-    /// * `std::iter::Zip<std::slice::Iter<'_, T>, std::slice::Iter<'_, V>>` - An iterator
+    /// * `std::iter::Zip<std::slice::Iter<'_, T>, std::slice::Iter<'_, Y>>` - An iterator
     ///   yielding (t, y) tuples.
     ///
-    pub fn iter(&self) -> std::iter::Zip<std::slice::Iter<'_, T>, std::slice::Iter<'_, V>> {
+    pub fn iter(&self) -> std::iter::Zip<std::slice::Iter<'_, T>, std::slice::Iter<'_, Y>> {
         self.t.iter().zip(self.y.iter())
     }
 

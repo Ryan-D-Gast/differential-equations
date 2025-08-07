@@ -274,18 +274,18 @@ impl<T: Real> CustomEventSolout<T> {
 }
 
 // Implement the Solout trait for our custom solout
-impl<T: Real, V: State<T>> Solout<T, V> for CustomEventSolout<T> {
+impl<T: Real, Y: State<T>> Solout<T, Y> for CustomEventSolout<T> {
     fn solout<I>(
         &mut self,
         t_curr: T,
         t_prev: T,
-        y_curr: &V,
-        y_prev: &V,
+        y_curr: &Y,
+        y_prev: &Y,
         interpolator: &mut I,
-        solution: &mut Solution<T, V>,
+        solution: &mut Solution<T, Y>,
     ) -> ControlFlag<String>
     where
-        I: Interpolation<T, V>,
+        I: Interpolation<T, Y>,
     {
         // Add the current point to the solution
         solution.push(t_curr, *y_curr);

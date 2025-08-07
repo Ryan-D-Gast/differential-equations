@@ -21,7 +21,7 @@ use std::{collections::VecDeque, marker::PhantomData};
 /// * `E`: Equation type (e.g., Ordinary, Delay, Stochastic)
 /// * `F`: Family type (e.g., Adaptive, Fixed, DormandPrince, etc.)
 /// * `T`: Real number type (f32, f64)
-/// * `V`: State vector type
+/// * `Y`: State vector type
 /// * `D`: Callback data type
 /// * `const O`: Order of the method
 /// * `const S`: Number of stages in the method
@@ -30,7 +30,7 @@ pub struct ExplicitRungeKutta<
     E,
     F,
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
     const O: usize,
     const S: usize,
@@ -47,17 +47,17 @@ pub struct ExplicitRungeKutta<
 
     // Current State
     t: T,
-    y: V,
-    dydt: V,
+    y: Y,
+    dydt: Y,
 
     // Previous State
     h_prev: T,
     t_prev: T,
-    y_prev: V,
-    dydt_prev: V,
+    y_prev: Y,
+    dydt_prev: Y,
 
     // Stage values
-    k: [V; I],
+    k: [Y; I],
 
     // Constants from Butcher tableau
     c: [T; I],
@@ -68,7 +68,7 @@ pub struct ExplicitRungeKutta<
 
     // Interpolation coefficients
     bi: Option<[[T; I]; I]>, // Optional for methods without dense output
-    cont: [V; O],
+    cont: [Y; O],
 
     // Settings
     pub rtol: T,
@@ -87,7 +87,7 @@ pub struct ExplicitRungeKutta<
     steps: usize,
 
     // Status
-    status: Status<T, V, D>,
+    status: Status<T, Y, D>,
 
     // Method info
     order: usize,
@@ -102,12 +102,12 @@ pub struct ExplicitRungeKutta<
     equation: PhantomData<E>,
 
     // DDE (Delay) support
-    history: VecDeque<(T, V, V)>, // (t, y, dydt)
+    history: VecDeque<(T, Y, Y)>, // (t, y, dydt)
     max_delay: Option<T>,         // Minimum delay for DDEs so that buffer can be emptied
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    Default for ExplicitRungeKutta<E, F, T, V, D, O, S, I>
+impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Default for ExplicitRungeKutta<E, F, T, Y, D, O, S, I>
 {
     fn default() -> Self {
         Self {
@@ -115,20 +115,20 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
             h0: T::zero(),
             h: T::zero(),
             t: T::zero(),
-            y: V::zeros(),
-            dydt: V::zeros(),
+            y: Y::zeros(),
+            dydt: Y::zeros(),
             h_prev: T::zero(),
             t_prev: T::zero(),
-            y_prev: V::zeros(),
-            dydt_prev: V::zeros(),
-            k: [V::zeros(); I],
+            y_prev: Y::zeros(),
+            dydt_prev: Y::zeros(),
+            k: [Y::zeros(); I],
             c: [T::zero(); I],
             a: [[T::zero(); I]; I],
             b: [T::zero(); S],
             bh: None,
             er: None,
             bi: None,
-            cont: [V::zeros(); O],
+            cont: [Y::zeros(); O],
             rtol: T::from_f64(1.0e-6).unwrap(),
             atol: T::from_f64(1.0e-6).unwrap(),
             h_max: T::infinity(),
@@ -154,8 +154,8 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
     }
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    ExplicitRungeKutta<E, F, T, V, D, O, S, I>
+impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    ExplicitRungeKutta<E, F, T, Y, D, O, S, I>
 {
     /// Set the relative tolerance for error control
     pub fn rtol(mut self, rtol: T) -> Self {
@@ -233,8 +233,8 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
     }
 }
 
-impl<F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    ExplicitRungeKutta<Delay, F, T, V, D, O, S, I>
+impl<F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    ExplicitRungeKutta<Delay, F, T, Y, D, O, S, I>
 {
     /// Set the maximum delay for DDEs
     pub fn max_delay(mut self, max_delay: T) -> Self {

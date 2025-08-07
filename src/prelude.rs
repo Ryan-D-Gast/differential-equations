@@ -26,15 +26,25 @@
 //!
 //! ### Implicit Runge-Kutta Methods:
 //! - `ImplicitRungeKutta::gauss_legendre6`: Gauss-Legendre 6th order method.
-//! 
+//!
 //! ### Diagonally Implicit Runge-Kutta Methods:
 //! - `DiagonallyImplicitRungeKutta::kvaerno745': Kvaerno 7(4,5) 7th order method.
 //!
 //! For detailed examples, including problem setup and full solution process,
 //! please refer to the [examples directory](https://github.com/Ryan-D-Gast/differential-equations/tree/master/examples).
-//! 
+//!
 
 pub use crate::{
+    control::ControlFlag,
+    // Delay Differential Equations (DDE) module
+    dde::{
+        DDE,        // Define the DDE system
+        DDEProblem, // Create IVP to solve
+    },
+
+    derive::State,
+    error::Error,
+    interpolate::Interpolation,
     // Numerical Methods
     methods::{
         AdamsPredictorCorrector,      // Adams Predictor-Corrector methods for ODEs
@@ -49,12 +59,6 @@ pub use crate::{
         ODEProblem, // Create IVP to solve
     },
 
-    // Delay Differential Equations (DDE) module
-    dde::{
-        DDE,        // Define the DDE system
-        DDEProblem, // Create IVP to solve
-    },
-
     // Stochastic Differential Equations (SDE) module
     sde::{
         SDE,        // Define the SDE system
@@ -66,10 +70,6 @@ pub use crate::{
         CrossingDirection,
         Solout, // Trait for defining a custom output behavior
     },
-    derive::State,
-    error::Error,
-    interpolate::Interpolation,
-    control::ControlFlag,
     solution::Solution,
     stats::Evals,
     status::Status,

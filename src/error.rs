@@ -12,10 +12,10 @@ use std::fmt::{Debug, Display};
 /// * `Stiffness` - NumericalMethod terminated due to stiffness.
 ///
 #[derive(PartialEq, Clone)]
-pub enum Error<T, V>
+pub enum Error<T, Y>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
 {
     /// NumericalMethod input was bad
     BadInput {
@@ -24,15 +24,15 @@ where
     MaxSteps {
         // If the solver reaches the maximum number of steps
         t: T, // Time at which the solver reached maximum steps
-        y: V, // Solution at time t
+        y: Y, // Solution at time t
     },
     StepSize {
         t: T, // Time at which step size became too small
-        y: V, // Solution at time t
+        y: Y, // Solution at time t
     },
     Stiffness {
         t: T, // Time at which stiffness was detected
-        y: V, // Solution at time t
+        y: Y, // Solution at time t
     },
     OutOfBounds {
         t_interp: T, // Time to interpolate at
@@ -41,10 +41,10 @@ where
     },
 }
 
-impl<T, V> Display for Error<T, V>
+impl<T, Y> Display for Error<T, Y>
 where
     T: Real + Display,
-    V: State<T> + Display,
+    Y: State<T> + Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -69,10 +69,10 @@ where
     }
 }
 
-impl<T, V> Debug for Error<T, V>
+impl<T, Y> Debug for Error<T, Y>
 where
     T: Real + Debug,
-    V: State<T> + Debug,
+    Y: State<T> + Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -101,9 +101,9 @@ where
     }
 }
 
-impl<T, V> std::error::Error for Error<T, V>
+impl<T, Y> std::error::Error for Error<T, Y>
 where
     T: Real + Debug + Display,
-    V: State<T> + Debug + Display,
+    Y: State<T> + Debug + Display,
 {
 }

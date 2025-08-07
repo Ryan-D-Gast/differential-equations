@@ -7,7 +7,7 @@ use super::*;
 use crate::linalg::dot;
 
 /// Function type for extracting position components from state vector
-pub type ExtractorFn<V, P> = fn(&V) -> P;
+pub type ExtractorFn<Y, P> = fn(&Y) -> P;
 
 /// A solout that detects when a trajectory crosses a hyperplane.
 ///
@@ -24,7 +24,7 @@ pub type ExtractorFn<V, P> = fn(&V) -> P;
 ///
 /// * `T`: Floating-point type
 /// * `P`: Vector type for the position space (e.g., Vector3<f64>)
-/// * `V`: Full state vector type (e.g., Vector6<f64>)
+/// * `Y`: Full state vector type (e.g., Vector6<f64>)
 ///
 /// # Example
 ///
@@ -83,31 +83,31 @@ pub type ExtractorFn<V, P> = fn(&V) -> P;
 ///
 /// // solution now contains only the points where the trajectory crosses the z=0 plane
 /// ```
-pub struct HyperplaneCrossingSolout<T, V1, V2>
+pub struct HyperplaneCrossingSolout<T, Y1, Y2>
 where
     T: Real,
-    V1: State<T>,
-    V2: State<T>,
+    Y1: State<T>,
+    Y2: State<T>,
 {
     /// Point on the hyperplane
-    point: V1,
+    point: Y1,
     /// Normal vector to the hyperplane (should be normalized)
-    normal: V1,
+    normal: Y1,
     /// Function to extract position components from state vector
-    extractor: ExtractorFn<V2, V1>,
+    extractor: ExtractorFn<Y2, Y1>,
     /// Last observed signed distance (for detecting sign changes)
     last_distance: Option<T>,
     /// Direction of crossing to detect
     direction: CrossingDirection,
     /// Phantom data for state vector type
-    _phantom: std::marker::PhantomData<V2>,
+    _phantom: std::marker::PhantomData<Y2>,
 }
 
-impl<T, V1, V2> HyperplaneCrossingSolout<T, V1, V2>
+impl<T, Y1, Y2> HyperplaneCrossingSolout<T, Y1, Y2>
 where
     T: Real,
-    V1: State<T>,
-    V2: State<T>,
+    Y1: State<T>,
+    Y2: State<T>,
 {
     /// Creates a new HyperplaneSolout to detect when the trajectory crosses the specified hyperplane.
     ///
@@ -121,9 +121,9 @@ where
     /// # Returns
     /// * A new `HyperplaneCrossingSolout` instance
     ///
-    pub fn new(point: V1, mut normal: V1, extractor: ExtractorFn<V2, V1>) -> Self {
+    pub fn new(point: Y1, mut normal: Y1, extractor: ExtractorFn<Y2, Y1>) -> Self {
         // Normalize the normal vector
-        let norm = |y: V1| {
+        let norm = |y: Y1| {
             let mut norm = T::zero();
             for i in 0..y.len() {
                 norm += y.get(i).powi(2);
@@ -194,7 +194,7 @@ where
     /// # Returns
     /// * Signed distance (positive if on same side as normal vector)
     ///
-    fn signed_distance(&self, pos: &V1) -> T {
+    fn signed_distance(&self, pos: &Y1) -> T {
         // Calculate displacement vector from plane point to position
         let displacement = *pos - self.point;
 
@@ -203,24 +203,24 @@ where
     }
 }
 
-impl<T, V1, V2, D: CallBackData> Solout<T, V2, D> for HyperplaneCrossingSolout<T, V1, V2>
+impl<T, Y1, Y2, D: CallBackData> Solout<T, Y2, D> for HyperplaneCrossingSolout<T, Y1, Y2>
 where
     T: Real,
-    V1: State<T>,
-    V2: State<T>,
+    Y1: State<T>,
+    Y2: State<T>,
     D: CallBackData,
 {
     fn solout<I>(
         &mut self,
         t_curr: T,
         t_prev: T,
-        y_curr: &V2,
-        _y_prev: &V2,
+        y_curr: &Y2,
+        _y_prev: &Y2,
         interpolator: &mut I,
-        solution: &mut Solution<T, V2, D>,
-    ) -> ControlFlag<T, V2, D>
+        solution: &mut Solution<T, Y2, D>,
+    ) -> ControlFlag<T, Y2, D>
     where
-        I: Interpolation<T, V2>,
+        I: Interpolation<T, Y2>,
     {
         // Extract position from current state and calculate distance
         let pos_curr = (self.extractor)(y_curr);
@@ -277,11 +277,11 @@ where
     }
 }
 
-impl<T, V1, V2> HyperplaneCrossingSolout<T, V1, V2>
+impl<T, Y1, Y2> HyperplaneCrossingSolout<T, Y1, Y2>
 where
     T: Real,
-    V1: State<T>,
-    V2: State<T>,
+    Y1: State<T>,
+    Y2: State<T>,
 {
     /// Find the crossing time using Newton's method with interpolator interpolation
     fn find_crossing_newton<I>(
@@ -293,7 +293,7 @@ where
         dist_upper: T,
     ) -> Option<T>
     where
-        I: Interpolation<T, V2>,
+        I: Interpolation<T, Y2>,
     {
         // Start with linear interpolation as initial guess
         let mut t = t_lower - dist_lower * (t_upper - t_lower) / (dist_upper - dist_lower);

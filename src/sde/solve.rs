@@ -129,21 +129,21 @@ use crate::{
 /// * The output points depend on the chosen `Solout` implementation.
 /// * Due to the stochastic nature, each run will produce different results unless a specific seed is used.
 ///
-pub fn solve_sde<T, V, D, S, F, O>(
+pub fn solve_sde<T, Y, D, S, F, O>(
     solver: &mut S,
     sde: &mut F,
     t0: T,
     tf: T,
-    y0: &V,
+    y0: &Y,
     solout: &mut O,
-) -> Result<Solution<T, V, D>, Error<T, V>>
+) -> Result<Solution<T, Y, D>, Error<T, Y>>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: SDE<T, V, D>,
-    S: StochasticNumericalMethod<T, V, D> + Interpolation<T, V>,
-    O: Solout<T, V, D>,
+    F: SDE<T, Y, D>,
+    S: StochasticNumericalMethod<T, Y, D> + Interpolation<T, Y>,
+    O: Solout<T, Y, D>,
 {
     // Initialize the Solution object
     let mut solution = Solution::new();

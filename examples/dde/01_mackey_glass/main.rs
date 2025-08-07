@@ -1,7 +1,7 @@
 //! # Example 1: Mackey-Glass Delay Differential Equation
 //!
-//! This example demonstrates the solution of the Mackey-Glass equation, 
-//! a classic example of a delay differential equation known for 
+//! This example demonstrates the solution of the Mackey-Glass equation,
+//! a classic example of a delay differential equation known for
 //! exhibiting chaotic behavior for certain parameter values.
 //!
 //! The equation is:
@@ -38,8 +38,7 @@ impl DDE<1> for MackeyGlass {
 
 fn main() {
     // --- Solver Configuration ---
-    let mut solver = ExplicitRungeKutta::rkv878e()
-        .max_delay(20.0); // Discard history older than 20.0 seconds to save memory
+    let mut solver = ExplicitRungeKutta::rkv878e().max_delay(20.0); // Discard history older than 20.0 seconds to save memory
 
     // --- Problem Definition ---
     let dde = MackeyGlass {
@@ -56,9 +55,7 @@ fn main() {
 
     // Define the initial history function phi(t) for t <= t0
     // Often a constant history is used matching the initial condition
-    let phi = |_t: f64| -> f64 {
-        y0
-    };
+    let phi = |_t: f64| -> f64 { y0 };
 
     // Define the DDE problem
     let problem = DDEProblem::new(dde, t0, tf, y0, phi);

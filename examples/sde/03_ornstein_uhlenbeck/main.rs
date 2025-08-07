@@ -105,10 +105,6 @@ fn main() {
     for &time in &intervals {
         let idx = solution.t.iter().position(|&t| t >= time).unwrap_or(0);
         let value = solution.y[idx];
-        println!(
-            "  t = {:.2}: y = {:.6}",
-            solution.t[idx],
-            value
-        );
+        println!("  t = {:.2}: y = {:.6}", solution.t[idx], value);
     }
 }

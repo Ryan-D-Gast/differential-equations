@@ -7,15 +7,15 @@ After successfully solving a differential equation, the result is returned as a 
 The `Solution` struct contains the numerical solution data as well as metadata about the solving process. It provides methods for accessing, iterating over, and exporting the solution.
 
 ```rust
-pub struct Solution<T, V, D>
+pub struct Solution<T, Y, D>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
 {
     pub t: Vec<T>,             // Time points
-    pub y: Vec<V>,             // State vectors at each time point
-    pub status: Status<T, V, D>, // Solver status (success, error, or interrupted)
+    pub y: Vec<Y>,             // State vectors at each time point
+    pub status: Status<T, Y, D>, // Solver status (success, error, or interrupted)
     pub evals: usize,          // Number of function evaluations
     pub jacobian_evals: usize,      // Number of jacobian evaluations
     pub steps: usize,          // Total number of steps taken
@@ -218,7 +218,7 @@ fn main() {
             
             // Save to CSV
             if let Err(e) = solution.to_csv("results/damped_oscillator.csv") {
-                println!("Failed to save CSV: {}", e);
+                println!("Failed to save CSY: {}", e);
             }
         },
         Err(e) => println!("Error solving ODE: {:?}", e),

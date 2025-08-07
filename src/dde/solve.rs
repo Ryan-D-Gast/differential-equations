@@ -44,38 +44,38 @@ use crate::{
 /// * `tf`: The final time point of the integration interval. `tf` must be different from `t0`.
 /// * `y0`: A reference to the initial state vector `y(t0)`.
 /// * `phi`: The initial history function. This must be a function or closure implementing
-///   `Fn(T) -> V` that returns the state vector `V` for any time `t <= t0`.
+///   `Fn(T) -> V` that returns the state vector `Y` for any time `t <= t0`.
 /// * `solout`: A mutable reference to a solution output handler implementing the [`Solout`] trait.
 ///   This determines how and when solution points `(t, y)` are recorded or processed.
 ///
 /// # Returns
 ///
-/// * `Ok(Solution<T, V, D>)`: If the integration completes successfully (reaches `tf`) or is
+/// * `Ok(Solution<T, Y, D>)`: If the integration completes successfully (reaches `tf`) or is
 ///   cleanly interrupted by an event detected by `dde.event()` or `solout.solout()`.
 ///   The [`Solution`] struct contains the time points, corresponding state vectors,
 ///   solver statistics, and potentially event data (`D`).
-/// * `Err(Error<T, V>)`: If the solver encounters an error during initialization or stepping.
+/// * `Err(Error<T, Y>)`: If the solver encounters an error during initialization or stepping.
 ///   This could be due to invalid input (`Error::BadInput`), failure to meet tolerances
 ///   (`Error::StepSizeTooSmall`), exceeding the maximum number of steps (`Error::MaxSteps`),
 ///   or potential stiffness detected by the solver (`Error::Stiffness`).
 ///
-pub fn solve_dde<const L: usize, T, V, D, S, F, H, O>(
+pub fn solve_dde<const L: usize, T, Y, D, S, F, H, O>(
     solver: &mut S,
     dde: &F,
     t0: T,
     tf: T,
-    y0: &V,
+    y0: &Y,
     phi: H,
     solout: &mut O,
-) -> Result<Solution<T, V, D>, Error<T, V>>
+) -> Result<Solution<T, Y, D>, Error<T, Y>>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: DDE<L, T, V, D>,
-    H: Fn(T) -> V + Clone,
-    S: DelayNumericalMethod<L, T, V, H, D> + Interpolation<T, V>,
-    O: Solout<T, V, D>,
+    F: DDE<L, T, Y, D>,
+    H: Fn(T) -> Y + Clone,
+    S: DelayNumericalMethod<L, T, Y, H, D> + Interpolation<T, Y>,
+    O: Solout<T, Y, D>,
 {
     // Initialize the Solution object
     let mut solution = Solution::new();

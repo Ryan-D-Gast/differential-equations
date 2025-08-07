@@ -112,21 +112,21 @@ use crate::{
 /// * The `tf == t0` case is considered an error (no integration to perform).
 /// * The output points depend on the chosen `Solout` implementation.
 ///
-pub fn solve_ode<T, V, D, S, F, O>(
+pub fn solve_ode<T, Y, D, S, F, O>(
     solver: &mut S,
     ode: &F,
     t0: T,
     tf: T,
-    y0: &V,
+    y0: &Y,
     solout: &mut O,
-) -> Result<Solution<T, V, D>, Error<T, V>>
+) -> Result<Solution<T, Y, D>, Error<T, Y>>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: ODE<T, V, D>,
-    S: OrdinaryNumericalMethod<T, V, D> + Interpolation<T, V>,
-    O: Solout<T, V, D>,
+    F: ODE<T, Y, D>,
+    S: OrdinaryNumericalMethod<T, Y, D> + Interpolation<T, Y>,
+    O: Solout<T, Y, D>,
 {
     // Initialize the Solution object
     let mut solution = Solution::new();

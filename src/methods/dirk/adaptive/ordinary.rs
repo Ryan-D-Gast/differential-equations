@@ -11,13 +11,13 @@ use crate::{
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    OrdinaryNumericalMethod<T, V, D>
-    for DiagonallyImplicitRungeKutta<Ordinary, Adaptive, T, V, D, O, S, I>
+impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    OrdinaryNumericalMethod<T, Y, D>
+    for DiagonallyImplicitRungeKutta<Ordinary, Adaptive, T, Y, D, O, S, I>
 {
-    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
+    fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, V, D>,
+        F: ODE<T, Y, D>,
     {
         let mut evals = Evals::new();
 
@@ -31,7 +31,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         }
 
         // Check bounds
-        match validate_step_size_parameters::<T, V, D>(self.h0, self.h_min, self.h_max, t0, tf) {
+        match validate_step_size_parameters::<T, Y, D>(self.h0, self.h_min, self.h_max, t0, tf) {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
@@ -68,9 +68,9 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         Ok(evals)
     }
 
-    fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, V>>
+    fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, V, D>,
+        F: ODE<T, Y, D>,
     {
         let mut evals = Evals::new();
 
@@ -125,7 +125,7 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
                 // Evaluate function at current stage guess
                 let t_stage = self.t + self.c[stage] * self.h;
-                let mut f_stage = V::zeros();
+                let mut f_stage = Y::zeros();
                 ode.diff(t_stage, &self.z_stage, &mut f_stage);
                 evals.function += 1;
 
@@ -321,13 +321,13 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
     fn t(&self) -> T {
         self.t
     }
-    fn y(&self) -> &V {
+    fn y(&self) -> &Y {
         &self.y
     }
     fn t_prev(&self) -> T {
         self.t_prev
     }
-    fn y_prev(&self) -> &V {
+    fn y_prev(&self) -> &Y {
         &self.y_prev
     }
     fn h(&self) -> T {
@@ -336,18 +336,18 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
     fn set_h(&mut self, h: T) {
         self.h = h;
     }
-    fn status(&self) -> &Status<T, V, D> {
+    fn status(&self) -> &Status<T, Y, D> {
         &self.status
     }
-    fn set_status(&mut self, status: Status<T, V, D>) {
+    fn set_status(&mut self, status: Status<T, Y, D>) {
         self.status = status;
     }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    Interpolation<T, V> for DiagonallyImplicitRungeKutta<Ordinary, Adaptive, T, V, D, O, S, I>
+impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Interpolation<T, Y> for DiagonallyImplicitRungeKutta<Ordinary, Adaptive, T, Y, D, O, S, I>
 {
-    fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
+    fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         // Check if t is within bounds
         if t_interp < self.t_prev || t_interp > self.t {
             return Err(Error::OutOfBounds {

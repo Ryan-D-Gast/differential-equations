@@ -15,9 +15,9 @@ The `dde` module provides tools for solving delay differential equations (DDEs),
 The `DDE` trait defines the delay differential equation `dydt = f(t, y(t), y(t - lag_1), ..., y(t - lag_L))` and the lag functions.
 
 ### DDE Trait
-*   `diff(&self, t: T, y: &V, yd: &[V; L], dydt: &mut V)`: Defines the differential equation. `y` is the current state `y(t)`, and `yd` is an array slice containing the delayed states `[y(t - lag_1), ..., y(t - lag_L)]`. `L` is a const generic parameter indicating the number of constant/state-dependent lags.
-*   `lags(&self, t: T, y: &V, lags: &mut [T; L])`: Defines the actual time lag values `[lag_1, ..., lag_L]` at time `t` and state `y`. These lags determine the past times `t - lag_i` at which the solution is evaluated.
-*   `event(&self, t: T, y: &V) -> ControlFlag<T, V, D>`: Optional event function, similar to the ODE trait, to interrupt the solver. `D` is the type for event data, defaulting to `String`. By default, it returns `ControlFlag::Continue`.
+*   `diff(&self, t: T, y: &Y, yd: &[Y; L], dydt: &mut Y)`: Defines the differential equation. `y` is the current state `y(t)`, and `yd` is an array slice containing the delayed states `[y(t - lag_1), ..., y(t - lag_L)]`. `L` is a const generic parameter indicating the number of constant/state-dependent lags.
+*   `lags(&self, t: T, y: &Y, lags: &mut [T; L])`: Defines the actual time lag values `[lag_1, ..., lag_L]` at time `t` and state `y`. These lags determine the past times `t - lag_i` at which the solution is evaluated.
+*   `event(&self, t: T, y: &Y) -> ControlFlag<T, Y, D>`: Optional event function, similar to the ODE trait, to interrupt the solver. `D` is the type for event data, defaulting to `String`. By default, it returns `ControlFlag::Continue`.
 
 ### Solout Trait
 The `Solout` trait works similarly to how it does for ODEs, allowing customization of which points are saved in the solution.
@@ -38,7 +38,7 @@ struct BreastCancerModel {
     tau: f64, // The time delay
 }
 
-// L=1 because there is one delay term, V is Vector3<f64>
+// L=1 because there is one delay term, Y is Vector3<f64>
 impl DDE<1, f64, Vector3<f64>> for BreastCancerModel {
     fn diff(&self, _t: f64, u: &Vector3<f64>, ud: &[Vector3<f64>; 1], dudt: &mut Vector3<f64>) {
         // ud[0] corresponds to u(t - lags[0])
@@ -61,7 +61,7 @@ impl DDE<1, f64, Vector3<f64>> for BreastCancerModel {
     }
 
     // Optional event function
-    // fn event(&self, t: f64, y: &Vector3<f64>) -> ControlFlag<T, V, D> { // D defaults to String
+    // fn event(&self, t: f64, y: &Vector3<f64>) -> ControlFlag<T, Y, D> { // D defaults to String
     //     if y[0] < 0.0 { // Example: check if first component is negative
     //         ControlFlag::Terminate("u1 became negative".to_string())
     //     } else {
@@ -70,7 +70,7 @@ impl DDE<1, f64, Vector3<f64>> for BreastCancerModel {
     // }
 }
 ```
-Generics `<const L: usize, T, V, D>` are used: `L` is the number of discrete lags, `T` is the float type (e.g., `f64`), `V` is the state vector type, and `D` is the type for event data (defaulting to `String`).
+Generics `<const L: usize, T, Y, D>` are used: `L` is the number of discrete lags, `T` is the float type (e.g., `f64`), `Y` is the state vector type, and `D` is the type for event data (defaulting to `String`).
 
 ## The History Function
 
@@ -86,7 +86,7 @@ let history_fn = |_t: f64| -> Vector3<f64> {
     initial_state // Return the constant initial state for t <= t0
 };
 ```
-The history function takes the time `t` (where `t <= t0`) and returns the historical value of `y(t)` as type `V`.
+The history function takes the time `t` (where `t <= t0`) and returns the historical value of `y(t)` as type `Y`.
 
 ## Solving an Initial Value Problem (DDEProblem)
 

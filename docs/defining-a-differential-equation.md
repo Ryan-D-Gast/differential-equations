@@ -10,25 +10,25 @@ Differential equations in this library are defined by implementing traits that s
 
 The `ODE` trait is generic over three types:
 - `T`: The independent variable type (typically `f64`)
-- `V`: The state type (can be `f64`, vectors, or custom state structs)
+- `Y`: The state type (can be `f64`, vectors, or custom state structs)
 - `D`: The data type for event callbacks
 
 Here's the basic structure:
 
 ```rust
-pub trait ODE<T = f64, V = f64, D = String>
+pub trait ODE<T = f64, Y = f64, D = String>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
 {
-    fn diff(&self, t: T, y: &V, dydt: &mut V);
+    fn diff(&self, t: T, y: &Y, dydt: &mut Y);
     
-    fn event(&self, t: T, y: &V) -> ControlFlag<T, V, D> {
+    fn event(&self, t: T, y: &Y) -> ControlFlag<T, Y, D> {
         ControlFlag::Continue
     }
     
-    fn jacobian(&self, t: T, y: &V, j: &mut DMatrix<T>) {
+    fn jacobian(&self, t: T, y: &Y, j: &mut DMatrix<T>) {
         /* Finite difference approximation */
     }
 }
@@ -108,7 +108,7 @@ fn event(&self, _t: f64, y: &SIRState<f64>) -> ControlFlag<PopulationMonitor> {
 }
 ```
 
-The return type `ControlFlag<T, V, D>` can be:
+The return type `ControlFlag<T, Y, D>` can be:
 - `ControlFlag::Continue` - Continue integration
 - `ControlFlag::Terminate(reason)` - Stop integration and return the provided reason
 
@@ -139,7 +139,7 @@ impl std::fmt::Display for PopulationMonitor {
 For stiff systems or when using implicit solvers, you can implement the `jacobian` method:
 
 ```rust
-fn jacobian(&self, t: T, y: &V, j: &mut DMatrix<T>) {
+fn jacobian(&self, t: T, y: &Y, j: &mut DMatrix<T>) {
     // Fill the jacobian matrix j with partial derivatives
     // For a system y' = f(t,y), the jacobian is J_ij = ∂f_i/∂y_j
 }

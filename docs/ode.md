@@ -48,7 +48,7 @@ impl ODE<f64, SVector<f64, 1>> for LogisticGrowth {
 }
 ```
 
-Note that for clarity, the `ODE` is defined with generics `<T, V>` where `T` is the float type (e.g. `f64` or `f32`) and `V` is the state vector of the system of ordinary differential equations. By default the generics are `f64, f64` and thus can be omitted if the system is a single ODE with a `f64` type and a single state variable `f64`. Here a `SVector` is used despite `f64` being usable here for clarity. For example a system with multiple ODEs of size N then `SVector<f64, N>` can be used.
+Note that for clarity, the `ODE` is defined with generics `<T, Y>` where `T` is the float type (e.g. `f64` or `f32`) and `Y` is the state vector of the system of ordinary differential equations. By default the generics are `f64, f64` and thus can be omitted if the system is a single ODE with a `f64` type and a single state variable `f64`. Here a `SVector` is used despite `f64` being usable here for clarity. For example a system with multiple ODEs of size N then `SVector<f64, N>` can be used.
 
 ## Solving an Initial Value Problem
 

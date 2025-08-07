@@ -14,17 +14,17 @@ use std::collections::VecDeque;
 impl<
     const L: usize,
     T: Real,
-    V: State<T>,
-    H: Fn(T) -> V,
+    Y: State<T>,
+    H: Fn(T) -> Y,
     D: CallBackData,
     const O: usize,
     const S: usize,
     const I: usize,
-> DelayNumericalMethod<L, T, V, H, D> for ExplicitRungeKutta<Delay, Adaptive, T, V, D, O, S, I>
+> DelayNumericalMethod<L, T, Y, H, D> for ExplicitRungeKutta<Delay, Adaptive, T, Y, D, O, S, I>
 {
-    fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &V, phi: &H) -> Result<Evals, Error<T, V>>
+    fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &Y, phi: &H) -> Result<Evals, Error<T, Y>>
     where
-        F: DDE<L, T, V, D>,
+        F: DDE<L, T, Y, D>,
     {
         let mut evals = Evals::new();
 
@@ -41,7 +41,7 @@ impl<
 
         // Initialize arrays for lags and delayed states
         let mut lags = [T::zero(); L];
-        let mut yd = [V::zeros(); L];
+        let mut yd = [Y::zeros(); L];
 
         // Evaluate initial lags and delayed states
         if L > 0 {
@@ -83,16 +83,16 @@ impl<
         }
 
         // Validate and set initial step size h
-        match validate_step_size_parameters::<T, V, D>(self.h0, self.h_min, self.h_max, t0, tf) {
+        match validate_step_size_parameters::<T, Y, D>(self.h0, self.h_min, self.h_max, t0, tf) {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
         Ok(evals)
     }
 
-    fn step<F>(&mut self, dde: &F, phi: &H) -> Result<Evals, Error<T, V>>
+    fn step<F>(&mut self, dde: &F, phi: &H) -> Result<Evals, Error<T, Y>>
     where
-        F: DDE<L, T, V, D>,
+        F: DDE<L, T, Y, D>,
     {
         let mut evals = Evals::new();
 
@@ -123,7 +123,7 @@ impl<
 
         // Initialize variables for the step
         let mut lags = [T::zero(); L];
-        let mut yd = [V::zeros(); L];
+        let mut yd = [Y::zeros(); L];
 
         // Store current derivative as k[0] for RK computations
         self.k[0] = self.dydt;
@@ -147,7 +147,7 @@ impl<
         };
 
         let mut y_next_candidate_iter = self.y; // Approximated y at t+h, refined in DDE iterations
-        let mut dydt_next_candidate_iter = V::zeros(); // Derivative at t+h using y_next_candidate_iter
+        let mut dydt_next_candidate_iter = Y::zeros(); // Derivative at t+h using y_next_candidate_iter
         let mut y_prev_candidate_iter = self.y; // y_next_candidate_iter from previous DDE iteration
         let mut dde_iteration_failed = false;
         let mut err_norm: T = T::zero(); // Error norm for step size control
@@ -184,7 +184,7 @@ impl<
                     y_low += self.k[i] * (bh_coeffs[i] * self.h);
                 }
             }
-            let err_vec: V = y_high - y_low; // Error vector
+            let err_vec: Y = y_high - y_low; // Error vector
 
             // Calculate error norm (||err||)
             err_norm = T::zero();
@@ -375,13 +375,13 @@ impl<
     fn t(&self) -> T {
         self.t
     }
-    fn y(&self) -> &V {
+    fn y(&self) -> &Y {
         &self.y
     }
     fn t_prev(&self) -> T {
         self.t_prev
     }
-    fn y_prev(&self) -> &V {
+    fn y_prev(&self) -> &Y {
         &self.y_prev
     }
     fn h(&self) -> T {
@@ -390,20 +390,20 @@ impl<
     fn set_h(&mut self, h: T) {
         self.h = h;
     }
-    fn status(&self) -> &Status<T, V, D> {
+    fn status(&self) -> &Status<T, Y, D> {
         &self.status
     }
-    fn set_status(&mut self, status: Status<T, V, D>) {
+    fn set_status(&mut self, status: Status<T, Y, D>) {
         self.status = status;
     }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    ExplicitRungeKutta<Delay, Adaptive, T, V, D, O, S, I>
+impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    ExplicitRungeKutta<Delay, Adaptive, T, Y, D, O, S, I>
 {
-    fn lagvals<const L: usize, H>(&mut self, t_stage: T, lags: &[T; L], yd: &mut [V; L], phi: &H)
+    fn lagvals<const L: usize, H>(&mut self, t_stage: T, lags: &[T; L], yd: &mut [Y; L], phi: &H)
     where
-        H: Fn(T) -> V,
+        H: Fn(T) -> Y,
     {
         for i in 0..L {
             let t_delayed = t_stage - lags[i];
@@ -500,11 +500,11 @@ impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, cons
     }
 }
 
-impl<T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    Interpolation<T, V> for ExplicitRungeKutta<Delay, Adaptive, T, V, D, O, S, I>
+impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Interpolation<T, Y> for ExplicitRungeKutta<Delay, Adaptive, T, Y, D, O, S, I>
 {
     /// Interpolates the solution at a given time `t_interp`.
-    fn interpolate(&mut self, t_interp: T) -> Result<V, Error<T, V>> {
+    fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         let posneg = (self.t - self.t_prev).signum();
         if (t_interp - self.t_prev) * posneg < T::zero() || (t_interp - self.t) * posneg > T::zero()
         {

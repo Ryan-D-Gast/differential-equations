@@ -50,10 +50,7 @@ fn main() {
 
     // Between a problem and the calling of solve, output settings can be adjusted.
     // Here we set the output interval to 2.0 seconds via the even method.
-    match logistic_growth_problem
-        .even(2.0)
-        .solve(&mut method)
-    {
+    match logistic_growth_problem.even(2.0).solve(&mut method) {
         Ok(solution) => {
             // Check if the solver stopped due to the event command
             if let Status::Interrupted(ref reason) = solution.status {
@@ -78,29 +75,23 @@ fn main() {
                 .title("Logistic Growth Model")
                 .x_label("Time (t)")
                 .y_label("Population")
-                .y_range(Range::Manual { min: 0.0, max: 10.0 })
+                .y_range(Range::Manual {
+                    min: 0.0,
+                    max: 10.0,
+                })
                 .legend(Legend::BottomRightInside)
                 .data([
                     Series::builder()
                         .name("Numerical Solution")
                         .color("Blue")
-                        .data(
-                            solution
-                                .iter()
-                                .map(|(t, y)| (*t, *y))
-                                .collect::<Vec<_>>(),
-                        )
+                        .data(solution.iter().map(|(t, y)| (*t, *y)).collect::<Vec<_>>())
                         .build(),
                     Series::builder()
                         .name("Termination Asymptote")
                         .color("Red")
                         .data(
                             // Create a horizontal line at y = 9.0
-                            solution
-                                .t
-                                .iter()
-                                .map(|t| (*t, 9.0))
-                                .collect::<Vec<_>>(),
+                            solution.t.iter().map(|t| (*t, 9.0)).collect::<Vec<_>>(),
                         )
                         .line(Line::Dashed)
                         .build(),

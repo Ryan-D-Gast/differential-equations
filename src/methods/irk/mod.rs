@@ -21,7 +21,7 @@ use std::marker::PhantomData;
 /// * `E`: Equation type (e.g., Ordinary, Delay, Stochastic)
 /// * `F`: Family type (e.g., Adaptive, Fixed, Gauss, Radau, Lobatto)
 /// * `T`: Real number type (f32, f64)
-/// * `V`: State vector type
+/// * `Y`: State vector type
 /// * `D`: Callback data type
 /// * `const O`: Order of the method
 /// * `const S`: Number of stages in the method
@@ -30,7 +30,7 @@ pub struct ImplicitRungeKutta<
     E,
     F,
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
     const O: usize,
     const S: usize,
@@ -44,18 +44,18 @@ pub struct ImplicitRungeKutta<
 
     // Current State
     t: T,
-    y: V,
-    dydt: V,
+    y: Y,
+    dydt: Y,
 
     // Previous State
     h_prev: T,
     t_prev: T,
-    y_prev: V,
-    dydt_prev: V,
+    y_prev: Y,
+    dydt_prev: Y,
 
     // Stage values
-    k: [V; I],        // Stage derivatives
-    y_stages: [V; S], // Stage values (Y_i = y_n + h * sum(a_ij * k_j))
+    k: [Y; I],        // Stage derivatives
+    y_stages: [Y; S], // Stage values (Y_i = y_n + h * sum(a_ij * k_j))
 
     // Constants from Butcher tableau
     c: [T; S],          // Stage time coefficients
@@ -91,7 +91,7 @@ pub struct ImplicitRungeKutta<
     lu_decompositions: usize,    // Total LU decompositions
 
     // Status
-    status: Status<T, V, D>,
+    status: Status<T, Y, D>,
 
     // Method info
     order: usize,
@@ -105,22 +105,22 @@ pub struct ImplicitRungeKutta<
     equation: PhantomData<E>,
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    Default for ImplicitRungeKutta<E, F, T, V, D, O, S, I>
+impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    Default for ImplicitRungeKutta<E, F, T, Y, D, O, S, I>
 {
     fn default() -> Self {
         Self {
             h0: T::zero(),
             h: T::zero(),
             t: T::zero(),
-            y: V::zeros(),
-            dydt: V::zeros(),
+            y: Y::zeros(),
+            dydt: Y::zeros(),
             h_prev: T::zero(),
             t_prev: T::zero(),
-            y_prev: V::zeros(),
-            dydt_prev: V::zeros(),
-            k: [V::zeros(); I],
-            y_stages: [V::zeros(); S],
+            y_prev: Y::zeros(),
+            dydt_prev: Y::zeros(),
+            k: [Y::zeros(); I],
+            y_stages: [Y::zeros(); S],
             c: [T::zero(); S],
             a: [[T::zero(); S]; S],
             b: [T::zero(); S],
@@ -156,8 +156,8 @@ impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize
     }
 }
 
-impl<E, F, T: Real, V: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    ImplicitRungeKutta<E, F, T, V, D, O, S, I>
+impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
+    ImplicitRungeKutta<E, F, T, Y, D, O, S, I>
 {
     /// Set the relative tolerance for error control
     pub fn rtol(mut self, rtol: T) -> Self {

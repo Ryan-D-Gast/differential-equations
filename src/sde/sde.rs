@@ -24,10 +24,10 @@ use crate::{
 /// Note that the event function is optional and can be left out when implementing.
 ///
 #[allow(unused_variables)]
-pub trait SDE<T = f64, V = f64, D = String>
+pub trait SDE<T = f64, Y = f64, D = String>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
 {
     /// Drift function a(t,Y) - deterministic part of the SDE
@@ -47,7 +47,7 @@ where
     /// * `y`    - Dependent variable point.
     /// * `dydt` - Drift term output.
     ///
-    fn drift(&self, t: T, y: &V, dydt: &mut V);
+    fn drift(&self, t: T, y: &Y, dydt: &mut Y);
 
     /// Diffusion function b(t,Y) - stochastic part of the SDE
     ///
@@ -60,7 +60,7 @@ where
     /// * `y`    - Dependent variable point.
     /// * `dydw` - Diffusion term output.
     ///
-    fn diffusion(&self, t: T, y: &V, dydw: &mut V);
+    fn diffusion(&self, t: T, y: &Y, dydw: &mut Y);
 
     /// Noise function - generates random noise increments for the SDE
     ///
@@ -76,7 +76,7 @@ where
     /// * `dt` - Time step size.
     /// * `dw` - Vector to store generated noise increments.
     ///
-    fn noise(&mut self, dt: T, dw: &mut V);
+    fn noise(&mut self, dt: T, dw: &mut Y);
 
     /// Event function to detect significant conditions during integration.
     ///
@@ -91,7 +91,7 @@ where
     /// # Returns
     /// * `ControlFlag` - Command to continue or stop solver.
     ///
-    fn event(&self, t: T, y: &V) -> ControlFlag<T, V, D> {
+    fn event(&self, t: T, y: &Y) -> ControlFlag<T, Y, D> {
         ControlFlag::Continue
     }
 }

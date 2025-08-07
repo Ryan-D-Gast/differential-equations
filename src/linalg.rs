@@ -2,10 +2,10 @@
 
 use crate::traits::{Real, State};
 
-pub fn dot<T, V>(a: &V, b: &V) -> T
+pub fn dot<T, Y>(a: &Y, b: &Y) -> T
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
 {
     let mut sum = T::zero();
     for i in 0..a.len() {
@@ -14,10 +14,10 @@ where
     sum
 }
 
-pub fn norm<T, V>(a: V) -> T
+pub fn norm<T, Y>(a: Y) -> T
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
 {
     let mut sum = T::zero();
     for i in 0..a.len() {
@@ -26,10 +26,10 @@ where
     sum.sqrt()
 }
 
-pub fn component_multiply<T, V>(a: &V, b: &V) -> V
+pub fn component_multiply<T, Y>(a: &Y, b: &Y) -> Y
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
 {
     let mut result = *a;
     for i in 0..a.len() {
@@ -38,8 +38,8 @@ where
     result
 }
 
-pub fn component_square<T: Real, V: State<T>>(v: &V) -> V {
-    let mut result = V::zeros();
+pub fn component_square<T: Real, Y: State<T>>(v: &Y) -> Y {
+    let mut result = Y::zeros();
 
     for i in 0..v.len() {
         let val = v.get(i);

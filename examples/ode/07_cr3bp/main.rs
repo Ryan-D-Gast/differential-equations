@@ -41,7 +41,10 @@ impl ODE<f64, StateVector<f64>> for Cr3bp {
         dsdt.vx = sv.x + 2.0 * sv.vy
             - (1.0 - self.mu) * (sv.x + self.mu) / r13.powi(3)
             - self.mu * (sv.x - 1.0 + self.mu) / r23.powi(3);
-        dsdt.vy = sv.y - 2.0 * sv.vx - (1.0 - self.mu) * sv.y / r13.powi(3) - self.mu * sv.y / r23.powi(3);
+        dsdt.vy = sv.y
+            - 2.0 * sv.vx
+            - (1.0 - self.mu) * sv.y / r13.powi(3)
+            - self.mu * sv.y / r23.powi(3);
         dsdt.vz = -(1.0 - self.mu) * sv.z / r13.powi(3) - self.mu * sv.z / r23.powi(3);
     }
 }
@@ -61,7 +64,7 @@ fn main() {
     let ode = Cr3bp {
         mu: 0.012150585609624, // Earth-Moon mass ratio
     };
-    
+
     // Near rectilinear orbit around the Moon system
     let sv = StateVector {
         x: 1.021881345465263,
@@ -83,7 +86,12 @@ fn main() {
     let mut method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
     match cr3bp_problem
         // Detect crossing of the hyperplane centered at x = 1.0, y = 0.0, z = 0.0  facing the direction of the norm of the vector [0.5, 0.5, 0.0]
-        .hyperplane_crossing(vector![1.0, 0.0, 0.0], vector![0.5, 0.5, 0.0], extractor, CrossingDirection::Both)
+        .hyperplane_crossing(
+            vector![1.0, 0.0, 0.0],
+            vector![0.5, 0.5, 0.0],
+            extractor,
+            CrossingDirection::Both,
+        )
         .solve(&mut method)
     {
         Ok(solution) => {
@@ -91,10 +99,7 @@ fn main() {
             println!("Solution:");
             println!("t, [x, y, z]");
             for (t, sv) in solution.iter() {
-                println!(
-                    "{:.4}, [{:.4}, {:.4}, {:.4}]",
-                    t, sv.x, sv.y, sv.z
-                );
+                println!("{:.4}, [{:.4}, {:.4}, {:.4}]", t, sv.x, sv.y, sv.z);
             }
 
             // Print the statistics

@@ -64,23 +64,23 @@ use super::*;
 ///
 pub struct DefaultSolout {}
 
-impl<T, V, D> Solout<T, V, D> for DefaultSolout
+impl<T, Y, D> Solout<T, Y, D> for DefaultSolout
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
 {
     fn solout<I>(
         &mut self,
         t_curr: T,
         _t_prev: T,
-        y_curr: &V,
-        _y_prev: &V,
+        y_curr: &Y,
+        _y_prev: &Y,
         _interpolator: &mut I,
-        solution: &mut Solution<T, V, D>,
-    ) -> ControlFlag<T, V, D>
+        solution: &mut Solution<T, Y, D>,
+    ) -> ControlFlag<T, Y, D>
     where
-        I: Interpolation<T, V>,
+        I: Interpolation<T, Y>,
     {
         // Output the current time and state to the vectors
         solution.push(t_curr, *y_curr);

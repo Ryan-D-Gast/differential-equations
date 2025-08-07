@@ -97,29 +97,29 @@ use crate::{
 /// let results = problem.dense(4).solve(&mut method).unwrap();
 /// ```
 #[derive(Clone, Debug)]
-pub struct ODEProblem<T, V, D, F>
+pub struct ODEProblem<T, Y, D, F>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: ODE<T, V, D>,
+    F: ODE<T, Y, D>,
 {
     // Initial Value Problem Fields
     pub ode: F, // ODE containing the Differential Equation and Optional Terminate Function.
     pub t0: T,  // Initial Time.
     pub tf: T,  // Final Time.
-    pub y0: V,  // Initial State Vector.
+    pub y0: Y,  // Initial State Vector.
 
     // Phantom Data for Users event output
     _event_output_type: std::marker::PhantomData<D>,
 }
 
-impl<T, V, D, F> ODEProblem<T, V, D, F>
+impl<T, Y, D, F> ODEProblem<T, Y, D, F>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: ODE<T, V, D>,
+    F: ODE<T, Y, D>,
 {
     /// Create a new Initial Value Problem
     ///
@@ -132,7 +132,7 @@ where
     /// # Returns
     /// * ODEProblem Problem ready to be solved.
     ///
-    pub fn new(ode: F, t0: T, tf: T, y0: V) -> Self {
+    pub fn new(ode: F, t0: T, tf: T, y0: Y) -> Self {
         ODEProblem {
             ode,
             t0,
@@ -145,11 +145,11 @@ where
     /// Solve the ODEProblem using a default solout, e.g. outputting solutions at calculated steps.
     ///
     /// # Returns
-    /// * `Result<Solution<T, V, D>, Status<T, V, D>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Status)` if an errors or issues such as stiffness are encountered.
+    /// * `Result<Solution<T, Y, D>, Status<T, Y, D>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Status)` if an errors or issues such as stiffness are encountered.
     ///
-    pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
+    pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, Y, D>, Error<T, Y>>
     where
-        S: OrdinaryNumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: OrdinaryNumericalMethod<T, Y, D> + Interpolation<T, Y>,
     {
         let mut default_solout = DefaultSolout::new(); // Default solout implementation
         solve_ode(
@@ -167,10 +167,10 @@ where
     /// # Returns
     /// * ODEProblem OrdinaryNumericalMethod with the provided solout function ready for .solve() method.
     ///
-    pub fn solout<'a, O: Solout<T, V, D>>(
+    pub fn solout<'a, O: Solout<T, Y, D>>(
         &'a self,
         solout: &'a mut O,
-    ) -> ODEProblemMutRefSoloutPair<'a, T, V, D, F, O> {
+    ) -> ODEProblemMutRefSoloutPair<'a, T, Y, D, F, O> {
         ODEProblemMutRefSoloutPair::new(self, solout)
     }
 
@@ -183,7 +183,7 @@ where
     /// # Returns
     /// * ODEProblem OrdinaryNumericalMethod with Even Solout function ready for .solve() method.
     ///
-    pub fn even(&self, dt: T) -> ODEProblemSoloutPair<'_, T, V, D, F, EvenSolout<T>> {
+    pub fn even(&self, dt: T) -> ODEProblemSoloutPair<'_, T, Y, D, F, EvenSolout<T>> {
         let even_solout = EvenSolout::new(dt, self.t0, self.tf); // Even solout implementation
         ODEProblemSoloutPair::new(self, even_solout)
     }
@@ -197,7 +197,7 @@ where
     /// # Returns
     /// * ODEProblem OrdinaryNumericalMethod with Dense Output function ready for .solve() method.
     ///
-    pub fn dense(&self, n: usize) -> ODEProblemSoloutPair<'_, T, V, D, F, DenseSolout> {
+    pub fn dense(&self, n: usize) -> ODEProblemSoloutPair<'_, T, Y, D, F, DenseSolout> {
         let dense_solout = DenseSolout::new(n); // Dense solout implementation
         ODEProblemSoloutPair::new(self, dense_solout)
     }
@@ -211,7 +211,7 @@ where
     /// # Returns
     /// * ODEProblem OrdinaryNumericalMethod with Custom Time Evaluation function ready for .solve() method.
     ///
-    pub fn t_eval(&self, points: Vec<T>) -> ODEProblemSoloutPair<'_, T, V, D, F, TEvalSolout<T>> {
+    pub fn t_eval(&self, points: Vec<T>) -> ODEProblemSoloutPair<'_, T, Y, D, F, TEvalSolout<T>> {
         let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf); // Custom time evaluation solout implementation
         ODEProblemSoloutPair::new(self, t_eval_solout)
     }
@@ -232,7 +232,7 @@ where
         component_idx: usize,
         threshhold: T,
         direction: CrossingDirection,
-    ) -> ODEProblemSoloutPair<'_, T, V, D, F, CrossingSolout<T>> {
+    ) -> ODEProblemSoloutPair<'_, T, Y, D, F, CrossingSolout<T>> {
         let crossing_solout =
             CrossingSolout::new(component_idx, threshhold).with_direction(direction); // Crossing solout implementation
         ODEProblemSoloutPair::new(self, crossing_solout)
@@ -250,15 +250,15 @@ where
     /// # Returns
     /// * ODEProblem OrdinaryNumericalMethod with HyperplaneCrossingSolout function ready for .solve() method.
     ///
-    pub fn hyperplane_crossing<V1>(
+    pub fn hyperplane_crossing<Y1>(
         &self,
-        point: V1,
-        normal: V1,
-        extractor: fn(&V) -> V1,
+        point: Y1,
+        normal: Y1,
+        extractor: fn(&Y) -> Y1,
         direction: CrossingDirection,
-    ) -> ODEProblemSoloutPair<'_, T, V, D, F, HyperplaneCrossingSolout<T, V1, V>>
+    ) -> ODEProblemSoloutPair<'_, T, Y, D, F, HyperplaneCrossingSolout<T, Y1, Y>>
     where
-        V1: State<T>,
+        Y1: State<T>,
     {
         let solout =
             HyperplaneCrossingSolout::new(point, normal, extractor).with_direction(direction);
@@ -268,32 +268,32 @@ where
 }
 
 /// ODEProblemMutRefSoloutPair serves as a intermediate between the ODEProblem struct and a custom solout provided by the user.
-pub struct ODEProblemMutRefSoloutPair<'a, T, V, D, F, O>
+pub struct ODEProblemMutRefSoloutPair<'a, T, Y, D, F, O>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: ODE<T, V, D>,
-    O: Solout<T, V, D>,
+    F: ODE<T, Y, D>,
+    O: Solout<T, Y, D>,
 {
-    pub problem: &'a ODEProblem<T, V, D, F>, // Reference to the ODEProblem struct
+    pub problem: &'a ODEProblem<T, Y, D, F>, // Reference to the ODEProblem struct
     pub solout: &'a mut O,                   // Reference to the solout implementation
 }
 
-impl<'a, T, V, D, F, O> ODEProblemMutRefSoloutPair<'a, T, V, D, F, O>
+impl<'a, T, Y, D, F, O> ODEProblemMutRefSoloutPair<'a, T, Y, D, F, O>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: ODE<T, V, D>,
-    O: Solout<T, V, D>,
+    F: ODE<T, Y, D>,
+    O: Solout<T, Y, D>,
 {
     /// Create a new ODEProblemMutRefSoloutPair
     ///
     /// # Arguments
     /// * `problem` - Reference to the ODEProblem struct
     ///
-    pub fn new(problem: &'a ODEProblem<T, V, D, F>, solout: &'a mut O) -> Self {
+    pub fn new(problem: &'a ODEProblem<T, Y, D, F>, solout: &'a mut O) -> Self {
         ODEProblemMutRefSoloutPair { problem, solout }
     }
 
@@ -303,11 +303,11 @@ where
     /// * `solver` - OrdinaryNumericalMethod to use for solving the ODEProblem
     ///
     /// # Returns
-    /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if an errors or issues such as stiffness are encountered.
+    /// * `Result<Solution<T, Y, D>, Error<T, Y>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if an errors or issues such as stiffness are encountered.
     ///
-    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
+    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, Y, D>, Error<T, Y>>
     where
-        S: OrdinaryNumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: OrdinaryNumericalMethod<T, Y, D> + Interpolation<T, Y>,
     {
         solve_ode(
             solver,
@@ -322,25 +322,25 @@ where
 
 /// ODEProblemSoloutPair serves as a intermediate between the ODEProblem struct and solve_ode when a predefined solout is used.
 #[derive(Clone, Debug)]
-pub struct ODEProblemSoloutPair<'a, T, V, D, F, O>
+pub struct ODEProblemSoloutPair<'a, T, Y, D, F, O>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: ODE<T, V, D>,
-    O: Solout<T, V, D>,
+    F: ODE<T, Y, D>,
+    O: Solout<T, Y, D>,
 {
-    pub problem: &'a ODEProblem<T, V, D, F>, // Reference to the ODEProblem struct
+    pub problem: &'a ODEProblem<T, Y, D, F>, // Reference to the ODEProblem struct
     pub solout: O,                           // Solout implementation
 }
 
-impl<'a, T, V, D, F, O> ODEProblemSoloutPair<'a, T, V, D, F, O>
+impl<'a, T, Y, D, F, O> ODEProblemSoloutPair<'a, T, Y, D, F, O>
 where
     T: Real,
-    V: State<T>,
+    Y: State<T>,
     D: CallBackData,
-    F: ODE<T, V, D>,
-    O: Solout<T, V, D>,
+    F: ODE<T, Y, D>,
+    O: Solout<T, Y, D>,
 {
     /// Create a new ODEProblemSoloutPair
     ///
@@ -348,7 +348,7 @@ where
     /// * `problem` - Reference to the ODEProblem struct
     /// * `solout` - Solout implementation
     ///
-    pub fn new(problem: &'a ODEProblem<T, V, D, F>, solout: O) -> Self {
+    pub fn new(problem: &'a ODEProblem<T, Y, D, F>, solout: O) -> Self {
         ODEProblemSoloutPair { problem, solout }
     }
 
@@ -358,11 +358,11 @@ where
     /// * `solver` - OrdinaryNumericalMethod to use for solving the ODEProblem
     ///
     /// # Returns
-    /// * `Result<Solution<T, V, D>, Error<T, V>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if an errors or issues such as stiffness are encountered.
+    /// * `Result<Solution<T, Y, D>, Error<T, Y>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if an errors or issues such as stiffness are encountered.
     ///
-    pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, V, D>, Error<T, V>>
+    pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, Y, D>, Error<T, Y>>
     where
-        S: OrdinaryNumericalMethod<T, V, D> + Interpolation<T, V>,
+        S: OrdinaryNumericalMethod<T, Y, D> + Interpolation<T, Y>,
     {
         solve_ode(
             solver,
