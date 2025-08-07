@@ -1,3 +1,4 @@
+#![allow(clippy::all)]
 //! Prelude module for the Differential Equations library.
 //!
 //! This prelude re-exports all the essential types and methods
@@ -35,16 +36,6 @@
 //!
 
 pub use crate::{
-    control::ControlFlag,
-    // Delay Differential Equations (DDE) module
-    dde::{
-        DDE,        // Define the DDE system
-        DDEProblem, // Create IVP to solve
-    },
-
-    derive::State,
-    error::Error,
-    interpolate::Interpolation,
     // Numerical Methods
     methods::{
         AdamsPredictorCorrector,      // Adams Predictor-Corrector methods for ODEs
@@ -59,6 +50,12 @@ pub use crate::{
         ODEProblem, // Create IVP to solve
     },
 
+    // Delay Differential Equations (DDE) module
+    dde::{
+        DDE,        // Define the DDE system
+        DDEProblem, // Create IVP to solve
+    },
+
     // Stochastic Differential Equations (SDE) module
     sde::{
         SDE,        // Define the SDE system
@@ -70,6 +67,10 @@ pub use crate::{
         CrossingDirection,
         Solout, // Trait for defining a custom output behavior
     },
+    control::ControlFlag,
+    derive::State,
+    error::Error,
+    interpolate::Interpolation,
     solution::Solution,
     stats::Evals,
     status::Status,
