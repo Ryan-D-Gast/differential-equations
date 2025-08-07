@@ -98,19 +98,11 @@ where
     }
 
     fn get(&self, i: usize) -> T {
-        if i < self.len() {
-            self[(i / C, i % C)]
-        } else {
-            panic!("Index out of bounds")
-        }
+        self[(i / C, i % C)]
     }
 
     fn set(&mut self, i: usize, value: T) {
-        if i < self.len() {
-            self[(i / C, i % C)] = value;
-        } else {
-            panic!("Index out of bounds")
-        }
+        self[(i / C, i % C)] = value;
     }
 
     fn zeros() -> Self {
