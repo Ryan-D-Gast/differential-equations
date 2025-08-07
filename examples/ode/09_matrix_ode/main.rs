@@ -107,7 +107,7 @@ fn main() {
             }
 
             // Display final values and analytical comparison
-            if let Some((final_t, final_y)) = solution.iter().last() {
+            if let Some((final_t, final_y)) = solution.iter().next_back() {
                 println!("=== FINAL STATE ===");
                 println!("Final time: {:.2}s", final_t);
                 println!("Final matrix Y({:.2}):", final_t);
