@@ -18,10 +18,10 @@ use nalgebra::DMatrix;
 ///
 /// # Impl
 /// * `diff`    - Differential Equation dydt = f(t, y) in form f(t, &y, &mut dydt).
-/// * `event`   - Solout function to interupt solver when condition is met or event occurs.
+/// * `event`   - Event function to interupt solver when condition is met or event occurs.
+/// * `jacobian` - Jacobian matrix J = df/dy for the system of equations.
 ///
-/// Note that the solout function is optional and can be left out when implementing
-/// in which can it will be set to return false by default.
+/// Note that the event and jacobian functions are optional and can be left out when implementing.
 ///
 #[allow(unused_variables)]
 pub trait ODE<T = f64, V = f64, D = String>

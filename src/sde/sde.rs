@@ -19,10 +19,9 @@ use crate::{
 /// * `drift`     - Deterministic part a(t,Y) of the SDE in form drift(t, &y, &mut dydt).
 /// * `diffusion` - Stochastic part b(t,Y) of the SDE in form diffusion(t, &y, &mut dydw).
 /// * `noise`     - Generates the random noise increments for the SDE.
-/// * `event`     - Solout function to interupt solver when condition is met or event occurs.
+/// * `event`     - Event function to interupt solver when condition is met or event occurs.
 ///
-/// Note that the event function is optional and can be left out when implementing
-/// in which case it will use a default implementation.
+/// Note that the event function is optional and can be left out when implementing.
 ///
 #[allow(unused_variables)]
 pub trait SDE<T = f64, V = f64, D = String>

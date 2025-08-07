@@ -7,19 +7,11 @@ use crate::{
 
 /// Trait for defining a system of Delay Differential Equations (DDEs).
 ///
-/// Implement this trait to describe your DDE system to the solver functions like
-/// [`solve_dde`] or the [`DDEProblem`] struct.
-///
 /// The system is generally represented as:
 /// `dy/dt = f(t, y(t), y(t - tau1), y(t - tau2), ...)`
 /// where `y` is the state vector, `t` is time, and `y(t - tau_i)` represents
 /// the state at some past time (a delay).
 ///
-/// # Type Parameters
-///
-/// * `T`: The floating-point type used for time (e.g., `f64`). Must implement [`Real`].
-/// * `V`: The type representing the state vector (e.g., `nalgebra::VectorN<T, N>`). Must implement [`State<T>`].
-/// * `D`: The type used for carrying data with termination events (e.g., `String` or a custom enum). Must implement [`CallBackData`]. Defaults to `String`.
 pub trait DDE<const L: usize, T = f64, V = f64, D = String>
 where
     T: Real,
