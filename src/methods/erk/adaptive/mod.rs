@@ -62,7 +62,7 @@ impl_erk_adaptive_step_constructor!(
     6,
     9,
     10,
-    "Creates a ExplictRungeKutta 6(5) method with 9 stages and a 5th order interpolant."
+    "Creates an Explicit Runge-Kutta 6(5) method with 9 stages and a 5th order interpolant."
 );
 impl_erk_adaptive_step_constructor!(
     rkv656e,
@@ -70,7 +70,7 @@ impl_erk_adaptive_step_constructor!(
     6,
     9,
     12,
-    "Creates a ExplictRungeKutta 6(5) method with 9 stages and a 6th order interpolant."
+    "Creates an Explicit Runge-Kutta 6(5) method with 9 stages and a 6th order interpolant."
 );
 impl_erk_adaptive_step_constructor!(
     rkv766e,
@@ -78,7 +78,7 @@ impl_erk_adaptive_step_constructor!(
     7,
     10,
     13,
-    "Creates a ExplicitRungeKutta 7(6) method with 10 stages and a 6th order interpolant."
+    "Creates an Explicit Runge-Kutta 7(6) method with 10 stages and a 6th order interpolant."
 );
 impl_erk_adaptive_step_constructor!(
     rkv767e,
@@ -86,7 +86,7 @@ impl_erk_adaptive_step_constructor!(
     7,
     10,
     16,
-    "Creates a ExplicitRungeKutta 7(6) method with 10 stages and a 7th order interpolant."
+    "Creates an Explicit Runge-Kutta 7(6) method with 10 stages and a 7th order interpolant."
 );
 impl_erk_adaptive_step_constructor!(
     rkv877e,
@@ -94,7 +94,7 @@ impl_erk_adaptive_step_constructor!(
     8,
     13,
     17,
-    "Creates a ExplicitRungeKutta 8(7) method with 13 stages and a 7th order interpolant."
+    "Creates an Explicit Runge-Kutta 8(7) method with 13 stages and a 7th order interpolant."
 );
 impl_erk_adaptive_step_constructor!(
     rkv878e,
@@ -102,7 +102,7 @@ impl_erk_adaptive_step_constructor!(
     8,
     13,
     21,
-    "Creates a ExplicitRungeKutta 8(7) method with 13 stages and a 8th order interpolant."
+    "Creates an Explicit Runge-Kutta 8(7) method with 13 stages and an 8th order interpolant."
 );
 impl_erk_adaptive_step_constructor!(
     rkv988e,
@@ -110,7 +110,7 @@ impl_erk_adaptive_step_constructor!(
     9,
     16,
     21,
-    "Creates a ExplicitRungeKutta 9(8) method with 16 stages and a 8th order interpolant."
+    "Creates an Explicit Runge-Kutta 9(8) method with 16 stages and an 8th order interpolant."
 );
 impl_erk_adaptive_step_constructor!(
     rkv989e,
@@ -118,5 +118,5 @@ impl_erk_adaptive_step_constructor!(
     9,
     16,
     26,
-    "Creates a ExplicitRungeKutta 9(8) method with 16 stages and a 9th order interpolant."
+    "Creates an Explicit Runge-Kutta 9(8) method with 16 stages and a 9th order interpolant."
 );

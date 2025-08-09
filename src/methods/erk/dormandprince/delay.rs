@@ -1,4 +1,4 @@
-//! Dormand-Prince Runge-Kutta methods for DDEs
+//! Dormand–Prince explicit Runge–Kutta methods for Delay Differential Equations (DDEs)
 
 use crate::{
     Error, Status,
@@ -41,42 +41,41 @@ impl<
         self.non_stiffness_counter = 0;
         self.history = VecDeque::new();
 
-        // Initialize arrays for lags and delayed states
-        let mut lags = [T::zero(); L];
-        let mut yd = [Y::zeros(); L];
+        // Delay buffers
+        let mut delays = [T::zero(); L];
+        let mut y_delayed = [Y::zeros(); L];
 
-        // Evaluate initial lags and delayed states
+        // Evaluate initial delays and history
         if L > 0 {
-            dde.lags(self.t, &self.y, &mut lags);
+            dde.lags(self.t, &self.y, &mut delays);
             for i in 0..L {
-                if lags[i] <= T::zero() {
+                if delays[i] <= T::zero() {
                     return Err(Error::BadInput {
                         msg: "All lags must be positive.".to_string(),
                     });
                 }
-                let t_delayed = self.t - lags[i];
-                // Ensure delayed time is within history range (t_delayed <= t0)
+                let t_delayed = self.t - delays[i];
+                // Ensure delayed time is within history range
                 if (t_delayed - t0) * (tf - t0).signum() > T::default_epsilon() {
                     return Err(Error::BadInput {
                         msg: format!("Delayed time {} is beyond initial time {}", t_delayed, t0),
                     });
                 }
-                yd[i] = phi(t_delayed);
+                y_delayed[i] = phi(t_delayed);
             }
         }
 
-        // Calculate initial derivative
-        dde.diff(self.t, &self.y, &yd, &mut self.k[0]);
+        // Initial derivative
+        dde.diff(self.t, &self.y, &y_delayed, &mut self.k[0]);
         self.dydt = self.k[0];
         evals.function += 1;
         self.dydt_prev = self.dydt;
 
-        // Store initial state in history
+        // Seed history
         self.history.push_back((self.t, self.y, self.dydt));
 
-        // Calculate initial step size h0 if not provided
+        // Initial step size
         if self.h0 == T::zero() {
-            // Use Dormand-Prince specific step size calculation
             self.h0 = InitialStepSize::<Delay>::compute(
                 dde, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max, phi,
                 &self.k[0], &mut evals,
@@ -122,40 +121,41 @@ impl<
         }
         self.steps += 1;
 
-        // Initialize variables for the step
-        let mut lags = [T::zero(); L];
-        let mut yd = [Y::zeros(); L];
+        // Step buffers
+        let mut delays = [T::zero(); L];
+        let mut y_delayed = [Y::zeros(); L];
 
-        // DDE: Determine if iterative approach for lag handling is needed
-        let mut min_lag_abs = T::infinity();
+        // Decide if delay iteration is needed
+        let mut min_delay_abs = T::infinity();
         if L > 0 {
-            // Predict y at t+h using Euler step to estimate lags at t+h
+            // Predict y(t+h) to estimate delays at t+h
             let y_pred_for_lags = self.y + self.k[0] * self.h;
-            dde.lags(self.t + self.h, &y_pred_for_lags, &mut lags);
+            dde.lags(self.t + self.h, &y_pred_for_lags, &mut delays);
             for i in 0..L {
-                min_lag_abs = min_lag_abs.min(lags[i].abs());
+                min_delay_abs = min_delay_abs.min(delays[i].abs());
             }
         }
 
-        // If lag values have to be extrapolated, we need to iterate for convergence
-        let max_iter: usize = if L > 0 && min_lag_abs < self.h.abs() && min_lag_abs > T::zero() {
+        // Delay iteration count
+        let max_iter: usize = if L > 0 && min_delay_abs < self.h.abs() && min_delay_abs > T::zero()
+        {
             5
         } else {
             1
         };
-        let mut y_next_candidate_iter = self.y; // Approximated y at t+h, refined in DDE iterations
-        let mut y_prev_candidate_iter = self.y; // y_next_candidate_iter from previous DDE iteration
-        let mut dde_iteration_failed = false;
-        let mut err: T = T::zero(); // Error norm for step size control
-        let mut ysti = Y::zeros(); // Store last stage for stiffness detection
+        let mut y_next_est = self.y;
+        let mut y_next_est_prev = self.y;
+        let mut dde_iter_failed = false;
+        let mut err_norm: T = T::zero();
+        let mut y_last_stage = Y::zeros();
 
-        // DDE iteration loop (for handling implicit lags or just one pass for explicit)
-        for iter_idx in 0..max_iter {
-            if iter_idx > 0 {
-                y_prev_candidate_iter = y_next_candidate_iter;
+        // DDE iteration loop
+        for it in 0..max_iter {
+            if it > 0 {
+                y_next_est_prev = y_next_est;
             }
 
-            // Compute Runge-Kutta stages
+            // Compute stages
             let mut y_stage = Y::zeros();
             for i in 1..self.stages {
                 y_stage = Y::zeros();
@@ -164,45 +164,44 @@ impl<
                 }
                 y_stage = self.y + y_stage * self.h;
 
-                // Evaluate delayed states for the current stage
+                // Delayed states for this stage
                 if L > 0 {
-                    dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut lags);
-                    self.lagvals(self.t + self.c[i] * self.h, &lags, &mut yd, phi);
+                    dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut delays);
+                    self.lagvals(self.t + self.c[i] * self.h, &delays, &mut y_delayed, phi);
                 }
-                dde.diff(self.t + self.c[i] * self.h, &y_stage, &yd, &mut self.k[i]);
+                dde.diff(
+                    self.t + self.c[i] * self.h,
+                    &y_stage,
+                    &y_delayed,
+                    &mut self.k[i],
+                );
             }
-            evals.function += self.stages - 1; // k[0] was already available
+            evals.function += self.stages - 1;
 
-            // Store the last stage for stiffness detection
-            ysti = y_stage;
+            // Keep last stage for stiffness detection
+            y_last_stage = y_stage;
 
-            // Calculate the line segment for the new y value
+            // RK combination
             let mut yseg = Y::zeros();
             for i in 0..self.stages {
                 yseg += self.k[i] * self.b[i];
             }
 
-            // Calculate the new y value using the line segment
             let y_new = self.y + yseg * self.h;
 
-            // Dormand-Prince error estimation
+            // Dormand–Prince error estimation
             let er = self.er.unwrap();
             let n = self.y.len();
             let mut err_val = T::zero();
             let mut err2 = T::zero();
             let mut erri;
             for i in 0..n {
-                // Calculate the error scale
                 let sk = self.atol + self.rtol * self.y.get(i).abs().max(y_new.get(i).abs());
-
-                // Primary error term
                 erri = T::zero();
                 for j in 0..self.stages {
                     erri += er[j] * self.k[j].get(i);
                 }
                 err_val += (erri / sk).powi(2);
-
-                // Optional secondary error term
                 if let Some(bh) = &self.bh {
                     erri = yseg.get(i);
                     for j in 0..self.stages {
@@ -215,21 +214,18 @@ impl<
             if deno <= T::zero() {
                 deno = T::one();
             }
-            err = self.h.abs() * err_val * (T::one() / (deno * T::from_usize(n).unwrap())).sqrt();
+            err_norm =
+                self.h.abs() * err_val * (T::one() / (deno * T::from_usize(n).unwrap())).sqrt();
 
-            // DDE iteration convergence check (if max_iter > 1)
-            if max_iter > 1 && iter_idx > 0 {
+            // Convergence check (if iterating)
+            if max_iter > 1 && it > 0 {
                 let mut dde_iteration_error = T::zero();
                 let n_dim = self.y.len();
                 for i_dim in 0..n_dim {
                     let scale = self.atol
-                        + self.rtol
-                            * y_prev_candidate_iter
-                                .get(i_dim)
-                                .abs()
-                                .max(y_new.get(i_dim).abs());
+                        + self.rtol * y_next_est_prev.get(i_dim).abs().max(y_new.get(i_dim).abs());
                     if scale > T::zero() {
-                        let diff_val = y_new.get(i_dim) - y_prev_candidate_iter.get(i_dim);
+                        let diff_val = y_new.get(i_dim) - y_next_est_prev.get(i_dim);
                         dde_iteration_error += (diff_val / scale).powi(2);
                     }
                 }
@@ -239,59 +235,51 @@ impl<
                 }
 
                 if dde_iteration_error <= self.rtol * T::from_f64(0.1).unwrap() {
-                    break; // DDE iteration converged
+                    break;
                 }
-                if iter_idx == max_iter - 1 {
-                    // Last iteration
-                    dde_iteration_failed =
-                        dde_iteration_error > self.rtol * T::from_f64(0.1).unwrap();
+                if it == max_iter - 1 {
+                    dde_iter_failed = dde_iteration_error > self.rtol * T::from_f64(0.1).unwrap();
                 }
             }
-            y_next_candidate_iter = y_new; // Update candidate solution for t+h
+            y_next_est = y_new;
+        }
 
-            // Store ysti for potential stiffness detection
-            if iter_idx == max_iter - 1 || max_iter == 1 {
-                // Keep ysti from the final iteration for stiffness detection
-            }
-        } // End of DDE iteration loop
-
-        // Handle DDE iteration failure: reduce step size and retry
-        if dde_iteration_failed {
+        // Iteration failed: reduce h and retry
+        if dde_iter_failed {
             let sign = self.h.signum();
             self.h = (self.h.abs() * T::from_f64(0.5).unwrap()).max(self.h_min.abs()) * sign;
-            // Ensure step size is not smaller than a fraction of the minimum lag, if applicable
             if L > 0
-                && min_lag_abs > T::zero()
-                && self.h.abs() < T::from_f64(2.0).unwrap() * min_lag_abs
+                && min_delay_abs > T::zero()
+                && self.h.abs() < T::from_f64(2.0).unwrap() * min_delay_abs
             {
-                self.h = min_lag_abs * sign;
+                self.h = min_delay_abs * sign;
             }
             self.h = constrain_step_size(self.h, self.h_min, self.h_max);
             self.status = Status::RejectedStep;
-            return Ok(evals); // Return to retry step with smaller h
+            return Ok(evals);
         }
 
-        // Step size scale factor
+        // Step size control
         let order = T::from_usize(self.order).unwrap();
         let error_exponent = T::one() / order;
-        let mut scale = self.safety_factor * err.powf(-error_exponent);
+        let mut scale = self.safety_factor * err_norm.powf(-error_exponent);
 
-        // Clamp scale factor to prevent extreme step size changes
+        // Clamp scale factor
         scale = scale.max(self.min_scale).min(self.max_scale);
 
-        // Step acceptance/rejection logic
-        if err <= T::one() {
-            // Step accepted
-            let y_new = y_next_candidate_iter;
+        // Accept/reject
+        if err_norm <= T::one() {
+            let y_new = y_next_est;
             let t_new = self.t + self.h;
 
-            // Calculate the new derivative at the new point
+            // Derivative at new point
             if L > 0 {
-                dde.lags(t_new, &y_new, &mut lags);
-                self.lagvals(t_new, &lags, &mut yd, phi);
+                dde.lags(t_new, &y_new, &mut delays);
+                self.lagvals(t_new, &delays, &mut y_delayed, phi);
             }
-            dde.diff(t_new, &y_new, &yd, &mut self.dydt);
-            evals.function += 1; // Stiffness detection (every 100 steps)
+            dde.diff(t_new, &y_new, &y_delayed, &mut self.dydt);
+            evals.function += 1;
+            // Stiffness detection (every 100 steps)
             let n_stiff_threshold = 100;
             if self.steps % n_stiff_threshold == 0 {
                 let mut stdnum = T::zero();
@@ -306,7 +294,7 @@ impl<
                 for i in 0..sqr.len() {
                     stdnum += sqr.get(i).powi(2);
                 }
-                let sqr = self.dydt - ysti;
+                let sqr = self.dydt - y_last_stage;
                 for i in 0..sqr.len() {
                     stden += sqr.get(i).powi(2);
                 }
@@ -335,7 +323,7 @@ impl<
                 }
             }
 
-            // Preparation for dense output / interpolation
+            // Prepare dense output / interpolation
             self.cont[0] = self.y;
             let ydiff = y_new - self.y;
             self.cont[1] = ydiff;
@@ -343,11 +331,9 @@ impl<
             self.cont[2] = bspl;
             self.cont[3] = ydiff - self.dydt * self.h - bspl;
 
-            // If method has dense output stages, compute them
+            // Dense output stages
             if let Some(bi) = &self.bi {
-                // Compute extra stages for dense output
                 if I > S {
-                    // First dense output coefficient, k{i=order+1}, is the derivative at the new point
                     self.k[self.stages] = self.dydt;
                     for i in S + 1..I {
                         let mut y_stage = Y::zeros();
@@ -357,38 +343,39 @@ impl<
                         y_stage = self.y + y_stage * self.h;
 
                         if L > 0 {
-                            dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut lags);
-                            // Manually inline the lagvals logic to avoid borrowing conflicts
+                            dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut delays);
                             for lag_idx in 0..L {
-                                let t_delayed = (self.t + self.c[i] * self.h) - lags[lag_idx];
+                                let t_delayed = (self.t + self.c[i] * self.h) - delays[lag_idx];
 
-                                // Check if delayed time falls within the history period (t_delayed <= t0)
                                 if (t_delayed - self.t0) * self.h.signum() <= T::default_epsilon() {
-                                    yd[lag_idx] = phi(t_delayed);
-                                // If t_delayed is after t_prev then use interpolation function
+                                    y_delayed[lag_idx] = phi(t_delayed);
                                 } else if (t_delayed - self.t_prev) * self.h.signum()
                                     > T::default_epsilon()
                                 {
                                     if self.bi.is_some() {
-                                        let s = (t_delayed - self.t_prev) / self.h_prev;
-                                        let s1 = T::one() - s;
+                                        let theta = (t_delayed - self.t_prev) / self.h_prev;
+                                        let one_minus_theta = T::one() - theta;
                                         let ilast = self.cont.len() - 1;
                                         let poly = (1..ilast).rev().fold(
                                             self.cont[ilast],
                                             |acc, cont_i| {
                                                 let factor = if cont_i >= 4 {
-                                                    if (ilast - cont_i) % 2 == 1 { s1 } else { s }
+                                                    if (ilast - cont_i) % 2 == 1 {
+                                                        one_minus_theta
+                                                    } else {
+                                                        theta
+                                                    }
                                                 } else if cont_i % 2 == 1 {
-                                                    s1
+                                                    one_minus_theta
                                                 } else {
-                                                    s
+                                                    theta
                                                 };
                                                 acc * factor + self.cont[cont_i]
                                             },
                                         );
-                                        yd[lag_idx] = self.cont[0] + poly * s;
+                                        y_delayed[lag_idx] = self.cont[0] + poly * theta;
                                     } else {
-                                        yd[lag_idx] = cubic_hermite_interpolate(
+                                        y_delayed[lag_idx] = cubic_hermite_interpolate(
                                             self.t_prev,
                                             self.t,
                                             &self.y_prev,
@@ -399,7 +386,6 @@ impl<
                                         );
                                     }
                                 } else {
-                                    // Search through history to find appropriate interpolation points
                                     let mut found_interpolation = false;
                                     let buffer = &self.history;
                                     let mut buffer_iter = buffer.iter();
@@ -415,7 +401,7 @@ impl<
                                             };
 
                                             if is_between {
-                                                yd[lag_idx] = cubic_hermite_interpolate(
+                                                y_delayed[lag_idx] = cubic_hermite_interpolate(
                                                     *t_left, *t_right, y_left, y_right, dydt_left,
                                                     dydt_right, t_delayed,
                                                 );
@@ -434,12 +420,17 @@ impl<
                                 }
                             }
                         }
-                        dde.diff(self.t + self.c[i] * self.h, &y_stage, &yd, &mut self.k[i]);
+                        dde.diff(
+                            self.t + self.c[i] * self.h,
+                            &y_stage,
+                            &y_delayed,
+                            &mut self.k[i],
+                        );
                         evals.function += 1;
                     }
                 }
 
-                // Compute dense output coefficients
+                // Dense output coefficients
                 for i in 4..self.order {
                     self.cont[i] = Y::zeros();
                     for j in 0..self.dense_stages {
@@ -455,12 +446,12 @@ impl<
             self.dydt_prev = self.k[0];
             self.h_prev = self.h;
 
-            // Update state to t + h
+            // Advance state
             self.t = t_new;
             self.y = y_new;
             self.k[0] = self.dydt;
 
-            // Update continuous output buffer and remove old entries if max_delay is set
+            // Append to history and prune
             self.history.push_back((self.t, self.y, self.dydt));
             if let Some(max_delay) = self.max_delay {
                 let cutoff_time = self.t - max_delay;
@@ -471,22 +462,19 @@ impl<
                         break;
                     }
                 }
-            } // Check if previous step is rejected
+            }
             if let Status::RejectedStep = self.status {
                 self.status = Status::Solving;
-
-                // Limit step size growth to avoid oscillations between accepted and rejected steps
                 scale = scale.min(T::one());
             }
         } else {
-            // Step Rejected
+            // Step rejected
             self.status = Status::RejectedStep;
         }
 
         // Update step size
         self.h *= scale;
-
-        // Ensure step size is within bounds
+        // Enforce bounds
         self.h = constrain_step_size(self.h, self.h_min, self.h_max);
 
         Ok(evals)
@@ -534,26 +522,28 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             // If t_delayed is after t_prev then use interpolation function
             } else if (t_delayed - self.t_prev) * self.h.signum() > T::default_epsilon() {
                 if self.bi.is_some() {
-                    let s = (t_delayed - self.t_prev) / self.h_prev;
-
-                    // Evaluate the interpolation polynomial at the requested time
-                    let s1 = T::one() - s;
+                    let theta = (t_delayed - self.t_prev) / self.h_prev;
+                    let one_minus_theta = T::one() - theta;
 
                     // Functional implementation of: cont[0] + (cont[1] + (cont[2] + (cont[3] + conpar*s1)*s)*s1)*s
                     let ilast = self.cont.len() - 1;
                     let poly = (1..ilast).rev().fold(self.cont[ilast], |acc, i| {
                         let factor = if i >= 4 {
-                            // For the higher-order part (conpar), alternate s and s1 based on index parity
-                            if (ilast - i) % 2 == 1 { s1 } else { s }
+                            if (ilast - i) % 2 == 1 {
+                                one_minus_theta
+                            } else {
+                                theta
+                            }
+                        } else if i % 2 == 1 {
+                            one_minus_theta
                         } else {
-                            // For the main polynomial part, pattern is [s1, s, s1] for indices [3, 2, 1]
-                            if i % 2 == 1 { s1 } else { s }
+                            theta
                         };
                         acc * factor + self.cont[i]
                     });
 
-                    // Final multiplication by s for the outermost level
-                    let y_interp = self.cont[0] + poly * s;
+                    // Final multiplication by theta for the outermost level
+                    let y_interp = self.cont[0] + poly * theta;
                     yd[i] = y_interp;
                 } else {
                     yd[i] = cubic_hermite_interpolate(
@@ -619,9 +609,8 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 {
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         // Check if interpolation is out of bounds
-        let posneg = (self.t - self.t_prev).signum();
-        if (t_interp - self.t_prev) * posneg < T::zero() || (t_interp - self.t) * posneg > T::zero()
-        {
+        let dir = (self.t - self.t_prev).signum();
+        if (t_interp - self.t_prev) * dir < T::zero() || (t_interp - self.t) * dir > T::zero() {
             return Err(Error::OutOfBounds {
                 t_interp,
                 t_prev: self.t_prev,
@@ -630,24 +619,28 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         }
 
         // Evaluate the interpolation polynomial at the requested time
-        let s = (t_interp - self.t_prev) / self.h_prev;
-        let s1 = T::one() - s;
+        let theta = (t_interp - self.t_prev) / self.h_prev;
+        let one_minus_theta = T::one() - theta;
 
         // Functional implementation of: cont[0] + (cont[1] + (cont[2] + (cont[3] + conpar*s1)*s)*s1)*s
         let ilast = self.cont.len() - 1;
         let poly = (1..ilast).rev().fold(self.cont[ilast], |acc, i| {
             let factor = if i >= 4 {
-                // For the higher-order part (conpar), alternate s and s1 based on index parity
-                if (ilast - i) % 2 == 1 { s1 } else { s }
+                if (ilast - i) % 2 == 1 {
+                    one_minus_theta
+                } else {
+                    theta
+                }
+            } else if i % 2 == 1 {
+                one_minus_theta
             } else {
-                // For the main polynomial part, pattern is [s1, s, s1] for indices [3, 2, 1]
-                if i % 2 == 1 { s1 } else { s }
+                theta
             };
             acc * factor + self.cont[i]
         });
 
-        // Final multiplication by s for the outermost level
-        let y_interp = self.cont[0] + poly * s;
+        // Final multiplication by theta for the outermost level
+        let y_interp = self.cont[0] + poly * theta;
 
         Ok(y_interp)
     }
