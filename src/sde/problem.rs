@@ -178,7 +178,7 @@ where
     /// * SDE Problem with Even Solout function ready for .solve() method
     ///
     pub fn even(&mut self, dt: T) -> SDEProblemSoloutPair<'_, T, Y, D, F, EvenSolout<T>> {
-        let even_solout = EvenSolout::new(dt, self.t0, self.tf); // Even solout implementation
+        let even_solout = EvenSolout::new(dt, self.t0, self.tf);
         SDEProblemSoloutPair::new(self, even_solout)
     }
 
@@ -192,7 +192,7 @@ where
     /// * SDE Problem with Dense Output function ready for .solve() method
     ///
     pub fn dense(&mut self, n: usize) -> SDEProblemSoloutPair<'_, T, Y, D, F, DenseSolout> {
-        let dense_solout = DenseSolout::new(n); // Dense solout implementation
+        let dense_solout = DenseSolout::new(n);
         SDEProblemSoloutPair::new(self, dense_solout)
     }
 
@@ -209,7 +209,7 @@ where
         &mut self,
         points: Vec<T>,
     ) -> SDEProblemSoloutPair<'_, T, Y, D, F, TEvalSolout<T>> {
-        let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf); // Custom time evaluation solout implementation
+        let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf);
         SDEProblemSoloutPair::new(self, t_eval_solout)
     }
 
@@ -231,7 +231,7 @@ where
         direction: CrossingDirection,
     ) -> SDEProblemSoloutPair<'_, T, Y, D, F, CrossingSolout<T>> {
         let crossing_solout =
-            CrossingSolout::new(component_idx, threshold).with_direction(direction); // Crossing solout implementation
+            CrossingSolout::new(component_idx, threshold).with_direction(direction);
         SDEProblemSoloutPair::new(self, crossing_solout)
     }
 
@@ -273,8 +273,8 @@ where
     F: SDE<T, Y, D>,
     O: Solout<T, Y, D>,
 {
-    pub sde_problem: &'a mut SDEProblem<T, Y, D, F>, // Reference to the SDE Problem struct
-    pub solout: &'a mut O,                           // Reference to the solout implementation
+    pub sde_problem: &'a mut SDEProblem<T, Y, D, F>,
+    pub solout: &'a mut O,
 }
 
 impl<'a, T, Y, D, F, O> SDEProblemMutRefSoloutPair<'a, T, Y, D, F, O>
@@ -331,8 +331,8 @@ where
     F: SDE<T, Y, D>,
     O: Solout<T, Y, D>,
 {
-    pub sde_problem: &'a mut SDEProblem<T, Y, D, F>, // Reference to the SDE Problem struct
-    pub solout: O,                                   // Solout implementation
+    pub sde_problem: &'a mut SDEProblem<T, Y, D, F>,
+    pub solout: O,
 }
 
 impl<'a, T, Y, D, F, O> SDEProblemSoloutPair<'a, T, Y, D, F, O>

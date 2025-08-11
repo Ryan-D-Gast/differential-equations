@@ -151,7 +151,7 @@ where
     where
         S: OrdinaryNumericalMethod<T, Y, D> + Interpolation<T, Y>,
     {
-        let mut default_solout = DefaultSolout::new(); // Default solout implementation
+        let mut default_solout = DefaultSolout::new();
         solve_ode(
             solver,
             &self.ode,
@@ -184,7 +184,7 @@ where
     /// * ODEProblem OrdinaryNumericalMethod with Even Solout function ready for .solve() method.
     ///
     pub fn even(&self, dt: T) -> ODEProblemSoloutPair<'_, T, Y, D, F, EvenSolout<T>> {
-        let even_solout = EvenSolout::new(dt, self.t0, self.tf); // Even solout implementation
+        let even_solout = EvenSolout::new(dt, self.t0, self.tf);
         ODEProblemSoloutPair::new(self, even_solout)
     }
 
@@ -198,7 +198,7 @@ where
     /// * ODEProblem OrdinaryNumericalMethod with Dense Output function ready for .solve() method.
     ///
     pub fn dense(&self, n: usize) -> ODEProblemSoloutPair<'_, T, Y, D, F, DenseSolout> {
-        let dense_solout = DenseSolout::new(n); // Dense solout implementation
+        let dense_solout = DenseSolout::new(n);
         ODEProblemSoloutPair::new(self, dense_solout)
     }
 
@@ -212,7 +212,7 @@ where
     /// * ODEProblem OrdinaryNumericalMethod with Custom Time Evaluation function ready for .solve() method.
     ///
     pub fn t_eval(&self, points: Vec<T>) -> ODEProblemSoloutPair<'_, T, Y, D, F, TEvalSolout<T>> {
-        let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf); // Custom time evaluation solout implementation
+        let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf);
         ODEProblemSoloutPair::new(self, t_eval_solout)
     }
 
@@ -234,7 +234,7 @@ where
         direction: CrossingDirection,
     ) -> ODEProblemSoloutPair<'_, T, Y, D, F, CrossingSolout<T>> {
         let crossing_solout =
-            CrossingSolout::new(component_idx, threshhold).with_direction(direction); // Crossing solout implementation
+            CrossingSolout::new(component_idx, threshhold).with_direction(direction);
         ODEProblemSoloutPair::new(self, crossing_solout)
     }
 
@@ -276,8 +276,8 @@ where
     F: ODE<T, Y, D>,
     O: Solout<T, Y, D>,
 {
-    pub problem: &'a ODEProblem<T, Y, D, F>, // Reference to the ODEProblem struct
-    pub solout: &'a mut O,                   // Reference to the solout implementation
+    pub problem: &'a ODEProblem<T, Y, D, F>,
+    pub solout: &'a mut O,
 }
 
 impl<'a, T, Y, D, F, O> ODEProblemMutRefSoloutPair<'a, T, Y, D, F, O>
@@ -330,8 +330,8 @@ where
     F: ODE<T, Y, D>,
     O: Solout<T, Y, D>,
 {
-    pub problem: &'a ODEProblem<T, Y, D, F>, // Reference to the ODEProblem struct
-    pub solout: O,                           // Solout implementation
+    pub problem: &'a ODEProblem<T, Y, D, F>,
+    pub solout: O,
 }
 
 impl<'a, T, Y, D, F, O> ODEProblemSoloutPair<'a, T, Y, D, F, O>

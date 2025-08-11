@@ -142,7 +142,7 @@ where
             self.t0,
             self.tf,
             &self.y0,
-            self.phi.clone(), // Clone phi here
+            self.phi.clone(),
             &mut default_solout,
         )
     }
@@ -306,7 +306,7 @@ where
             self.problem.t0,
             self.problem.tf,
             &self.problem.y0,
-            self.problem.phi.clone(), // Clone phi here
+            self.problem.phi.clone(),
             self.solout,
         )
     }
@@ -364,7 +364,7 @@ where
             self.problem.t0,
             self.problem.tf,
             &self.problem.y0,
-            self.problem.phi.clone(), // Clone phi here
+            self.problem.phi.clone(),
             &mut self.solout,
         )
     }
