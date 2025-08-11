@@ -1,4 +1,4 @@
-//! NumericalMethod Trait for Differential Equations Crate
+//! Errors for Differential Equations Crate
 
 use crate::traits::{Real, State};
 use std::fmt::{Debug, Display};
