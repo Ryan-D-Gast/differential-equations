@@ -1,5 +1,5 @@
 use crate::{
-    Error,
+    error::Error,
     traits::{CallBackData, Real, State},
 };
 

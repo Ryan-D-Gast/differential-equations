@@ -10,7 +10,8 @@
 //!
 
 use crate::{
-    ControlFlag, Solution,
+    control::ControlFlag,
+    solution::Solution,
     interpolate::Interpolation,
     traits::{CallBackData, Real, State},
 };

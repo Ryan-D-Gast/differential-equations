@@ -1,7 +1,9 @@
 //! Suite of test cases for numerical method error handling
 
 use differential_equations::{
-    ControlFlag, Error, Status,
+    control::ControlFlag,
+    error::Error,
+    status::Status,
     methods::{AdamsPredictorCorrector, ExplicitRungeKutta, ImplicitRungeKutta},
     ode::{ODE, ODEProblem},
 };
@@ -63,8 +65,8 @@ macro_rules! test_solver_error {
                         stringify!($solver_name), stringify!($test_name), $expected_error, e);
 
                     // For BadInput, ensure message conveys invalid input without depending on exact wording
-                    if let (differential_equations::Error::BadInput { msg: got_msg },
-                            differential_equations::Error::BadInput { .. }) = (&e, &$expected_error) {
+                    if let (Error::BadInput { msg: got_msg },
+                            Error::BadInput { .. }) = (&e, &$expected_error) {
                         assert!(got_msg.starts_with("Invalid input"),
                             "Test {} {} failed: Expected BadInput message to start with 'Invalid input', got: {}",
                             stringify!($solver_name), stringify!($test_name), got_msg);

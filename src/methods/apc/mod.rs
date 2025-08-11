@@ -4,7 +4,7 @@ mod apcf4;
 mod apcv4;
 
 use crate::{
-    Status,
+    status::Status,
     traits::{CallBackData, Real, State},
 };
 use std::marker::PhantomData;

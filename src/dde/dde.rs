@@ -1,7 +1,7 @@
 //! Defines the trait for systems of Delay Differential Equations (DDEs) used by numerical solvers.
 
 use crate::{
-    ControlFlag,
+    control::ControlFlag,
     traits::{CallBackData, Real, State},
 };
 

@@ -1,7 +1,8 @@
 //! Initial Value Problem Struct and Constructors
 
 use crate::{
-    Error, Solution,
+    error::Error,
+    solution::Solution,
     interpolate::Interpolation,
     ode::{ODE, OrdinaryNumericalMethod, solve_ode},
     solout::*,

@@ -1,7 +1,10 @@
 //! Solve SDE function
 
 use crate::{
-    ControlFlag, Error, Solution, Status,
+    control::ControlFlag,
+    error::Error,
+    solution::Solution, 
+    status::Status,
     interpolate::Interpolation,
     sde::{SDE, StochasticNumericalMethod},
     solout::*,

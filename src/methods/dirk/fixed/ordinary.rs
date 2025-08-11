@@ -1,7 +1,8 @@
 //! Fixed-step DIRK for ODEs
 
 use crate::{
-    Error, Status,
+    error::Error,
+    status::Status,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     methods::{DiagonallyImplicitRungeKutta, Fixed, Ordinary},
     ode::{ODE, OrdinaryNumericalMethod},

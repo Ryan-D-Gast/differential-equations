@@ -4,7 +4,7 @@
 //! given a condition or event.
 
 use crate::{
-    ControlFlag,
+    control::ControlFlag,
     traits::{CallBackData, Real, State},
 };
 use nalgebra::DMatrix;

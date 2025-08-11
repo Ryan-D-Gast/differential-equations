@@ -2,7 +2,8 @@
 
 use super::AdamsPredictorCorrector;
 use crate::{
-    Error, Status,
+    error::Error,
+    status::Status,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     linalg::norm,
     methods::{Adaptive, Ordinary, h_init::InitialStepSize},

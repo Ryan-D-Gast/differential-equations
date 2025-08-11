@@ -1,7 +1,8 @@
 //! Adaptive Runge-Kutta methods for Delay Differential Equations (DDEs)
 
 use crate::{
-    Error, Status,
+    error::Error, 
+    status::Status,
     dde::{DDE, DelayNumericalMethod},
     interpolate::{Interpolation, cubic_hermite_interpolate},
     methods::{Adaptive, Delay, ExplicitRungeKutta, h_init::InitialStepSize},

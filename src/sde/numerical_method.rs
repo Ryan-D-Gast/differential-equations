@@ -1,7 +1,8 @@
 //! Numerical methods for SDEs.
 
 use crate::{
-    Error, Status,
+    error::Error,
+    status::Status,
     sde::SDE,
     stats::Evals,
     traits::{CallBackData, Real, State},

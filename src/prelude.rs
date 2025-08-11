@@ -1,81 +1,64 @@
 #![allow(clippy::all)]
-//! Prelude module for the Differential Equations library.
+//! # Library Prelude
 //!
-//! This prelude re-exports all the essential types and methods
-//! for Ordinary Differential Equations (ODEs), Delay Differential Equations (DDEs),
-//! and Stochastic Differential Equations (SDEs).
+//! Convenient import for all core types, traits, and solvers in the `differential-equations` crate.
 //!
-//! ## Solver Naming Conventions
+//! ## What is re-exported?
 //!
-//! Solvers are accessed through their respective method modules using the pattern
-//! `MethodType::SolverName`. For example, `ExplicitRungeKutta::dop853` or
-//! `ImplicitRungeKutta::gauss_legendre6`. This approach provides clear organization
-//! and avoids naming conflicts between different equation types.
+//! - All major solver types for ODE, DDE, and SDE problems
+//! - Problem and trait types for each equation class
+//! - Output control, event, and solution types
+//! - Common utility types (e.g., error, status, interpolation)
+//! - Key nalgebra types for vector/matrix work
 //!
-//! ## Sample of Available Solvers
+//! ## Solver Naming
 //!
-//! ### Explicit Runge-Kutta Methods:
-//! - `ExplicitRungeKutta::dop853`: Adaptive Step Dormand-Prince 8(5,3) with dense output of order 7.
-//! - `ExplicitRungeKutta::dopri5`: Adaptive Step Dormand-Prince 5(4) with dense output of order 4.
-//! - `ExplicitRungeKutta::euler`: Fixed Step Euler method.
-//! - `ExplicitRungeKutta::rk4`: Fixed Step Runge-Kutta 4th Order.
-//! - `ExplicitRungeKutta::rkv65e`: Verner's efficient 6(5) adaptive method with dense output of order 5.
-//! - `ExplicitRungeKutta::rkv98e`: Verner's efficient 9(8) adaptive method with dense output of order 9.
+//! Solvers are accessed as `MethodType::solver_name`, e.g. `ExplicitRungeKutta::dop853`, `ImplicitRungeKutta::gauss_legendre6`.
+//! This keeps the API organized and avoids naming conflicts.
 //!
-//! ODEs and DDEs are supported by these methods.
-//! SDEs are supported for fixed step methods such as Euler and RK4.
+//! ## Example Solvers
 //!
-//! ### Implicit Runge-Kutta Methods:
-//! - `ImplicitRungeKutta::gauss_legendre6`: Gauss-Legendre 6th order method.
+//! - `ExplicitRungeKutta::dop853`, `dopri5`, `euler`, `rk4`, `rkv65e`, `rkv98e`
+//! - `ImplicitRungeKutta::gauss_legendre6`
+//! - `DiagonallyImplicitRungeKutta::kvaerno745`
 //!
-//! ### Diagonally Implicit Runge-Kutta Methods:
-//! - `DiagonallyImplicitRungeKutta::kvaerno745': Kvaerno 7(4,5) 7th order method.
+//! ## Method Support Table
 //!
-//! For detailed examples, including problem setup and full solution process,
-//! please refer to the [examples directory](https://github.com/Ryan-D-Gast/differential-equations/tree/master/examples).
+//! | Method                        | ODE | DDE | SDE |
+//! |-------------------------------|:---:|:---:|:---:|
+//! | ExplicitRungeKutta            |  X  |  X  | (X) |
+//! | ImplicitRungeKutta            |  X  |     |     |
+//! | DiagonallyImplicitRungeKutta  |  X  |     |     |
+//! | AdamsPredictorCorrector       |  X  |     |     |
+//!
+//! - `X` = Supported
+//! - `(X)` = Supported for fixed step only (e.g., Euler, RK4)
+//!
+//! For full examples and advanced usage, see the [examples directory](https://github.com/Ryan-D-Gast/differential-equations/tree/master/examples).
 //!
 
-pub use crate::{
-    // Numerical Methods
-    methods::{
-        AdamsPredictorCorrector,      // Adams Predictor-Corrector methods for ODEs
-        DiagonallyImplicitRungeKutta, // Diagonally Implicit Runge-Kutta methods for ODEs
-        ExplicitRungeKutta,           // Explicit Runge-Kutta methods for ODEs, DDEs, and SDEs
-        ImplicitRungeKutta,           // Implicit Runge-Kutta methods for ODEs
-    },
-
-    // Ordinary Differential Equations (ODE) module
-    ode::{
-        ODE,        // Define the ODE system
-        ODEProblem, // Create IVP to solve
-    },
-
-    // Delay Differential Equations (DDE) module
-    dde::{
-        DDE,        // Define the DDE system
-        DDEProblem, // Create IVP to solve
-    },
-
-    // Stochastic Differential Equations (SDE) module
-    sde::{
-        SDE,        // Define the SDE system
-        SDEProblem, // Create IVP to solve
-    },
-
-    // Shared items not specific to a Differential Equation Type
-    solout::{
-        CrossingDirection,
-        Solout, // Trait for defining a custom output behavior
-    },
-    control::ControlFlag,
-    derive::State,
-    error::Error,
-    interpolate::Interpolation,
-    solution::Solution,
-    stats::Evals,
-    status::Status,
+// Numerical Methods
+pub use crate::methods::{
+    AdamsPredictorCorrector,
+    DiagonallyImplicitRungeKutta,
+    ExplicitRungeKutta,
+    ImplicitRungeKutta,
 };
 
-// -- re-export of nalgebra Types and Macros --
+// Problem Types & Traits
+pub use crate::ode::{ODE, ODEProblem};
+pub use crate::dde::{DDE, DDEProblem};
+pub use crate::sde::{SDE, SDEProblem};
 
+// Output, Events, and Solution Types
+pub use crate::solout::{CrossingDirection, Solout};
+pub use crate::control::ControlFlag;
+pub use crate::solution::Solution;
+pub use crate::status::Status;
+pub use crate::error::Error;
+pub use crate::interpolate::Interpolation;
+pub use crate::stats::Evals;
+pub use crate::derive::State;
+
+// nalgebra Types and Macros
 pub use nalgebra::{DMatrix, SMatrix, SVector, vector};

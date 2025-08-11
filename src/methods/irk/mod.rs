@@ -4,7 +4,7 @@ mod adaptive;
 mod fixed;
 
 use crate::{
-    Status,
+    status::Status,
     traits::{CallBackData, Real, State},
 };
 use std::marker::PhantomData;

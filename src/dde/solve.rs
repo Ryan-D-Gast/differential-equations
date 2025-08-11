@@ -1,7 +1,10 @@
 //! Core solver function for Delay Differential Equation Initial Value Problems.
 
 use crate::{
-    ControlFlag, Error, Solution, Status,
+    control::ControlFlag,
+    error::Error,
+    solution::Solution,
+    status::Status,
     dde::DDE,
     dde::numerical_method::DelayNumericalMethod,
     interpolate::Interpolation,

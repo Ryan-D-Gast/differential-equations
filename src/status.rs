@@ -1,7 +1,7 @@
 //! Status for solving differential equations
 
 use crate::{
-    Error,
+    error::Error,
     traits::{CallBackData, Real, State},
 };
 use std::fmt::{Debug, Display};

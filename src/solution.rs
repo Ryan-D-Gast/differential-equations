@@ -1,7 +1,7 @@
 //! Solution of differential equations
 
 use crate::{
-    Status,
+    status::Status,
     stats::{Evals, Steps, Timer},
     traits::{CallBackData, Real, State},
 };

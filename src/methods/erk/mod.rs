@@ -5,7 +5,7 @@ mod dormandprince;
 mod fixed;
 
 use crate::{
-    Status,
+    status::Status,
     methods::Delay,
     traits::{CallBackData, Real, State},
 };

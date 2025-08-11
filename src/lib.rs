@@ -1,37 +1,25 @@
 //! # differential-equations
 //!
-//! A Rust library for solving various types of differential equations.
+//! A Rust library for solving ODE, DDE, and SDE initial value problems.
 //!
 //! [![GitHub](https://img.shields.io/badge/GitHub-differential--equations-blue)](https://github.com/Ryan-D-Gast/differential-equations)
 //! [![Documentation](https://docs.rs/differential-equations/badge.svg)](https://docs.rs/differential-equations)
 //!
 //! ## Overview
 //!
-//! This library provides numerical solvers for different classes of differential equations:
+//! This library provides numerical solvers for:
 //!
-//! - **[Ordinary Differential Equations (ODE)](crate::ode)**
-//!   - Initial value problems (ODEProblem)
-//!   - Fixed and adaptive step methods
-//!   - Event detection
-//!   - Customizable output control
-//!
-//! - **[Delay Differential Equations (DDE)](crate::dde)**
-//!   - Constant delays
-//!   - State-dependent delays
-//!   - Same features as ODEs
-//!
-//! - **[Stochastic Differential Equations (SDE)](crate::sde)**
-//!   - Drift-diffusion equations
-//!   - User controlled random number generation
-//!   - Same features as ODEs
+//! - **[Ordinary Differential Equations (ODE)](crate::ode)**: initial value problems, fixed/adaptive step, event detection, flexible output
+//! - **[Delay Differential Equations (DDE)](crate::dde)**: constant/state-dependent delays, same features as ODE
+//! - **[Stochastic Differential Equations (SDE)](crate::sde)**: drift-diffusion, user RNG, same features as ODE
 //!
 //! ## Feature Flags
 //!
-//! - `polars`: Enable converting Solution to Polars DataFrame using `Solution.to_polars()`
+//! - `polars`: Enable converting `Solution` to a Polars DataFrame with `Solution::to_polars()`
 //!
 //! ## Example (ODE)
 //!
-//!```rust
+//! ```rust
 //! use differential_equations::prelude::*;
 //! use nalgebra::{SVector, vector};
 //!
@@ -59,12 +47,12 @@
 //!     };
 //!
 //!     for (t, y) in solution.iter() {
-//!        println!("t: {:.4}, y: {:.4}", t, y[0]);
+//!         println!("t: {:.4}, y: {:.4}", t, y[0]);
 //!     }
 //! }
-//!```
+//! ```
 //!
-//! # License
+//! ## License
 //!
 //! ```text
 //! Copyright 2025 Ryan D. Gast
@@ -82,71 +70,31 @@
 //! limitations under the License.
 //! ```
 
-// -- Prelude Module & Recommended Imports for Users --
-
+// Prelude & User-Facing API
 pub mod prelude;
 
-// -- Butcher Tableaus --
-
-mod tableau;
-
-// -- Numerical Methods for Differential Equations --
+// Core Modules
+pub mod tableau;
 pub mod methods;
-
-// -- Types of Differential Equations --
-
-// Ordinary Differential Equations (ODE) Module
 pub mod ode;
-
-// Delay Differential Equations (DDE) Module
 pub mod dde;
-
-// Stochastic Differential Equations (SDE) Module
 pub mod sde;
-
-// -- Solution Output Control --
-
-// Numerous implementations of the Solout trait are contained in this module
 pub mod solout;
-pub use solout::{
-    // Solout Trait for controlling output of the solver
-    Solout,
-};
 
-// -- Shared items not specific to a Differential Equation Type --
-
-// Error for Differential Equations NumericalMethods
-mod error;
-pub use error::Error;
-
-// Status of Differential Equations NumericalMethods
-mod status;
-pub use status::Status;
-
-// Solution of a solved differential equation
-mod solution;
-pub use solution::Solution;
-
-// Control Flow
-mod control;
-pub use control::ControlFlag;
-
-// Traits for Floating Point Types
-pub mod traits;
-
-// Interpolation Functions
-pub mod interpolate;
-
-// Shared Utility Functions
-pub mod utils;
-
-// Linear Algebra Functions
-pub mod linalg;
-
-// Alias for primative types for readability
+// Core Structures
+pub mod error;
+pub mod status;
+pub mod solution;
+pub mod control;
 pub mod stats;
 
-// Derive Macros for Differential Equations
+// Shared Traits & Utilities
+pub mod traits;
+pub mod interpolate;
+pub mod utils;
+pub mod linalg;
+
+// Derive Macros
 pub mod derive {
     pub use differential_equations_derive::State;
 }

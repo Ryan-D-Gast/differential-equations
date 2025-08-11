@@ -1,7 +1,8 @@
 //! Adaptive DIRK for ODEs
 
 use crate::{
-    Error, Status,
+    error::Error,
+    status::Status,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     methods::h_init::InitialStepSize,
     methods::{Adaptive, DiagonallyImplicitRungeKutta, Ordinary},

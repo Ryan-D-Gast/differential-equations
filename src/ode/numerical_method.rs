@@ -1,7 +1,8 @@
 //! Numerical methods for ODEs.
 
 use crate::{
-    Error, Status,
+    error::Error,
+    status::Status,
     ode::ODE,
     stats::Evals,
     traits::{CallBackData, Real, State},

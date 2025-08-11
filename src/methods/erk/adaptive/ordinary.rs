@@ -1,7 +1,8 @@
 //! Adaptive Runge-Kutta methods for ODEs
 
 use crate::{
-    Error, Status,
+    error::Error,
+    status::Status,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     methods::{Adaptive, ExplicitRungeKutta, Ordinary, h_init::InitialStepSize},
     ode::{ODE, OrdinaryNumericalMethod},
