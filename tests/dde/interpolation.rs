@@ -72,7 +72,7 @@ fn interpolation() {
 
         solver_name: RKV4, solver: ExplicitRungeKutta::rk4(0.1),
         solver_name: RKV655, solver: ExplicitRungeKutta::rkv655e(),
-        solver_name: DDE45, solver: ExplicitRungeKutta::dopri5(),
+        solver_name: DOPRI5, solver: ExplicitRungeKutta::dopri5(),
         solver_name: DOP853, solver: ExplicitRungeKutta::dop853()
     }
 }

@@ -28,6 +28,11 @@ impl<
     {
         // Initialize solver state
         let mut evals = Evals::new();
+
+        // DDE requires at least one lag
+        if L <= 0 {
+            return Err(Error::NoLags);
+        }
         self.t0 = t0;
         self.t = t0;
         self.y = *y0;
@@ -42,26 +47,19 @@ impl<
         let mut y_delayed = [Y::zeros(); L];
 
         // Evaluate initial delays and history
-        if L > 0 {
-            dde.lags(self.t, &self.y, &mut delays);
-            for i in 0..L {
-                if delays[i] <= T::zero() {
-                    return Err(Error::BadInput {
-                        msg: "All lags must be positive.".to_string(),
-                    });
-                }
-                let t_delayed = self.t - delays[i];
-                // Ensure delayed time is within history range
-                if (t_delayed - t0) * (tf - t0).signum() > T::default_epsilon() {
-                    return Err(Error::BadInput {
-                        msg: format!(
-                            "Initial delayed time {} is out of history range (t <= {}).",
-                            t_delayed, t0
-                        ),
-                    });
-                }
-                y_delayed[i] = phi(t_delayed);
+        dde.lags(self.t, &self.y, &mut delays);
+        for i in 0..L {
+            let t_delayed = self.t - delays[i];
+            // Ensure delayed time is within history range
+            if (t_delayed - t0) * (tf - t0).signum() > T::default_epsilon() {
+                return Err(Error::BadInput {
+                    msg: format!(
+                        "Initial delayed time {} is out of history range (t <= {}).",
+                        t_delayed, t0
+                    ),
+                });
             }
+            y_delayed[i] = phi(t_delayed);
         }
 
         // Initial derivative
@@ -112,18 +110,15 @@ impl<
         // Seed k[0] with current derivative
         self.k[0] = self.dydt;
         let mut min_delay_abs = T::infinity();
-        if L > 0 {
-            // Predict y(t+h) to estimate delays at t+h
-            let y_pred_for_lags = self.y + self.k[0] * self.h;
-            dde.lags(self.t + self.h, &y_pred_for_lags, &mut delays);
-            for i in 0..L {
-                min_delay_abs = min_delay_abs.min(delays[i].abs());
-            }
+        // Predict y(t+h) to estimate delays at t+h
+        let y_pred_for_lags = self.y + self.k[0] * self.h;
+        dde.lags(self.t + self.h, &y_pred_for_lags, &mut delays);
+        for i in 0..L {
+            min_delay_abs = min_delay_abs.min(delays[i].abs());
         }
 
         // Delay iteration count
-        let max_iter: usize = if L > 0 && min_delay_abs < self.h.abs() && min_delay_abs > T::zero()
-        {
+    let max_iter: usize = if min_delay_abs < self.h.abs() && min_delay_abs > T::zero() {
             5
         } else {
             1
@@ -147,9 +142,10 @@ impl<
                     y_stage += self.k[j] * (self.a[i][j] * self.h);
                 }
                 // Delayed states for this stage
-                if L > 0 {
-                    dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut delays);
-                    self.lagvals(self.t + self.c[i] * self.h, &delays, &mut y_delayed, phi);
+                dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut delays);
+                if let Err(e) = self.lagvals(self.t + self.c[i] * self.h, &delays, &mut y_delayed, phi) {
+                    self.status = Status::Error(e.clone());
+                    return Err(e);
                 }
                 dde.diff(
                     self.t + self.c[i] * self.h,
@@ -196,9 +192,10 @@ impl<
             y_next_candidate_iter = y_next;
 
             // Derivative at t+h for current candidate
-            if L > 0 {
-                dde.lags(self.t + self.h, &y_next_candidate_iter, &mut delays);
-                self.lagvals(self.t + self.h, &delays, &mut y_delayed, phi);
+            dde.lags(self.t + self.h, &y_next_candidate_iter, &mut delays);
+            if let Err(e) = self.lagvals(self.t + self.h, &delays, &mut y_delayed, phi) {
+                self.status = Status::Error(e.clone());
+                return Err(e);
             }
             dde.diff(
                 self.t + self.h,
@@ -236,9 +233,10 @@ impl<
         if self.fsal {
             self.dydt = self.k[S - 1];
         } else {
-            if L > 0 {
-                dde.lags(self.t, &self.y, &mut delays);
-                self.lagvals(self.t, &delays, &mut y_delayed, phi);
+            dde.lags(self.t, &self.y, &mut delays);
+            if let Err(e) = self.lagvals(self.t, &delays, &mut y_delayed, phi) {
+                self.status = Status::Error(e.clone());
+                return Err(e);
             }
             dde.diff(self.t, &self.y, &y_delayed, &mut self.dydt);
             evals.function += 1;
@@ -251,10 +249,11 @@ impl<
                 for j in 0..self.stages + i {
                     y_stage_dense += self.k[j] * (self.a[self.stages + i][j] * self.h);
                 }
-                if L > 0 {
-                    let t_stage = self.t_prev + self.c[self.stages + i] * self.h;
-                    dde.lags(t_stage, &y_stage_dense, &mut delays);
-                    self.lagvals(t_stage, &delays, &mut y_delayed, phi);
+                let t_stage = self.t_prev + self.c[self.stages + i] * self.h;
+                dde.lags(t_stage, &y_stage_dense, &mut delays);
+                if let Err(e) = self.lagvals(t_stage, &delays, &mut y_delayed, phi) {
+                    self.status = Status::Error(e.clone());
+                    return Err(e);
                 }
                 dde.diff(
                     self.t_prev + self.c[self.stages + i] * self.h,
@@ -318,7 +317,8 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         delays: &[T; L],
         y_delayed: &mut [Y; L],
         phi: &H,
-    ) where
+    ) -> Result<(), Error<T, Y>>
+    where
         H: Fn(T) -> Y,
     {
         for i in 0..L {
@@ -396,23 +396,15 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                     }
                 } // If not found in history, this indicates insufficient history in buffer
                 if !found_interpolation {
-                    // Debug: show buffer contents
-                    let buffer = &self.history;
-                    println!("Buffer contents ({} entries):", buffer.len());
-                    for (idx, (t_buf, _, _)) in buffer.iter().enumerate() {
-                        if idx < 5 || idx >= buffer.len() - 5 {
-                            println!("  [{}] t = {}", idx, t_buf);
-                        } else if idx == 5 {
-                            println!("  ... ({} more entries) ...", buffer.len() - 10);
-                        }
-                    }
-                    panic!(
-                        "Insufficient history in history for t_delayed = {} (t_prev = {}, t = {}). Buffer may need to retain more points or there's a logic error in determining interpolation intervals.",
-                        t_delayed, self.t_prev, self.t
-                    );
+                    return Err(Error::InsufficientHistory {
+                        t_delayed,
+                        t_prev: self.t_prev,
+                        t_curr: self.t,
+                    });
                 }
             }
         }
+        Ok(())
     }
 }
 

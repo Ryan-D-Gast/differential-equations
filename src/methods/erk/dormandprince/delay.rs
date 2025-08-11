@@ -29,6 +29,11 @@ impl<
     {
         let mut evals = Evals::new();
 
+        // DDE requires at least one lag
+        if L <= 0 {
+            return Err(Error::NoLags);
+        }
+
         // Initialize solver state
         self.t0 = t0;
         self.t = t0;
@@ -46,23 +51,16 @@ impl<
         let mut y_delayed = [Y::zeros(); L];
 
         // Evaluate initial delays and history
-        if L > 0 {
-            dde.lags(self.t, &self.y, &mut delays);
-            for i in 0..L {
-                if delays[i] <= T::zero() {
-                    return Err(Error::BadInput {
-                        msg: "All lags must be positive.".to_string(),
-                    });
-                }
-                let t_delayed = self.t - delays[i];
-                // Ensure delayed time is within history range
-                if (t_delayed - t0) * (tf - t0).signum() > T::default_epsilon() {
-                    return Err(Error::BadInput {
-                        msg: format!("Delayed time {} is beyond initial time {}", t_delayed, t0),
-                    });
-                }
-                y_delayed[i] = phi(t_delayed);
+        dde.lags(self.t, &self.y, &mut delays);
+        for i in 0..L {
+            let t_delayed = self.t - delays[i];
+            // Ensure delayed time is within history range
+            if (t_delayed - t0) * (tf - t0).signum() > T::default_epsilon() {
+                return Err(Error::BadInput {
+                    msg: format!("Delayed time {} is beyond initial time {}", t_delayed, t0),
+                });
             }
+            y_delayed[i] = phi(t_delayed);
         }
 
         // Initial derivative
@@ -127,18 +125,15 @@ impl<
 
         // Decide if delay iteration is needed
         let mut min_delay_abs = T::infinity();
-        if L > 0 {
-            // Predict y(t+h) to estimate delays at t+h
-            let y_pred_for_lags = self.y + self.k[0] * self.h;
-            dde.lags(self.t + self.h, &y_pred_for_lags, &mut delays);
-            for i in 0..L {
-                min_delay_abs = min_delay_abs.min(delays[i].abs());
-            }
+        // Predict y(t+h) to estimate delays at t+h
+        let y_pred_for_lags = self.y + self.k[0] * self.h;
+        dde.lags(self.t + self.h, &y_pred_for_lags, &mut delays);
+        for i in 0..L {
+            min_delay_abs = min_delay_abs.min(delays[i].abs());
         }
 
         // Delay iteration count
-        let max_iter: usize = if L > 0 && min_delay_abs < self.h.abs() && min_delay_abs > T::zero()
-        {
+    let max_iter: usize = if min_delay_abs < self.h.abs() && min_delay_abs > T::zero() {
             5
         } else {
             1
@@ -165,9 +160,10 @@ impl<
                 y_stage = self.y + y_stage * self.h;
 
                 // Delayed states for this stage
-                if L > 0 {
-                    dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut delays);
-                    self.lagvals(self.t + self.c[i] * self.h, &delays, &mut y_delayed, phi);
+                dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut delays);
+                if let Err(e) = self.lagvals(self.t + self.c[i] * self.h, &delays, &mut y_delayed, phi) {
+                    self.status = Status::Error(e.clone());
+                    return Err(e);
                 }
                 dde.diff(
                     self.t + self.c[i] * self.h,
@@ -273,9 +269,10 @@ impl<
             let t_new = self.t + self.h;
 
             // Derivative at new point
-            if L > 0 {
-                dde.lags(t_new, &y_new, &mut delays);
-                self.lagvals(t_new, &delays, &mut y_delayed, phi);
+            dde.lags(t_new, &y_new, &mut delays);
+            if let Err(e) = self.lagvals(t_new, &delays, &mut y_delayed, phi) {
+                self.status = Status::Error(e.clone());
+                return Err(e);
             }
             dde.diff(t_new, &y_new, &y_delayed, &mut self.dydt);
             evals.function += 1;
@@ -342,81 +339,80 @@ impl<
                         }
                         y_stage = self.y + y_stage * self.h;
 
-                        if L > 0 {
-                            dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut delays);
-                            for lag_idx in 0..L {
-                                let t_delayed = (self.t + self.c[i] * self.h) - delays[lag_idx];
+                        dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut delays);
+                        for lag_idx in 0..L {
+                            let t_delayed = (self.t + self.c[i] * self.h) - delays[lag_idx];
 
-                                if (t_delayed - self.t0) * self.h.signum() <= T::default_epsilon() {
-                                    y_delayed[lag_idx] = phi(t_delayed);
-                                } else if (t_delayed - self.t_prev) * self.h.signum()
-                                    > T::default_epsilon()
-                                {
-                                    if self.bi.is_some() {
-                                        let theta = (t_delayed - self.t_prev) / self.h_prev;
-                                        let one_minus_theta = T::one() - theta;
-                                        let ilast = self.cont.len() - 1;
-                                        let poly = (1..ilast).rev().fold(
-                                            self.cont[ilast],
-                                            |acc, cont_i| {
-                                                let factor = if cont_i >= 4 {
-                                                    if (ilast - cont_i) % 2 == 1 {
-                                                        one_minus_theta
-                                                    } else {
-                                                        theta
-                                                    }
-                                                } else if cont_i % 2 == 1 {
+                            if (t_delayed - self.t0) * self.h.signum() <= T::default_epsilon() {
+                                y_delayed[lag_idx] = phi(t_delayed);
+                            } else if (t_delayed - self.t_prev) * self.h.signum()
+                                > T::default_epsilon()
+                            {
+                                if self.bi.is_some() {
+                                    let theta = (t_delayed - self.t_prev) / self.h_prev;
+                                    let one_minus_theta = T::one() - theta;
+                                    let ilast = self.cont.len() - 1;
+                                    let poly = (1..ilast).rev().fold(
+                                        self.cont[ilast],
+                                        |acc, cont_i| {
+                                            let factor = if cont_i >= 4 {
+                                                if (ilast - cont_i) % 2 == 1 {
                                                     one_minus_theta
                                                 } else {
                                                     theta
-                                                };
-                                                acc * factor + self.cont[cont_i]
-                                            },
-                                        );
-                                        y_delayed[lag_idx] = self.cont[0] + poly * theta;
-                                    } else {
-                                        y_delayed[lag_idx] = cubic_hermite_interpolate(
-                                            self.t_prev,
-                                            self.t,
-                                            &self.y_prev,
-                                            &self.y,
-                                            &self.dydt_prev,
-                                            &self.dydt,
-                                            t_delayed,
-                                        );
-                                    }
-                                } else {
-                                    let mut found_interpolation = false;
-                                    let buffer = &self.history;
-                                    let mut buffer_iter = buffer.iter();
-                                    if let Some(mut prev_entry) = buffer_iter.next() {
-                                        for curr_entry in buffer_iter {
-                                            let (t_left, y_left, dydt_left) = prev_entry;
-                                            let (t_right, y_right, dydt_right) = curr_entry;
-
-                                            let is_between = if self.h.signum() > T::zero() {
-                                                *t_left <= t_delayed && t_delayed <= *t_right
+                                                }
+                                            } else if cont_i % 2 == 1 {
+                                                one_minus_theta
                                             } else {
-                                                *t_right <= t_delayed && t_delayed <= *t_left
+                                                theta
                                             };
+                                            acc * factor + self.cont[cont_i]
+                                        },
+                                    );
+                                    y_delayed[lag_idx] = self.cont[0] + poly * theta;
+                                } else {
+                                    y_delayed[lag_idx] = cubic_hermite_interpolate(
+                                        self.t_prev,
+                                        self.t,
+                                        &self.y_prev,
+                                        &self.y,
+                                        &self.dydt_prev,
+                                        &self.dydt,
+                                        t_delayed,
+                                    );
+                                }
+                            } else {
+                                let mut found_interpolation = false;
+                                let buffer = &self.history;
+                                let mut buffer_iter = buffer.iter();
+                                if let Some(mut prev_entry) = buffer_iter.next() {
+                                    for curr_entry in buffer_iter {
+                                        let (t_left, y_left, dydt_left) = prev_entry;
+                                        let (t_right, y_right, dydt_right) = curr_entry;
 
-                                            if is_between {
-                                                y_delayed[lag_idx] = cubic_hermite_interpolate(
-                                                    *t_left, *t_right, y_left, y_right, dydt_left,
-                                                    dydt_right, t_delayed,
-                                                );
-                                                found_interpolation = true;
-                                                break;
-                                            }
-                                            prev_entry = curr_entry;
+                                        let is_between = if self.h.signum() > T::zero() {
+                                            *t_left <= t_delayed && t_delayed <= *t_right
+                                        } else {
+                                            *t_right <= t_delayed && t_delayed <= *t_left
+                                        };
+
+                                        if is_between {
+                                            y_delayed[lag_idx] = cubic_hermite_interpolate(
+                                                *t_left, *t_right, y_left, y_right, dydt_left,
+                                                dydt_right, t_delayed,
+                                            );
+                                            found_interpolation = true;
+                                            break;
                                         }
+                                        prev_entry = curr_entry;
                                     }
-                                    if !found_interpolation {
-                                        panic!(
-                                            "Insufficient history for t_delayed = {} (t_prev = {}, t = {})",
-                                            t_delayed, self.t_prev, self.t
-                                        );
-                                    }
+                                }
+                                if !found_interpolation {
+                                    return Err(Error::InsufficientHistory {
+                                        t_delayed,
+                                        t_prev: self.t_prev,
+                                        t_curr: self.t,
+                                    });
                                 }
                             }
                         }
@@ -509,7 +505,7 @@ impl<
 impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
     ExplicitRungeKutta<Delay, DormandPrince, T, Y, D, O, S, I>
 {
-    fn lagvals<const L: usize, H>(&mut self, t_stage: T, lags: &[T; L], yd: &mut [Y; L], phi: &H)
+    fn lagvals<const L: usize, H>(&mut self, t_stage: T, lags: &[T; L], yd: &mut [Y; L], phi: &H) -> Result<(), Error<T, Y>>
     where
         H: Fn(T) -> Y,
     {
@@ -588,19 +584,15 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 }
                 // If not found in history, this indicates insufficient history in buffer
                 if !found_interpolation {
-                    // Debug: show buffer contents
-                    let buffer = &self.history;
-                    println!("Buffer contents ({} entries):", buffer.len());
-                    for (idx, (t_buf, _, _)) in buffer.iter().enumerate() {
-                        println!("  [{}]: t = {}", idx, t_buf);
-                    }
-                    panic!(
-                        "Insufficient history in history for t_delayed = {} (t_prev = {}, t = {}). Buffer may need to retain more points or there's a logic error in determining interpolation intervals.",
-                        t_delayed, self.t_prev, self.t
-                    );
+                    return Err(Error::InsufficientHistory {
+                        t_delayed,
+                        t_prev: self.t_prev,
+                        t_curr: self.t,
+                    });
                 }
             }
         }
+        Ok(())
     }
 }
 

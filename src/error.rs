@@ -4,13 +4,6 @@ use crate::traits::{Real, State};
 use std::fmt::{Debug, Display};
 
 /// Error for Differential Equations Crate
-///
-/// # Variants
-/// * `BadInput` - NumericalMethod input was bad.
-/// * `MaxSteps` - NumericalMethod reached maximum steps.
-/// * `StepSize` - NumericalMethod terminated due to step size converging too small of a value.
-/// * `Stiffness` - NumericalMethod terminated due to stiffness.
-///
 #[derive(PartialEq, Clone)]
 pub enum Error<T, Y>
 where
@@ -21,24 +14,42 @@ where
     BadInput {
         msg: String, // if input is bad, return this with reason
     },
+
+    /// Maximum steps reached
     MaxSteps {
-        // If the solver reaches the maximum number of steps
-        t: T, // Time at which the solver reached maximum steps
-        y: Y, // Solution at time t
+        t: T,
+        y: Y,
     },
+
+    /// Step size became too small
     StepSize {
-        t: T, // Time at which step size became too small
-        y: Y, // Solution at time t
+        t: T,
+        y: Y,
     },
+
+    /// Stiffness detected
     Stiffness {
-        t: T, // Time at which stiffness was detected
-        y: Y, // Solution at time t
+        t: T,
+        y: Y,
     },
+
+    /// Out of bounds error
     OutOfBounds {
-        t_interp: T, // Time to interpolate at
-        t_prev: T,   // Time of previous step
-        t_curr: T,   // Time of current step
+        t_interp: T,
+        t_prev: T,
+        t_curr: T,
     },
+
+    /// DDE requires at least one lag (L > 0)
+    NoLags,
+
+    /// Not enough history retained to evaluate a delayed state
+    InsufficientHistory {
+        t_delayed: T,
+        t_prev: T,
+        t_curr: T,
+    },
+
 }
 
 impl<T, Y> Display for Error<T, Y>
@@ -63,6 +74,14 @@ where
                     f,
                     "Interpolation Error: t_interp {} is not within the previous and current step: t_prev {}, t_curr {}",
                     t_interp, t_prev, t_curr
+                )
+            }
+            Self::NoLags => write!(f, "Invalid DDE configuration: number of lags L must be > 0"),
+            Self::InsufficientHistory { t_delayed, t_prev, t_curr } => {
+                write!(
+                    f,
+                    "Insufficient history to interpolate at t_delayed {} (t_prev {}, t_curr {})",
+                    t_delayed, t_prev, t_curr
                 )
             }
         }
@@ -95,6 +114,14 @@ where
                     f,
                     "Interpolation Error: t_interp {:?} is not within the previous and current step: t_prev {:?}, t_curr {:?}",
                     t_interp, t_prev, t_curr
+                )
+            }
+            Self::NoLags => write!(f, "Invalid DDE configuration: number of lags L must be > 0"),
+            Self::InsufficientHistory { t_delayed, t_prev, t_curr } => {
+                write!(
+                    f,
+                    "Insufficient history to interpolate at t_delayed {:?} (t_prev {:?}, t_curr {:?})",
+                    t_delayed, t_prev, t_curr
                 )
             }
         }

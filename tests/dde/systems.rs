@@ -32,18 +32,18 @@ pub struct ExponentialGrowth {
     pub k: f64,
 }
 
-impl DDE<0, f64, SVector<f64, 1>> for ExponentialGrowth {
+impl DDE<1, f64, SVector<f64, 1>> for ExponentialGrowth {
     fn diff(
         &self,
         _t: f64,
         y: &SVector<f64, 1>,
-        _yd: &[SVector<f64, 1>; 0],
+        _yd: &[SVector<f64, 1>; 1],
         dydt: &mut SVector<f64, 1>,
     ) {
         dydt[0] = self.k * y[0];
     }
 
-    fn lags(&self, _t: f64, _y: &SVector<f64, 1>, _lags: &mut [f64; 0]) {
-        // No lags for this system just using to test interpolation
+    fn lags(&self, _t: f64, _y: &SVector<f64, 1>, lags: &mut [f64; 1]) {
+        lags[0] = 0.0; // Dummy lag because L > 0
     }
 }
