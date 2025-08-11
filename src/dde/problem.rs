@@ -1,11 +1,11 @@
 //! Initial Value Problem Struct and Constructors for Delay Differential Equations (DDEs)
 
 use crate::{
-    error::Error, 
-    solution::Solution,
     dde::{DDE, numerical_method::DelayNumericalMethod, solve_dde},
+    error::Error,
     interpolate::Interpolation,
     solout::*,
+    solution::Solution,
     traits::{CallBackData, Real, State},
 };
 use std::marker::PhantomData;

@@ -73,26 +73,30 @@
 // Prelude & User-Facing API
 pub mod prelude;
 
-// Core Modules
-pub mod tableau;
+// Numerical Methods
 pub mod methods;
-pub mod ode;
+pub mod tableau;
+
+// Differential Equations
 pub mod dde;
+pub mod ode;
 pub mod sde;
+
+// Output Control
 pub mod solout;
 
 // Core Structures
-pub mod error;
-pub mod status;
-pub mod solution;
 pub mod control;
+pub mod error;
+pub mod solution;
 pub mod stats;
+pub mod status;
 
 // Shared Traits & Utilities
-pub mod traits;
 pub mod interpolate;
-pub mod utils;
 pub mod linalg;
+pub mod traits;
+pub mod utils;
 
 // Derive Macros
 pub mod derive {

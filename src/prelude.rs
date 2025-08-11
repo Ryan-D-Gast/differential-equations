@@ -39,26 +39,23 @@
 
 // Numerical Methods
 pub use crate::methods::{
-    AdamsPredictorCorrector,
-    DiagonallyImplicitRungeKutta,
-    ExplicitRungeKutta,
-    ImplicitRungeKutta,
+    AdamsPredictorCorrector, DiagonallyImplicitRungeKutta, ExplicitRungeKutta, ImplicitRungeKutta,
 };
 
 // Problem Types & Traits
-pub use crate::ode::{ODE, ODEProblem};
 pub use crate::dde::{DDE, DDEProblem};
+pub use crate::ode::{ODE, ODEProblem};
 pub use crate::sde::{SDE, SDEProblem};
 
 // Output, Events, and Solution Types
-pub use crate::solout::{CrossingDirection, Solout};
 pub use crate::control::ControlFlag;
-pub use crate::solution::Solution;
-pub use crate::status::Status;
+pub use crate::derive::State;
 pub use crate::error::Error;
 pub use crate::interpolate::Interpolation;
+pub use crate::solout::{CrossingDirection, Solout};
+pub use crate::solution::Solution;
 pub use crate::stats::Evals;
-pub use crate::derive::State;
+pub use crate::status::Status;
 
 // nalgebra Types and Macros
 pub use nalgebra::{DMatrix, SMatrix, SVector, vector};

@@ -3,11 +3,11 @@
 use super::AdamsPredictorCorrector;
 use crate::{
     error::Error,
-    status::Status,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     methods::{Fixed, Ordinary},
     ode::{ODE, OrdinaryNumericalMethod},
     stats::Evals,
+    status::Status,
     traits::{CallBackData, Real, State},
     utils::validate_step_size_parameters,
 };

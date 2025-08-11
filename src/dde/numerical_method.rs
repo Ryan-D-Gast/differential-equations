@@ -1,10 +1,10 @@
 //! Numerical methods for DDEs.
 
 use crate::{
-    error::Error,
-    status::Status,
     dde::DDE,
+    error::Error,
     stats::Evals,
+    status::Status,
     traits::{CallBackData, Real, State},
 };
 

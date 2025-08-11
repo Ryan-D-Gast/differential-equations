@@ -1,8 +1,8 @@
 //! Solution container for differential equation solvers.
 
 use crate::{
-    status::Status,
     stats::{Evals, Steps, Timer},
+    status::Status,
     traits::{CallBackData, Real, State},
 };
 

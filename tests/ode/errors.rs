@@ -3,9 +3,9 @@
 use differential_equations::{
     control::ControlFlag,
     error::Error,
-    status::Status,
     methods::{AdamsPredictorCorrector, ExplicitRungeKutta, ImplicitRungeKutta},
     ode::{ODE, ODEProblem},
+    status::Status,
 };
 use nalgebra::{SVector, vector};
 

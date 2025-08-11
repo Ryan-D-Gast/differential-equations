@@ -3,12 +3,12 @@
 //! Provides traits and types for defining and solving DDE initial value problems.
 //! See [`DDE`] and [`DDEProblem`] for usage.
 
-mod problem;
-mod solve;
 mod dde;
 mod numerical_method;
+mod problem;
+mod solve;
 
-pub use problem::DDEProblem;
-pub use solve::solve_dde;
 pub use dde::DDE;
 pub use numerical_method::DelayNumericalMethod;
+pub use problem::DDEProblem;
+pub use solve::solve_dde;

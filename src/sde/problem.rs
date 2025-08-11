@@ -2,10 +2,10 @@
 
 use crate::{
     error::Error,
-    solution::Solution,
     interpolate::Interpolation,
     sde::{SDE, StochasticNumericalMethod, solve_sde},
     solout::*,
+    solution::Solution,
     traits::{CallBackData, Real, State},
 };
 

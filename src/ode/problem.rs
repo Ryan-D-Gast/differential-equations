@@ -2,10 +2,10 @@
 
 use crate::{
     error::Error,
-    solution::Solution,
     interpolate::Interpolation,
     ode::{ODE, OrdinaryNumericalMethod, solve_ode},
     solout::*,
+    solution::Solution,
     traits::{CallBackData, Real, State},
 };
 

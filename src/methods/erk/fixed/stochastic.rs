@@ -2,12 +2,12 @@
 
 use crate::{
     error::Error,
-    status::Status,
-    interpolate::Interpolation,
+    interpolate::{Interpolation, linear_interpolate},
     linalg::component_multiply,
     methods::{ExplicitRungeKutta, Fixed, Stochastic},
     sde::{SDE, StochasticNumericalMethod},
     stats::Evals,
+    status::Status,
     traits::{CallBackData, Real, State},
     utils::validate_step_size_parameters,
 };
@@ -178,9 +178,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // For stochastic methods, we typically use linear interpolation
         // since the exact path between points involves the Wiener process
-        // which is not deterministic
-        let s = (t_interp - self.t_prev) / (self.t - self.t_prev);
-        let y_interp = self.y_prev + (self.y - self.y_prev) * s;
+        let y_interp = linear_interpolate(self.t_prev, self.t, &self.y_prev, &self.y, t_interp);
 
         Ok(y_interp)
     }

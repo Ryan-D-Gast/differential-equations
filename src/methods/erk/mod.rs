@@ -5,8 +5,8 @@ mod dormandprince;
 mod fixed;
 
 use crate::{
-    status::Status,
     methods::Delay,
+    status::Status,
     traits::{CallBackData, Real, State},
 };
 use std::{collections::VecDeque, marker::PhantomData};

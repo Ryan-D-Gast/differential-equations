@@ -56,3 +56,17 @@ pub fn cubic_hermite_interpolate<T: Real, Y: State<T>>(
     let h11 = s.powi(3) - s.powi(2);
     *y0 * h00 + *k0 * h10 * h + *y1 * h01 + *k1 * h11 * h
 }
+
+/// Linear interpolation over `[t0, t1]`.
+///
+/// Computes the straight-line interpolant between `y0` and `y1`.
+///
+/// - Inputs:
+///   - `t0`, `t1`: interval bounds
+///   - `y0`, `y1`: state values at `t0`, `t1`
+///   - `t`: evaluation time
+/// - Output: interpolated state at `t`
+pub fn linear_interpolate<T: Real, Y: State<T>>(t0: T, t1: T, y0: &Y, y1: &Y, t: T) -> Y {
+    let s = (t - t0) / (t1 - t0);
+    *y0 * (T::one() - s) + *y1 * s
+}

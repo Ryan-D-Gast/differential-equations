@@ -3,11 +3,11 @@
 use crate::{
     control::ControlFlag,
     error::Error,
-    solution::Solution,
-    status::Status,
     interpolate::Interpolation,
     ode::{ODE, OrdinaryNumericalMethod},
     solout::*,
+    solution::Solution,
+    status::Status,
     traits::{CallBackData, Real, State},
 };
 

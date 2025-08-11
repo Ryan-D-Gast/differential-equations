@@ -2,9 +2,9 @@
 
 use crate::{
     error::Error,
-    status::Status,
     sde::SDE,
     stats::Evals,
+    status::Status,
     traits::{CallBackData, Real, State},
 };
 

@@ -11,26 +11,26 @@
 
 use crate::{
     control::ControlFlag,
-    solution::Solution,
     interpolate::Interpolation,
+    solution::Solution,
     traits::{CallBackData, Real, State},
 };
 
-mod solout;
-mod default;
-mod even;
-mod dense;
-mod t_eval;
 mod crossing;
+mod default;
+mod dense;
+mod even;
 mod hyperplane;
+mod solout;
+mod t_eval;
 
-pub use solout::Solout;
-pub use default::DefaultSolout;
-pub use even::EvenSolout;
-pub use dense::DenseSolout;
-pub use t_eval::TEvalSolout;
 pub use crossing::CrossingSolout;
+pub use default::DefaultSolout;
+pub use dense::DenseSolout;
+pub use even::EvenSolout;
 pub use hyperplane::HyperplaneCrossingSolout;
+pub use solout::Solout;
+pub use t_eval::TEvalSolout;
 
 /// Defines the direction of threshold crossing to detect.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -2,13 +2,13 @@
 
 use crate::{
     control::ControlFlag,
-    error::Error,
-    solution::Solution,
-    status::Status,
     dde::DDE,
     dde::numerical_method::DelayNumericalMethod,
+    error::Error,
     interpolate::Interpolation,
     solout::*,
+    solution::Solution,
+    status::Status,
     traits::{CallBackData, Real, State},
 };
 
