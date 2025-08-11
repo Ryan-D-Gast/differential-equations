@@ -1,4 +1,4 @@
-//! Solution of differential equations
+//! Solution container for differential equation solvers.
 
 use crate::{
     status::Status,
@@ -9,7 +9,7 @@ use crate::{
 #[cfg(feature = "polars")]
 use polars::prelude::*;
 
-/// Solution of returned by differential equation solvers
+/// The result produced by differential equation solvers.
 ///
 /// # Fields
 /// * `y`              - Outputted dependent variable points.
@@ -37,13 +37,13 @@ where
     /// Status of the solver.
     pub status: Status<T, Y, D>,
 
-    /// Number of function, jacobian, etc evaluations.
+    /// Number of function, Jacobian, and related evaluations.
     pub evals: Evals,
 
     /// Number of steps taken during the solution.
     pub steps: Steps,
 
-    /// Timer for tracking solution time - Running during solving, Completed after finalization
+    /// Timer tracking wall-clock time. `Running` during solving, `Completed` after finalization.
     pub timer: Timer<T>,
 }
 
@@ -85,7 +85,7 @@ where
     Y: State<T>,
     D: CallBackData,
 {
-    /// Puhes a new point to the solution, e.g. t and y vecs.
+    /// Push a new `(t, y)` point into the solution.
     ///
     /// # Arguments
     /// * `t` - The time point.
@@ -96,7 +96,7 @@ where
         self.y.push(y);
     }
 
-    /// Pops the last point from the solution, e.g. t and y vecs.
+    /// Pop the last `(t, y)` point from the solution.
     ///
     /// # Returns
     /// * `Option<(T, SMatrix<T, R, C>)>` - The last point in the solution.
@@ -128,9 +128,9 @@ where
     Y: State<T>,
     D: CallBackData,
 {
-    /// Simplifies the Solution into a tuple of vectors in form (t, y).
-    /// By doing so, the Solution will be consumed and the status,
-    /// evals, steps, rejected_steps, and accepted_steps will be discarded.
+    /// Consume the solution into `(t, y)` vectors.
+    ///
+    /// Status, evaluation counters, steps, and timers are discarded.
     ///
     /// # Returns
     /// * `(Vec<T>, Vec<Y)` - Tuple of time and state vectors.
@@ -139,7 +139,7 @@ where
         (self.t, self.y)
     }
 
-    /// Returns the last accepted step of the solution in form (t, y).
+    /// Return the last accepted step `(t, y)`.
     ///
     /// # Returns
     /// * `Result<(T, Y), Box<dyn std::error::Error>>` - Result of time and state vector.
@@ -160,7 +160,7 @@ where
         self.t.iter().zip(self.y.iter())
     }
 
-    /// Creates a CSV file of the solution using standard library functionality.
+    /// Write the solution to CSV using only the standard library.
     ///
     /// Note the columns will be named t, y0, y1, ..., yN.
     ///
@@ -187,14 +187,14 @@ where
         // Length of state vector
         let n = self.y[0].len();
 
-        // Write header
+        // Header
         let mut header = String::from("t");
         for i in 0..n {
             header.push_str(&format!(",y{}", i));
         }
         writeln!(writer, "{}", header)?;
 
-        // Write data
+        // Data rows
         for (t, y) in self.iter() {
             let mut row = format!("{:?}", t);
             for i in 0..n {
@@ -203,13 +203,12 @@ where
             writeln!(writer, "{}", row)?;
         }
 
-        // Ensure all data is flushed to disk
         writer.flush()?;
 
         Ok(())
     }
 
-    /// Creates a csv file of the solution using Polars DataFrame.
+    /// Write the solution to CSV via a Polars `DataFrame`.
     ///
     /// Note the columns will be named t, y0, y1, ..., yN.
     ///
@@ -243,13 +242,13 @@ where
         }
         let mut df = DataFrame::new(columns)?;
 
-        // Write the dataframe to a csv file
+        // Write the DataFrame to CSV
         CsvWriter::new(&mut file).finish(&mut df)?;
 
         Ok(())
     }
 
-    /// Creates a Polars DataFrame of the solution.
+    /// Convert the solution to a Polars `DataFrame`.
     ///
     /// Requires feature "polars" to be enabled.
     ///
@@ -277,7 +276,7 @@ where
         DataFrame::new(columns)
     }
 
-    /// Creates a Polars DataFrame with column names.
+    /// Convert the solution to a Polars `DataFrame` with custom column names.
     ///
     /// Requires feature "polars" to be enabled.
     ///

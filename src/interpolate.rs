@@ -1,45 +1,42 @@
-//! Interpolation Methods for the ODEProblem struct when solving the system.
+//! Interpolation utilities used by solvers and output handlers.
 
 use crate::{
     error::Error,
     traits::{Real, State},
 };
 
-/// Interpolation trait implemented by Solvers to allow Solout to access interpolated values between t_prev and t_curr
+/// Interpolation capability provided by solvers for dense output.
+///
+/// Implementations expose an interpolant valid on the current step
+/// interval `[t_prev, t_curr]` so that downstream components (e.g.,
+/// `Solout`) can query states between accepted steps.
 pub trait Interpolation<T, Y>
 where
     T: Real,
     Y: State<T>,
 {
-    /// Interpolate between previous and current step
+    /// Evaluate the step-local interpolant at the given time.
     ///
-    /// Note that the range for interpolation is between t_prev and t_curr.
-    /// If t_interp is outside this range, an error will be returned in the
-    /// form of an Error::OutOfBounds.
+    /// The valid domain is the current step interval `[t_prev, t_curr]`.
+    /// If `t_interp` lies outside this range, an `Error::OutOfBounds` is
+    /// returned.
     ///
-    /// # Arguments
-    /// * `t_interp`  - Time to interpolate at.
-    ///
-    /// # Returns
-    /// * Interpolated State Vector.
-    ///
+    /// - Input: `t_interp` time within the current step
+    /// - Output: interpolated state `Y` or an error
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>>;
 }
 
-/// Cubic Hermite Interpolation
+/// Cubic Hermite interpolation over `[t0, t1]`.
 ///
-/// # Arguments
-/// * `t0` - Initial Time.
-/// * `t1` - Final Time.
-/// * `y0` - Initial State Vector.
-/// * `y1` - Final State Vector.
-/// * `k0` - Initial Deriv of State Vector.
-/// * `k1` - Final Deriv of State Vector.
-/// * `t`  - Time to interpolate at.
+/// Uses endpoint values and derivatives to construct a smooth
+/// cubic interpolant.
 ///
-/// # Returns
-/// * Interpolated State Vector.
-///
+/// - Inputs:
+///   - `t0`, `t1`: interval bounds
+///   - `y0`, `y1`: state values at `t0`, `t1`
+///   - `k0`, `k1`: state derivatives at `t0`, `t1`
+///   - `t`: evaluation time
+/// - Output: interpolated state at `t`
 pub fn cubic_hermite_interpolate<T: Real, Y: State<T>>(
     t0: T,
     t1: T,

@@ -1,11 +1,10 @@
-//! Control flow for solving process. Control flags and data return from events, solout functions, etc.
+//! Control flow flags used by solvers, events, and output callbacks.
 
 use crate::traits::{CallBackData, Real, State};
 
-/// Control flag for solver execution flow
+/// Directive to the solver indicating how to proceed with integration.
 ///
-/// ControlFlag is a command to the solver about how to proceed with integration.
-/// Used by both event functions and solout functions to control solver execution.
+/// Returned by event functions and `Solout` callbacks to steer execution.
 ///
 #[derive(Debug, Clone)]
 pub enum ControlFlag<T = f64, Y = f64, D = String>
@@ -14,10 +13,10 @@ where
     Y: State<T>,
     D: CallBackData,
 {
-    /// Continue to next step
+    /// Continue to the next step.
     Continue,
-    /// Modify State and continue to next step
+    /// Replace the current state and continue to the next step.
     ModifyState(T, Y),
-    /// Terminate solver with the given reason/data
+    /// Terminate the solver with the given reason/data.
     Terminate(D),
 }
