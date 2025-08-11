@@ -12,7 +12,7 @@ where
 {
     /// NumericalMethod input was bad
     BadInput {
-        msg: String, // if input is bad, return this with reason
+        msg: String,
     },
 
     /// Maximum steps reached
