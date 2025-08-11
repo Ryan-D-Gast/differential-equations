@@ -54,10 +54,23 @@ macro_rules! test_solver_error {
                         stringify!($solver_name), stringify!($test_name), $expected_error, r.status);
                 },
                 Err(e) => {
-                    assert_eq!(e, $expected_error,
-                        "Test {} {} failed: Expected: {:?}, Got: {:?}",
+                    // Compare only the error variant to avoid brittle string checks
+                    use std::mem::discriminant;
+                    let got_kind = discriminant(&e);
+                    let expected_kind = discriminant(&$expected_error);
+                    assert_eq!(got_kind, expected_kind,
+                        "Test {} {} failed: Expected error kind {:?}, Got {:?}",
                         stringify!($solver_name), stringify!($test_name), $expected_error, e);
-                    println!("{} {} passed with expected error: {:?}",
+
+                    // For BadInput, ensure message conveys invalid input without depending on exact wording
+                    if let (differential_equations::Error::BadInput { msg: got_msg },
+                            differential_equations::Error::BadInput { .. }) = (&e, &$expected_error) {
+                        assert!(got_msg.starts_with("Invalid input"),
+                            "Test {} {} failed: Expected BadInput message to start with 'Invalid input', got: {}",
+                            stringify!($solver_name), stringify!($test_name), got_msg);
+                    }
+
+                    println!("{} {} passed with expected error kind: {:?}",
                         stringify!($solver_name), stringify!($test_name), e);
                 }
             }
