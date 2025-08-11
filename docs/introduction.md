@@ -54,7 +54,6 @@ Some notable examples of solvers implemented in this library are:
 - DOP853: Dormand-Prince 8th order adaptive step method with dense output
 - DOPRI5: Dormand-Prince 5th order adaptive step method with dense output
 - RKV98: Verner's 9th order adaptive step method with dense output
-- Radau5: Radau 5th order implicit method with dense output
 
 More information on the solvers can be found in the respective equation type documentation (e.g., [ODE](./ode.md), [DDE](./dde.md), [SDE](./sde.md), ...).
 
