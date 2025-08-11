@@ -1,4 +1,4 @@
-//! Numerical Methods for solving stochastic differential equations (SDEs).
+//! Numerical methods for SDEs.
 
 use crate::{
     Error, Status,
@@ -7,20 +7,16 @@ use crate::{
     traits::{CallBackData, Real, State},
 };
 
-/// StochasticNumericalMethod Trait for SDE NumericalMethods
+/// Trait for SDE solvers.
 ///
-/// SDE NumericalMethods implement this trait to solve stochastic differential equations.
-/// This step function is called iteratively to solve the SDE.
-/// By implementing this trait, different functions can use a user provided
-/// SDE solver to solve the SDE that fits their requirements.
-///
+/// Implemented by types that can solve SDEs via repeated calls to `step`.
 pub trait StochasticNumericalMethod<T, Y, D = String>
 where
     T: Real,
     Y: State<T>,
     D: CallBackData,
 {
-    /// Initialize StochasticNumericalMethod before solving SDE
+    /// Initialize the solver before integration
     ///
     /// # Arguments
     /// * `sde`    - System of SDEs to solve.
@@ -35,7 +31,7 @@ where
     where
         F: SDE<T, Y, D>;
 
-    /// Step through solving the SDE by one step
+    /// Advance the solution by one step
     ///
     /// # Arguments
     /// * `sde`    - System of SDEs to solve.
@@ -47,29 +43,29 @@ where
     where
         F: SDE<T, Y, D>;
 
-    // Access fields of the solver
+    // Accessors
 
-    /// Access time of last accepted step
+    /// Time of last accepted step
     fn t(&self) -> T;
 
-    /// Access solution of last accepted step
+    /// State at last accepted step
     fn y(&self) -> &Y;
 
-    /// Access time of previous accepted step
+    /// Time of previous accepted step
     fn t_prev(&self) -> T;
 
-    /// Access solution of previous accepted step
+    /// State at previous accepted step
     fn y_prev(&self) -> &Y;
 
-    /// Access step size of next step
+    /// Step size for next step
     fn h(&self) -> T;
 
-    /// Set step size of next step
+    /// Set step size for next step
     fn set_h(&mut self, h: T);
 
-    /// Status of solver
+    /// Current solver status
     fn status(&self) -> &Status<T, Y, D>;
 
-    /// Set status of solver
+    /// Set solver status
     fn set_status(&mut self, status: Status<T, Y, D>);
 }

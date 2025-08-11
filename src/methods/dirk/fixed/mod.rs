@@ -36,10 +36,4 @@ macro_rules! impl_dirk_fixed_step_constructor {
 }
 
 // Fixed-step DIRK methods
-impl_dirk_fixed_step_constructor!(
-    esdirk33,
-    3,
-    3,
-    3,
-    "ESDIRK-3-3: 3-stage, order 3."
-);
+impl_dirk_fixed_step_constructor!(esdirk33, 3, 3, 3, "ESDIRK-3-3: 3-stage, order 3.");

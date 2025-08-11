@@ -1,4 +1,4 @@
-//! Numerical Methods for solving delay differential equations (DDEs).
+//! Numerical methods for DDEs.
 
 use crate::{
     Error, Status,
@@ -7,12 +7,9 @@ use crate::{
     traits::{CallBackData, Real, State},
 };
 
-/// DelayNumericalMethod Trait for DDE NumericalMethods
+/// Trait for DDE solvers.
 ///
-/// DDE NumericalMethods implement this trait to solve delay differential equations.
-/// The `step` function is called iteratively by a solver function (like `solve_dde`)
-/// to advance the solution.
-///
+/// Implemented by types that can solve DDEs via repeated calls to `step`.
 pub trait DelayNumericalMethod<const L: usize, T, Y, H, D = String>
 where
     T: Real,
@@ -20,7 +17,7 @@ where
     H: Fn(T) -> Y,
     D: CallBackData,
 {
-    /// Initialize DelayNumericalMethod before solving DDE.
+    /// Initialize the solver before integration
     ///
     /// # Arguments
     /// * `dde` - System of DDEs to solve.
@@ -36,7 +33,7 @@ where
     where
         F: DDE<L, T, Y, D>;
 
-    /// Perform one integration step for the DDE.
+    /// Advance the solution by one step
     ///
     /// # Arguments
     /// * `dde`            - System of DDEs to solve.
@@ -48,29 +45,29 @@ where
     where
         F: DDE<L, T, Y, D>;
 
-    // Access fields of the solver
+    // Accessors
 
-    /// Access time of the current state (end of the last accepted step).
+    /// Time of last accepted step
     fn t(&self) -> T;
 
-    /// Access solution state `y` at the current time `t`.
+    /// State at last accepted step
     fn y(&self) -> &Y;
 
-    /// Access time at the beginning of the last accepted step.
+    /// Time of previous accepted step
     fn t_prev(&self) -> T;
 
-    /// Access solution state `y` at the beginning of the last accepted step.
+    /// State at previous accepted step
     fn y_prev(&self) -> &Y;
 
-    /// Access the proposed step size `h` for the *next* step attempt.
+    /// Step size for next step
     fn h(&self) -> T;
 
-    /// Set the step size `h` for the *next* step attempt.
+    /// Set step size for next step
     fn set_h(&mut self, h: T);
 
-    /// Get the current status of the solver (Solving, Complete, Error, etc.).
+    /// Current solver status
     fn status(&self) -> &Status<T, Y, D>;
 
-    /// Set the status of the solver.
+    /// Set solver status
     fn set_status(&mut self, status: Status<T, Y, D>);
 }

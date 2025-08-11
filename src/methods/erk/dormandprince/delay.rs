@@ -133,7 +133,7 @@ impl<
         }
 
         // Delay iteration count
-    let max_iter: usize = if min_delay_abs < self.h.abs() && min_delay_abs > T::zero() {
+        let max_iter: usize = if min_delay_abs < self.h.abs() && min_delay_abs > T::zero() {
             5
         } else {
             1
@@ -161,7 +161,9 @@ impl<
 
                 // Delayed states for this stage
                 dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut delays);
-                if let Err(e) = self.lagvals(self.t + self.c[i] * self.h, &delays, &mut y_delayed, phi) {
+                if let Err(e) =
+                    self.lagvals(self.t + self.c[i] * self.h, &delays, &mut y_delayed, phi)
+                {
                     self.status = Status::Error(e.clone());
                     return Err(e);
                 }
@@ -352,9 +354,8 @@ impl<
                                     let theta = (t_delayed - self.t_prev) / self.h_prev;
                                     let one_minus_theta = T::one() - theta;
                                     let ilast = self.cont.len() - 1;
-                                    let poly = (1..ilast).rev().fold(
-                                        self.cont[ilast],
-                                        |acc, cont_i| {
+                                    let poly =
+                                        (1..ilast).rev().fold(self.cont[ilast], |acc, cont_i| {
                                             let factor = if cont_i >= 4 {
                                                 if (ilast - cont_i) % 2 == 1 {
                                                     one_minus_theta
@@ -367,8 +368,7 @@ impl<
                                                 theta
                                             };
                                             acc * factor + self.cont[cont_i]
-                                        },
-                                    );
+                                        });
                                     y_delayed[lag_idx] = self.cont[0] + poly * theta;
                                 } else {
                                     y_delayed[lag_idx] = cubic_hermite_interpolate(
@@ -505,7 +505,13 @@ impl<
 impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
     ExplicitRungeKutta<Delay, DormandPrince, T, Y, D, O, S, I>
 {
-    fn lagvals<const L: usize, H>(&mut self, t_stage: T, lags: &[T; L], yd: &mut [Y; L], phi: &H) -> Result<(), Error<T, Y>>
+    fn lagvals<const L: usize, H>(
+        &mut self,
+        t_stage: T,
+        lags: &[T; L],
+        yd: &mut [Y; L],
+        phi: &H,
+    ) -> Result<(), Error<T, Y>>
     where
         H: Fn(T) -> Y,
     {

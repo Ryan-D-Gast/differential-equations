@@ -136,7 +136,7 @@ impl<
         }
 
         // Delay iteration count
-    let max_iter: usize = if min_delay_abs < self.h.abs() && min_delay_abs > T::zero() {
+        let max_iter: usize = if min_delay_abs < self.h.abs() && min_delay_abs > T::zero() {
             5
         } else {
             1
@@ -246,8 +246,7 @@ impl<
         if dde_iter_failed {
             let sign = self.h.signum();
             self.h = (self.h.abs() * T::from_f64(0.5).unwrap()).max(self.h_min.abs()) * sign;
-            if min_delay_abs > T::zero()
-                && self.h.abs() < T::from_f64(2.0).unwrap() * min_delay_abs
+            if min_delay_abs > T::zero() && self.h.abs() < T::from_f64(2.0).unwrap() * min_delay_abs
             {
                 self.h = min_delay_abs * sign;
             }

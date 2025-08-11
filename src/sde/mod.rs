@@ -1,85 +1,14 @@
-//! # Stochastic Differential Equations (SDE) Module
+//! Stochastic Differential Equations (SDE) module.
 //!
-//! This module provides comprehensive functionality for solving Stochastic Differential Equations (SDEs),
-//! focusing on Initial Value Problems (SDEProblems).
-//!
-//! ## Example
-//!
-//! The following example demonstrates how to solve a simple Geometric Brownian Motion SDE using the Euler-Maruyama method:
-//!
-//! ```rust
-//! use differential_equations::prelude::*;
-//! use nalgebra::SVector;
-//! use rand::SeedableRng;
-//! use rand_distr::{Distribution, Normal};
-//!
-//! // Define the SDE system: dY = mu*Y dt + sigma*Y dW
-//! struct GBM {
-//!     mu: f64,
-//!     sigma: f64,
-//!     rng: rand::rngs::StdRng,
-//! }
-//!
-//! impl GBM {
-//!     fn new(mu: f64, sigma: f64, seed: u64) -> Self {
-//!         Self {
-//!             mu,
-//!             sigma,
-//!             rng: rand::rngs::StdRng::seed_from_u64(seed),
-//!         }
-//!     }
-//! }
-//!
-//! impl SDE<f64, SVector<f64, 1>> for GBM {
-//!     fn drift(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
-//!         dydt[0] = self.mu * y[0];
-//!     }
-//!     fn diffusion(&self, _t: f64, y: &SVector<f64, 1>, dydw: &mut SVector<f64, 1>) {
-//!         dydw[0] = self.sigma * y[0];
-//!     }
-//!     fn noise(&mut self, dt: f64, dw: &mut SVector<f64, 1>) {
-//!         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
-//!         dw[0] = normal.sample(&mut self.rng);
-//!     }
-//! }
-//!
-//! fn main() {
-//!     let t0 = 0.0;
-//!     let tf = 1.0;
-//!     let y0 = SVector::<f64, 1>::new(100.0);
-//!     let mu = 0.1;
-//!     let sigma = 0.3;
-//!     let seed = 42;
-//!
-//!     let gbm = GBM::new(mu, sigma, seed);
-//!     let mut solver = ExplicitRungeKutta::rk4(0.01);
-//!     let mut problem = SDEProblem::new(gbm, t0, tf, y0);
-//!
-//!     let solution = match problem.solve(&mut solver) {
-//!         Ok(sol) => sol,
-//!         Err(e) => panic!("Error: {:?}", e),
-//!     };
-//!
-//!     for (t, y) in solution.iter() {
-//!         println!("t: {:.4}, y: {:.4}", t, y[0]);
-//!     }
-//! }
-//! ```
-//!
-//! ## Core Components
-//!
-//! - [`SDE`]: Define your stochastic differential equation system by implementing this trait
-//! - [`SDEProblem`]: Set up an initial value problem with your system, time span, and initial conditions
-//!
+//! Provides traits and types for defining and solving SDE initial value problems.
+//! See [`SDE`] and [`SDEProblem`] for usage.
 
 mod sde;
-pub use sde::SDE;
-
 mod numerical_method;
-pub use numerical_method::StochasticNumericalMethod;
-
 mod problem;
 mod solve;
 
+pub use sde::SDE;
+pub use numerical_method::StochasticNumericalMethod;
 pub use problem::SDEProblem;
 pub use solve::solve_sde;

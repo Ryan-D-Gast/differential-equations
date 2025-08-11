@@ -118,7 +118,7 @@ impl<
         }
 
         // Delay iteration count
-    let max_iter: usize = if min_delay_abs < self.h.abs() && min_delay_abs > T::zero() {
+        let max_iter: usize = if min_delay_abs < self.h.abs() && min_delay_abs > T::zero() {
             5
         } else {
             1
@@ -143,7 +143,9 @@ impl<
                 }
                 // Delayed states for this stage
                 dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut delays);
-                if let Err(e) = self.lagvals(self.t + self.c[i] * self.h, &delays, &mut y_delayed, phi) {
+                if let Err(e) =
+                    self.lagvals(self.t + self.c[i] * self.h, &delays, &mut y_delayed, phi)
+                {
                     self.status = Status::Error(e.clone());
                     return Err(e);
                 }
