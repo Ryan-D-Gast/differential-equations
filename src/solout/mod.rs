@@ -15,24 +15,21 @@ use crate::{
     traits::{CallBackData, Real, State},
 };
 
-// Solout Trait for controlling output of the solver
 mod solout;
-pub use solout::Solout;
-
-// Common Solout Implementations
 mod default;
-pub use default::DefaultSolout;
-
 mod even;
-pub use even::EvenSolout;
-
 mod dense;
-pub use dense::DenseSolout;
-
 mod t_eval;
-pub use t_eval::TEvalSolout;
+mod crossing;
+mod hyperplane;
 
-// Crossing Detecting Solouts
+pub use solout::Solout;
+pub use default::DefaultSolout;
+pub use even::EvenSolout;
+pub use dense::DenseSolout;
+pub use t_eval::TEvalSolout;
+pub use crossing::CrossingSolout;
+pub use hyperplane::HyperplaneCrossingSolout;
 
 /// Defines the direction of threshold crossing to detect.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -44,11 +41,3 @@ pub enum CrossingDirection {
     /// Detect only crossings from above to below the threshold (negative direction)
     Negative,
 }
-
-// Crossing detection solout
-mod crossing;
-pub use crossing::CrossingSolout;
-
-// Hyperplane crossing detection solout
-mod hyperplane;
-pub use hyperplane::HyperplaneCrossingSolout;
