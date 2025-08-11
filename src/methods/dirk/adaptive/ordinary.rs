@@ -1,4 +1,4 @@
-//! Adaptive DIRK methods for ODEs
+//! Adaptive DIRK for ODEs
 
 use crate::{
     Error, Status,
@@ -21,39 +21,39 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
     {
         let mut evals = Evals::new();
 
-        // If h0 is zero, calculate initial step size
+        // Compute h0 if not set
         if self.h0 == T::zero() {
-            // Use adaptive step size calculation for implicit methods
+            // Implicit initial step size heuristic
             self.h0 = InitialStepSize::<Ordinary>::compute(
                 ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max,
                 &mut evals,
             );
         }
 
-        // Check bounds
+        // Validate step size bounds
         match validate_step_size_parameters::<T, Y, D>(self.h0, self.h_min, self.h_max, t0, tf) {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
 
-        // Initialize Statistics
+        // Stats
         self.stiffness_counter = 0;
         self.newton_iterations = 0;
         self.jacobian_evaluations = 0;
         self.lu_decompositions = 0;
 
-        // Initialize State
+        // State
         self.t = t0;
         self.y = *y0;
         ode.diff(self.t, &self.y, &mut self.dydt);
         evals.function += 1;
 
-        // Initialize previous state
+        // Previous state
         self.t_prev = self.t;
         self.y_prev = self.y;
         self.dydt_prev = self.dydt;
 
-        // Initialize linear algebra workspace with proper dimensions
+        // Newton workspace
         let dim = y0.len();
         self.stage_jacobian = nalgebra::DMatrix::zeros(dim, dim);
         self.newton_matrix = nalgebra::DMatrix::zeros(dim, dim);
@@ -62,7 +62,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         self.z_stage = *y0;
         self.jacobian_age = 0;
 
-        // Initialize Status
+        // Status
         self.status = Status::Initialized;
 
         Ok(evals)
@@ -74,7 +74,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
     {
         let mut evals = Evals::new();
 
-        // Check step size
+        // Step size guard
         if self.h.abs() < self.h_prev.abs() * T::from_f64(1e-14).unwrap() {
             self.status = Status::Error(Error::StepSize {
                 t: self.t,
@@ -86,7 +86,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             });
         }
 
-        // Check max steps
+        // Max steps guard
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
                 t: self.t,
@@ -101,19 +101,18 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         let dim = self.y.len();
 
-        // DIRK stage loop - solve one stage at a time
+        // DIRK stage loop (sequential)
         for stage in 0..self.stages {
-            // Construct RHS for current stage
-            // rhs = y_n + h * sum_{j=0}^{stage-1} a[stage][j] * k[j]
+            // rhs = y_n + h Σ_{j<stage} a[stage][j] k[j]
             let mut rhs = self.y;
             for j in 0..stage {
                 rhs += self.k[j] * (self.a[stage][j] * self.h);
             }
 
-            // Initial guess for stage solution - use previous solution
+            // Initial stage guess
             self.z_stage = self.y;
 
-            // Newton iteration to solve: z - rhs - h*a[stage][stage]*f(t + c[stage]*h, z) = 0
+            // Newton: solve z - rhs - h*a_ii f(t_i, z) = 0
             let mut newton_converged = false;
             let mut newton_iter = 0;
             let mut increment_norm = T::infinity();
@@ -123,16 +122,16 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 self.newton_iterations += 1;
                 evals.newton += 1;
 
-                // Evaluate function at current stage guess
+                // Evaluate f at stage guess
                 let t_stage = self.t + self.c[stage] * self.h;
                 let mut f_stage = Y::zeros();
                 ode.diff(t_stage, &self.z_stage, &mut f_stage);
                 evals.function += 1;
 
-                // Compute residual: F(z) = z - rhs - h*a[stage][stage]*f(t_stage, z)
+                // Residual F(z)
                 let residual = self.z_stage - rhs - f_stage * (self.a[stage][stage] * self.h);
 
-                // Calculate residual norm for convergence check
+                // Max-norm and RHS
                 let mut residual_norm = T::zero();
                 for row_idx in 0..dim {
                     let res_val = residual.get(row_idx);
@@ -141,24 +140,24 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                     self.rhs_newton[row_idx] = -res_val;
                 }
 
-                // Check residual convergence first
+                // Converged by residual
                 if residual_norm < self.newton_tol {
                     newton_converged = true;
                     break;
                 }
 
-                // Check increment convergence from previous iteration
+                // Converged by increment
                 if newton_iter > 1 && increment_norm < self.newton_tol {
                     newton_converged = true;
                     break;
                 }
 
-                // Only recompute Jacobian if needed (every few iterations or first time)
+                // Refresh Jacobian if needed
                 if newton_iter == 1 || self.jacobian_age > 3 {
                     ode.jacobian(t_stage, &self.z_stage, &mut self.stage_jacobian);
                     evals.jacobian += 1;
 
-                    // Form Newton matrix: I - h*a[stage][stage]*J
+                    // Newton matrix: I - h*a_ii J
                     self.newton_matrix.fill(T::zero());
                     let scale_factor = -self.h * self.a[stage][stage];
                     for r in 0..dim {
@@ -166,7 +165,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                             self.newton_matrix[(r, c_col)] =
                                 self.stage_jacobian[(r, c_col)] * scale_factor;
                         }
-                        // Add identity matrix
+                        // Add identity
                         self.newton_matrix[(r, r)] += T::one();
                     }
 
@@ -174,18 +173,18 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 }
                 self.jacobian_age += 1;
 
-                // Solve Newton system: (I - h*a[stage][stage]*J) * delta_z = -F(z)
+                // Solve (I - h*a_ii J) Δz = -F(z)
                 let lu_decomp = nalgebra::LU::new(self.newton_matrix.clone());
                 if let Some(solution) = lu_decomp.solve(&self.rhs_newton) {
                     self.delta_z.copy_from(&solution);
                     self.lu_decompositions += 1;
                 } else {
-                    // LU decomposition failed - matrix is singular
+                    // Singular matrix: fail this stage
                     newton_converged = false;
                     break;
                 }
 
-                // Update stage solution: z += delta_z and calculate increment norm
+                // Update z and increment norm
                 increment_norm = T::zero();
                 for row_idx in 0..dim {
                     let delta_val = self.delta_z[row_idx];
@@ -196,9 +195,9 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 }
             }
 
-            // Check if Newton iteration failed to converge for this stage
+            // Newton failed for this stage
             if !newton_converged {
-                // Reduce step size and try again
+                // Reduce h and retry later
                 self.h *= T::from_f64(0.25).unwrap();
                 self.h = constrain_step_size(self.h, self.h_min, self.h_max);
                 self.status = Status::RejectedStep;
@@ -217,31 +216,31 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 return Ok(evals);
             }
 
-            // Compute stage derivative with converged stage solution
+            // k_i from converged z
             let t_stage = self.t + self.c[stage] * self.h;
             ode.diff(t_stage, &self.z_stage, &mut self.k[stage]);
             evals.function += 1;
         }
 
-        // Compute solution: y_new = y_old + h * sum(b_i * k_i)
+        // y_{n+1} = y_n + h Σ b_i k_i
         let mut y_new = self.y;
         for i in 0..self.stages {
             y_new += self.k[i] * (self.b[i] * self.h);
         }
 
-        // Compute error estimate using embedded method (bh coefficients)
+        // Embedded error estimate (bh)
         let mut err_norm = T::zero();
         if let Some(bh) = &self.bh {
-            // Compute lower order solution for error estimation
+            // Lower-order solution
             let mut y_low = self.y;
             for i in 0..self.stages {
                 y_low += self.k[i] * (bh[i] * self.h);
             }
 
-            // Compute error estimate: err = y_high - y_low
+            // err = y_high - y_low
             let err = y_new - y_low;
 
-            // Calculate weighted RMS norm for error control
+            // Weighted max-norm
             for n in 0..self.y.len() {
                 let scale = self.atol + self.rtol * self.y.get(n).abs().max(y_new.get(n).abs());
                 if scale > T::zero() {
@@ -254,49 +253,49 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             err_norm = T::one();
         }
 
-        // Ensure error norm is not too small (add a small minimum)
+        // Avoid vanishing error
         err_norm = err_norm.max(T::default_epsilon() * T::from_f64(100.0).unwrap());
 
-        // Step size scale factor
+        // Step scale factor
         let order = T::from_usize(self.order).unwrap();
         let error_exponent = T::one() / order;
         let mut scale = self.safety_factor * err_norm.powf(-error_exponent);
 
-        // Clamp scale factor to prevent extreme step size changes
+        // Clamp scale factor
         scale = scale.max(self.min_scale).min(self.max_scale);
 
-        // Determine if step is accepted
+        // Accept/reject
         if err_norm <= T::one() {
-            // Step accepted
+            // Accepted
             self.status = Status::Solving;
 
-            // Log previous state
+            // Log previous
             self.t_prev = self.t;
             self.y_prev = self.y;
             self.dydt_prev = self.dydt;
             self.h_prev = self.h;
 
-            // Update state with the new solution
+            // Advance state
             self.t += self.h;
             self.y = y_new;
 
-            // Compute the derivative for the next step
+            // Next-step derivative
             ode.diff(self.t, &self.y, &mut self.dydt);
             evals.function += 1;
 
-            // Reset stiffness counter if we had rejections before
+            // If we were rejecting, limit growth
             if let Status::RejectedStep = self.status {
                 self.stiffness_counter = 0;
 
-                // Limit step size growth to avoid oscillations between accepted and rejected steps
+                // Avoid oscillations
                 scale = scale.min(T::one());
             }
         } else {
-            // Step rejected
+            // Rejected
             self.status = Status::RejectedStep;
             self.stiffness_counter += 1;
 
-            // Check for excessive rejections
+            // Too many rejections
             if self.stiffness_counter >= self.max_rejects {
                 self.status = Status::Error(Error::Stiffness {
                     t: self.t,
@@ -309,10 +308,10 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             }
         }
 
-        // Update step size
+        // Update h
         self.h *= scale;
 
-        // Apply the new step size
+        // Constrain h
         self.h = constrain_step_size(self.h, self.h_min, self.h_max);
 
         Ok(evals)

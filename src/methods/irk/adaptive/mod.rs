@@ -1,7 +1,6 @@
-//! Implicit Runge-Kutta solvers with Newton iteration and adaptive step size control.
+//! IRK with Newton solves and adaptive step size.
 
 mod ordinary;
-//mod delay;
 
 use crate::{
     methods::{Adaptive, ImplicitRungeKutta},
@@ -9,7 +8,7 @@ use crate::{
     traits::{CallBackData, Real, State},
 };
 
-// Macro for adaptive step constructors
+// Adaptive step constructors
 macro_rules! impl_irk_adaptive_step_constructor {
     ($method_name:ident, $order_val:expr, $s_val:expr, $m_val:expr, $doc:expr) => {
         impl<E, T: Real, Y: State<T>, D: CallBackData>
@@ -38,9 +37,7 @@ macro_rules! impl_irk_adaptive_step_constructor {
     };
 }
 
-// Adaptive step methods (embedded error estimation, Newton iteration)
-
-// Gauss-Legendre methods - A-stable, symplectic, highly accurate
+// Gauss–Legendre (A-stable, symplectic)
 impl_irk_adaptive_step_constructor!(
     gauss_legendre_4,
     4,
@@ -56,7 +53,7 @@ impl_irk_adaptive_step_constructor!(
     "Creates a new Gauss-Legendre 3-stage implicit Runge-Kutta method of order 6."
 );
 
-// Lobatto IIIC methods - L-stable, algebraically stable
+// Lobatto IIIC (L-stable)
 impl_irk_adaptive_step_constructor!(
     lobatto_iiic_2,
     2,

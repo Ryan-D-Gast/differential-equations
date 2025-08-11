@@ -1,4 +1,4 @@
-//! Implicit Runge-Kutta (IRK) methods
+//! Implicit Runge–Kutta (IRK) methods
 
 mod adaptive;
 mod fixed;
@@ -9,23 +9,11 @@ use crate::{
 };
 use std::marker::PhantomData;
 
-/// Implicit Runge-Kutta solver that can handle:
-/// - Fixed-step methods with Newton iteration for stage equations
-/// - Adaptive step methods with embedded error estimation
-/// - Gauss methods (A-stable, symplectic for Hamiltonian systems)
-/// - Radau methods (L-stable, good for stiff problems)
-/// - Lobatto methods (A-stable, good for constrained systems)
+/// IRK solver core. Supports fixed/adaptive stepping and common IRK families
+/// (Gauss, Radau, Lobatto).
 ///
-/// # Type Parameters
-///
-/// * `E`: Equation type (e.g., Ordinary, Delay, Stochastic)
-/// * `F`: Family type (e.g., Adaptive, Fixed, Gauss, Radau, Lobatto)
-/// * `T`: Real number type (f32, f64)
-/// * `Y`: State vector type
-/// * `D`: Callback data type
-/// * `const O`: Order of the method
-/// * `const S`: Number of stages in the method
-/// * `const I`: Total number of stages including interpolation (equal to S for methods without dense output)
+/// Type params: E (equation), F (family), T (scalar), Y (state), D (callback),
+/// O (order), S (stages), I (dense output terms).
 pub struct ImplicitRungeKutta<
     E,
     F,
@@ -36,38 +24,38 @@ pub struct ImplicitRungeKutta<
     const S: usize,
     const I: usize,
 > {
-    // Initial Step Size
+    // Initial step
     pub h0: T,
 
-    // Current Step Size
+    // Current step
     h: T,
 
-    // Current State
+    // Current state
     t: T,
     y: Y,
     dydt: Y,
 
-    // Previous State
+    // Previous state
     h_prev: T,
     t_prev: T,
     y_prev: Y,
     dydt_prev: Y,
 
-    // Stage values
+    // Stage data
     k: [Y; I],        // Stage derivatives
-    y_stages: [Y; S], // Stage values (Y_i = y_n + h * sum(a_ij * k_j))
+    y_stages: [Y; S], // Stage states (z_i)
 
-    // Constants from Butcher tableau
-    c: [T; S],          // Stage time coefficients
-    a: [[T; S]; S],     // Runge-Kutta matrix (typically dense for implicit methods)
-    b: [T; S],          // Weights for final solution
-    bh: Option<[T; S]>, // Lower order coefficients for embedded methods
+    // Butcher tableau
+    c: [T; S],          // Nodes c
+    a: [[T; S]; S],     // Matrix a
+    b: [T; S],          // Weights b
+    bh: Option<[T; S]>, // Embedded weights
 
-    // Newton iteration settings
-    pub newton_tol: T,          // Tolerance for Newton iteration convergence
-    pub max_newton_iter: usize, // Maximum Newton iterations per stage
+    // Newton settings
+    pub newton_tol: T,          // Convergence tol
+    pub max_newton_iter: usize, // Max iterations per solve
 
-    // Settings
+    // Adaptive settings
     pub rtol: T,
     pub atol: T,
     pub h_max: T,
@@ -79,11 +67,11 @@ pub struct ImplicitRungeKutta<
     pub max_scale: T,
 
     // Iteration tracking
-    stage_jacobians: [nalgebra::DMatrix<T>; S], // Stage-specific jacobian matrices J_i = df/dy(t + c_i*h, z_i)
-    newton_matrix: nalgebra::DMatrix<T>,        // Newton system matrix M = I - h*(A⊗J)
-    rhs_newton: nalgebra::DVector<T>,           // Right-hand side vector for Newton system
-    delta_k_vec: nalgebra::DVector<T>,          // Solution vector for Newton system
-    jacobian_age: usize,                        // Age of current jacobian (for reuse)
+    stage_jacobians: [nalgebra::DMatrix<T>; S], // J_i at each stage
+    newton_matrix: nalgebra::DMatrix<T>,        // I - h*(A⊗J)
+    rhs_newton: nalgebra::DVector<T>,           // Newton RHS
+    delta_k_vec: nalgebra::DVector<T>,          // Newton solution
+    jacobian_age: usize,                        // Reuse counter
     stiffness_counter: usize,
     steps: usize,
     newton_iterations: usize,    // Total Newton iterations
@@ -159,89 +147,89 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
 impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
     ImplicitRungeKutta<E, F, T, Y, D, O, S, I>
 {
-    /// Set the relative tolerance for error control
+    /// Set relative tolerance
     pub fn rtol(mut self, rtol: T) -> Self {
         self.rtol = rtol;
         self
     }
 
-    /// Set the absolute tolerance for error control
+    /// Set absolute tolerance
     pub fn atol(mut self, atol: T) -> Self {
         self.atol = atol;
         self
     }
 
-    /// Set the initial step size
+    /// Set initial step size
     pub fn h0(mut self, h0: T) -> Self {
         self.h0 = h0;
         self
     }
 
-    /// Set the minimum allowed step size
+    /// Set minimum step size
     pub fn h_min(mut self, h_min: T) -> Self {
         self.h_min = h_min;
         self
     }
 
-    /// Set the maximum allowed step size
+    /// Set maximum step size
     pub fn h_max(mut self, h_max: T) -> Self {
         self.h_max = h_max;
         self
     }
 
-    /// Set the maximum number of steps allowed
+    /// Set max steps
     pub fn max_steps(mut self, max_steps: usize) -> Self {
         self.max_steps = max_steps;
         self
     }
 
-    /// Set the maximum number of consecutive rejected steps before declaring stiffness
+    /// Set max consecutive rejections
     pub fn max_rejects(mut self, max_rejects: usize) -> Self {
         self.max_rejects = max_rejects;
         self
     }
 
-    /// Set the safety factor for step size control (default: 0.9)
+    /// Set step size safety factor (default: 0.9)
     pub fn safety_factor(mut self, safety_factor: T) -> Self {
         self.safety_factor = safety_factor;
         self
     }
 
-    /// Set the minimum scale factor for step size changes (default: 0.2)
+    /// Set minimum scale for step changes (default: 0.2)
     pub fn min_scale(mut self, min_scale: T) -> Self {
         self.min_scale = min_scale;
         self
     }
 
-    /// Set the maximum scale factor for step size changes (default: 10.0)
+    /// Set maximum scale for step changes (default: 10.0)
     pub fn max_scale(mut self, max_scale: T) -> Self {
         self.max_scale = max_scale;
         self
     }
 
-    /// Set the Newton iteration tolerance (default: 1e-10)
+    /// Set Newton tolerance (default: 1e-10)
     pub fn newton_tol(mut self, newton_tol: T) -> Self {
         self.newton_tol = newton_tol;
         self
     }
 
-    /// Set the maximum number of Newton iterations per stage (default: 50)
+    /// Set max Newton iterations per stage (default: 50)
     pub fn max_newton_iter(mut self, max_newton_iter: usize) -> Self {
         self.max_newton_iter = max_newton_iter;
         self
     }
 
-    /// Get the order of the method
+    /// Get method order
     pub fn order(&self) -> usize {
         self.order
     }
 
-    /// Get the number of stages in the method
+    /// Get number of stages
     pub fn stages(&self) -> usize {
         self.stages
     }
 
-    /// Get the number of terms in the dense output interpolation polynomial
+    /// Get dense output terms
     pub fn dense_stages(&self) -> usize {
         self.dense_stages
     }

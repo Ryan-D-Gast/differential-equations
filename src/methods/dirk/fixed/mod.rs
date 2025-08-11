@@ -1,4 +1,4 @@
-//! Diagonally Implicit Runge-Kutta solvers with Newton iteration for each stage.
+//! DIRK with per-stage Newton solves (fixed step).
 
 mod ordinary;
 
@@ -8,7 +8,7 @@ use crate::{
     traits::{CallBackData, Real, State},
 };
 
-// Macro for fixed step constructors
+// Fixed-step constructors
 macro_rules! impl_dirk_fixed_step_constructor {
     ($method_name:ident, $order_val:expr, $s_val:expr, $m_val:expr, $doc:expr) => {
         impl<E, T: Real, Y: State<T>, D: CallBackData>
@@ -35,11 +35,11 @@ macro_rules! impl_dirk_fixed_step_constructor {
     };
 }
 
-// Fixed step DIRK methods
+// Fixed-step DIRK methods
 impl_dirk_fixed_step_constructor!(
     esdirk33,
     3,
     3,
     3,
-    "ESDIRK-3-3: 3-stage, 3rd order ESDIRK method."
+    "ESDIRK-3-3: 3-stage, order 3."
 );

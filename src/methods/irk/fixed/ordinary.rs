@@ -1,4 +1,4 @@
-//! Fixed Runge-Kutta methods for ODEs
+//! Fixed-step IRK for ODEs
 
 use crate::{
     Error, Status,
@@ -19,31 +19,31 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
     {
         let mut evals = Evals::new();
 
-        // Check bounds
+        // Validate step size bounds
         match validate_step_size_parameters::<T, Y, D>(self.h0, self.h_min, self.h_max, t0, tf) {
             // Set the fixed step size
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
 
-        // Initialize Statistics
+        // Stats
         self.stiffness_counter = 0;
         self.newton_iterations = 0;
         self.jacobian_evaluations = 0;
         self.lu_decompositions = 0;
 
-        // Initialize State
+        // State
         self.t = t0;
         self.y = *y0;
         ode.diff(self.t, &self.y, &mut self.dydt);
         evals.function += 1;
 
-        // Initialize previous state
+        // Previous state
         self.t_prev = self.t;
         self.y_prev = self.y;
         self.dydt_prev = self.dydt;
 
-        // Initialize linear algebra workspace with proper dimensions
+        // Linear algebra workspace
         let dim = y0.len();
         let newton_system_size = self.stages * dim;
         self.stage_jacobians = core::array::from_fn(|_| nalgebra::DMatrix::zeros(dim, dim));
@@ -52,7 +52,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         self.delta_k_vec = nalgebra::DVector::zeros(newton_system_size);
         self.jacobian_age = 0;
 
-        // Initialize Status
+        // Status
         self.status = Status::Initialized;
 
         Ok(evals)
@@ -64,7 +64,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
     {
         let mut evals = Evals::new();
 
-        // Check max steps
+        // Max steps guard
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
                 t: self.t,
@@ -77,18 +77,17 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         }
         self.steps += 1;
 
-        // Initial guess for stage values - use previous solution for all stages
+        // Initial stage guesses: copy current state
         let dim = self.y.len();
         for i in 0..self.stages {
             self.y_stages[i] = self.y;
         }
 
-        // Newton iteration to solve the implicit system
-        // We solve F(z) = z - y_n - h*A*f(z) = 0 where z = [z1; z2; ...; zs]
+        // Newton solve for F(z) = z - y_n - h*A*f(z) = 0
         let mut newton_converged = false;
         let mut newton_iter = 0;
 
-        // Initialize increment norm for convergence tracking
+        // Track increment norm
         let mut increment_norm = T::infinity();
 
         while !newton_converged && newton_iter < self.max_newton_iter {
@@ -96,7 +95,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             self.newton_iterations += 1;
             evals.newton += 1;
 
-            // Evaluate f at current stage guesses and compute residual
+            // Evaluate f at stage guesses
             for i in 0..self.stages {
                 ode.diff(
                     self.t + self.c[i] * self.h,
@@ -106,7 +105,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             }
             evals.function += self.stages;
 
-            // Compute residual F(z) = z - y_n - h*sum(A*f) and calculate its norm
+            // Residual and max-norm
             let mut residual_norm = T::zero();
             for i in 0..self.stages {
                 // Start with z_i - y_n
@@ -117,7 +116,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                     residual = residual - self.k[j] * (self.a[i][j] * self.h);
                 }
 
-                // Calculate infinity norm of residual for convergence check
+                // Infinity norm and RHS
                 for row_idx in 0..dim {
                     let res_val = residual.get(row_idx);
                     residual_norm = residual_norm.max(res_val.abs());
@@ -126,22 +125,21 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 }
             }
 
-            // Check residual convergence first
+            // Converged by residual
             if residual_norm < self.newton_tol {
                 newton_converged = true;
                 break;
             }
 
-            // Check increment convergence from previous iteration
+            // Converged by increment
             if newton_iter > 1 && increment_norm < self.newton_tol {
                 newton_converged = true;
                 break;
             }
 
-            // Only recompute jacobian if needed (every few iterations or first time)
+            // Refresh Jacobians if needed
             if newton_iter == 1 || self.jacobian_age > 3 {
-                // Evaluate jacobian at each stage point
-                // Use pre-allocated stage_jacobians array to avoid dynamic allocation
+                // Stage Jacobians
                 for i in 0..self.stages {
                     ode.jacobian(
                         self.t + self.c[i] * self.h,
@@ -151,12 +149,12 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                     evals.jacobian += 1;
                 }
 
-                // Form Newton matrix: I - h * (A ⊗ J) using stage-specific jacobians
+                // Build Newton matrix: I - h*(A ⊗ J)
                 self.newton_matrix.fill(T::zero());
                 for i in 0..self.stages {
                     for j in 0..self.stages {
                         let scale_factor = -self.h * self.a[i][j];
-                        // Use the jacobian from stage j
+                        // Use J from stage j
                         for r in 0..dim {
                             for c_col in 0..dim {
                                 self.newton_matrix[(i * dim + r, j * dim + c_col)] =
@@ -165,7 +163,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                         }
                     }
 
-                    // Add identity matrix for diagonal blocks
+                    // Add identity per block
                     for d_idx in 0..dim {
                         self.newton_matrix[(i * dim + d_idx, i * dim + d_idx)] += T::one();
                     }
@@ -175,19 +173,18 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             }
             self.jacobian_age += 1;
 
-            // Solve Newton system: (I - h*A⊗J) * delta_z = -F(z)
+            // Solve (I - h*A⊗J) Δz = -F(z)
             let lu_decomp = nalgebra::LU::new(self.newton_matrix.clone());
             if let Some(solution) = lu_decomp.solve(&self.rhs_newton) {
                 self.delta_k_vec.copy_from(&solution);
                 self.lu_decompositions += 1;
             } else {
-                // LU decomposition failed - matrix is singular
-                // This is a failure condition, not convergence
+                // Singular matrix: fail this attempt
                 newton_converged = false;
                 break;
             }
 
-            // Update stage values: z_i += delta_z_i and calculate increment norm
+            // Update z_i and increment norm
             increment_norm = T::zero();
             for i in 0..self.stages {
                 for row_idx in 0..dim {
@@ -199,10 +196,10 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 }
             }
 
-            // Final convergence check will be at start of next iteration
+            // Next loop will re-check
         }
 
-        // Check if Newton iteration failed to converge
+        // Newton failed to converge
         if !newton_converged {
             self.status = Status::Error(Error::Stiffness {
                 t: self.t,
@@ -214,7 +211,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             });
         }
 
-        // Compute final stage derivatives with converged stage values
+        // Final stage derivatives
         for i in 0..self.stages {
             ode.diff(
                 self.t + self.c[i] * self.h,
@@ -224,26 +221,26 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         }
         evals.function += self.stages;
 
-        // Compute the solution using the b coefficients: y_new = y_old + h * sum(b_i * f_i)
+        // y_{n+1} = y_n + h Σ b_i f_i
         let mut y_new = self.y;
         for i in 0..self.stages {
             y_new += self.k[i] * (self.b[i] * self.h);
         }
 
-        // Step is always accepted for fixed step size methods
+        // Fixed step: always accept
         self.status = Status::Solving;
 
-        // Log previous state
+        // Log previous
         self.t_prev = self.t;
         self.y_prev = self.y;
         self.dydt_prev = self.dydt;
         self.h_prev = self.h;
 
-        // Update state
+        // Advance state
         self.t += self.h;
         self.y = y_new;
 
-        // Compute the derivative for the next step
+        // Next-step derivative
         ode.diff(self.t, &self.y, &mut self.dydt);
         evals.function += 1;
 
