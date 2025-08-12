@@ -55,15 +55,13 @@ use crate::{
 ///
 /// The returned `Solution` object contains:
 ///
-/// * `t` - Vector of time points
-/// * `y` - Vector of state vectors at each time point
+/// * `t`      - Vector of time points
+/// * `y`      - Vector of state vectors at each time point
 /// * `solout` - Struct of the solution output strategy used
 /// * `status` - Final solver status (Complete or Interrupted)
-/// * `evals` - Number of function evaluations performed
-/// * `steps` - Total number of steps attempted
-/// * `rejected_steps` - Number of steps rejected by the error control
-/// * `accepted_steps` - Number of steps accepted by the error control
-/// * `solve_time` - Wall time taken for the integration
+/// * `evals`  - Number of function evaluations performed
+/// * `steps`  - Total number of steps attempted
+/// * `timer`  - Timer for tracking the solve time
 ///
 /// # Event Handling
 ///

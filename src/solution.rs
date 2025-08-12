@@ -17,8 +17,6 @@ use polars::prelude::*;
 /// * `status`         - Status of the solver.
 /// * `evals`          - Number of function evaluations.
 /// * `steps`          - Number of steps.
-/// * `rejected_steps` - Number of rejected steps.
-/// * `accepted_steps` - Number of accepted steps.
 /// * `timer`          - Timer for tracking solution time.
 ///
 #[derive(Debug, Clone)]
