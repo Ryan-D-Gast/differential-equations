@@ -72,7 +72,8 @@ fn main() {
     // --- Solve the SDE ---
     let dt = 0.01;
     let mut solver = ExplicitRungeKutta::rk4(dt);
-    let solution = problem.even(1.0).solve(&mut solver).unwrap();
+    let points_of_interest = vec![2.0, 5.0, 8.0];
+    let solution = problem.t_eval(points_of_interest).solve(&mut solver).unwrap();
 
     // --- Print the results ---
     let final_value = *solution.y.last().unwrap();
@@ -101,10 +102,7 @@ fn main() {
     );
 
     println!("\nIntermediate values:");
-    let intervals = [2.5, 5.0, 7.5];
-    for &time in &intervals {
-        let idx = solution.t.iter().position(|&t| t >= time).unwrap_or(0);
-        let value = solution.y[idx];
-        println!("  t = {:.2}: y = {:.6}", solution.t[idx], value);
+    for (t, y) in solution.iter() {
+        println!("  t = {:.2}: y = {:.6}", t, y);
     }
 }
