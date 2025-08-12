@@ -94,6 +94,11 @@ where
         // Determine the alignment offset (remainder when divided by dt)
         let offset = self.t0 % self.dt;
 
+        // Tolerance for comparing time points to avoid near-duplicates from FP error
+        // Scales with dt and also includes a small absolute epsilon
+        let tol = self.dt.abs() * T::from_f64(1e-12).unwrap_or(T::default_epsilon())
+            + T::default_epsilon() * T::from_f64(10.0).unwrap_or(T::one());
+
         // Start from the last output point if available, otherwise from t_prev
         let start_t = match self.last_output_t {
             Some(t) => t + self.dt * self.direction,
@@ -136,9 +141,18 @@ where
             if (self.direction > T::zero() && ti >= t_prev && ti <= t_curr)
                 || (self.direction < T::zero() && ti <= t_prev && ti >= t_curr)
             {
-                let yi = interpolator.interpolate(ti).unwrap();
-                solution.push(ti, yi);
-                self.last_output_t = Some(ti);
+                // Skip if this ti is essentially the same as the last output
+                if self
+                    .last_output_t
+                    .map(|t_last| (ti - t_last).abs() <= tol)
+                    .unwrap_or(false)
+                {
+                    // Do nothing; advance to next ti
+                } else {
+                    let yi = interpolator.interpolate(ti).unwrap();
+                    solution.push(ti, yi);
+                    self.last_output_t = Some(ti);
+                }
             }
 
             // Move to the next point
@@ -146,11 +160,24 @@ where
         }
 
         // Include final point if this step reaches tf and we haven't added it yet
-        if t_curr == self.tf
-            && (self.last_output_t.is_none() || self.last_output_t.unwrap() != self.tf)
-        {
-            solution.push(self.tf, *y_curr);
-            self.last_output_t = Some(self.tf);
+        if t_curr == self.tf {
+            match self.last_output_t {
+                Some(t_last) => {
+                    if (t_last - self.tf).abs() <= tol {
+                        // Replace the near-duplicate last point with the exact final time
+                        let _ = solution.pop();
+                        solution.push(self.tf, *y_curr);
+                        self.last_output_t = Some(self.tf);
+                    } else if t_last != self.tf {
+                        solution.push(self.tf, *y_curr);
+                        self.last_output_t = Some(self.tf);
+                    }
+                }
+                None => {
+                    solution.push(self.tf, *y_curr);
+                    self.last_output_t = Some(self.tf);
+                }
+            }
         }
 
         // Continue the integration
