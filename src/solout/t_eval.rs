@@ -148,10 +148,11 @@ impl<T: Real> TEvalSolout<T> {
     /// # Returns
     /// * A new `TEvalSolout` instance
     ///
-    pub fn new(t_evals: Vec<T>, t0: T, tf: T) -> Self {
+    pub fn new(t_evals: impl AsRef<[T]>, t0: T, tf: T) -> Self {
         // Sort evaluation points according to integration direction
         let integration_direction = (tf - t0).signum();
-        let mut sorted_t_evals = t_evals;
+        // Accept Vec, slice, or array by copying into a Vec for internal ownership and sorting
+        let mut sorted_t_evals: Vec<T> = t_evals.as_ref().to_vec();
 
         if integration_direction > T::zero() {
             sorted_t_evals.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));

@@ -212,7 +212,10 @@ where
     /// # Returns
     /// * ODEProblem OrdinaryNumericalMethod with Custom Time Evaluation function ready for .solve() method.
     ///
-    pub fn t_eval(&self, points: Vec<T>) -> ODEProblemSoloutPair<'_, T, Y, D, F, TEvalSolout<T>> {
+    pub fn t_eval(
+        &self,
+        points: impl AsRef<[T]>,
+    ) -> ODEProblemSoloutPair<'_, T, Y, D, F, TEvalSolout<T>> {
         let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf);
         ODEProblemSoloutPair::new(self, t_eval_solout)
     }

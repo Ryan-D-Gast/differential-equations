@@ -208,7 +208,7 @@ where
     ///
     pub fn t_eval(
         &mut self,
-        points: Vec<T>,
+        points: impl AsRef<[T]>,
     ) -> SDEProblemSoloutPair<'_, T, Y, D, F, TEvalSolout<T>> {
         let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf);
         SDEProblemSoloutPair::new(self, t_eval_solout)

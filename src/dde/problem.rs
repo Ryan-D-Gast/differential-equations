@@ -199,7 +199,7 @@ where
     ///
     pub fn t_eval(
         &self,
-        points: Vec<T>,
+        points: impl AsRef<[T]>,
     ) -> DDEProblemSoloutPair<'_, L, T, Y, D, F, H, TEvalSolout<T>> {
         let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf); // Custom time evaluation solout implementation
         DDEProblemSoloutPair::new(self, t_eval_solout)
