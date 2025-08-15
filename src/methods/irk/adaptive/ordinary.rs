@@ -119,11 +119,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
             // Evaluate f at stage guesses
             for i in 0..self.stages {
-                ode.diff(
-                    self.t + self.c[i] * self.h,
-                    &self.z[i],
-                    &mut self.k[i],
-                );
+                ode.diff(self.t + self.c[i] * self.h, &self.z[i], &mut self.k[i]);
             }
             evals.function += self.stages;
 
@@ -244,11 +240,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // Final stage derivatives
         for i in 0..self.stages {
-            ode.diff(
-                self.t + self.c[i] * self.h,
-                &self.z[i],
-                &mut self.k[i],
-            );
+            ode.diff(self.t + self.c[i] * self.h, &self.z[i], &mut self.k[i]);
         }
         evals.function += self.stages;
 
@@ -260,27 +252,23 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // Embedded error estimate (bh)
         let mut err_norm = T::zero();
-        if let Some(bh) = &self.bh {
-            // Lower-order solution
-            let mut y_low = self.y;
-            for i in 0..self.stages {
-                y_low += self.k[i] * (bh[i] * self.h);
-            }
+        let bh = &self.bh.unwrap();
 
-            // err = y_high - y_low
-            let err = y_new - y_low;
+        // Lower-order solution
+        let mut y_low = self.y;
+        for i in 0..self.stages {
+            y_low += self.k[i] * (bh[i] * self.h);
+        }
 
-            // Weighted max-norm
-            for n in 0..self.y.len() {
-                let scale = self.atol + self.rtol * self.y.get(n).abs().max(y_new.get(n).abs());
-                if scale > T::zero() {
-                    err_norm = err_norm.max((err.get(n) / scale).abs());
-                }
+        // err = y_high - y_low
+        let err = y_new - y_low;
+
+        // Weighted max-norm
+        for n in 0..self.y.len() {
+            let scale = self.atol + self.rtol * self.y.get(n).abs().max(y_new.get(n).abs());
+            if scale > T::zero() {
+                err_norm = err_norm.max((err.get(n) / scale).abs());
             }
-        } else {
-            // No embedded method available - this shouldn't happen for adaptive methods
-            // Accept the step with a warning-level error norm
-            err_norm = T::one();
         }
 
         // Avoid vanishing error

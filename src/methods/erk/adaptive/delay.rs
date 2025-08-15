@@ -184,10 +184,9 @@ impl<
                 y_high += self.k[i] * (self.b[i] * self.h);
             }
             let mut y_low = self.y;
-            if let Some(bh) = &self.bh {
-                for i in 0..self.stages {
-                    y_low += self.k[i] * (bh[i] * self.h);
-                }
+            let bh = &self.bh.unwrap();
+            for i in 0..self.stages {
+                y_low += self.k[i] * (bh[i] * self.h);
             }
             let err_vec: Y = y_high - y_low;
 

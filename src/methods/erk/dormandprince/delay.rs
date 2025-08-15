@@ -195,12 +195,17 @@ impl<
             let mut err2 = T::zero();
             let mut erri;
             for i in 0..n {
+                // Calculate the error scale
                 let sk = self.atol + self.rtol * self.y.get(i).abs().max(y_new.get(i).abs());
+
+                // Primary error term
                 erri = T::zero();
                 for j in 0..self.stages {
                     erri += er[j] * self.k[j].get(i);
                 }
                 err_val += (erri / sk).powi(2);
+
+                // Optional secondary error term
                 if let Some(bh) = &self.bh {
                     erri = yseg.get(i);
                     for j in 0..self.stages {

@@ -98,11 +98,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
             // Evaluate f at stage guesses
             for i in 0..self.stages {
-                ode.diff(
-                    self.t + self.c[i] * self.h,
-                    &self.z[i],
-                    &mut self.k[i],
-                );
+                ode.diff(self.t + self.c[i] * self.h, &self.z[i], &mut self.k[i]);
             }
             evals.function += self.stages;
 
@@ -214,11 +210,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // Final stage derivatives
         for i in 0..self.stages {
-            ode.diff(
-                self.t + self.c[i] * self.h,
-                &self.z[i],
-                &mut self.k[i],
-            );
+            ode.diff(self.t + self.c[i] * self.h, &self.z[i], &mut self.k[i]);
         }
         evals.function += self.stages;
 
