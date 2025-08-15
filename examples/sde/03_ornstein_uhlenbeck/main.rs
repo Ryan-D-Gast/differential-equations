@@ -73,7 +73,10 @@ fn main() {
     let dt = 0.01;
     let mut solver = ExplicitRungeKutta::rk4(dt);
     let points_of_interest = [2.0, 5.0, 8.0];
-    let solution = problem.t_eval(points_of_interest).solve(&mut solver).unwrap();
+    let solution = problem
+        .t_eval(points_of_interest)
+        .solve(&mut solver)
+        .unwrap();
 
     // --- Print the results ---
     let final_value = *solution.y.last().unwrap();
