@@ -50,7 +50,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         self.newton_matrix = nalgebra::DMatrix::zeros(dim, dim);
         self.rhs_newton = nalgebra::DVector::zeros(dim);
         self.delta_z = nalgebra::DVector::zeros(dim);
-        self.z_stage = *y0;
+        self.z = *y0;
         self.jacobian_age = 0;
 
         // Status
@@ -89,7 +89,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             }
 
             // Initial stage guess
-            self.z_stage = self.y;
+            self.z = self.y;
 
             // Newton: solve z - rhs - h*a_ii f(t_i, z) = 0
             let mut newton_converged = false;
@@ -104,11 +104,11 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 // Evaluate f at stage guess
                 let t_stage = self.t + self.c[stage] * self.h;
                 let mut f_stage = Y::zeros();
-                ode.diff(t_stage, &self.z_stage, &mut f_stage);
+                ode.diff(t_stage, &self.z, &mut f_stage);
                 evals.function += 1;
 
                 // Residual F(z)
-                let residual = self.z_stage - rhs - f_stage * (self.a[stage][stage] * self.h);
+                let residual = self.z - rhs - f_stage * (self.a[stage][stage] * self.h);
 
                 // Max-norm and RHS
                 let mut residual_norm = T::zero();
@@ -133,7 +133,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
                 // Refresh Jacobian if needed
                 if newton_iter == 1 || self.jacobian_age > 3 {
-                    ode.jacobian(t_stage, &self.z_stage, &mut self.stage_jacobian);
+                    ode.jacobian(t_stage, &self.z, &mut self.stage_jacobian);
                     evals.jacobian += 1;
 
                     // Newton matrix: I - h*a_ii J
@@ -167,8 +167,8 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 increment_norm = T::zero();
                 for row_idx in 0..dim {
                     let delta_val = self.delta_z[row_idx];
-                    let current_val = self.z_stage.get(row_idx);
-                    self.z_stage.set(row_idx, current_val + delta_val);
+                    let current_val = self.z.get(row_idx);
+                    self.z.set(row_idx, current_val + delta_val);
                     // Calculate infinity norm of increment
                     increment_norm = increment_norm.max(delta_val.abs());
                 }
@@ -188,7 +188,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
             // k_i from converged z
             let t_stage = self.t + self.c[stage] * self.h;
-            ode.diff(t_stage, &self.z_stage, &mut self.k[stage]);
+            ode.diff(t_stage, &self.z, &mut self.k[stage]);
             evals.function += 1;
         }
 

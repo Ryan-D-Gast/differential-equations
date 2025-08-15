@@ -81,7 +81,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Initial stage guesses: copy current state
         let dim = self.y.len();
         for i in 0..self.stages {
-            self.y_stages[i] = self.y;
+            self.z[i] = self.y;
         }
 
         // Newton solve for F(z) = z - y_n - h*A*f(z) = 0
@@ -100,7 +100,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             for i in 0..self.stages {
                 ode.diff(
                     self.t + self.c[i] * self.h,
-                    &self.y_stages[i],
+                    &self.z[i],
                     &mut self.k[i],
                 );
             }
@@ -110,7 +110,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             let mut residual_norm = T::zero();
             for i in 0..self.stages {
                 // Start with z_i - y_n
-                let mut residual = self.y_stages[i] - self.y;
+                let mut residual = self.z[i] - self.y;
 
                 // Subtract h*sum(a_ij * f_j)
                 for j in 0..self.stages {
@@ -144,7 +144,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 for i in 0..self.stages {
                     ode.jacobian(
                         self.t + self.c[i] * self.h,
-                        &self.y_stages[i],
+                        &self.z[i],
                         &mut self.stage_jacobians[i],
                     );
                     evals.jacobian += 1;
@@ -190,8 +190,8 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
             for i in 0..self.stages {
                 for row_idx in 0..dim {
                     let delta_val = self.delta_k_vec[i * dim + row_idx];
-                    let current_val = self.y_stages[i].get(row_idx);
-                    self.y_stages[i].set(row_idx, current_val + delta_val);
+                    let current_val = self.z[i].get(row_idx);
+                    self.z[i].set(row_idx, current_val + delta_val);
                     // Calculate infinity norm of increment
                     increment_norm = increment_norm.max(delta_val.abs());
                 }
@@ -216,7 +216,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         for i in 0..self.stages {
             ode.diff(
                 self.t + self.c[i] * self.h,
-                &self.y_stages[i],
+                &self.z[i],
                 &mut self.k[i],
             );
         }

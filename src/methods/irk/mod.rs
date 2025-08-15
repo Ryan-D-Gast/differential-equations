@@ -42,8 +42,8 @@ pub struct ImplicitRungeKutta<
     dydt_prev: Y,
 
     // Stage data
-    k: [Y; I],        // Stage derivatives
-    y_stages: [Y; S], // Stage states (z_i)
+    k: [Y; I], // Stage derivatives
+    z: [Y; S], // Stage states (z_i)
 
     // Butcher tableau
     c: [T; S],          // Nodes c
@@ -108,7 +108,7 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
             y_prev: Y::zeros(),
             dydt_prev: Y::zeros(),
             k: [Y::zeros(); I],
-            y_stages: [Y::zeros(); S],
+            z: [Y::zeros(); S],
             c: [T::zero(); S],
             a: [[T::zero(); S]; S],
             b: [T::zero(); S],

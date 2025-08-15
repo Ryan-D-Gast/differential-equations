@@ -43,8 +43,8 @@ pub struct DiagonallyImplicitRungeKutta<
     dydt_prev: Y,
 
     // Stage data (solved one at a time)
-    k: [Y; I],  // Stage derivatives
-    z_stage: Y, // Current stage state
+    k: [Y; I], // Stage derivatives
+    z: Y,      // Current stage state
 
     // Butcher tableau
     c: [T; S],          // Nodes c
@@ -115,7 +115,7 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
             y_prev: Y::zeros(),
             dydt_prev: Y::zeros(),
             k: [Y::zeros(); I],
-            z_stage: Y::zeros(),
+            z: Y::zeros(),
             c: [T::zero(); S],
             a: [[T::zero(); S]; S],
             b: [T::zero(); S],
