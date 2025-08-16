@@ -49,7 +49,7 @@ impl_irk_fixed_step_constructor!(
     2,
     2,
     2,
-    "Crank–Nicolson, order 2, 2 stages. A-stable; stiff-suitable."
+    "Crank-Nicolson, order 2, 2 stages. A-stable; stiff-suitable."
 );
 impl_irk_fixed_step_constructor!(
     trapezoidal,
@@ -57,18 +57,4 @@ impl_irk_fixed_step_constructor!(
     2,
     2,
     "Trapezoidal, order 2, 2 stages. A-stable; stiff-suitable."
-);
-impl_irk_fixed_step_constructor!(
-    radau_iia_3,
-    3,
-    2,
-    2,
-    "Radau IIA, order 3, 2 stages. A-/L-stable; stiff-suitable."
-);
-impl_irk_fixed_step_constructor!(
-    radau_iia_5,
-    5,
-    3,
-    3,
-    "Radau IIA, order 5, 3 stages. A-/L-stable; stiff-suitable."
 );
