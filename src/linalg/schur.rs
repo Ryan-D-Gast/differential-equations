@@ -112,8 +112,8 @@ mod tests {
         // Choose small invertible A and D, and simple B, C
         let a: SquareMatrix<f64> = SquareMatrix::full(2, vec![3.0, 1.0, 2.0, 4.0]);
         let d: SquareMatrix<f64> = SquareMatrix::full(2, vec![2.0, 0.5, 1.0, 3.0]);
-        let b: SquareMatrix<f64> = SquareMatrix::full(2, vec![1.0, 0.0, 0.0, 1.0]); // I
-        let c: SquareMatrix<f64> = SquareMatrix::full(2, vec![0.5, 0.0, 0.0, 0.5]); // 0.5 I
+        let b: SquareMatrix<f64> = SquareMatrix::full(2, vec![1.0, 0.0, 0.0, 1.0]);
+        let c: SquareMatrix<f64> = SquareMatrix::full(2, vec![0.5, 0.0, 0.0, 0.5]);
 
         let x_true = Vector2::new(1.0, -2.0);
         let y_true = Vector2::new(3.0, 4.0);
