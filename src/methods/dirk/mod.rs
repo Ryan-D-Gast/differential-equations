@@ -81,7 +81,6 @@ pub struct DiagonallyImplicitRungeKutta<
 
     // Newton workspace (per stage)
     jacobian: SquareMatrix<T>,
-    newton_matrix: SquareMatrix<T>,
     rhs_newton: Y,
     delta_z: Y,
     jacobian_age: usize,
@@ -138,7 +137,6 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
             jacobian_evaluations: 0,
             lu_decompositions: 0,
             jacobian: SquareMatrix::zeros(dim),
-            newton_matrix: SquareMatrix::zeros(dim),
             rhs_newton: Y::zeros(),
             delta_z: Y::zeros(),
             jacobian_age: 0,

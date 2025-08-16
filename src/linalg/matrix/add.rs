@@ -1,6 +1,7 @@
 //! Addition operations for SquareMatrix.
 
 use core::ops::Add;
+use core::ops::{AddAssign};
 
 use crate::traits::Real;
 
@@ -75,6 +76,32 @@ impl<T: Real> Add<T> for SquareMatrix<T> {
     }
 }
 
+// Add-assign: self += scalar
+impl<T: Real> AddAssign<T> for SquareMatrix<T> {
+    fn add_assign(&mut self, rhs: T) {
+        let n = self.n();
+        let lhs = core::mem::replace(self, SquareMatrix::zeros(n));
+        *self = lhs + rhs;
+    }
+}
+
+// Add-assign: self += matrix (by value)
+impl<T: Real> AddAssign<SquareMatrix<T>> for SquareMatrix<T> {
+    fn add_assign(&mut self, rhs: SquareMatrix<T>) {
+        let n = self.n();
+        let lhs = core::mem::replace(self, SquareMatrix::zeros(n));
+        *self = lhs + rhs;
+    }
+}
+
+// Add-assign: self += &matrix (by reference, clones rhs)
+impl<T: Real> AddAssign<&SquareMatrix<T>> for SquareMatrix<T> {
+    fn add_assign(&mut self, rhs: &SquareMatrix<T>) {
+        let n = self.n();
+        let lhs = core::mem::replace(self, SquareMatrix::zeros(n));
+        *self = lhs + rhs.clone();
+    }
+}
 // SquareMatrix + SquareMatrix (elementwise), result shape rules:
 // If both banded, and the sum of bands covers only a band (i.e., ml=max, mu=max), keep banded; else become Full.
 impl<T: Real> Add for SquareMatrix<T> {

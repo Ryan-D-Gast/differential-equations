@@ -58,7 +58,6 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Newton workspace
         let dim = y0.len();
         self.jacobian = SquareMatrix::zeros(dim);
-        self.newton_matrix = SquareMatrix::zeros(dim);
         self.z = *y0;
         self.jacobian_age = 0;
 
@@ -154,25 +153,16 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 if newton_iter == 1 || self.jacobian_age > 3 {
                     ode.jacobian(t_stage, &self.z, &mut self.jacobian);
                     evals.jacobian += 1;
+                    self.jacobian_age = 0;
 
                     // Newton matrix: I - h*a_ii J
-                    self.newton_matrix = SquareMatrix::zeros(dim);
-                    let scale_factor = -self.h * self.a[stage][stage];
-                    for r in 0..dim {
-                        for c_col in 0..dim {
-                            self.newton_matrix[(r, c_col)] =
-                                self.jacobian[(r, c_col)] * scale_factor;
-                        }
-                        // Add identity
-                        self.newton_matrix[(r, r)] = self.newton_matrix[(r, r)] + T::one();
-                    }
-
-                    self.jacobian_age = 0;
+                    self.jacobian *= -self.h * self.a[stage][stage];
+                    self.jacobian += SquareMatrix::identity(dim);
                 }
                 self.jacobian_age += 1;
 
                 // Solve (I - h*a_ii J) Δz = -F(z) using in-place LU
-                self.delta_z = self.newton_matrix.lin_solve(self.rhs_newton);
+                self.delta_z = self.jacobian.lin_solve(self.rhs_newton);
                 self.lu_decompositions += 1;
 
                 // Update z and increment norm

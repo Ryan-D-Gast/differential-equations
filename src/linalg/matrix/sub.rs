@@ -1,6 +1,6 @@
 //! Subtraction operations for SquareMatrix.
 
-use core::ops::Sub;
+use core::ops::{Sub, SubAssign};
 
 use crate::traits::Real;
 
@@ -186,6 +186,33 @@ impl<T: Real> Sub for SquareMatrix<T> {
                 SquareMatrix::Full { n: n1, data: a }
             }
         }
+    }
+}
+
+// Sub-assign: self -= scalar
+impl<T: Real> SubAssign<T> for SquareMatrix<T> {
+    fn sub_assign(&mut self, rhs: T) {
+        let n = self.n();
+        let lhs = core::mem::replace(self, SquareMatrix::zeros(n));
+        *self = lhs - rhs;
+    }
+}
+
+// Sub-assign: self -= matrix (by value)
+impl<T: Real> SubAssign<SquareMatrix<T>> for SquareMatrix<T> {
+    fn sub_assign(&mut self, rhs: SquareMatrix<T>) {
+        let n = self.n();
+        let lhs = core::mem::replace(self, SquareMatrix::zeros(n));
+        *self = lhs - rhs;
+    }
+}
+
+// Sub-assign: self -= &matrix (by reference, clones rhs)
+impl<T: Real> SubAssign<&SquareMatrix<T>> for SquareMatrix<T> {
+    fn sub_assign(&mut self, rhs: &SquareMatrix<T>) {
+        let n = self.n();
+        let lhs = core::mem::replace(self, SquareMatrix::zeros(n));
+        *self = lhs - rhs.clone();
     }
 }
 

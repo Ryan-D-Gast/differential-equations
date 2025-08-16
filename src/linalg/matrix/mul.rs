@@ -1,84 +1,84 @@
 //! Multiplication for SquareMatrix: scalar, vector (State), and matrix product.
 
-use core::ops::Mul;
+use core::ops::{Mul, MulAssign};
 
-use crate::traits::{Real, State};
+use crate::traits::Real;
 
 use super::base::SquareMatrix;
 
-// SquareMatrix * Vector (State)
-impl<T, V> Mul<V> for SquareMatrix<T>
+// SquareMatrix * scalar (elementwise scale)
+impl<T> Mul<T> for SquareMatrix<T>
 where
     T: Real,
-    V: State<T>,
 {
-    type Output = V;
+    type Output = SquareMatrix<T>;
 
-    fn mul(self, rhs: V) -> Self::Output {
-        let n = self.n();
-        assert_eq!(rhs.len(), n, "dimension mismatch in SquareMatrix * Vector");
-        // Accumulate into a fresh vector-like State using zeros and set
-        let mut out = V::zeros();
-        // Helper to add into out[i]
+    fn mul(self, rhs: T) -> Self::Output {
         match self {
-            SquareMatrix::Identity { .. } => {
-                // out = rhs
-                for i in 0..n {
-                    out.set(i, rhs.get(i));
-                }
-            }
+            // a * I -> diagonal matrix with `a` on the diagonal
+            SquareMatrix::Identity { n, .. } => SquareMatrix::diagonal(vec![rhs; n]),
+            // Scale each entry in the dense storage
             SquareMatrix::Full { n, data } => {
-                for i in 0..n {
-                    let mut acc = T::zero();
-                    for j in 0..n {
-                        acc = acc + data[i * n + j] * rhs.get(j);
-                    }
-                    out.set(i, acc);
-                }
+                SquareMatrix::full(n, data.into_iter().map(|x| x * rhs).collect())
             }
-            SquareMatrix::Banded {
-                n, ml, mu, data, ..
-            } => {
-                let rows = ml + mu + 1;
-                for j in 0..n {
-                    for r in 0..rows {
-                        let k = r as isize - mu as isize; // i - j
-                        let i_signed = j as isize + k;
-                        if i_signed >= 0 && (i_signed as usize) < n {
-                            let i = i_signed as usize;
-                            let prev = out.get(i);
-                            let add = data[r * n + j] * rhs.get(j);
-                            out.set(i, prev + add);
-                        }
-                    }
-                }
-            }
+            // Scale each stored band entry; preserve bandwidths
+            SquareMatrix::Banded { n, ml, mu, data, .. } => SquareMatrix::Banded {
+                n,
+                ml,
+                mu,
+                data: data.into_iter().map(|x| x * rhs).collect(),
+                zero: T::zero(),
+            },
         }
-        out
+    }
+}
+
+// In-place scalar scale: self *= scalar
+impl<T> MulAssign<T> for SquareMatrix<T>
+where
+    T: Real,
+{
+    fn mul_assign(&mut self, rhs: T) {
+        let n = self.n();
+        let lhs = core::mem::replace(self, SquareMatrix::zeros(n));
+        *self = lhs * rhs;
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::SquareMatrix;
-    use nalgebra::Vector2;
-    use num_complex::Complex;
 
     #[test]
-    fn mul_matrix_vector_full() {
+    fn mul_matrix_full() {
         let a: SquareMatrix<f64> = SquareMatrix::full(2, vec![1.0, 2.0, 3.0, 4.0]);
-        let v = Vector2::new(5.0, 6.0);
-        let out = a * v;
-        assert_eq!(out.x, 17.0);
-        assert_eq!(out.y, 39.0);
+        let s = 5.0;
+        let out = a * s;
+        assert_eq!(out[(0, 0)], 5.0);
+        assert_eq!(out[(0, 1)], 10.0);
+        assert_eq!(out[(1, 0)], 15.0);
+        assert_eq!(out[(1, 1)], 20.0);
     }
 
     #[test]
-    fn mul_identity_vector() {
+    fn mul_identity() {
         let a: SquareMatrix<f64> = SquareMatrix::identity(2);
-        let v: Complex<f64> = Complex::new(5.0, 6.0);
-        let out = a * v;
-        assert_eq!(out.re, 5.0);
-        assert_eq!(out.im, 6.0);
+        let s = 5.0;
+        let out = a * s;
+        assert_eq!(out[(0, 0)], 5.0);
+        assert_eq!(out[(0, 1)], 0.0);
+        assert_eq!(out[(1, 0)], 0.0);
+        assert_eq!(out[(1, 1)], 5.0);
+    }
+
+    #[test]
+    fn mul_assign() {
+        let mut a: SquareMatrix<f64> = SquareMatrix::identity(2);
+        let s = 5.0;
+        a *= s;
+        assert_eq!(a[(0, 0)], 5.0);
+        assert_eq!(a[(0, 1)], 0.0);
+        assert_eq!(a[(1, 0)], 0.0);
+        assert_eq!(a[(1, 1)], 5.0);
     }
 }
