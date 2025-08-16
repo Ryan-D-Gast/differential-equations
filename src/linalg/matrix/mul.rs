@@ -2,7 +2,7 @@
 
 use core::ops::{Mul, MulAssign};
 
-use crate::traits::Real;
+use crate::traits::{Real, State};
 
 use super::base::SquareMatrix;
 
@@ -22,7 +22,9 @@ where
                 SquareMatrix::full(n, data.into_iter().map(|x| x * rhs).collect())
             }
             // Scale each stored band entry; preserve bandwidths
-            SquareMatrix::Banded { n, ml, mu, data, .. } => SquareMatrix::Banded {
+            SquareMatrix::Banded {
+                n, ml, mu, data, ..
+            } => SquareMatrix::Banded {
                 n,
                 ml,
                 mu,
@@ -42,6 +44,28 @@ where
         let n = self.n();
         let lhs = core::mem::replace(self, SquareMatrix::zeros(n));
         *self = lhs * rhs;
+    }
+}
+
+// Matrix * State (vector-like) multiplication
+impl<T: Real> SquareMatrix<T> {
+    pub fn mul_state<V: State<T>>(&self, vec: &V) -> V {
+        let n = self.n();
+        assert_eq!(
+            vec.len(),
+            n,
+            "dimension mismatch in SquareMatrix::mul_state"
+        );
+
+        let mut result = V::zeros();
+        for i in 0..n {
+            let mut sum = T::zero();
+            for j in 0..n {
+                sum = sum + self[(i, j)] * vec.get(j);
+            }
+            result.set(i, sum);
+        }
+        result
     }
 }
 

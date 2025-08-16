@@ -1,7 +1,7 @@
 //! Addition operations for SquareMatrix.
 
 use core::ops::Add;
-use core::ops::{AddAssign};
+use core::ops::AddAssign;
 
 use crate::traits::Real;
 

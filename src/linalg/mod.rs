@@ -1,6 +1,10 @@
 //! Linear algebra types and utilities.
 
+mod schur;
 mod util;
-pub use util::*;
+
 pub mod matrix;
+
 pub use matrix::SquareMatrix;
+pub use schur::schur_complement;
+pub use util::*;
