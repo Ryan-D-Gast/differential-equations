@@ -1,37 +1,38 @@
-//! Core SquareMatrix enum and constructors.
+//! Core Matrix struct, storage enum, and constructors.
 
 use crate::traits::Real;
 
-/// Generic matrix representation used for mass/jacobian matrices.
+/// Storage format of a Matrix.
 #[derive(Clone, Debug)]
-pub enum SquareMatrix<T: Real> {
-    /// Identity matrix of size n x n (implicitly stored)
-    Identity { n: usize, zero: T, one: T },
-
-    /// Full dense matrix
-    Full { n: usize, data: Vec<T> },
-
+pub enum MatrixStorage<T: Real> {
+    /// Identity matrix (implicitly stored). Data holds [one, zero] for references.
+    Identity,
+    /// Full dense matrix (data holds all entries row-major).
+    Full,
     /// Banded matrix with lower (ml) and upper (mu) bandwidth
-    /// stored in diagonal-wise compact form with shape (ml+mu+1, n)
-    Banded {
-        n: usize,
-        ml: usize,
-        mu: usize,
-        /// Row-major data with (ml + mu + 1) rows and n columns
-        /// Layout: data[row * n + col]
-        data: Vec<T>,
-        /// A cached zero value so we can return references for out-of-band reads
-        zero: T,
-    },
+    /// stored in diagonal-wise compact form with shape (ml+mu+1, ncols)
+    /// Layout: data[row * ncols + col]. Includes a cached zero for OOB reads.
+    Banded { ml: usize, mu: usize, zero: T },
 }
 
-impl<T: Real> SquareMatrix<T> {
+/// Generic matrix representation used for mass/jacobian matrices (square by usage today).
+#[derive(Clone, Debug)]
+pub struct Matrix<T: Real> {
+    pub nrows: usize,
+    pub ncols: usize,
+    pub data: Vec<T>,
+    pub storage: MatrixStorage<T>,
+}
+
+impl<T: Real> Matrix<T> {
     /// Construct an identity matrix of size n x n.
     pub fn identity(n: usize) -> Self {
-        SquareMatrix::Identity {
-            n,
-            zero: T::zero(),
-            one: T::one(),
+        Matrix {
+            nrows: n,
+            ncols: n,
+            // Store [one, zero] so we can return references for reads
+            data: vec![T::one(), T::zero()],
+            storage: MatrixStorage::Identity,
         }
     }
 
@@ -40,17 +41,14 @@ impl<T: Real> SquareMatrix<T> {
         assert_eq!(
             data.len(),
             n * n,
-            "SquareMatrix::full expects data of length n*n"
+            "Matrix::full expects data of length n*n"
         );
-        SquareMatrix::Full { n, data }
+        Matrix { nrows: n, ncols: n, data, storage: MatrixStorage::Full }
     }
 
     /// Construct a zero matrix of size n x n.
     pub fn zeros(n: usize) -> Self {
-        SquareMatrix::Full {
-            n,
-            data: vec![T::zero(); n * n],
-        }
+        Matrix { nrows: n, ncols: n, data: vec![T::zero(); n * n], storage: MatrixStorage::Full }
     }
 
     /// Construct an empty banded matrix (all zeros) with the given size and bandwidths.
@@ -59,12 +57,11 @@ impl<T: Real> SquareMatrix<T> {
     pub fn banded(n: usize, ml: usize, mu: usize) -> Self {
         let rows = ml + mu + 1;
         let data = vec![T::zero(); rows * n];
-        SquareMatrix::Banded {
-            n,
-            ml,
-            mu,
+        Matrix {
+            nrows: n,
+            ncols: n,
             data,
-            zero: T::zero(),
+            storage: MatrixStorage::Banded { ml, mu, zero: T::zero() },
         }
     }
 
@@ -74,37 +71,32 @@ impl<T: Real> SquareMatrix<T> {
         let n = diag.len();
         // For ml=mu=0, banded storage has shape (1, n) and maps the main diagonal
         // to row 0, so the layout matches `diag` exactly. Move `diag` directly.
-        SquareMatrix::Banded {
-            n,
-            ml: 0,
-            mu: 0,
+        Matrix {
+            nrows: n,
+            ncols: n,
             data: diag,
-            zero: T::zero(),
+            storage: MatrixStorage::Banded { ml: 0, mu: 0, zero: T::zero() },
         }
     }
 
     /// Construct a zero lower-triangular matrix (including main diagonal).
     /// Uses banded storage with ml = n-1, mu = 0.
     pub fn lower_triangular(n: usize) -> Self {
-        SquareMatrix::banded(n, n.saturating_sub(1), 0)
+        Matrix::banded(n, n.saturating_sub(1), 0)
     }
 
     /// Construct a zero upper-triangular matrix (including main diagonal).
     /// Uses banded storage with ml = 0, mu = n-1.
     pub fn upper_triangular(n: usize) -> Self {
-        SquareMatrix::banded(n, 0, n.saturating_sub(1))
+        Matrix::banded(n, 0, n.saturating_sub(1))
     }
 
-    /// SquareMatrix dimension (nrows, ncols). Always square for this enum.
+    /// Matrix dimensions (nrows, ncols).
     pub fn dims(&self) -> (usize, usize) {
-        match self {
-            SquareMatrix::Identity { n, .. } => (*n, *n),
-            SquareMatrix::Full { n, .. } => (*n, *n),
-            SquareMatrix::Banded { n, .. } => (*n, *n),
-        }
+        (self.nrows, self.ncols)
     }
 
-    /// Size n for a square n x n matrix.
+    /// Convenience: size n for a square n x n matrix.
     pub fn n(&self) -> usize {
         self.dims().0
     }
@@ -112,11 +104,11 @@ impl<T: Real> SquareMatrix<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::SquareMatrix;
+    use super::Matrix;
 
     #[test]
     fn diagonal_constructor_sets_diagonal() {
-        let m = SquareMatrix::diagonal(vec![1.0f64, 2.0, 3.0]);
+        let m = Matrix::diagonal(vec![1.0f64, 2.0, 3.0]);
         assert_eq!(m[(0, 0)], 1.0);
         assert_eq!(m[(1, 1)], 2.0);
         assert_eq!(m[(2, 2)], 3.0);
@@ -126,10 +118,10 @@ mod tests {
 
     #[test]
     fn triangular_constructors_shape() {
-        let l: SquareMatrix<f64> = SquareMatrix::lower_triangular(4);
+        let l: Matrix<f64> = Matrix::lower_triangular(4);
         // Above main diagonal reads zero
         assert_eq!(l[(0, 3)], 0.0);
-        let u: SquareMatrix<f64> = SquareMatrix::upper_triangular(4);
+        let u: Matrix<f64> = Matrix::upper_triangular(4);
         // Below main diagonal reads zero
         assert_eq!(u[(3, 0)], 0.0);
     }

@@ -3,7 +3,7 @@
 use crate::{
     error::Error,
     interpolate::{Interpolation, cubic_hermite_interpolate},
-    linalg::SquareMatrix,
+    linalg::Matrix,
     methods::{Fixed, ImplicitRungeKutta, Ordinary},
     ode::{ODE, OrdinaryNumericalMethod},
     stats::Evals,
@@ -48,8 +48,8 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Linear algebra workspace
         let dim = y0.len();
         let newton_system_size = self.stages * dim;
-        self.stage_jacobians = core::array::from_fn(|_| SquareMatrix::zeros(dim));
-        self.newton_matrix = SquareMatrix::zeros(newton_system_size);
+        self.stage_jacobians = core::array::from_fn(|_| Matrix::zeros(dim));
+        self.newton_matrix = Matrix::zeros(newton_system_size);
         self.rhs_newton = vec![T::zero(); newton_system_size];
         self.delta_k_vec = vec![T::zero(); newton_system_size];
         self.jacobian_age = 0;
@@ -149,7 +149,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
                 // Build Newton matrix: I - h*(A ⊗ J)
                 let nsys = self.stages * dim;
-                let mut nm = SquareMatrix::zeros(nsys);
+                let mut nm = Matrix::zeros(nsys);
                 for i in 0..self.stages {
                     for j in 0..self.stages {
                         let scale_factor = -self.h * self.a[i][j];

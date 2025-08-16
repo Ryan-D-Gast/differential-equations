@@ -6,8 +6,8 @@
 //!   0 is the main diagonal, 1 is the first subdiagonal, -1 is the first superdiagonal, etc.
 //!
 //! Examples:
-//! let m: SquareMatrix<f64> = matrix![ [1.0, 2.0], [3.0, 4.0] ];
-//! let b: SquareMatrix<f64> = banded_matrix!(3, 1, 1; (0,0,1.0), (1,0,2.0), (0,1,3.0));
+//! let m: Matrix<f64> = matrix![ [1.0, 2.0], [3.0, 4.0] ];
+//! let b: Matrix<f64> = banded_matrix!(3, 1, 1; (0,0,1.0), (1,0,2.0), (0,1,3.0));
 
 // no local imports required; macros reference items via $crate paths
 
@@ -24,7 +24,7 @@ macro_rules! matrix {
         assert!(rows_vec.iter().all(|r| r.len() == n), "matrix! requires a square n x n list of rows");
         let mut data = Vec::with_capacity(n*n);
         for r in rows_vec.into_iter() { data.extend(r.into_iter()); }
-        $crate::linalg::matrix::SquareMatrix::full(n, data)
+        $crate::linalg::matrix::Matrix::full(n, data)
     }};
     ( $( [ $( $x:expr ),* $(,)? ] ),+ $(,)? ) => {{
         // Collect rows into a Vec<Vec<_>> first
@@ -34,7 +34,7 @@ macro_rules! matrix {
         assert!(rows_vec.iter().all(|r| r.len() == n), "matrix! requires a square n x n list of rows");
         let mut data = Vec::with_capacity(n*n);
         for r in rows_vec.into_iter() { data.extend(r.into_iter()); }
-        $crate::linalg::matrix::SquareMatrix::full(n, data)
+        $crate::linalg::matrix::Matrix::full(n, data)
     }};
 }
 
@@ -56,7 +56,7 @@ macro_rules! banded_matrix {
             if candidate > n { n = candidate; }
             if k < 0 { if kk > mu { mu = kk; } } else { if kk > ml { ml = kk; } }
         } )+;
-        let mut m = $crate::linalg::matrix::SquareMatrix::banded(n, ml, mu);
+        let mut m = $crate::linalg::matrix::Matrix::banded(n, ml, mu);
         // Second pass: fill values; allow shorter diagonals (len <= n - |k|)
         $( {
             let k: isize = $k as isize;
@@ -86,24 +86,22 @@ macro_rules! banded_matrix {
 
 #[cfg(test)]
 mod tests {
-    use crate::linalg::matrix::SquareMatrix;
+    use crate::linalg::matrix::Matrix;
 
     #[test]
     fn macro_full_matrix() {
-        let m: SquareMatrix<f64> = matrix![ 1.0, 2.0; 3.0, 4.0 ];
-        match m {
-            SquareMatrix::Full { n, data } => {
-                assert_eq!(n, 2);
-                assert_eq!(data, vec![1.0, 2.0, 3.0, 4.0]);
-            }
-            _ => panic!("expected full"),
-        }
+        let m: Matrix<f64> = matrix![ 1.0, 2.0; 3.0, 4.0 ];
+        assert_eq!(m.n(), 2);
+        assert_eq!(m[(0,0)], 1.0);
+        assert_eq!(m[(0,1)], 2.0);
+        assert_eq!(m[(1,0)], 3.0);
+        assert_eq!(m[(1,1)], 4.0);
     }
 
     #[test]
     fn macro_banded_matrix() {
         // Inferred n=3 from main diag len=3
-        let b: SquareMatrix<f64> =
+        let b: Matrix<f64> =
             banded_matrix!( 0 => [1.0,1.0,1.0], 1 => [2.0,2.0], -1 => [3.0,3.0] );
         // verify some values
         assert_eq!(b[(0, 0)], 1.0);
@@ -120,7 +118,7 @@ mod tests {
     #[test]
     fn macro_banded_by_diagonals() {
         // 4x4: main diag 1s, first upper 2s, first lower 3s
-        let b: SquareMatrix<f64> =
+        let b: Matrix<f64> =
             banded_matrix!( 0 => [1.0,1.0,1.0,1.0], 1 => [2.0,2.0,2.0], -1 => [3.0,3.0,3.0] );
         assert_eq!(b[(0, 0)], 1.0);
         assert_eq!(b[(1, 1)], 1.0);

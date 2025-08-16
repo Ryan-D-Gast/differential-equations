@@ -27,7 +27,7 @@ impl ODE<f64, Vector2<f64>> for BrusselatorSystem {
         dydt[1] = 3.0 * y0 - y0 * y0 * y1;
     }
 
-    fn jacobian(&self, _t: f64, y: &Vector2<f64>, j: &mut SquareMatrix<f64>) {
+    fn jacobian(&self, _t: f64, y: &Vector2<f64>, j: &mut Matrix<f64>) {
         let y0 = y[0];
         let y1 = y[1];
 

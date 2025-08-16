@@ -5,6 +5,6 @@ mod util;
 
 pub mod matrix;
 
-pub use matrix::SquareMatrix;
+pub use matrix::{Matrix, MatrixStorage};
 pub use schur::schur_complement;
 pub use util::*;

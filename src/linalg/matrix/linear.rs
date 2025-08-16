@@ -2,9 +2,9 @@
 
 use crate::traits::{Real, State};
 
-use super::base::SquareMatrix;
+use super::base::{Matrix, MatrixStorage};
 
-impl<T: Real> SquareMatrix<T> {
+impl<T: Real> Matrix<T> {
     /// Solve A x = b for x using LU decomposition with partial pivoting.
     /// Returns the solution vector with the same State<T> type as b.
     /// Internally densifies A if needed.
@@ -24,32 +24,22 @@ impl<T: Real> SquareMatrix<T> {
 
         // 1) Densify A into a Vec<T> of size n*n (row-major)
         let mut a = vec![T::zero(); n * n];
-        match self {
-            SquareMatrix::Identity { .. } => {
-                for i in 0..n {
-                    a[i * n + i] = T::one();
-                }
+        match &self.storage {
+            MatrixStorage::Identity => {
+                for i in 0..n { a[i * n + i] = T::one(); }
             }
-            SquareMatrix::Full { n: nn, data } => {
-                let nnv = *nn;
-                a.copy_from_slice(&data[0..nnv * nnv]);
+            MatrixStorage::Full => {
+                a.copy_from_slice(&self.data[0..n * n]);
             }
-            SquareMatrix::Banded {
-                n: nn,
-                ml,
-                mu,
-                data,
-                ..
-            } => {
+            MatrixStorage::Banded { ml, mu, .. } => {
                 let rows = *ml + *mu + 1;
-                let nnv = *nn;
-                for j in 0..nnv {
+                for j in 0..self.ncols {
                     for r in 0..rows {
                         let k = r as isize - *mu as isize; // i - j
                         let i_signed = j as isize + k;
-                        if i_signed >= 0 && (i_signed as usize) < nnv {
+                        if i_signed >= 0 && (i_signed as usize) < self.nrows {
                             let i = i_signed as usize;
-                            a[i * nnv + j] = a[i * nnv + j] + data[r * nnv + j];
+                            a[i * self.ncols + j] = a[i * self.ncols + j] + self.data[r * self.ncols + j];
                         }
                     }
                 }
@@ -139,32 +129,22 @@ impl<T: Real> SquareMatrix<T> {
 
         // Densify A into row-major Vec<T>
         let mut a = vec![T::zero(); n * n];
-        match self {
-            SquareMatrix::Identity { .. } => {
-                for i in 0..n {
-                    a[i * n + i] = T::one();
-                }
+        match &self.storage {
+            MatrixStorage::Identity => {
+                for i in 0..n { a[i * n + i] = T::one(); }
             }
-            SquareMatrix::Full { n: nn, data } => {
-                let nnv = *nn;
-                a.copy_from_slice(&data[0..nnv * nnv]);
+            MatrixStorage::Full => {
+                a.copy_from_slice(&self.data[0..n * n]);
             }
-            SquareMatrix::Banded {
-                n: nn,
-                ml,
-                mu,
-                data,
-                ..
-            } => {
+            MatrixStorage::Banded { ml, mu, .. } => {
                 let rows = *ml + *mu + 1;
-                let nnv = *nn;
-                for j in 0..nnv {
+                for j in 0..self.ncols {
                     for r in 0..rows {
                         let k = r as isize - *mu as isize;
                         let i_signed = j as isize + k;
-                        if i_signed >= 0 && (i_signed as usize) < nnv {
+                        if i_signed >= 0 && (i_signed as usize) < self.nrows {
                             let i = i_signed as usize;
-                            a[i * nnv + j] = a[i * nnv + j] + data[r * nnv + j];
+                            a[i * self.ncols + j] = a[i * self.ncols + j] + self.data[r * self.ncols + j];
                         }
                     }
                 }
@@ -224,13 +204,13 @@ impl<T: Real> SquareMatrix<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::SquareMatrix;
+    use crate::linalg::matrix::Matrix;
     use nalgebra::Vector2;
 
     #[test]
     fn solve_full_2x2() {
         // A = [[3, 2],[1, 4]], b = [5, 6] -> x = [0.8, 1.3]
-        let a: SquareMatrix<f64> = SquareMatrix::full(2, vec![3.0, 2.0, 1.0, 4.0]);
+        let a: Matrix<f64> = Matrix::full(2, vec![3.0, 2.0, 1.0, 4.0]);
         let b = Vector2::new(5.0, 6.0);
         let x = a.lin_solve(b);
         // Solve manually: [[3,2],[1,4]] x = [5,6] => x = [ (20-12)/10, (15-5)/10 ] = [0.8, 1.3]

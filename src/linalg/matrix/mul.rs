@@ -1,60 +1,47 @@
-//! Multiplication for SquareMatrix: scalar, vector (State), and matrix product.
+//! Multiplication for Matrix: scalar, vector (State), and matrix product.
 
 use core::ops::{Mul, MulAssign};
 
 use crate::traits::{Real, State};
 
-use super::base::SquareMatrix;
+use super::base::{Matrix, MatrixStorage};
 
-// SquareMatrix * scalar (elementwise scale)
-impl<T> Mul<T> for SquareMatrix<T>
+// Matrix * scalar (elementwise scale)
+impl<T> Mul<T> for Matrix<T>
 where
     T: Real,
 {
-    type Output = SquareMatrix<T>;
+    type Output = Matrix<T>;
 
     fn mul(self, rhs: T) -> Self::Output {
-        match self {
-            // a * I -> diagonal matrix with `a` on the diagonal
-            SquareMatrix::Identity { n, .. } => SquareMatrix::diagonal(vec![rhs; n]),
-            // Scale each entry in the dense storage
-            SquareMatrix::Full { n, data } => {
-                SquareMatrix::full(n, data.into_iter().map(|x| x * rhs).collect())
-            }
-            // Scale each stored band entry; preserve bandwidths
-            SquareMatrix::Banded {
-                n, ml, mu, data, ..
-            } => SquareMatrix::Banded {
-                n,
-                ml,
-                mu,
-                data: data.into_iter().map(|x| x * rhs).collect(),
-                zero: T::zero(),
-            },
+        match self.storage {
+            MatrixStorage::Identity => Matrix::diagonal(vec![rhs; self.nrows]),
+            MatrixStorage::Full => Matrix { nrows: self.nrows, ncols: self.ncols, data: self.data.into_iter().map(|x| x * rhs).collect(), storage: MatrixStorage::Full },
+            MatrixStorage::Banded { ml, mu, zero: _ } => Matrix { nrows: self.nrows, ncols: self.ncols, data: self.data.into_iter().map(|x| x * rhs).collect(), storage: MatrixStorage::Banded { ml, mu, zero: T::zero() } },
         }
     }
 }
 
 // In-place scalar scale: self *= scalar
-impl<T> MulAssign<T> for SquareMatrix<T>
+impl<T> MulAssign<T> for Matrix<T>
 where
     T: Real,
 {
     fn mul_assign(&mut self, rhs: T) {
-        let n = self.n();
-        let lhs = core::mem::replace(self, SquareMatrix::zeros(n));
+    let n = self.n();
+    let lhs = core::mem::replace(self, Matrix::zeros(n));
         *self = lhs * rhs;
     }
 }
 
 // Matrix * State (vector-like) multiplication
-impl<T: Real> SquareMatrix<T> {
+impl<T: Real> Matrix<T> {
     pub fn mul_state<V: State<T>>(&self, vec: &V) -> V {
         let n = self.n();
         assert_eq!(
             vec.len(),
             n,
-            "dimension mismatch in SquareMatrix::mul_state"
+            "dimension mismatch in Matrix::mul_state"
         );
 
         let mut result = V::zeros();
@@ -71,11 +58,11 @@ impl<T: Real> SquareMatrix<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::SquareMatrix;
+    use super::Matrix;
 
     #[test]
     fn mul_matrix_full() {
-        let a: SquareMatrix<f64> = SquareMatrix::full(2, vec![1.0, 2.0, 3.0, 4.0]);
+        let a: Matrix<f64> = Matrix::full(2, vec![1.0, 2.0, 3.0, 4.0]);
         let s = 5.0;
         let out = a * s;
         assert_eq!(out[(0, 0)], 5.0);
@@ -86,7 +73,7 @@ mod tests {
 
     #[test]
     fn mul_identity() {
-        let a: SquareMatrix<f64> = SquareMatrix::identity(2);
+        let a: Matrix<f64> = Matrix::identity(2);
         let s = 5.0;
         let out = a * s;
         assert_eq!(out[(0, 0)], 5.0);
@@ -97,7 +84,7 @@ mod tests {
 
     #[test]
     fn mul_assign() {
-        let mut a: SquareMatrix<f64> = SquareMatrix::identity(2);
+        let mut a: Matrix<f64> = Matrix::identity(2);
         let s = 5.0;
         a *= s;
         assert_eq!(a[(0, 0)], 5.0);

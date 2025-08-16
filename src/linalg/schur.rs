@@ -2,7 +2,7 @@
 
 use crate::traits::{Real, State};
 
-use super::SquareMatrix;
+use super::Matrix;
 
 /// Solve the 2x2 block system using the (explicit) Schur complement:
 /// [A B; C D] [x;y] = [r;s]
@@ -13,10 +13,10 @@ use super::SquareMatrix;
 ///   For small per-stage blocks (common in IRK), this is acceptable and simple.
 /// - For larger blocks, prefer an operator-based approach that applies S without forming it.
 pub fn schur_complement<T: Real, V: State<T>>(
-    a: &SquareMatrix<T>,
-    b: &SquareMatrix<T>,
-    c: &SquareMatrix<T>,
-    d: &SquareMatrix<T>,
+    a: &Matrix<T>,
+    b: &Matrix<T>,
+    c: &Matrix<T>,
+    d: &Matrix<T>,
     r: V,
     s: V,
 ) -> (V, V) {
@@ -32,7 +32,7 @@ pub fn schur_complement<T: Real, V: State<T>>(
 
     // Build dense Schur complement S = D - C A^{-1} B, as a dense Full matrix
     // We'll fill column-by-column using basis vectors e_j.
-    let mut s_dense = SquareMatrix::zeros(n);
+    let mut s_dense = Matrix::zeros(n);
     for j in 0..n {
         // e_j
         let mut e = V::zeros();
@@ -79,7 +79,7 @@ pub fn schur_complement<T: Real, V: State<T>>(
 
 #[cfg(test)]
 mod tests {
-    use super::{SquareMatrix, schur_complement};
+    use super::{Matrix, schur_complement};
     use nalgebra::Vector2;
 
     fn approx_eq(a: f64, b: f64) {
@@ -88,10 +88,10 @@ mod tests {
 
     #[test]
     fn schur_trivial_identity_blocks() {
-        let a: SquareMatrix<f64> = SquareMatrix::identity(2);
-        let d: SquareMatrix<f64> = SquareMatrix::identity(2);
-        let b: SquareMatrix<f64> = SquareMatrix::zeros(2);
-        let c: SquareMatrix<f64> = SquareMatrix::zeros(2);
+        let a: Matrix<f64> = Matrix::identity(2);
+        let d: Matrix<f64> = Matrix::identity(2);
+        let b: Matrix<f64> = Matrix::zeros(2);
+        let c: Matrix<f64> = Matrix::zeros(2);
 
         let x_true = Vector2::new(1.0, -2.0);
         let y_true = Vector2::new(3.0, 4.0);
@@ -110,10 +110,10 @@ mod tests {
     #[test]
     fn schur_mixed_blocks_small_dense() {
         // Choose small invertible A and D, and simple B, C
-        let a: SquareMatrix<f64> = SquareMatrix::full(2, vec![3.0, 1.0, 2.0, 4.0]);
-        let d: SquareMatrix<f64> = SquareMatrix::full(2, vec![2.0, 0.5, 1.0, 3.0]);
-        let b: SquareMatrix<f64> = SquareMatrix::full(2, vec![1.0, 0.0, 0.0, 1.0]);
-        let c: SquareMatrix<f64> = SquareMatrix::full(2, vec![0.5, 0.0, 0.0, 0.5]);
+        let a: Matrix<f64> = Matrix::full(2, vec![3.0, 1.0, 2.0, 4.0]);
+        let d: Matrix<f64> = Matrix::full(2, vec![2.0, 0.5, 1.0, 3.0]);
+        let b: Matrix<f64> = Matrix::full(2, vec![1.0, 0.0, 0.0, 1.0]);
+        let c: Matrix<f64> = Matrix::full(2, vec![0.5, 0.0, 0.0, 0.5]);
 
         let x_true = Vector2::new(1.0, -2.0);
         let y_true = Vector2::new(3.0, 4.0);

@@ -4,7 +4,7 @@ mod adaptive;
 mod fixed;
 
 use crate::{
-    linalg::SquareMatrix,
+    linalg::Matrix,
     status::Status,
     traits::{CallBackData, Real, State},
 };
@@ -80,7 +80,7 @@ pub struct DiagonallyImplicitRungeKutta<
     lu_decompositions: usize,
 
     // Newton workspace (per stage)
-    jacobian: SquareMatrix<T>,
+    jacobian: Matrix<T>,
     rhs_newton: Y,
     delta_z: Y,
     jacobian_age: usize,
@@ -136,7 +136,7 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
             newton_iterations: 0,
             jacobian_evaluations: 0,
             lu_decompositions: 0,
-            jacobian: SquareMatrix::zeros(dim),
+            jacobian: Matrix::zeros(dim),
             rhs_newton: Y::zeros(),
             delta_z: Y::zeros(),
             jacobian_age: 0,

@@ -5,7 +5,7 @@
 
 use crate::{
     control::ControlFlag,
-    linalg::SquareMatrix,
+    linalg::Matrix,
     traits::{CallBackData, Real, State},
 };
 
@@ -83,7 +83,7 @@ where
     /// * `y` - Dependent variable vector.
     /// * `j` - jacobian matrix. This matrix should be pre-sized by the caller to `dim x dim` where `dim = y.len()`.
     ///
-    fn jacobian(&self, t: T, y: &Y, j: &mut SquareMatrix<T>) {
+    fn jacobian(&self, t: T, y: &Y, j: &mut Matrix<T>) {
         // Default implementation using forward finite differences
         let dim = y.len();
         let mut y_perturbed = *y;

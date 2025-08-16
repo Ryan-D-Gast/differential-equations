@@ -3,7 +3,7 @@
 use crate::{
     error::Error,
     interpolate::{Interpolation, cubic_hermite_interpolate},
-    linalg::SquareMatrix,
+    linalg::Matrix,
     methods::{DiagonallyImplicitRungeKutta, Fixed, Ordinary},
     ode::{ODE, OrdinaryNumericalMethod},
     stats::Evals,
@@ -47,7 +47,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // Newton workspace
         let dim = y0.len();
-        self.jacobian = SquareMatrix::zeros(dim);
+        self.jacobian = Matrix::zeros(dim);
         self.z = *y0;
         self.jacobian_age = 0;
 
@@ -135,7 +135,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
                     // Newton matrix: I - h*a_ii J
                     self.jacobian *= -self.h * self.a[stage][stage];
-                    self.jacobian += SquareMatrix::identity(dim);
+                    self.jacobian += Matrix::identity(dim);
                 }
                 self.jacobian_age += 1;
 
