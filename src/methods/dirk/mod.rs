@@ -4,6 +4,7 @@ mod adaptive;
 mod fixed;
 
 use crate::{
+    linalg::SquareMatrix,
     status::Status,
     traits::{CallBackData, Real, State},
 };
@@ -79,10 +80,10 @@ pub struct DiagonallyImplicitRungeKutta<
     lu_decompositions: usize,
 
     // Newton workspace (per stage)
-    stage_jacobian: nalgebra::DMatrix<T>,
-    newton_matrix: nalgebra::DMatrix<T>, // I - h*a_ii*J
-    rhs_newton: nalgebra::DVector<T>,    // Newton RHS
-    delta_z: nalgebra::DVector<T>,       // Newton correction
+    stage_jacobian: SquareMatrix<T>,
+    newton_matrix: SquareMatrix<T>, // I - h*a_ii*J
+    rhs_newton: Vec<T>,             // Newton RHS
+    delta_z: Vec<T>,                // Newton correction
     jacobian_age: usize,
 
     // Status
@@ -136,10 +137,10 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
             newton_iterations: 0,
             jacobian_evaluations: 0,
             lu_decompositions: 0,
-            stage_jacobian: nalgebra::DMatrix::zeros(dim, dim),
-            newton_matrix: nalgebra::DMatrix::zeros(dim, dim),
-            rhs_newton: nalgebra::DVector::zeros(dim),
-            delta_z: nalgebra::DVector::zeros(dim),
+            stage_jacobian: SquareMatrix::zeros(dim),
+            newton_matrix: SquareMatrix::zeros(dim),
+            rhs_newton: vec![T::zero(); dim],
+            delta_z: vec![T::zero(); dim],
             jacobian_age: 0,
             status: Status::Uninitialized,
             order: O,

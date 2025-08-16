@@ -1,4 +1,6 @@
-mod temp;
-pub use temp::*;
+//! Linear algebra types and utilities.
+
+mod util;
+pub use util::*;
 pub mod matrix;
-pub use matrix::Matrix;
+pub use matrix::SquareMatrix;

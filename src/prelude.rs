@@ -57,5 +57,5 @@ pub use crate::solution::Solution;
 pub use crate::stats::Evals;
 pub use crate::status::Status;
 
-// nalgebra Types and Macros
-pub use nalgebra::{DMatrix, SMatrix, SVector, vector};
+// Linear Algebra
+pub use crate::linalg::SquareMatrix;

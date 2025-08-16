@@ -4,6 +4,7 @@ mod adaptive;
 mod fixed;
 
 use crate::{
+    linalg::SquareMatrix,
     status::Status,
     traits::{CallBackData, Real, State},
 };
@@ -67,11 +68,11 @@ pub struct ImplicitRungeKutta<
     pub max_scale: T,
 
     // Iteration tracking
-    stage_jacobians: [nalgebra::DMatrix<T>; S], // J_i at each stage
-    newton_matrix: nalgebra::DMatrix<T>,        // I - h*(A⊗J)
-    rhs_newton: nalgebra::DVector<T>,           // Newton RHS
-    delta_k_vec: nalgebra::DVector<T>,          // Newton solution
-    jacobian_age: usize,                        // Reuse counter
+    stage_jacobians: [SquareMatrix<T>; S], // J_i at each stage
+    newton_matrix: SquareMatrix<T>,        // I - h*(A⊗J)
+    rhs_newton: Vec<T>,                    // Newton RHS
+    delta_k_vec: Vec<T>,                   // Newton solution
+    jacobian_age: usize,                   // Reuse counter
     stiffness_counter: usize,
     steps: usize,
     newton_iterations: usize,    // Total Newton iterations
@@ -135,10 +136,10 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
             dense_stages: I,
             family: PhantomData,
             equation: PhantomData,
-            stage_jacobians: core::array::from_fn(|_| nalgebra::DMatrix::zeros(0, 0)),
-            newton_matrix: nalgebra::DMatrix::zeros(0, 0),
-            rhs_newton: nalgebra::DVector::zeros(0),
-            delta_k_vec: nalgebra::DVector::zeros(0),
+            stage_jacobians: core::array::from_fn(|_| SquareMatrix::zeros(0)),
+            newton_matrix: SquareMatrix::zeros(0),
+            rhs_newton: Vec::new(),
+            delta_k_vec: Vec::new(),
             jacobian_age: 0,
         }
     }
