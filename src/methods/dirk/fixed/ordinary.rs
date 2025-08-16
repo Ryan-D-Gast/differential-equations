@@ -111,11 +111,9 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
                 // Max-norm and RHS
                 let mut residual_norm = T::zero();
-                for row_idx in 0..dim {
-                    let res_val = residual.get(row_idx);
-                    residual_norm = residual_norm.max(res_val.abs());
-                    // Store negative residual in Newton RHS
-                    self.rhs_newton.set(row_idx, -res_val);
+                self.rhs_newton = -residual;
+                for i in 0..dim {
+                    residual_norm = residual_norm.max(residual.get(i).abs());
                 }
 
                 // Converged by residual
@@ -157,12 +155,10 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
                 // Update z and increment norm
                 increment_norm = T::zero();
+                self.z = self.z + self.delta_z;
                 for row_idx in 0..dim {
-                    let delta_val = self.delta_z.get(row_idx);
-                    let current_val = self.z.get(row_idx);
-                    self.z.set(row_idx, current_val + delta_val);
                     // Calculate infinity norm of increment
-                    increment_norm = increment_norm.max(delta_val.abs());
+                    increment_norm = increment_norm.max(self.delta_z.get(row_idx).abs());
                 }
             }
 
