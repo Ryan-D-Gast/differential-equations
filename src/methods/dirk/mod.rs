@@ -80,10 +80,10 @@ pub struct DiagonallyImplicitRungeKutta<
     lu_decompositions: usize,
 
     // Newton workspace (per stage)
-    stage_jacobian: SquareMatrix<T>,
-    newton_matrix: SquareMatrix<T>, // I - h*a_ii*J
-    rhs_newton: Vec<T>,             // Newton RHS
-    delta_z: Vec<T>,                // Newton correction
+    jacobian: SquareMatrix<T>,
+    newton_matrix: SquareMatrix<T>,
+    rhs_newton: Y,
+    delta_z: Y,
     jacobian_age: usize,
 
     // Status
@@ -137,10 +137,10 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
             newton_iterations: 0,
             jacobian_evaluations: 0,
             lu_decompositions: 0,
-            stage_jacobian: SquareMatrix::zeros(dim),
+            jacobian: SquareMatrix::zeros(dim),
             newton_matrix: SquareMatrix::zeros(dim),
-            rhs_newton: vec![T::zero(); dim],
-            delta_z: vec![T::zero(); dim],
+            rhs_newton: Y::zeros(),
+            delta_z: Y::zeros(),
             jacobian_age: 0,
             status: Status::Uninitialized,
             order: O,
