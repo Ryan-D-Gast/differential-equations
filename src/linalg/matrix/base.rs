@@ -72,13 +72,15 @@ impl<T: Real> SquareMatrix<T> {
     /// Uses banded storage with ml=0, mu=0.
     pub fn diagonal(diag: Vec<T>) -> Self {
         let n = diag.len();
-        let mut m = SquareMatrix::banded(n, 0, 0);
-        if let SquareMatrix::Banded { data, .. } = &mut m {
-            for j in 0..n {
-                data[0 * n + j] = diag[j].clone();
-            }
+        // For ml=mu=0, banded storage has shape (1, n) and maps the main diagonal
+        // to row 0, so the layout matches `diag` exactly. Move `diag` directly.
+        SquareMatrix::Banded {
+            n,
+            ml: 0,
+            mu: 0,
+            data: diag,
+            zero: T::zero(),
         }
-        m
     }
 
     /// Construct a zero lower-triangular matrix (including main diagonal).
