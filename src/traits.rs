@@ -4,7 +4,7 @@ use nalgebra::{RealField, SMatrix};
 use num_complex::Complex;
 use std::{
     fmt::Debug,
-    ops::{Add, AddAssign, Div, Mul, Sub},
+    ops::{Add, AddAssign, Div, Mul, Neg, Sub},
 };
 
 /// Real Number Trait
@@ -53,6 +53,7 @@ pub trait State<T: Real>:
     + AddAssign
     + Mul<T, Output = Self>
     + Div<T, Output = Self>
+    + Neg<Output = Self>
 {
     fn len(&self) -> usize;
 

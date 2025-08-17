@@ -1,5 +1,7 @@
 //! Dormand–Prince explicit Runge–Kutta methods for Delay Differential Equations (DDEs)
 
+use std::collections::VecDeque;
+
 use crate::{
     dde::{DDE, DelayNumericalMethod},
     error::Error,
@@ -10,7 +12,6 @@ use crate::{
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
-use std::collections::VecDeque;
 
 impl<
     const L: usize,

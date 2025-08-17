@@ -3,11 +3,13 @@
 mod adaptive;
 mod fixed;
 
+use std::marker::PhantomData;
+
 use crate::{
+    linalg::Matrix,
     status::Status,
     traits::{CallBackData, Real, State},
 };
-use std::marker::PhantomData;
 
 /// DIRK/SDIRK core with fixed/adaptive stepping. Stages are solved
 /// sequentially (A is lower-triangular), which is cheaper than full IRK
@@ -79,10 +81,9 @@ pub struct DiagonallyImplicitRungeKutta<
     lu_decompositions: usize,
 
     // Newton workspace (per stage)
-    stage_jacobian: nalgebra::DMatrix<T>,
-    newton_matrix: nalgebra::DMatrix<T>, // I - h*a_ii*J
-    rhs_newton: nalgebra::DVector<T>,    // Newton RHS
-    delta_z: nalgebra::DVector<T>,       // Newton correction
+    jacobian: Matrix<T>,
+    rhs_newton: Y,
+    delta_z: Y,
     jacobian_age: usize,
 
     // Status
@@ -136,10 +137,9 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
             newton_iterations: 0,
             jacobian_evaluations: 0,
             lu_decompositions: 0,
-            stage_jacobian: nalgebra::DMatrix::zeros(dim, dim),
-            newton_matrix: nalgebra::DMatrix::zeros(dim, dim),
-            rhs_newton: nalgebra::DVector::zeros(dim),
-            delta_z: nalgebra::DVector::zeros(dim),
+            jacobian: Matrix::zeros(dim),
+            rhs_newton: Y::zeros(),
+            delta_z: Y::zeros(),
             jacobian_age: 0,
             status: Status::Uninitialized,
             order: O,

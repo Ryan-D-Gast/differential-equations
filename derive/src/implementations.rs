@@ -177,6 +177,106 @@ enum OperationType {
     Div,
 }
 
+/// Generate Neg trait implementation (unary minus)
+pub fn generate_neg_impl(
+    name: &Ident,
+    fields: &Punctuated<Field, Comma>,
+    field_info: &[FieldTypeInfo],
+) -> proc_macro2::TokenStream {
+    let neg_fields = generate_neg_fields(fields, field_info);
+    let constructor = generate_constructor_syntax(&neg_fields, fields);
+
+    quote! {
+        impl<T: differential_equations::traits::Real> std::ops::Neg for #name<T> {
+            type Output = Self;
+
+            fn neg(self) -> Self::Output {
+                #constructor
+            }
+        }
+    }
+}
+
+/// Generate per-field expressions for unary negation
+fn generate_neg_fields(
+    fields: &Punctuated<Field, Comma>,
+    field_info: &[FieldTypeInfo],
+) -> Vec<proc_macro2::TokenStream> {
+    fields.iter().enumerate().zip(field_info).map(|((field_idx, field), field_type)| {
+        match &field.ident {
+            Some(ident) => {
+                match field_type {
+                    FieldTypeInfo::Single => quote! { #ident: -self.#ident },
+                    FieldTypeInfo::Array { array_size } => {
+                        quote! { 
+                            #ident: {
+                                let mut result = [T::zero(); #array_size];
+                                for i in 0..#array_size { result[i] = -self.#ident[i]; }
+                                result
+                            }
+                        }
+                    },
+                    FieldTypeInfo::SMatrix { .. } => quote! { #ident: -self.#ident },
+                    FieldTypeInfo::Complex => quote! { #ident: -self.#ident },
+                    FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
+                        quote! { 
+                            #ident: {
+                                let mut result = self.#ident;
+                                for i in 0..#array_size { result[i] = -self.#ident[i]; }
+                                result
+                            }
+                        }
+                    },
+                    FieldTypeInfo::ArrayOfComplex { array_size } => {
+                        quote! { 
+                            #ident: {
+                                let mut result = self.#ident;
+                                for i in 0..#array_size { result[i] = -self.#ident[i]; }
+                                result
+                            }
+                        }
+                    },
+                }
+            },
+            None => {
+                let index = syn::Index::from(field_idx);
+                match field_type {
+                    FieldTypeInfo::Single => quote! { -self.#index },
+                    FieldTypeInfo::Array { array_size } => {
+                        quote! { 
+                            {
+                                let mut result = [T::zero(); #array_size];
+                                for i in 0..#array_size { result[i] = -self.#index[i]; }
+                                result
+                            }
+                        }
+                    },
+                    FieldTypeInfo::SMatrix { .. } => quote! { -self.#index },
+                    FieldTypeInfo::Complex => quote! { -self.#index },
+                    FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
+                        quote! { 
+                            {
+                                let mut result = self.#index;
+                                for i in 0..#array_size { result[i] = -self.#index[i]; }
+                                result
+                            }
+                        }
+                    },
+                    FieldTypeInfo::ArrayOfComplex { array_size } => {
+                        quote! { 
+                            {
+                                let mut result = self.#index;
+                                for i in 0..#array_size { result[i] = -self.#index[i]; }
+                                result
+                            }
+                        }
+                    },
+                }
+            }
+        }
+    }).collect()
+}
+
 /// Helper function to determine if we're dealing with a tuple struct
 fn is_tuple_struct(fields: &Punctuated<Field, Comma>) -> bool {
     fields.iter().all(|field| field.ident.is_none())

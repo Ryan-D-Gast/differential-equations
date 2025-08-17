@@ -107,6 +107,7 @@ pub fn derive_state(input: TokenStream) -> TokenStream {
     let add_impl = generate_add_impl(&name, &fields, &field_info);
     let sub_impl = generate_sub_impl(&name, &fields, &field_info);
     let add_assign_impl = generate_add_assign_impl(&name, &fields, &field_info);
+    let neg_impl = generate_neg_impl(&name, &fields, &field_info);
     let mul_impl = generate_mul_impl(&name, &fields, &field_info);
     let div_impl = generate_div_impl(&name, &fields, &field_info);
     
@@ -121,6 +122,7 @@ pub fn derive_state(input: TokenStream) -> TokenStream {
         #add_assign_impl
         #mul_impl
         #div_impl
+    #neg_impl
     };
     
     // Return the generated implementation

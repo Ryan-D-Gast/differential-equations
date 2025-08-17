@@ -1,10 +1,11 @@
 //! Statistics and performance tracking for Numerical methods
-
-use crate::traits::Real;
+ 
 use std::{
     ops::{Add, AddAssign},
     time::Instant,
 };
+
+use crate::traits::Real;
 
 /// Number of evaluations
 ///

@@ -3,6 +3,7 @@
 use crate::{
     error::Error,
     interpolate::{Interpolation, cubic_hermite_interpolate},
+    linalg::Matrix,
     methods::h_init::InitialStepSize,
     methods::{Adaptive, DiagonallyImplicitRungeKutta, Ordinary},
     ode::{ODE, OrdinaryNumericalMethod},
@@ -56,10 +57,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // Newton workspace
         let dim = y0.len();
-        self.stage_jacobian = nalgebra::DMatrix::zeros(dim, dim);
-        self.newton_matrix = nalgebra::DMatrix::zeros(dim, dim);
-        self.rhs_newton = nalgebra::DVector::zeros(dim);
-        self.delta_z = nalgebra::DVector::zeros(dim);
+        self.jacobian = Matrix::zeros(dim);
         self.z = *y0;
         self.jacobian_age = 0;
 
@@ -134,11 +132,9 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
                 // Max-norm and RHS
                 let mut residual_norm = T::zero();
-                for row_idx in 0..dim {
-                    let res_val = residual.get(row_idx);
-                    residual_norm = residual_norm.max(res_val.abs());
-                    // Store negative residual in Newton RHS
-                    self.rhs_newton[row_idx] = -res_val;
+                self.rhs_newton = -residual;
+                for i in 0..dim {
+                    residual_norm = residual_norm.max(residual.get(i).abs());
                 }
 
                 // Converged by residual
@@ -155,44 +151,27 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
                 // Refresh Jacobian if needed
                 if newton_iter == 1 || self.jacobian_age > 3 {
-                    ode.jacobian(t_stage, &self.z, &mut self.stage_jacobian);
+                    ode.jacobian(t_stage, &self.z, &mut self.jacobian);
                     evals.jacobian += 1;
+                    self.jacobian_age = 0;
 
                     // Newton matrix: I - h*a_ii J
-                    self.newton_matrix.fill(T::zero());
-                    let scale_factor = -self.h * self.a[stage][stage];
-                    for r in 0..dim {
-                        for c_col in 0..dim {
-                            self.newton_matrix[(r, c_col)] =
-                                self.stage_jacobian[(r, c_col)] * scale_factor;
-                        }
-                        // Add identity
-                        self.newton_matrix[(r, r)] += T::one();
-                    }
-
-                    self.jacobian_age = 0;
+                    self.jacobian
+                        .component_mul_mut(-self.h * self.a[stage][stage]);
+                    self.jacobian += Matrix::identity(dim);
                 }
                 self.jacobian_age += 1;
 
-                // Solve (I - h*a_ii J) Δz = -F(z)
-                let lu_decomp = nalgebra::LU::new(self.newton_matrix.clone());
-                if let Some(solution) = lu_decomp.solve(&self.rhs_newton) {
-                    self.delta_z.copy_from(&solution);
-                    self.lu_decompositions += 1;
-                } else {
-                    // Singular matrix: fail this stage
-                    newton_converged = false;
-                    break;
-                }
+                // Solve (I - h*a_ii J) Δz = -F(z) using in-place LU
+                self.delta_z = self.jacobian.lin_solve(self.rhs_newton);
+                self.lu_decompositions += 1;
 
                 // Update z and increment norm
                 increment_norm = T::zero();
+                self.z = self.z + self.delta_z;
                 for row_idx in 0..dim {
-                    let delta_val = self.delta_z[row_idx];
-                    let current_val = self.z.get(row_idx);
-                    self.z.set(row_idx, current_val + delta_val);
                     // Calculate infinity norm of increment
-                    increment_norm = increment_norm.max(delta_val.abs());
+                    increment_norm = increment_norm.max(self.delta_z.get(row_idx).abs());
                 }
             }
 

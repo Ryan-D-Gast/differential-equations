@@ -34,6 +34,12 @@ impl ODE<f64, SMatrix<f64, 2, 2>> for MatrixEvolutionODE {
         // Linear matrix evolution: dY/dt = A * Y
         *dydt = self.a * y;
     }
+
+    // Note on Jacobians:
+    // When the state Y is a matrix type (e.g., SMatrix<_, 2, 2>), it is flattened to a 1D vector internally.
+    // Therefore, a 2x2 Y has state dimension 4, and its Jacobian is 4x4 with respect to the flattened state.
+    // SMatrix support exists primarily to allow fixed-size column or row vectors, but it also permits full matrices;
+    // this example illustrates how such matrix states are handled.
 }
 
 fn main() {

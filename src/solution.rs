@@ -1,13 +1,13 @@
 //! Solution container for differential equation solvers.
 
+#[cfg(feature = "polars")]
+use polars::prelude::*;
+
 use crate::{
     stats::{Evals, Steps, Timer},
     status::Status,
     traits::{CallBackData, Real, State},
 };
-
-#[cfg(feature = "polars")]
-use polars::prelude::*;
 
 /// The result produced by differential equation solvers.
 ///

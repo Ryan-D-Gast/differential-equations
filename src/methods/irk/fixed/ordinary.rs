@@ -3,6 +3,7 @@
 use crate::{
     error::Error,
     interpolate::{Interpolation, cubic_hermite_interpolate},
+    linalg::Matrix,
     methods::{Fixed, ImplicitRungeKutta, Ordinary},
     ode::{ODE, OrdinaryNumericalMethod},
     stats::Evals,
@@ -47,10 +48,10 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Linear algebra workspace
         let dim = y0.len();
         let newton_system_size = self.stages * dim;
-        self.stage_jacobians = core::array::from_fn(|_| nalgebra::DMatrix::zeros(dim, dim));
-        self.newton_matrix = nalgebra::DMatrix::zeros(newton_system_size, newton_system_size);
-        self.rhs_newton = nalgebra::DVector::zeros(newton_system_size);
-        self.delta_k_vec = nalgebra::DVector::zeros(newton_system_size);
+        self.stage_jacobians = core::array::from_fn(|_| Matrix::zeros(dim));
+        self.newton_matrix = Matrix::zeros(newton_system_size);
+        self.rhs_newton = vec![T::zero(); newton_system_size];
+        self.delta_k_vec = vec![T::zero(); newton_system_size];
         self.jacobian_age = 0;
 
         // Status
@@ -147,14 +148,15 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 }
 
                 // Build Newton matrix: I - h*(A ⊗ J)
-                self.newton_matrix.fill(T::zero());
+                let nsys = self.stages * dim;
+                let mut nm = Matrix::zeros(nsys);
                 for i in 0..self.stages {
                     for j in 0..self.stages {
                         let scale_factor = -self.h * self.a[i][j];
                         // Use J from stage j
                         for r in 0..dim {
                             for c_col in 0..dim {
-                                self.newton_matrix[(i * dim + r, j * dim + c_col)] =
+                                nm[(i * dim + r, j * dim + c_col)] =
                                     self.stage_jacobians[j][(r, c_col)] * scale_factor;
                             }
                         }
@@ -162,24 +164,23 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
                     // Add identity per block
                     for d_idx in 0..dim {
-                        self.newton_matrix[(i * dim + d_idx, i * dim + d_idx)] += T::one();
+                        let idx = i * dim + d_idx;
+                        nm[(idx, idx)] = nm[(idx, idx)] + T::one();
                     }
                 }
+                self.newton_matrix = nm;
 
                 self.jacobian_age = 0;
             }
             self.jacobian_age += 1;
 
-            // Solve (I - h*A⊗J) Δz = -F(z)
-            let lu_decomp = nalgebra::LU::new(self.newton_matrix.clone());
-            if let Some(solution) = lu_decomp.solve(&self.rhs_newton) {
-                self.delta_k_vec.copy_from(&solution);
-                self.lu_decompositions += 1;
-            } else {
-                // Singular matrix: fail this attempt
-                newton_converged = false;
-                break;
+            // Solve (I - h*A⊗J) Δz = -F(z) using in-place LU on our matrix
+            let mut rhs = self.rhs_newton.clone();
+            self.newton_matrix.lin_solve_mut(&mut rhs[..]);
+            for i in 0..self.delta_k_vec.len() {
+                self.delta_k_vec[i] = rhs[i];
             }
+            self.lu_decompositions += 1;
 
             // Update z_i and increment norm
             increment_norm = T::zero();
