@@ -1,13 +1,11 @@
-//! Linear system solve: solve A x = b using LU decomposition on a dense copy.
+//! Linear solves: A x = b via LU with partial pivoting on a dense copy.
 
 use crate::traits::{Real, State};
 
 use super::base::{Matrix, MatrixStorage};
 
 impl<T: Real> Matrix<T> {
-    /// Solve A x = b for x using LU decomposition with partial pivoting.
-    /// Returns the solution vector with the same State<T> type as b.
-    /// Internally densifies A if needed.
+    /// Solve A x = b (returns same `State<T>` type as `b`). Densifies `A` as needed.
     pub fn lin_solve<V>(&self, b: V) -> V
     where
         V: State<T>,
@@ -77,7 +75,7 @@ impl<T: Real> Matrix<T> {
                 x.swap(k, pivot_row);
                 piv.swap(k, pivot_row);
             }
-            // Eliminate below
+            // Eliminate below the pivot
             let akk = a[k * n + k];
             for i in (k + 1)..n {
                 let factor = a[i * n + k] / akk;
@@ -88,7 +86,7 @@ impl<T: Real> Matrix<T> {
             }
         }
 
-        // 4) Forward solve Ly = Pb (x currently holds permuted b)
+    // Forward solve Ly = Pb (x currently holds permuted b)
         for i in 0..n {
             let mut sum = x[i];
             for k in 0..i {
@@ -97,7 +95,7 @@ impl<T: Real> Matrix<T> {
             x[i] = sum; // since L has ones on diagonal
         }
 
-        // 5) Backward solve Ux = y
+    // Backward solve Ux = y
         for i in (0..n).rev() {
             let mut sum = x[i];
             for k in (i + 1)..n {
@@ -114,9 +112,8 @@ impl<T: Real> Matrix<T> {
         out
     }
 
-    /// Solve A x = b in-place on the provided slice b (overwritten with x).
-    /// Uses LU with partial pivoting on a dense copy of A.
-    pub fn lin_solve_in_place(&self, b: &mut [T]) {
+    /// In-place solve: overwrites `b` with `x`.
+    pub fn lin_solve_mut(&self, b: &mut [T]) {
         let n = self.n();
         assert_eq!(
             b.len(),
@@ -127,7 +124,7 @@ impl<T: Real> Matrix<T> {
             b.len()
         );
 
-        // Densify A into row-major Vec<T>
+    // Densify A into row-major Vec<T>
         let mut a = vec![T::zero(); n * n];
         match &self.storage {
             MatrixStorage::Identity => {
@@ -151,7 +148,7 @@ impl<T: Real> Matrix<T> {
             }
         }
 
-        // LU factorization with partial pivoting, applying permutations to b
+    // LU with partial pivoting, applying permutations to b
         for k in 0..n {
             // pivot
             let mut pivot_row = k;
@@ -172,7 +169,7 @@ impl<T: Real> Matrix<T> {
                 }
                 b.swap(k, pivot_row);
             }
-            // eliminate
+            // Eliminate below the pivot
             let akk = a[k * n + k];
             for i in (k + 1)..n {
                 let factor = a[i * n + k] / akk;
@@ -183,7 +180,7 @@ impl<T: Real> Matrix<T> {
             }
         }
 
-        // Forward solve Ly = Pb (b currently permuted) stored back into b
+    // Forward solve Ly = Pb (b is permuted)
         for i in 0..n {
             let mut sum = b[i];
             for k in 0..i {

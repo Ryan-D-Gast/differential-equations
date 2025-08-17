@@ -198,7 +198,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
             // Solve (I - h*A⊗J) Δz = -F(z) using our LU in-place over a flat slice
             let mut rhs = self.rhs_newton.clone();
-            self.newton_matrix.lin_solve_in_place(&mut rhs[..]);
+            self.newton_matrix.lin_solve_mut(&mut rhs[..]);
             for i in 0..self.delta_k_vec.len() {
                 self.delta_k_vec[i] = rhs[i];
             }

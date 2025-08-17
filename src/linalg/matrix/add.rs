@@ -1,4 +1,4 @@
-//! Addition operations for Matrix.
+//! Matrix addition.
 
 use core::ops::Add;
 use core::ops::AddAssign;
@@ -7,60 +7,7 @@ use crate::traits::Real;
 
 use super::base::{Matrix, MatrixStorage};
 
-// Matrix + scalar (elementwise add of a constant)
-impl<T: Real> Add<T> for Matrix<T> {
-    type Output = Matrix<T>;
-
-    fn add(self, rhs: T) -> Self::Output {
-        match self.storage {
-            MatrixStorage::Identity => {
-                // I + c -> diagonal with 1+c, off-diagonals c
-                let n = self.nrows;
-                let mut data = vec![rhs; n * n];
-                for i in 0..n { data[i * n + i] = rhs + T::one(); }
-                Matrix { nrows: n, ncols: n, data, storage: MatrixStorage::Full }
-            }
-            MatrixStorage::Full => {
-                let n = self.nrows;
-                let mut data = self.data;
-                for v in &mut data { *v = *v + rhs; }
-                Matrix { nrows: n, ncols: n, data, storage: MatrixStorage::Full }
-            }
-            MatrixStorage::Banded { ml, mu, zero } => {
-                let n = self.nrows;
-                if rhs == T::zero() {
-                    Matrix { nrows: n, ncols: n, data: self.data, storage: MatrixStorage::Banded { ml, mu, zero } }
-                } else {
-                    let mut dense = vec![rhs; n * n];
-                    let rows = ml + mu + 1;
-                    for j in 0..n {
-                        for r in 0..rows {
-                            let k = r as isize - mu as isize;
-                            let i_signed = j as isize + k;
-                            if i_signed >= 0 && (i_signed as usize) < n {
-                                let i = i_signed as usize;
-                                let val = self.data[r * n + j];
-                                dense[i * n + j] = val + rhs;
-                            }
-                        }
-                    }
-                    Matrix { nrows: n, ncols: n, data: dense, storage: MatrixStorage::Full }
-                }
-            }
-        }
-    }
-}
-
-// Add-assign: self += scalar
-impl<T: Real> AddAssign<T> for Matrix<T> {
-    fn add_assign(&mut self, rhs: T) {
-        let n = self.n();
-    let lhs = core::mem::replace(self, Matrix::zeros(n));
-        *self = lhs + rhs;
-    }
-}
-
-// Add-assign: self += matrix (by value)
+// Add-assign by value
 impl<T: Real> AddAssign<Matrix<T>> for Matrix<T> {
     fn add_assign(&mut self, rhs: Matrix<T>) {
         let n = self.n();
@@ -69,16 +16,7 @@ impl<T: Real> AddAssign<Matrix<T>> for Matrix<T> {
     }
 }
 
-// Add-assign: self += &matrix (by reference, clones rhs)
-impl<T: Real> AddAssign<&Matrix<T>> for Matrix<T> {
-    fn add_assign(&mut self, rhs: &Matrix<T>) {
-        let n = self.n();
-        let lhs = core::mem::replace(self, Matrix::zeros(n));
-        *self = lhs + rhs.clone();
-    }
-}
-// Matrix + Matrix (elementwise), result shape rules:
-// If both banded, and the sum of bands covers only a band (i.e., ml=max, mu=max), keep banded; else become Full.
+// Matrix + Matrix (elementwise). If both are banded, keep banded with widened bandwidth; otherwise densify.
 impl<T: Real> Add for Matrix<T> {
     type Output = Matrix<T>;
 
@@ -172,6 +110,49 @@ impl<T: Real> Add for Matrix<T> {
     }
 }
 
+impl<T: Real> Matrix<T> {
+    /// Return a new matrix where each stored entry has `rhs` added. Off-band for banded becomes dense if rhs != 0.
+    pub fn component_add(mut self, rhs: T) -> Self {
+        match &mut self.storage {
+            MatrixStorage::Identity => {
+                // I + c -> Full with diag 1+c and off-diag c
+                let n = self.nrows;
+                let mut data = vec![rhs; n * n];
+                for i in 0..n { data[i * n + i] = rhs + T::one(); }
+                Matrix { nrows: n, ncols: n, data, storage: MatrixStorage::Full }
+            }
+            MatrixStorage::Full => {
+                for v in &mut self.data { *v = *v + rhs; }
+                self
+            }
+            MatrixStorage::Banded { ml, mu, .. } => {
+                let n = self.nrows;
+                if rhs == T::zero() {
+                    self
+                } else {
+                    let rows = *ml + *mu + 1;
+                    let mut dense = vec![rhs; n * n];
+                    for j in 0..n {
+                        for r in 0..rows {
+                            let k = r as isize - *mu as isize;
+                            let i_signed = j as isize + k;
+                            if i_signed >= 0 && (i_signed as usize) < n {
+                                let i = i_signed as usize;
+                                let val = self.data[r * n + j];
+                                dense[i * n + j] = val + rhs;
+                            }
+                        }
+                    }
+                    Matrix { nrows: n, ncols: n, data: dense, storage: MatrixStorage::Full }
+                }
+            }
+        }
+    }
+
+
+
+}
+
 #[cfg(test)]
 mod tests {
     use crate::linalg::matrix::Matrix;
@@ -179,17 +160,17 @@ mod tests {
     #[test]
     fn add_scalar_full() {
         let m: Matrix<f64> = Matrix::full(2, vec![1.0, 2.0, 3.0, 4.0]);
-        let r = m + 1.0;
-    assert_eq!(r[(0,0)], 2.0);
-    assert_eq!(r[(0,1)], 3.0);
-    assert_eq!(r[(1,0)], 4.0);
-    assert_eq!(r[(1,1)], 5.0);
+        let r = m.component_add(1.0);
+        assert_eq!(r[(0,0)], 2.0);
+        assert_eq!(r[(0,1)], 3.0);
+        assert_eq!(r[(1,0)], 4.0);
+        assert_eq!(r[(1,1)], 5.0);
     }
 
     #[test]
     fn add_scalar_banded_zero_keeps_banded() {
-        let m: Matrix<f64> = Matrix::banded(3, 1, 1);
-        let r = m + 0.0;
+    let m: Matrix<f64> = Matrix::banded(3, 1, 1);
+    let r = m.component_add(0.0);
     for i in 0..3 { for j in 0..3 { assert_eq!(r[(i,j)], 0.0); } }
     }
 

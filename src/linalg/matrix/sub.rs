@@ -1,52 +1,9 @@
-//! Subtraction operations for Matrix.
+//! Matrix subtraction.
 
 use core::ops::{Sub, SubAssign};
 
 use crate::traits::Real;
 use super::base::{Matrix, MatrixStorage};
-
-// Matrix - scalar (elementwise subtract constant)
-impl<T: Real> Sub<T> for Matrix<T> {
-    type Output = Matrix<T>;
-
-    fn sub(self, rhs: T) -> Self::Output {
-        match self.storage {
-            MatrixStorage::Identity => {
-                let n = self.nrows;
-                let mut data = vec![T::zero() - rhs; n * n];
-                for i in 0..n { data[i * n + i] = T::one() - rhs; }
-                Matrix { nrows: n, ncols: n, data, storage: MatrixStorage::Full }
-            }
-            MatrixStorage::Full => {
-                let n = self.nrows;
-                let mut data = self.data;
-                for v in &mut data { *v = *v - rhs; }
-                Matrix { nrows: n, ncols: n, data, storage: MatrixStorage::Full }
-            }
-            MatrixStorage::Banded { ml, mu, zero } => {
-                let n = self.nrows;
-                if rhs == T::zero() {
-                    Matrix { nrows: n, ncols: n, data: self.data, storage: MatrixStorage::Banded { ml, mu, zero } }
-                } else {
-                    let mut dense = vec![T::zero() - rhs; n * n];
-                    let rows = ml + mu + 1;
-                    for j in 0..n {
-                        for r in 0..rows {
-                            let k = r as isize - mu as isize; // i - j
-                            let i_signed = j as isize + k;
-                            if i_signed >= 0 && (i_signed as usize) < n {
-                                let i = i_signed as usize;
-                                let val = self.data[r * n + j];
-                                dense[i * n + j] = val - rhs;
-                            }
-                        }
-                    }
-                    Matrix { nrows: n, ncols: n, data: dense, storage: MatrixStorage::Full }
-                }
-            }
-        }
-    }
-}
 
 // Matrix - Matrix
 impl<T: Real> Sub for Matrix<T> {
@@ -102,7 +59,7 @@ impl<T: Real> Sub for Matrix<T> {
                 }
                 out
             }
-            // Mixed cases: densify
+            // Mixed storage: densify
             (
                 Matrix { nrows: n1, data: a, storage: sa, .. },
                 Matrix { nrows: n2, data: b, storage: sb, .. },
@@ -141,16 +98,9 @@ impl<T: Real> Sub for Matrix<T> {
     }
 }
 
-// Sub-assign: self -= scalar
-impl<T: Real> SubAssign<T> for Matrix<T> {
-    fn sub_assign(&mut self, rhs: T) {
-        let n = self.n();
-        let lhs = core::mem::replace(self, Matrix::zeros(n));
-        *self = lhs - rhs;
-    }
-}
+// For scalars, use `component_sub`.
 
-// Sub-assign: self -= matrix (by value)
+// Sub-assign by value
 impl<T: Real> SubAssign<Matrix<T>> for Matrix<T> {
     fn sub_assign(&mut self, rhs: Matrix<T>) {
         let n = self.n();
@@ -159,12 +109,51 @@ impl<T: Real> SubAssign<Matrix<T>> for Matrix<T> {
     }
 }
 
-// Sub-assign: self -= &matrix (by reference, clones rhs)
+// Sub-assign by reference (clones rhs)
 impl<T: Real> SubAssign<&Matrix<T>> for Matrix<T> {
     fn sub_assign(&mut self, rhs: &Matrix<T>) {
         let n = self.n();
         let lhs = core::mem::replace(self, Matrix::zeros(n));
         *self = lhs - rhs.clone();
+    }
+}
+
+impl<T: Real> Matrix<T> {
+    /// Return a new matrix where each stored entry has `rhs` subtracted. Off-band handling similar to add.
+    pub fn component_sub(mut self, rhs: T) -> Self {
+        match &mut self.storage {
+            MatrixStorage::Identity => {
+                let n = self.nrows;
+                let mut data = vec![T::zero() - rhs; n * n];
+                for i in 0..n { data[i * n + i] = T::one() - rhs; }
+                Matrix { nrows: n, ncols: n, data, storage: MatrixStorage::Full }
+            }
+            MatrixStorage::Full => {
+                for v in &mut self.data { *v = *v - rhs; }
+                self
+            }
+            MatrixStorage::Banded { ml, mu, .. } => {
+                let n = self.nrows;
+                if rhs == T::zero() {
+                    self
+                } else {
+                    let rows = *ml + *mu + 1;
+                    let mut dense = vec![T::zero() - rhs; n * n];
+                    for j in 0..n {
+                        for r in 0..rows {
+                            let k = r as isize - *mu as isize;
+                            let i_signed = j as isize + k;
+                            if i_signed >= 0 && (i_signed as usize) < n {
+                                let i = i_signed as usize;
+                                let val = self.data[r * n + j];
+                                dense[i * n + j] = val - rhs;
+                            }
+                        }
+                    }
+                    Matrix { nrows: n, ncols: n, data: dense, storage: MatrixStorage::Full }
+                }
+            }
+        }
     }
 }
 
@@ -175,7 +164,7 @@ mod tests {
     #[test]
     fn sub_scalar_full() {
         let m: Matrix<f64> = Matrix::full(2, vec![1.0, 2.0, 3.0, 4.0]);
-        let r = m - 1.0;
+    let r = m.component_sub(1.0);
         assert_eq!(r[(0,0)], 0.0);
         assert_eq!(r[(0,1)], 1.0);
         assert_eq!(r[(1,0)], 2.0);
@@ -185,7 +174,7 @@ mod tests {
     #[test]
     fn sub_scalar_banded_zero_keeps_banded() {
         let m: Matrix<f64> = Matrix::banded(3, 1, 1);
-        let r = m - 0.0;
+    let r = m.component_sub(0.0);
         for i in 0..3 { for j in 0..3 { assert_eq!(r[(i,j)], 0.0); } }
     }
 

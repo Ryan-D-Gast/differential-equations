@@ -1,4 +1,4 @@
-//! Indexing and Display implementations for Matrix.
+//! Indexing and display for `Matrix`.
 
 use core::fmt::{self, Display, Write as _};
 use core::ops::{Index, IndexMut};
@@ -7,7 +7,7 @@ use crate::traits::Real;
 
 use super::base::{Matrix, MatrixStorage};
 
-/// 2D indexing by (i, j): read-only.
+/// 2D indexing by (i, j), read-only.
 impl<T: Real> Index<(usize, usize)> for Matrix<T> {
     type Output = T;
 
@@ -34,7 +34,7 @@ impl<T: Real> Index<(usize, usize)> for Matrix<T> {
     }
 }
 
-/// 2D indexing by (i, j): mutable.
+/// 2D indexing by (i, j), mutable (where supported).
 impl<T: Real> IndexMut<(usize, usize)> for Matrix<T> {
     fn index_mut(&mut self, (i, j): (usize, usize)) -> &mut Self::Output {
         assert!(i < self.nrows && j < self.ncols, "Index out of bounds");

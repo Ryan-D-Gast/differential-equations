@@ -1,21 +1,21 @@
-//! Core Matrix struct, storage enum, and constructors.
+//! Core matrix type, storage enum, and constructors.
 
 use crate::traits::Real;
 
-/// Storage format of a Matrix.
+/// Matrix storage layout.
 #[derive(Clone, Debug)]
 pub enum MatrixStorage<T: Real> {
-    /// Identity matrix (implicitly stored). Data holds [one, zero] for references.
+    /// Identity matrix (implicit). `data` stores [one, zero] to satisfy indexing by reference.
     Identity,
-    /// Full dense matrix (data holds all entries row-major).
+    /// Dense row-major matrix (nrows*ncols entries).
     Full,
-    /// Banded matrix with lower (ml) and upper (mu) bandwidth
-    /// stored in diagonal-wise compact form with shape (ml+mu+1, ncols)
-    /// Layout: data[row * ncols + col]. Includes a cached zero for OOB reads.
+    /// Banded matrix with lower (ml) and upper (mu) bandwidth.
+    /// Compact diagonal storage with shape (ml+mu+1, ncols), row-major per diagonal.
+    /// Off-band reads return `zero`.
     Banded { ml: usize, mu: usize, zero: T },
 }
 
-/// Generic matrix representation used for mass/jacobian matrices (square by usage today).
+/// Generic matrix for linear algebra (typically square in current use).
 #[derive(Clone, Debug)]
 pub struct Matrix<T: Real> {
     pub nrows: usize,
@@ -25,18 +25,18 @@ pub struct Matrix<T: Real> {
 }
 
 impl<T: Real> Matrix<T> {
-    /// Construct an identity matrix of size n x n.
+    /// Identity matrix of size n x n.
     pub fn identity(n: usize) -> Self {
         Matrix {
             nrows: n,
             ncols: n,
-            // Store [one, zero] so we can return references for reads
+            // Keep [one, zero] so indexing can return references.
             data: vec![T::one(), T::zero()],
             storage: MatrixStorage::Identity,
         }
     }
 
-    /// Construct a full matrix from a row-major vector of length n*n.
+    /// Full matrix from a row-major vector of length n*n.
     pub fn full(n: usize, data: Vec<T>) -> Self {
         assert_eq!(
             data.len(),
@@ -46,14 +46,13 @@ impl<T: Real> Matrix<T> {
         Matrix { nrows: n, ncols: n, data, storage: MatrixStorage::Full }
     }
 
-    /// Construct a zero matrix of size n x n.
+    /// Zero matrix of size n x n.
     pub fn zeros(n: usize) -> Self {
         Matrix { nrows: n, ncols: n, data: vec![T::zero(); n * n], storage: MatrixStorage::Full }
     }
 
-    /// Construct an empty banded matrix (all zeros) with the given size and bandwidths.
-    /// Storage matches Fortran/LAPACK: data has shape (ml + mu + 1, n), and
-    /// an element at (i, j) maps to data[i - j + mu, j] when within band.
+    /// Zero banded matrix with the given bandwidths.
+    /// For entry (i,j) within the band, index maps to data[i - j + mu, j].
     pub fn banded(n: usize, ml: usize, mu: usize) -> Self {
         let rows = ml + mu + 1;
         let data = vec![T::zero(); rows * n];
@@ -65,12 +64,10 @@ impl<T: Real> Matrix<T> {
         }
     }
 
-    /// Construct a diagonal matrix from a vector of diagonal entries.
-    /// Uses banded storage with ml=0, mu=0.
+    /// Diagonal matrix from the provided diagonal entries (ml=mu=0).
     pub fn diagonal(diag: Vec<T>) -> Self {
         let n = diag.len();
-        // For ml=mu=0, banded storage has shape (1, n) and maps the main diagonal
-        // to row 0, so the layout matches `diag` exactly. Move `diag` directly.
+    // With ml=mu=0, storage is (1,n), so `diag` maps directly to row 0.
         Matrix {
             nrows: n,
             ncols: n,
@@ -79,24 +76,22 @@ impl<T: Real> Matrix<T> {
         }
     }
 
-    /// Construct a zero lower-triangular matrix (including main diagonal).
-    /// Uses banded storage with ml = n-1, mu = 0.
+    /// Zero lower-triangular matrix (ml = n-1, mu = 0).
     pub fn lower_triangular(n: usize) -> Self {
         Matrix::banded(n, n.saturating_sub(1), 0)
     }
 
-    /// Construct a zero upper-triangular matrix (including main diagonal).
-    /// Uses banded storage with ml = 0, mu = n-1.
+    /// Zero upper-triangular matrix (ml = 0, mu = n-1).
     pub fn upper_triangular(n: usize) -> Self {
         Matrix::banded(n, 0, n.saturating_sub(1))
     }
 
-    /// Matrix dimensions (nrows, ncols).
+    /// Dimensions (nrows, ncols).
     pub fn dims(&self) -> (usize, usize) {
         (self.nrows, self.ncols)
     }
 
-    /// Convenience: size n for a square n x n matrix.
+    /// Convenience: n for an n x n matrix.
     pub fn n(&self) -> usize {
         self.dims().0
     }

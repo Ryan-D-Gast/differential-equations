@@ -1,4 +1,4 @@
-//! Matrix module split: base definitions and indexing/display.
+//! Matrix types, operations, and utilities.
 
 mod add;
 mod base;
