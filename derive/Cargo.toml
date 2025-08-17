@@ -20,6 +20,6 @@ quote = "1.0.40"
 proc-macro2 = "1.0.95"
 
 [dev-dependencies]
-differential-equations = "0.3.3"
+differential-equations = "0.3.7"
 nalgebra = "0.33.2"
 num-complex = "0.4.6"
