@@ -4,12 +4,13 @@ mod adaptive;
 mod dormandprince;
 mod fixed;
 
+use std::{collections::VecDeque, marker::PhantomData};
+
 use crate::{
     methods::Delay,
     status::Status,
     traits::{CallBackData, Real, State},
 };
-use std::{collections::VecDeque, marker::PhantomData};
 
 /// Runge-Kutta solver that can handle:
 /// - Fixed-step methods with cubic Hermite interpolation

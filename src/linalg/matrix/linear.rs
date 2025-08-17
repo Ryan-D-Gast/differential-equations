@@ -24,7 +24,9 @@ impl<T: Real> Matrix<T> {
         let mut a = vec![T::zero(); n * n];
         match &self.storage {
             MatrixStorage::Identity => {
-                for i in 0..n { a[i * n + i] = T::one(); }
+                for i in 0..n {
+                    a[i * n + i] = T::one();
+                }
             }
             MatrixStorage::Full => {
                 a.copy_from_slice(&self.data[0..n * n]);
@@ -37,7 +39,8 @@ impl<T: Real> Matrix<T> {
                         let i_signed = j as isize + k;
                         if i_signed >= 0 && (i_signed as usize) < self.nrows {
                             let i = i_signed as usize;
-                            a[i * self.ncols + j] = a[i * self.ncols + j] + self.data[r * self.ncols + j];
+                            a[i * self.ncols + j] =
+                                a[i * self.ncols + j] + self.data[r * self.ncols + j];
                         }
                     }
                 }
@@ -86,7 +89,7 @@ impl<T: Real> Matrix<T> {
             }
         }
 
-    // Forward solve Ly = Pb (x currently holds permuted b)
+        // Forward solve Ly = Pb (x currently holds permuted b)
         for i in 0..n {
             let mut sum = x[i];
             for k in 0..i {
@@ -95,7 +98,7 @@ impl<T: Real> Matrix<T> {
             x[i] = sum; // since L has ones on diagonal
         }
 
-    // Backward solve Ux = y
+        // Backward solve Ux = y
         for i in (0..n).rev() {
             let mut sum = x[i];
             for k in (i + 1)..n {
@@ -124,11 +127,13 @@ impl<T: Real> Matrix<T> {
             b.len()
         );
 
-    // Densify A into row-major Vec<T>
+        // Densify A into row-major Vec<T>
         let mut a = vec![T::zero(); n * n];
         match &self.storage {
             MatrixStorage::Identity => {
-                for i in 0..n { a[i * n + i] = T::one(); }
+                for i in 0..n {
+                    a[i * n + i] = T::one();
+                }
             }
             MatrixStorage::Full => {
                 a.copy_from_slice(&self.data[0..n * n]);
@@ -141,14 +146,15 @@ impl<T: Real> Matrix<T> {
                         let i_signed = j as isize + k;
                         if i_signed >= 0 && (i_signed as usize) < self.nrows {
                             let i = i_signed as usize;
-                            a[i * self.ncols + j] = a[i * self.ncols + j] + self.data[r * self.ncols + j];
+                            a[i * self.ncols + j] =
+                                a[i * self.ncols + j] + self.data[r * self.ncols + j];
                         }
                     }
                 }
             }
         }
 
-    // LU with partial pivoting, applying permutations to b
+        // LU with partial pivoting, applying permutations to b
         for k in 0..n {
             // pivot
             let mut pivot_row = k;
@@ -180,7 +186,7 @@ impl<T: Real> Matrix<T> {
             }
         }
 
-    // Forward solve Ly = Pb (b is permuted)
+        // Forward solve Ly = Pb (b is permuted)
         for i in 0..n {
             let mut sum = b[i];
             for k in 0..i {

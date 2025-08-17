@@ -38,17 +38,23 @@ impl<T: Real> Matrix<T> {
 
     /// Full matrix from a row-major vector of length n*n.
     pub fn full(n: usize, data: Vec<T>) -> Self {
-        assert_eq!(
-            data.len(),
-            n * n,
-            "Matrix::full expects data of length n*n"
-        );
-        Matrix { nrows: n, ncols: n, data, storage: MatrixStorage::Full }
+        assert_eq!(data.len(), n * n, "Matrix::full expects data of length n*n");
+        Matrix {
+            nrows: n,
+            ncols: n,
+            data,
+            storage: MatrixStorage::Full,
+        }
     }
 
     /// Zero matrix of size n x n.
     pub fn zeros(n: usize) -> Self {
-        Matrix { nrows: n, ncols: n, data: vec![T::zero(); n * n], storage: MatrixStorage::Full }
+        Matrix {
+            nrows: n,
+            ncols: n,
+            data: vec![T::zero(); n * n],
+            storage: MatrixStorage::Full,
+        }
     }
 
     /// Zero banded matrix with the given bandwidths.
@@ -60,19 +66,27 @@ impl<T: Real> Matrix<T> {
             nrows: n,
             ncols: n,
             data,
-            storage: MatrixStorage::Banded { ml, mu, zero: T::zero() },
+            storage: MatrixStorage::Banded {
+                ml,
+                mu,
+                zero: T::zero(),
+            },
         }
     }
 
     /// Diagonal matrix from the provided diagonal entries (ml=mu=0).
     pub fn diagonal(diag: Vec<T>) -> Self {
         let n = diag.len();
-    // With ml=mu=0, storage is (1,n), so `diag` maps directly to row 0.
+        // With ml=mu=0, storage is (1,n), so `diag` maps directly to row 0.
         Matrix {
             nrows: n,
             ncols: n,
             data: diag,
-            storage: MatrixStorage::Banded { ml: 0, mu: 0, zero: T::zero() },
+            storage: MatrixStorage::Banded {
+                ml: 0,
+                mu: 0,
+                zero: T::zero(),
+            },
         }
     }
 

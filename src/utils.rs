@@ -1,3 +1,5 @@
+//! Utility functions for the differential equation solvers
+
 use crate::{
     error::Error,
     traits::{CallBackData, Real, State},

@@ -1,6 +1,5 @@
 //! Adams-Predictor-Corrector 4th Order Fixed Step Size Method.
 
-use super::AdamsPredictorCorrector;
 use crate::{
     error::Error,
     interpolate::{Interpolation, cubic_hermite_interpolate},
@@ -11,6 +10,8 @@ use crate::{
     traits::{CallBackData, Real, State},
     utils::validate_step_size_parameters,
 };
+
+use super::AdamsPredictorCorrector;
 
 impl<T: Real, Y: State<T>, D: CallBackData> AdamsPredictorCorrector<Ordinary, Fixed, T, Y, D, 4> {
     /// Adams-Predictor-Corrector 4th Order Fixed Step Size Method.

@@ -16,11 +16,13 @@ impl<T: Real> Index<(usize, usize)> for Matrix<T> {
         assert!(i < self.nrows && j < self.ncols, "Index out of bounds");
         match &self.storage {
             MatrixStorage::Identity => {
-                if i == j { &self.data[0] } else { &self.data[1] }
+                if i == j {
+                    &self.data[0]
+                } else {
+                    &self.data[1]
+                }
             }
-            MatrixStorage::Full => {
-                &self.data[i * self.ncols + j]
-            }
+            MatrixStorage::Full => &self.data[i * self.ncols + j],
             MatrixStorage::Banded { ml, mu, zero } => {
                 let k = i as isize - j as isize;
                 if k < -(*mu as isize) || k > *ml as isize {
@@ -39,11 +41,11 @@ impl<T: Real> IndexMut<(usize, usize)> for Matrix<T> {
     fn index_mut(&mut self, (i, j): (usize, usize)) -> &mut Self::Output {
         assert!(i < self.nrows && j < self.ncols, "Index out of bounds");
         match &mut self.storage {
-            MatrixStorage::Full => {
-                &mut self.data[i * self.ncols + j]
-            }
+            MatrixStorage::Full => &mut self.data[i * self.ncols + j],
             MatrixStorage::Identity => {
-                panic!("cannot mutate Identity matrix via indexing; convert explicitly to Full first")
+                panic!(
+                    "cannot mutate Identity matrix via indexing; convert explicitly to Full first"
+                )
             }
             MatrixStorage::Banded { ml, mu, .. } => {
                 let k = i as isize - j as isize;
@@ -101,7 +103,7 @@ mod tests {
         b[(2, 2)] = 10.0; // main diag
         b[(1, 2)] = 5.0; // upper-1
         b[(3, 2)] = 7.0; // lower-1
-    // stays valid and values accessible
+        // stays valid and values accessible
         assert_eq!(b[(2, 2)], 10.0);
         assert_eq!(b[(1, 2)], 5.0);
         assert_eq!(b[(3, 2)], 7.0);

@@ -3,12 +3,13 @@
 mod adaptive;
 mod fixed;
 
+use std::marker::PhantomData;
+
 use crate::{
     linalg::Matrix,
     status::Status,
     traits::{CallBackData, Real, State},
 };
-use std::marker::PhantomData;
 
 /// DIRK/SDIRK core with fixed/adaptive stepping. Stages are solved
 /// sequentially (A is lower-triangular), which is cheaper than full IRK

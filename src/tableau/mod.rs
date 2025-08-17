@@ -1,8 +1,6 @@
 #![allow(dead_code)]
 //! Butcher Tableau
 
-use crate::traits::Real;
-
 // Explicit Runge-Kutta methods
 mod dorman_prince;
 mod runge_kutta;
@@ -16,6 +14,8 @@ mod radau;
 // Diagonally Implicit Runge-Kutta methods
 pub mod dirk;
 pub mod kvaerno;
+
+use crate::traits::Real;
 
 /// Butcher Tableau structure for Runge-Kutta methods.
 ///

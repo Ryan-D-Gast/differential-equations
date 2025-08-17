@@ -1,12 +1,13 @@
 //! Initial step size picker
 
-use super::{Delay, Ordinary};
 use crate::{
     dde::DDE,
     ode::ODE,
     stats::Evals,
     traits::{CallBackData, Real, State},
 };
+
+use super::{Delay, Ordinary};
 
 /// Initial step size estimator using typestates for different equation types
 pub struct InitialStepSize<Kind> {

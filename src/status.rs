@@ -1,10 +1,11 @@
 //! Status for solving differential equations
 
+use std::fmt::{Debug, Display};
+
 use crate::{
     error::Error,
     traits::{CallBackData, Real, State},
 };
-use std::fmt::{Debug, Display};
 
 /// Status for solving differential equations
 ///

@@ -134,7 +134,8 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                     self.jacobian_age = 0;
 
                     // Newton matrix: I - h*a_ii J
-                    self.jacobian.component_mul_mut(-self.h * self.a[stage][stage]);
+                    self.jacobian
+                        .component_mul_mut(-self.h * self.a[stage][stage]);
                     self.jacobian += Matrix::identity(dim);
                 }
                 self.jacobian_age += 1;

@@ -2,8 +2,8 @@
 
 use core::ops::{Sub, SubAssign};
 
-use crate::traits::Real;
 use super::base::{Matrix, MatrixStorage};
+use crate::traits::Real;
 
 // Matrix - Matrix
 impl<T: Real> Sub for Matrix<T> {
@@ -12,29 +12,81 @@ impl<T: Real> Sub for Matrix<T> {
     fn sub(self, rhs: Matrix<T>) -> Self::Output {
         match (self, rhs) {
             (
-                Matrix { nrows: n1, storage: MatrixStorage::Identity, .. },
-                Matrix { nrows: n2, storage: MatrixStorage::Identity, .. },
+                Matrix {
+                    nrows: n1,
+                    storage: MatrixStorage::Identity,
+                    ..
+                },
+                Matrix {
+                    nrows: n2,
+                    storage: MatrixStorage::Identity,
+                    ..
+                },
             ) => {
                 assert_eq!(n1, n2, "dimension mismatch in Matrix - Matrix");
-                Matrix { nrows: n1, ncols: n1, data: vec![T::zero(); n1 * n1], storage: MatrixStorage::Full }
+                Matrix {
+                    nrows: n1,
+                    ncols: n1,
+                    data: vec![T::zero(); n1 * n1],
+                    storage: MatrixStorage::Full,
+                }
             }
             (
-                Matrix { nrows: n, data: mut a, storage: MatrixStorage::Full, .. },
-                Matrix { nrows: n2, data: b, storage: MatrixStorage::Full, .. },
+                Matrix {
+                    nrows: n,
+                    data: mut a,
+                    storage: MatrixStorage::Full,
+                    ..
+                },
+                Matrix {
+                    nrows: n2,
+                    data: b,
+                    storage: MatrixStorage::Full,
+                    ..
+                },
             ) => {
                 assert_eq!(n, n2, "dimension mismatch in Matrix - Matrix");
-                for (x, y) in a.iter_mut().zip(b.iter()) { *x = *x - *y; }
-                Matrix { nrows: n, ncols: n, data: a, storage: MatrixStorage::Full }
+                for (x, y) in a.iter_mut().zip(b.iter()) {
+                    *x = *x - *y;
+                }
+                Matrix {
+                    nrows: n,
+                    ncols: n,
+                    data: a,
+                    storage: MatrixStorage::Full,
+                }
             }
             (
-                Matrix { nrows: n, data: a, storage: MatrixStorage::Banded { ml, mu, .. }, .. },
-                Matrix { nrows: n2, data: b, storage: MatrixStorage::Banded { ml: ml2, mu: mu2, .. }, .. },
+                Matrix {
+                    nrows: n,
+                    data: a,
+                    storage: MatrixStorage::Banded { ml, mu, .. },
+                    ..
+                },
+                Matrix {
+                    nrows: n2,
+                    data: b,
+                    storage:
+                        MatrixStorage::Banded {
+                            ml: ml2, mu: mu2, ..
+                        },
+                    ..
+                },
             ) => {
                 assert_eq!(n, n2, "dimension mismatch in Matrix - Matrix");
                 let ml_out = ml.max(ml2);
                 let mu_out = mu.max(mu2);
                 let rows_out = ml_out + mu_out + 1;
-                let mut out = Matrix { nrows: n, ncols: n, data: vec![T::zero(); rows_out * n], storage: MatrixStorage::Banded { ml: ml_out, mu: mu_out, zero: T::zero() } };
+                let mut out = Matrix {
+                    nrows: n,
+                    ncols: n,
+                    data: vec![T::zero(); rows_out * n],
+                    storage: MatrixStorage::Banded {
+                        ml: ml_out,
+                        mu: mu_out,
+                        zero: T::zero(),
+                    },
+                };
                 // Add first banded
                 for j in 0..n {
                     for r in 0..(ml + mu + 1) {
@@ -61,8 +113,18 @@ impl<T: Real> Sub for Matrix<T> {
             }
             // Mixed storage: densify
             (
-                Matrix { nrows: n1, data: a, storage: sa, .. },
-                Matrix { nrows: n2, data: b, storage: sb, .. },
+                Matrix {
+                    nrows: n1,
+                    data: a,
+                    storage: sa,
+                    ..
+                },
+                Matrix {
+                    nrows: n2,
+                    data: b,
+                    storage: sb,
+                    ..
+                },
             ) => {
                 assert_eq!(n1, n2, "dimension mismatch in Matrix - Matrix");
                 let to_full = |n: usize, data: Vec<T>, storage: MatrixStorage<T>| -> Vec<T> {
@@ -70,7 +132,9 @@ impl<T: Real> Sub for Matrix<T> {
                         MatrixStorage::Full => data,
                         MatrixStorage::Identity => {
                             let mut d = vec![T::zero(); n * n];
-                            for i in 0..n { d[i * n + i] = T::one(); }
+                            for i in 0..n {
+                                d[i * n + i] = T::one();
+                            }
                             d
                         }
                         MatrixStorage::Banded { ml, mu, .. } => {
@@ -91,8 +155,17 @@ impl<T: Real> Sub for Matrix<T> {
                 };
                 let aa = to_full(n1, a, sa);
                 let bb = to_full(n2, b, sb);
-                let data = aa.into_iter().zip(bb.into_iter()).map(|(x,y)| x-y).collect();
-                Matrix { nrows: n1, ncols: n1, data, storage: MatrixStorage::Full }
+                let data = aa
+                    .into_iter()
+                    .zip(bb.into_iter())
+                    .map(|(x, y)| x - y)
+                    .collect();
+                Matrix {
+                    nrows: n1,
+                    ncols: n1,
+                    data,
+                    storage: MatrixStorage::Full,
+                }
             }
         }
     }
@@ -125,11 +198,20 @@ impl<T: Real> Matrix<T> {
             MatrixStorage::Identity => {
                 let n = self.nrows;
                 let mut data = vec![T::zero() - rhs; n * n];
-                for i in 0..n { data[i * n + i] = T::one() - rhs; }
-                Matrix { nrows: n, ncols: n, data, storage: MatrixStorage::Full }
+                for i in 0..n {
+                    data[i * n + i] = T::one() - rhs;
+                }
+                Matrix {
+                    nrows: n,
+                    ncols: n,
+                    data,
+                    storage: MatrixStorage::Full,
+                }
             }
             MatrixStorage::Full => {
-                for v in &mut self.data { *v = *v - rhs; }
+                for v in &mut self.data {
+                    *v = *v - rhs;
+                }
                 self
             }
             MatrixStorage::Banded { ml, mu, .. } => {
@@ -150,7 +232,12 @@ impl<T: Real> Matrix<T> {
                             }
                         }
                     }
-                    Matrix { nrows: n, ncols: n, data: dense, storage: MatrixStorage::Full }
+                    Matrix {
+                        nrows: n,
+                        ncols: n,
+                        data: dense,
+                        storage: MatrixStorage::Full,
+                    }
                 }
             }
         }
@@ -164,18 +251,22 @@ mod tests {
     #[test]
     fn sub_scalar_full() {
         let m: Matrix<f64> = Matrix::full(2, vec![1.0, 2.0, 3.0, 4.0]);
-    let r = m.component_sub(1.0);
-        assert_eq!(r[(0,0)], 0.0);
-        assert_eq!(r[(0,1)], 1.0);
-        assert_eq!(r[(1,0)], 2.0);
-        assert_eq!(r[(1,1)], 3.0);
+        let r = m.component_sub(1.0);
+        assert_eq!(r[(0, 0)], 0.0);
+        assert_eq!(r[(0, 1)], 1.0);
+        assert_eq!(r[(1, 0)], 2.0);
+        assert_eq!(r[(1, 1)], 3.0);
     }
 
     #[test]
     fn sub_scalar_banded_zero_keeps_banded() {
         let m: Matrix<f64> = Matrix::banded(3, 1, 1);
-    let r = m.component_sub(0.0);
-        for i in 0..3 { for j in 0..3 { assert_eq!(r[(i,j)], 0.0); } }
+        let r = m.component_sub(0.0);
+        for i in 0..3 {
+            for j in 0..3 {
+                assert_eq!(r[(i, j)], 0.0);
+            }
+        }
     }
 
     #[test]
@@ -183,10 +274,10 @@ mod tests {
         let a: Matrix<f64> = Matrix::full(2, vec![1.0, 2.0, 3.0, 4.0]);
         let b: Matrix<f64> = Matrix::full(2, vec![4.0, 3.0, 2.0, 1.0]);
         let r = a - b;
-        assert_eq!(r[(0,0)], -3.0);
-        assert_eq!(r[(0,1)], -1.0);
-        assert_eq!(r[(1,0)], 1.0);
-        assert_eq!(r[(1,1)], 3.0);
+        assert_eq!(r[(0, 0)], -3.0);
+        assert_eq!(r[(0, 1)], -1.0);
+        assert_eq!(r[(1, 0)], 1.0);
+        assert_eq!(r[(1, 1)], 3.0);
     }
 
     #[test]
@@ -208,13 +299,13 @@ mod tests {
         b[(1, 2)] = 2.0;
         let r = a - b;
         // Check entries of the resulting tri-diagonal
-        assert_eq!(r[(0,0)], -1.0);
-        assert_eq!(r[(1,1)], -1.0);
-        assert_eq!(r[(2,2)], -1.0);
-        assert_eq!(r[(1,0)], 1.0);
-        assert_eq!(r[(2,1)], 1.0);
-        assert_eq!(r[(0,1)], -2.0);
-        assert_eq!(r[(1,2)], -2.0);
-        assert_eq!(r[(0,2)], 0.0);
+        assert_eq!(r[(0, 0)], -1.0);
+        assert_eq!(r[(1, 1)], -1.0);
+        assert_eq!(r[(2, 2)], -1.0);
+        assert_eq!(r[(1, 0)], 1.0);
+        assert_eq!(r[(2, 1)], 1.0);
+        assert_eq!(r[(0, 1)], -2.0);
+        assert_eq!(r[(1, 2)], -2.0);
+        assert_eq!(r[(0, 2)], 0.0);
     }
 }

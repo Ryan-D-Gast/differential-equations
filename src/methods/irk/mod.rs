@@ -3,12 +3,13 @@
 mod adaptive;
 mod fixed;
 
+use std::marker::PhantomData;
+
 use crate::{
     linalg::Matrix,
     status::Status,
     traits::{CallBackData, Real, State},
 };
-use std::marker::PhantomData;
 
 /// IRK solver core. Supports fixed/adaptive stepping and common IRK families
 /// (Gauss, Radau, Lobatto).
@@ -70,9 +71,9 @@ pub struct ImplicitRungeKutta<
     // Iteration tracking
     stage_jacobians: [Matrix<T>; S], // J_i at each stage
     newton_matrix: Matrix<T>,        // I - h*(A⊗J)
-    rhs_newton: Vec<T>,                    // Newton RHS
-    delta_k_vec: Vec<T>,                   // Newton solution
-    jacobian_age: usize,                   // Reuse counter
+    rhs_newton: Vec<T>,              // Newton RHS
+    delta_k_vec: Vec<T>,             // Newton solution
+    jacobian_age: usize,             // Reuse counter
     stiffness_counter: usize,
     steps: usize,
     newton_iterations: usize,    // Total Newton iterations

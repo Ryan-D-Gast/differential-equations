@@ -1,7 +1,8 @@
 //! Errors for Differential Equations Crate
 
-use crate::traits::{Real, State};
 use std::fmt::{Debug, Display};
+
+use crate::traits::{Real, State};
 
 /// Error for Differential Equations Crate
 #[derive(PartialEq, Clone)]

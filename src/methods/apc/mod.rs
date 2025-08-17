@@ -3,11 +3,12 @@
 mod apcf4;
 mod apcv4;
 
+use std::marker::PhantomData;
+
 use crate::{
     status::Status,
     traits::{CallBackData, Real, State},
 };
-use std::marker::PhantomData;
 
 pub struct AdamsPredictorCorrector<E, F, T: Real, Y: State<T>, D: CallBackData, const S: usize> {
     // Initial Step Size

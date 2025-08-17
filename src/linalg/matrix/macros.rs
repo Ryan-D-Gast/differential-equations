@@ -92,17 +92,16 @@ mod tests {
     fn macro_full_matrix() {
         let m: Matrix<f64> = matrix![ 1.0, 2.0; 3.0, 4.0 ];
         assert_eq!(m.n(), 2);
-        assert_eq!(m[(0,0)], 1.0);
-        assert_eq!(m[(0,1)], 2.0);
-        assert_eq!(m[(1,0)], 3.0);
-        assert_eq!(m[(1,1)], 4.0);
+        assert_eq!(m[(0, 0)], 1.0);
+        assert_eq!(m[(0, 1)], 2.0);
+        assert_eq!(m[(1, 0)], 3.0);
+        assert_eq!(m[(1, 1)], 4.0);
     }
 
     #[test]
     fn macro_banded_matrix() {
         // Inferred n=3 from main diag len=3
-        let b: Matrix<f64> =
-            banded_matrix!( 0 => [1.0,1.0,1.0], 1 => [2.0,2.0], -1 => [3.0,3.0] );
+        let b: Matrix<f64> = banded_matrix!( 0 => [1.0,1.0,1.0], 1 => [2.0,2.0], -1 => [3.0,3.0] );
         // verify some values
         assert_eq!(b[(0, 0)], 1.0);
         assert_eq!(b[(1, 1)], 1.0);
