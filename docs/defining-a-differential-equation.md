@@ -28,7 +28,7 @@ where
         ControlFlag::Continue
     }
     
-    fn jacobian(&self, t: T, y: &Y, j: &mut DMatrix<T>) {
+    fn jacobian(&self, t: T, y: &Y, j: &mut Matrix<T>) {
         /* Finite difference approximation */
     }
 }
