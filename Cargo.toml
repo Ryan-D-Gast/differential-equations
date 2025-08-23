@@ -93,6 +93,10 @@ path = "examples/ode/11_schrodinger/main.rs"
 name = "ode_12_brusselator"
 path = "examples/ode/12_brusselator/main.rs"
 
+[[example]]
+name = "ode_13_vanderpol"
+path = "examples/ode/13_vanderpol/main.rs"
+
 # Differential-Algebraic Equation (DAE) examples
 [[example]]
 name = "dae_01_amplifier"
