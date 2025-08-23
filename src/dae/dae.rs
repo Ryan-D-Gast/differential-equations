@@ -6,7 +6,6 @@
 use crate::{
     control::ControlFlag,
     linalg::Matrix,
-    ode::ODE,
     traits::{CallBackData, Real, State},
 };
 
@@ -136,34 +135,5 @@ where
                 j[(i_row, j_col)] = (f_perturbed.get(i_row) - f_origin.get(i_row)) / perturbation;
             }
         }
-    }
-}
-
-/// Adapter: Treat any ODE as a DAE with identity mass matrix.
-///
-/// This blanket impl lets you use an ODE system anywhere a DAE is expected.
-/// It forwards `diff`, `event`, and `jacobian` to the ODE implementation and
-/// sets the mass matrix to the identity.
-impl<S, T, Y, D> DAE<T, Y, D> for S
-where
-    S: ODE<T, Y, D>,
-    T: Real,
-    Y: State<T>,
-    D: CallBackData,
-{
-    fn diff(&self, t: T, y: &Y, f: &mut Y) {
-        <S as ODE<T, Y, D>>::diff(self, t, y, f)
-    }
-
-    fn mass(&self, m: &mut Matrix<T>) {
-        *m = Matrix::identity(m.nrows());
-    }
-
-    fn event(&self, t: T, y: &Y) -> ControlFlag<T, Y, D> {
-        <S as ODE<T, Y, D>>::event(self, t, y)
-    }
-
-    fn jacobian(&self, t: T, y: &Y, j: &mut Matrix<T>) {
-        <S as ODE<T, Y, D>>::jacobian(self, t, y, j)
     }
 }

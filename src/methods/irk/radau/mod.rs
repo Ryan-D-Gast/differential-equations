@@ -191,9 +191,9 @@ pub struct Radau5<E, T: Real, Y: State<T>, D: CallBackData> {
     /// True when last step was rejected
     reject: bool,
     /// Routing flag for Jacobian computation
-    calc_jac: bool,
+    call_jac: bool,
     /// Routing flag for Jacobian decomposition
-    calc_decomp: bool,
+    call_decomp: bool,
 
     // Gustafsson controller
     /// Last accepted step size HACC
@@ -375,8 +375,8 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> Default for Radau5<E, T, Y, D> {
             // Control flags
             first: true,
             reject: false,
-            calc_jac: true,
-            calc_decomp: true,
+            call_jac: true,
+            call_decomp: true,
 
             // Predictive controller defaults
             h_acc: T::zero(),

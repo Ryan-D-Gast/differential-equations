@@ -63,13 +63,14 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
         let n = self.y.len();
 
         // Computation of the jacobian
-        if self.calc_jac {
+        if self.call_jac {
             evals.jacobian += 1;
             dae.jacobian(self.t, &self.y, &mut self.jacobian);
+            self.call_jac = false;
         }
 
-        if self.calc_decomp {
-            // Compute the matrices E1 and E2 and their decompositions
+        // Compute the matrices E1 and E2 and their decompositions
+        if self.call_decomp {
             let fac1 = self.u1 / self.h;
             let alphn = self.alph / self.h;
             let betan = self.beta / self.h;
@@ -81,6 +82,15 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
                 }
             }
             if lu::dec(&mut self.e1, &mut self.ip1).is_err() {
+                self.singular_count += 1;
+                if self.singular_count > 5 {
+                    self.status = Status::Error(Error::LinearAlgebra {
+                        msg: "Repeated singular matrix in step rejection; aborting.".to_string(),
+                    });
+                    return Err(Error::LinearAlgebra {
+                        msg: "Repeated singular matrix in step rejection; aborting.".to_string(),
+                    });
+                }
                 self.unexpected_step_rejection();
                 return Ok(evals);
             }
@@ -94,6 +104,15 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
                 }
             }
             if lu::decc(&mut self.e2r, &mut self.e2i, &mut self.ip2).is_err() {
+                self.singular_count += 1;
+                if self.singular_count > 5 {
+                    self.status = Status::Error(Error::LinearAlgebra {
+                        msg: "Repeated singular matrix in step rejection; aborting.".to_string(),
+                    });
+                    return Err(Error::LinearAlgebra {
+                        msg: "Repeated singular matrix in step rejection; aborting.".to_string(),
+                    });
+                }
                 self.unexpected_step_rejection();
                 return Ok(evals);
             }
@@ -116,7 +135,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
         }
 
         // Step size guard
-        if self.h.abs() < self.h_prev.abs() * T::from_f64(1e-14).unwrap() {
+        if self.h.abs() < self.h_prev.abs() * self.uround {
             self.status = Status::Error(Error::StepSize {
                 t: self.t,
                 y: self.y,
@@ -149,36 +168,23 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
             let c1q = self.c1 * c3q;
             let c2q = self.c2 * c3q;
 
-            for n in 0..n {
-                let ak1 = self.cont[1].get(n);
-                let ak2 = self.cont[2].get(n);
-                let ak3 = self.cont[3].get(n);
+            let ak1 = self.cont[1];
+            let ak2 = self.cont[2];
+            let ak3 = self.cont[3];
 
-                let z1i = c1q * (ak1 + (c1q - self.c2m1) * (ak2 + (c1q - self.c1m1) * ak3));
-                let z2i = c2q * (ak1 + (c2q - self.c2m1) * (ak2 + (c2q - self.c1m1) * ak3));
-                let z3i = c3q * (ak1 + (c3q - self.c2m1) * (ak2 + (c3q - self.c1m1) * ak3));
-
-                self.z[0].set(n, z1i);
-                self.z[1].set(n, z2i);
-                self.z[2].set(n, z3i);
-
-                let f1 =
-                    self.tinv[(0, 0)] * z1i + self.tinv[(0, 1)] * z2i + self.tinv[(0, 2)] * z3i;
-                let f2 =
-                    self.tinv[(1, 0)] * z1i + self.tinv[(1, 1)] * z2i + self.tinv[(1, 2)] * z3i;
-                let f3 =
-                    self.tinv[(2, 0)] * z1i + self.tinv[(2, 1)] * z2i + self.tinv[(2, 2)] * z3i;
-
-                self.f[0].set(n, f1);
-                self.f[1].set(n, f2);
-                self.f[2].set(n, f3);
-            }
+            self.z[0] = (ak1 + (ak2 + ak3 * (c1q - self.c1m1)) * (c1q - self.c2m1)) * c1q;
+            self.z[1] = (ak1 + (ak2 + ak3 * (c2q - self.c1m1)) * (c2q - self.c2m1)) * c2q;
+            self.z[2] = (ak1 + (ak2 + ak3 * (c3q - self.c1m1)) * (c3q - self.c2m1)) * c3q;
+            
+            self.f[0] = self.z[0] * self.tinv[(0, 0)] + self.z[1] * self.tinv[(0, 1)] + self.z[2] * self.tinv[(0, 2)];
+            self.f[1] = self.z[0] * self.tinv[(1, 0)] + self.z[1] * self.tinv[(1, 1)] + self.z[2] * self.tinv[(1, 2)];
+            self.f[2] = self.z[0] * self.tinv[(2, 0)] + self.z[1] * self.tinv[(2, 1)] + self.z[2] * self.tinv[(2, 2)];
         }
 
         // Loop for simplified newton iteration
         self.faccon = self
             .faccon
-            .max(T::default_epsilon())
+            .max(self.uround)
             .powf(T::from_f64(0.8).unwrap());
         self.theta = self.thet.abs();
         let mut newt_iter: usize = 0;
@@ -276,7 +282,6 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
                     let dyth =
                         self.faccon * dyno * self.theta.powf(T::from_f64(remaining_iters).unwrap())
                             / self.newton_tol;
-
                     if dyth >= T::one() {
                         let qnewt = T::from_f64(1e-4)
                             .unwrap()
@@ -293,7 +298,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
                     return Ok(evals);
                 }
             }
-            self.dynold = dyno.max(T::default_epsilon());
+            self.dynold = dyno.max(self.uround);
 
             // Compute new F and Z
             self.f[0] = self.f[0] + self.z[0];
@@ -320,30 +325,25 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
         let hee1 = self.dd1 / self.h;
         let hee2 = self.dd2 / self.h;
         let hee3 = self.dd3 / self.h;
-
-        // F2 = M * (HEE1*Z1 + HEE2*Z2 + HEE3*Z3)
+        let mut f1 = self.z[0] * hee1 + self.z[1] * hee2 + self.z[2] * hee3;
         let mut f2 = Y::zeros();
+        let mut cont = Y::zeros();
         for i in 0..n {
             let mut sum = T::zero();
             for j in 0..n {
-                let comb =
-                    hee1 * self.z[0].get(j) + hee2 * self.z[1].get(j) + hee3 * self.z[2].get(j);
-                sum = sum + self.mass[(i, j)] * comb;
+                sum = sum + self.mass[(i, j)] * f1.get(j);
             }
             f2.set(i, sum);
+            cont.set(i, sum + self.dydt.get(i));
         }
-
-        // cont = F2 + f(t,y); then solve E1*cont = RHS
-        let mut cont = f2 + self.dydt;
         linear::sol(&self.e1, &mut cont, &self.ip1);
         evals.solves += 1;
 
         // Error estimate
         let mut err = T::zero();
         for i in 0..n {
-            let sc = self.scal.get(i);
-            let v = cont.get(i) / sc;
-            err = err + v * v;
+            let r = cont.get(i) / self.scal.get(i);
+            err = err + r * r;
         }
         let mut err = (err / T::from_usize(n).unwrap())
             .sqrt()
@@ -351,25 +351,23 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
 
         // Optional refinement: on first or rejected step and large error
         if err >= T::one() && (self.first || self.reject) {
-            // y_ref = y + cont, evaluate f at refined point
-            let y_ref = self.y + cont;
-            let mut f1 = Y::zeros();
-            dae.diff(self.t, &y_ref, &mut f1);
+            cont = self.y + cont;
+            f1 = Y::zeros();
+            dae.diff(self.t, &cont, &mut f1);
             evals.function += 1;
 
             // cont = f1 + F2; solve again
-            let mut cont2 = f1 + f2;
-            linear::sol(&self.e1, &mut cont2, &self.ip1);
+            cont = f1 + f2;
+            linear::sol(&self.e1, &mut cont, &self.ip1);
             evals.solves += 1;
 
             // Recompute error
-            let mut e2 = T::zero();
+            err = T::zero();
             for i in 0..n {
-                let sc = self.scal.get(i);
-                let v = cont2.get(i) / sc;
-                e2 = e2 + v * v;
+                let r = cont.get(i) / self.scal.get(i);
+                err = err + r * r;
             }
-            err = (e2 / T::from_usize(n).unwrap())
+            err = (err / T::from_usize(n).unwrap())
                 .sqrt()
                 .max(T::from_f64(1e-10).unwrap());
         }
@@ -443,9 +441,6 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
                     .set(i, self.atol + self.rtol * self.y.get(i).abs());
             }
 
-            // Reset singular counter
-            self.singular_count = 0;
-
             // Constrain new step size to [h_min, h_max]
             hnew = constrain_step_size(hnew, self.h_min, self.h_max);
 
@@ -454,17 +449,16 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
                 let posneg = self.h.signum();
                 hnew = posneg * hnew.abs().min(self.h.abs());
                 self.reject = false;
+                self.status = Status::Solving;
             }
-
-            self.status = Status::Solving;
 
             // Sophisticated step size control
             let qt = hnew / self.h;
             self.hhfac = self.h;
             if self.theta < self.thet && qt > self.quot1 && qt < self.quot2 {
                 // Skip jacobian and decomposition recomputation
-                self.calc_decomp = false;
-                self.calc_jac = false;
+                self.call_decomp = false;
+                self.call_jac = false;
                 return Ok(evals);
             };
             self.h = hnew;
@@ -472,13 +466,13 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
 
             if self.theta < self.thet {
                 // Skip jacobian recomputation
-                self.calc_jac = false;
+                self.call_jac = false;
                 return Ok(evals);
             }
 
-            // Do all computations
-            self.calc_jac = true;
-            self.calc_decomp = true;
+            // Next step does everything.
+            self.call_jac = true;
+            self.call_decomp = true;
         } else {
             // Step rejected
             self.reject = true;
@@ -486,7 +480,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
 
             // If first step, reduce more aggressively
             if self.first {
-                self.h = self.h / T::from_f64(10.0).unwrap();
+                self.h = self.h * T::from_f64(0.1).unwrap();
                 self.hhfac = T::from_f64(0.1).unwrap();
             } else {
                 self.hhfac = hnew / self.h;

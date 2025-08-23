@@ -82,7 +82,10 @@ impl DAE<f64, SVector<f64, 3>> for RobertsonModel {
 
 fn main() {
     // DAE solver for stiff chemical kinetics
-    let mut method = ImplicitRungeKutta::radau5().rtol(1e-5).atol(1e-11).h0(1e-6);
+    let mut method = ImplicitRungeKutta::radau5()
+        .rtol(1e-5)
+        .atol(1e-11)
+        .h0(1e-6);
 
     // Robertson reaction rate constants
     let k1 = 0.04; // A → B

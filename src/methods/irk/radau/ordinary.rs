@@ -59,12 +59,12 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
         let n = self.y.len();
 
         // Computation of the jacobian
-        if self.calc_jac {
+        if self.call_jac {
             evals.jacobian += 1;
             ode.jacobian(self.t, &self.y, &mut self.jacobian);
         }
 
-        if self.calc_decomp {
+        if self.call_decomp {
             // Compute the matrices E1 and E2 and their decompositions
             let fac1 = self.u1 / self.h;
             let alphn = self.alph / self.h;
@@ -448,8 +448,8 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
             self.hhfac = self.h;
             if self.theta < self.thet && qt > self.quot1 && qt < self.quot2 {
                 // Skip jacobian and decomposition recomputation
-                self.calc_decomp = false;
-                self.calc_jac = false;
+                self.call_decomp = false;
+                self.call_jac = false;
                 return Ok(evals);
             };
             self.h = hnew;
@@ -457,13 +457,13 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
 
             if self.theta < self.thet {
                 // Skip jacobian recomputation
-                self.calc_jac = false;
+                self.call_jac = false;
                 return Ok(evals);
             }
 
             // Do all computations
-            self.calc_jac = true;
-            self.calc_decomp = true;
+            self.call_jac = true;
+            self.call_decomp = true;
         } else {
             // Step rejected
             self.reject = true;
