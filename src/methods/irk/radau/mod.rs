@@ -1,5 +1,7 @@
 //! IRK with Newton solves and adaptive step size.
 
+// TODO: Currently Stiff problems result in too many rejected steps and high error/step requirement often failing. Nonstiff problems work fine. There is probably a bug somewhere.
+
 mod algebraic;
 mod initialize;
 mod interpolate;
@@ -391,37 +393,44 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> Default for Radau5<E, T, Y, D> {
 
 impl<E, T: Real, Y: State<T>, D: CallBackData> Radau5<E, T, Y, D> {
     // Builder methods
+    /// Set the relative tolerance for the solver.
     pub fn rtol<V: Into<Tolerance<T>>>(mut self, rtol: V) -> Self {
         self.rtol = rtol.into();
         self
     }
 
+    /// Set the absolute tolerance for the solver.
     pub fn atol<V: Into<Tolerance<T>>>(mut self, atol: V) -> Self {
         self.atol = atol.into();
         self
     }
 
+    /// Set the initial step size for the solver.
     pub fn h0(mut self, h0: T) -> Self {
         self.h0 = h0;
         self
     }
 
+    /// Set the minimum step size for the solver.
     pub fn h_min(mut self, h_min: T) -> Self {
         self.h_min = h_min;
         self
     }
 
+    /// Set the maximum step size for the solver.
     pub fn h_max(mut self, h_max: T) -> Self {
         self.h_max = h_max;
         self
     }
 
+    /// Set the minimum scale factor for the solver.
     pub fn min_scale(mut self, min_scale: T) -> Self {
         self.min_scale = min_scale;
         self.facl = T::one() / min_scale;
         self
     }
 
+    /// Set the maximum scale factor for the solver.
     pub fn max_scale(mut self, max_scale: T) -> Self {
         self.max_scale = max_scale;
         self.facr = T::one() / max_scale;
@@ -434,26 +443,31 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> Radau5<E, T, Y, D> {
         self
     }
 
+    /// Set the maximum number of steps for the solver.
     pub fn max_steps(mut self, n: usize) -> Self {
         self.max_steps = n;
         self
     }
 
+    /// Set the maximum number of rejected steps for the solver.
     pub fn max_rejects(mut self, n: usize) -> Self {
         self.max_rejects = n;
         self
     }
 
+    /// Set the Newton tolerance for the solver.
     pub fn newton_tol(mut self, tol: T) -> Self {
         self.newton_tol = tol;
         self
     }
 
+    /// Set the safety factor for the solver.
     pub fn safety_factor(mut self, sf: T) -> Self {
         self.safety_factor = sf;
         self
     }
 
+    /// Set the maximum number of Newton iterations for the solver.
     pub fn max_newton_iter(mut self, n: usize) -> Self {
         self.max_newton_iter = n;
         self
