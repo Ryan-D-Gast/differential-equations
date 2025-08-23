@@ -116,9 +116,7 @@ fn main() {
         .collect::<Vec<_>>();
 
     // Solve the DAE
-    match robertson_problem
-        .t_eval(points)
-        .solve(&mut method) {
+    match robertson_problem.t_eval(points).solve(&mut method) {
         Ok(solution) => {
             // Print the statistics
             println!("Function evaluations: {}", solution.evals.function);
@@ -153,9 +151,21 @@ fn main() {
                 .x_scale(Scale::Log)
                 .legend(Legend::TopLeftInside)
                 .data([
-                    Series::builder().name("Concentration A").color("Blue").data(s1).build(),
-                    Series::builder().name("Concentration B").color("Orange").data(s2).build(),
-                    Series::builder().name("Concentration C").color("Green").data(s3).build(),
+                    Series::builder()
+                        .name("Concentration A")
+                        .color("Blue")
+                        .data(s1)
+                        .build(),
+                    Series::builder()
+                        .name("Concentration B")
+                        .color("Orange")
+                        .data(s2)
+                        .build(),
+                    Series::builder()
+                        .name("Concentration C")
+                        .color("Green")
+                        .data(s3)
+                        .build(),
                 ])
                 .build()
                 .to_svg("examples/dae/02_robertson/robertson.svg")

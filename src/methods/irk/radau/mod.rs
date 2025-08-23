@@ -11,9 +11,9 @@ use crate::{
     linalg::Matrix,
     methods::{ImplicitRungeKutta, Radau},
     status::Status,
+    tolerance::Tolerance,
     traits::{CallBackData, Real, State},
     utils::constrain_step_size,
-    tolerance::Tolerance,
 };
 
 /// Constructor for Radau5

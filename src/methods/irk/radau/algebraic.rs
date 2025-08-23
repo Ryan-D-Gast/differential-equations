@@ -175,17 +175,20 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
             self.z[0] = (ak1 + (ak2 + ak3 * (c1q - self.c1m1)) * (c1q - self.c2m1)) * c1q;
             self.z[1] = (ak1 + (ak2 + ak3 * (c2q - self.c1m1)) * (c2q - self.c2m1)) * c2q;
             self.z[2] = (ak1 + (ak2 + ak3 * (c3q - self.c1m1)) * (c3q - self.c2m1)) * c3q;
-            
-            self.f[0] = self.z[0] * self.tinv[(0, 0)] + self.z[1] * self.tinv[(0, 1)] + self.z[2] * self.tinv[(0, 2)];
-            self.f[1] = self.z[0] * self.tinv[(1, 0)] + self.z[1] * self.tinv[(1, 1)] + self.z[2] * self.tinv[(1, 2)];
-            self.f[2] = self.z[0] * self.tinv[(2, 0)] + self.z[1] * self.tinv[(2, 1)] + self.z[2] * self.tinv[(2, 2)];
+
+            self.f[0] = self.z[0] * self.tinv[(0, 0)]
+                + self.z[1] * self.tinv[(0, 1)]
+                + self.z[2] * self.tinv[(0, 2)];
+            self.f[1] = self.z[0] * self.tinv[(1, 0)]
+                + self.z[1] * self.tinv[(1, 1)]
+                + self.z[2] * self.tinv[(1, 2)];
+            self.f[2] = self.z[0] * self.tinv[(2, 0)]
+                + self.z[1] * self.tinv[(2, 1)]
+                + self.z[2] * self.tinv[(2, 2)];
         }
 
         // Loop for simplified newton iteration
-        self.faccon = self
-            .faccon
-            .max(self.uround)
-            .powf(T::from_f64(0.8).unwrap());
+        self.faccon = self.faccon.max(self.uround).powf(T::from_f64(0.8).unwrap());
         self.theta = self.thet.abs();
         let mut newt_iter: usize = 0;
         'newton: loop {

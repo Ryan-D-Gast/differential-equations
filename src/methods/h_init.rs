@@ -6,8 +6,8 @@ use crate::{
     linalg::Matrix,
     ode::ODE,
     stats::Evals,
-    traits::{CallBackData, Real, State},
     tolerance::Tolerance,
+    traits::{CallBackData, Real, State},
 };
 
 use super::{Algebraic, Delay, Ordinary};
