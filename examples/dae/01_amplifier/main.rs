@@ -102,10 +102,7 @@ impl DAE<f64, SVector<f64, 8>> for AmplifierModel {
         f[7] = (y[7] - uet) / self.r0;
     }
 
-    fn mass_matrix(&self, m: &mut Matrix<f64>) {
-        // Initialize mass matrix to zero
-        m.fill(0.0);
-
+    fn mass(&self, m: &mut Matrix<f64>) {
         // Main diagonal elements: B(2,j) -> m[(j-1,j-1)]
         m[(0, 0)] = -self.c5;
         m[(1, 1)] = -self.c5;
@@ -128,9 +125,6 @@ impl DAE<f64, SVector<f64, 8>> for AmplifierModel {
     }
 
     fn jacobian(&self, _t: f64, y: &SVector<f64, 8>, jac: &mut Matrix<f64>) {
-        // Initialize Jacobian to zero
-        jac.fill(0.0);
-
         // Sensitivities of exponential terms
         let g14 = self.beta * ((y[3] - y[2]) / self.uf).exp() / self.uf;
         let g27 = self.beta * ((y[6] - y[5]) / self.uf).exp() / self.uf;

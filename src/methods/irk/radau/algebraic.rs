@@ -42,7 +42,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
         // Now fill the mass matrix from the DAE and compute initial derivative
         let n = y0.len();
         self.mass = Matrix::zeros(n, n);
-        dae.mass_matrix(&mut self.mass);
+        dae.mass(&mut self.mass);
 
         dae.diff(self.t, &self.y, &mut self.dydt);
         evals.function += 1;

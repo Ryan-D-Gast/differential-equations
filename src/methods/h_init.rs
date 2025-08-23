@@ -331,7 +331,7 @@ impl InitialStepSize<Algebraic> {
 
         // Mass matrix to determine which equations are differential vs algebraic
         let mut m = Matrix::zeros(dim, dim);
-        dae.mass_matrix(&mut m);
+        dae.mass(&mut m);
         let eps = T::from_f64(1e-14).unwrap();
         let mut is_diff = vec![false; dim];
         for i in 0..dim {

@@ -51,10 +51,7 @@ impl DAE<f64, SVector<f64, 3>> for RobertsonModel {
         f[2] = y1 + y2 + y3 - 1.0; // Conservation constraint
     }
 
-    fn mass_matrix(&self, m: &mut Matrix<f64>) {
-        // Initialize mass matrix to zero
-        m.fill(0.0);
-
+    fn mass(&self, m: &mut Matrix<f64>) {
         // Mass matrix for Robertson DAE
         m[(0, 0)] = 1.0; // dy1/dt equation (differential)
         m[(1, 1)] = 1.0; // dy2/dt equation (differential)
@@ -62,12 +59,8 @@ impl DAE<f64, SVector<f64, 3>> for RobertsonModel {
     }
 
     fn jacobian(&self, _t: f64, y: &SVector<f64, 3>, j: &mut Matrix<f64>) {
-        let _y1 = y[0];
         let y2 = y[1];
         let y3 = y[2];
-
-        // Clear matrix
-        j.fill(0.0);
 
         // Row 0: dF1/dy
         j[(0, 0)] = -self.k1; // dF1/dy1

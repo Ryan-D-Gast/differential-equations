@@ -19,9 +19,9 @@ use crate::{
 /// interrupt the solver when a condition is met or event occurs.
 ///
 /// # Impl
-/// * `diff`        - Right-hand side function f(t, y) in form f(t, &y, &mut f).
-/// * `mass_matrix`- Mass matrix m that multiplies y' in the DAE system m·y' = f(t, y).
-/// * `event`      - Event function to interrupt solver when condition is met or event occurs.
+/// * `diff`  - Right-hand side function f(t, y) in form f(t, &y, &mut f).
+/// * `mass`  - Mass matrix m that multiplies y' in the DAE system m·y' = f(t, y).
+/// * `event` - Event function to interrupt solver when condition is met or event occurs.
 ///
 /// Note that the event function is optional and can be left out when implementing
 /// in which case it will be set to return Continue by default.
@@ -61,14 +61,13 @@ where
     /// - Identity matrix: Reduces to standard ODE y' = f(t, y)
     /// - Singular matrix: True DAE system with algebraic constraints
     /// - Constant matrix: Linear DAE system
-    /// - Time-dependent matrix: Nonlinear DAE system
     ///
     /// For efficiency, the mass matrix is calculated using a mutable reference.
     ///
     /// # Arguments
-    /// * `m`   - Mass matrix M. This matrix should be pre-sized by the caller to `dim x dim` where `dim = y.len()`.
+    /// * `m` - Mass matrix M. This matrix should be pre-sized by the caller to `dim x dim` where `dim = y.len()`.
     ///
-    fn mass_matrix(&self, m: &mut Matrix<T>);
+    fn mass(&self, m: &mut Matrix<T>);
 
     /// Event function to detect significant conditions during integration.
     ///
@@ -156,7 +155,7 @@ where
         <S as ODE<T, Y, D>>::diff(self, t, y, f)
     }
 
-    fn mass_matrix(&self, m: &mut Matrix<T>) {
+    fn mass(&self, m: &mut Matrix<T>) {
         *m = Matrix::identity(m.nrows());
     }
 
