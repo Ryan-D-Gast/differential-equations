@@ -304,11 +304,29 @@ impl InitialStepSize<Delay> {
 }
 
 impl InitialStepSize<Algebraic> {
-    /// Compute an initial step size for DAEs using the mass matrix structure.
+    /// Automatically compute an initial step size for DAEs.
     ///
-    /// Heuristic mirrors the ODE estimator but only measures derivative norms on
-    /// differential components (rows of M with non-negligible entries). We avoid
-    /// inverting the mass matrix; algebraic rows are ignored in derivative norms.
+    /// This method uses the mass matrix structure to identify differential
+    /// and algebraic components, allowing for a more accurate step size
+    /// estimation.
+    ///
+    /// # Arguments
+    /// * `dae` - The DAE system.
+    /// * `t0` - The initial time.
+    /// * `tf` - The final time.
+    /// * `y0` - The initial state.
+    /// * `order` - The order of the numerical method
+    /// * `rtol` - Relative tolerance
+    /// * `atol` - Absolute tolerance
+    /// * `h_min` - Minimum allowed step size
+    /// * `h_max` - Maximum allowed step size
+    /// * `phi` - History function for delayed values
+    /// * `f0` - Initial derivative value
+    /// * `evals` - Function evaluation counter
+    ///
+    /// # Returns
+    ///
+    /// The estimated initial step size
     pub fn compute<T, F, Y, D>(
         dae: &F,
         t0: T,
