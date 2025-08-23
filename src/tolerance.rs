@@ -3,8 +3,8 @@
 use crate::traits::Real;
 
 use std::{
-    ops::{Index, IndexMut},
     convert::From,
+    ops::{Index, IndexMut},
 };
 
 pub enum Tolerance<T: Real> {
