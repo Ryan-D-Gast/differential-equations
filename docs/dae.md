@@ -107,12 +107,12 @@ impl DAE<f64, SVector<f64, 8>> for AmplifierModel {
         m[(6, 6)] = -self.c1;
         m[(7, 7)] = -self.c1;
 
-        // Upper diagonal
+        // Super diagonal
         m[(0, 1)] = self.c5;
         m[(3, 4)] = self.c3;
         m[(6, 7)] = self.c1;
 
-        // Lower diagonal
+        // Sub diagonal
         m[(1, 0)] = self.c5;
         m[(4, 3)] = self.c3;
         m[(7, 6)] = self.c1;

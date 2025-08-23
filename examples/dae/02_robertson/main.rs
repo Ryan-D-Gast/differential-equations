@@ -5,7 +5,7 @@
 //! autocatalytic chemical reaction with three species A, B, and C.
 //!
 //! The chemical reactions are:
-//! A → B        (rate k₁)
+//! A → B         (rate k₁)
 //! B + B → C + B (rate k₂)  
 //! B + C → A + C (rate k₃)
 //!
@@ -24,6 +24,7 @@
 
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
+use quill::prelude::*;
 
 /// Robertson Chemical Kinetics DAE Model
 struct RobertsonModel {
@@ -63,14 +64,14 @@ impl DAE<f64, SVector<f64, 3>> for RobertsonModel {
         let y3 = y[2];
 
         // Row 0: dF1/dy
-        j[(0, 0)] = -self.k1; // dF1/dy1
-        j[(0, 1)] = self.k3 * y3; // dF1/dy2
-        j[(0, 2)] = self.k3 * y2; // dF1/dy3
+        j[(0, 0)] = -self.k1;
+        j[(0, 1)] = self.k3 * y3;
+        j[(0, 2)] = self.k3 * y2;
 
         // Row 1: dF2/dy
-        j[(1, 0)] = self.k1; // dF2/dy1
-        j[(1, 1)] = -self.k3 * y3 - 2.0 * self.k2 * y2; // dF2/dy2
-        j[(1, 2)] = -self.k3 * y2; // dF2/dy3
+        j[(1, 0)] = self.k1;
+        j[(1, 1)] = -self.k3 * y3 - 2.0 * self.k2 * y2;
+        j[(1, 2)] = -self.k3 * y2;
 
         // Row 2: dF3/dy for algebraic constraint y1 + y2 + y3 - 1 = 0
         j[(2, 0)] = 1.0;
@@ -99,12 +100,23 @@ fn main() {
 
     // Simulation time - very long time span to see equilibrium
     let t0 = 0.0;
-    let tf = 1.0e5; // 100,000 time units
+    let tf = 4.0 * 10f64.powf(5.0);
 
     let robertson_problem = DAEProblem::new(model, t0, tf, y0);
 
+    // Output points: ~200 log-spaced points between 1e-5 and 1e5
+    let n_pts = 200usize;
+    let exp_min = -5.0f64;
+    let exp_max = 5.0f64;
+    let step = (exp_max - exp_min) / ((n_pts - 1) as f64);
+    let points = (0..n_pts)
+        .map(|i| 10f64.powf(exp_min + (i as f64) * step))
+        .collect::<Vec<_>>();
+
     // Solve the DAE
-    match robertson_problem.even(5000.0).solve(&mut method) {
+    match robertson_problem
+        .t_eval(points)
+        .solve(&mut method) {
         Ok(solution) => {
             // Print the statistics
             println!("Function evaluations: {}", solution.evals.function);
@@ -117,6 +129,35 @@ fn main() {
             for (t, y) in solution.iter() {
                 println!("{:12.4}  {:12.8}   {:12.8}   {:12.8}", t, y[0], y[1], y[2]);
             }
+
+            // Create semilog-x plot with three series: y[:,0], 1e4*y[:,1], y[:,2]
+            // Skip t == 0 because log(0) is undefined.
+            let mut s1: Vec<(f64, f64)> = Vec::new();
+            let mut s2: Vec<(f64, f64)> = Vec::new();
+            let mut s3: Vec<(f64, f64)> = Vec::new();
+            for (t, y) in solution.iter() {
+                let tv = *t;
+                if tv > 0.0 {
+                    s1.push((tv, y[0]));
+                    s2.push((tv, 1e4 * y[1]));
+                    s3.push((tv, y[2]));
+                }
+            }
+
+            Plot::builder()
+                .title("Robertson DAE problem with a Conservation Law")
+                .x_label("Time (t)")
+                .y_label("y1, 1e4 * y2, y3")
+                .x_scale(Scale::Log)
+                .legend(Legend::TopLeftInside)
+                .data([
+                    Series::builder().name("Concentration A").color("Blue").data(s1).build(),
+                    Series::builder().name("Concentration B").color("Orange").data(s2).build(),
+                    Series::builder().name("Concentration C").color("Green").data(s3).build(),
+                ])
+                .build()
+                .to_svg("examples/dae/02_robertson/robertson.svg")
+                .expect("Failed to save Robertson semilogx plot as SVG");
         }
         Err(e) => panic!("Error solving Robertson DAE: {:?}", e),
     }
