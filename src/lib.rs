@@ -93,6 +93,7 @@ pub mod error;
 pub mod solution;
 pub mod stats;
 pub mod status;
+pub mod tolerance;
 
 // Shared Traits & Utilities
 pub mod interpolate;

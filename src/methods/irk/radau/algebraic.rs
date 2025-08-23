@@ -24,7 +24,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
         if self.h0 == T::zero() {
             // Use DAE-specific heuristic that respects the mass matrix
             self.h0 = InitialStepSize::<Algebraic>::compute(
-                dae, t0, tf, y0, 5, self.rtol, self.atol, self.h_min, self.h_max, &mut evals,
+                dae, t0, tf, y0, 5, &self.rtol, &self.atol, self.h_min, self.h_max, &mut evals,
             );
         }
 
@@ -438,7 +438,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
             // Compute error scale
             for i in 0..n {
                 self.scal
-                    .set(i, self.atol + self.rtol * self.y.get(i).abs());
+                    .set(i, self.atol[i] + self.rtol[i] * self.y.get(i).abs());
             }
 
             // Constrain new step size to [h_min, h_max]

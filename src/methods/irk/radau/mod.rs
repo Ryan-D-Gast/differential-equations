@@ -13,6 +13,7 @@ use crate::{
     status::Status,
     traits::{CallBackData, Real, State},
     utils::constrain_step_size,
+    tolerance::Tolerance,
 };
 
 /// Constructor for Radau5
@@ -27,9 +28,9 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> ImplicitRungeKutta<E, Radau, T, Y
 pub struct Radau5<E, T: Real, Y: State<T>, D: CallBackData> {
     // Configuration
     /// Relative error tolerance for adaptive step size control
-    pub rtol: T,
-    /// Absolute error tolerance for adaptive step size control  
-    pub atol: T,
+    pub rtol: Tolerance<T>,
+    /// Absolute error tolerance for adaptive step size control
+    pub atol: Tolerance<T>,
     /// Initial step size (computed automatically if zero)
     pub h0: T,
     /// Minimum allowed step size
@@ -278,8 +279,8 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> Default for Radau5<E, T, Y, D> {
 
         Self {
             // Settings
-            rtol: rtol_default,
-            atol: atol_default,
+            rtol: Tolerance::Scalar(rtol_default),
+            atol: Tolerance::Scalar(atol_default),
             h0: T::zero(),
             h_min: T::zero(),
             h_max: T::infinity(),
@@ -390,13 +391,13 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> Default for Radau5<E, T, Y, D> {
 
 impl<E, T: Real, Y: State<T>, D: CallBackData> Radau5<E, T, Y, D> {
     // Builder methods
-    pub fn rtol(mut self, rtol: T) -> Self {
-        self.rtol = rtol;
+    pub fn rtol<V: Into<Tolerance<T>>>(mut self, rtol: V) -> Self {
+        self.rtol = rtol.into();
         self
     }
 
-    pub fn atol(mut self, atol: T) -> Self {
-        self.atol = atol;
+    pub fn atol<V: Into<Tolerance<T>>>(mut self, atol: V) -> Self {
+        self.atol = atol.into();
         self
     }
 
@@ -470,6 +471,7 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> Radau5<E, T, Y, D> {
         self
     }
 
+    /// Handle unexpected step rejection
     fn unexpected_step_rejection(&mut self) {
         self.hhfac = T::from_f64(0.5).unwrap();
         self.h = constrain_step_size(self.h * self.hhfac, self.h_min, self.h_max);

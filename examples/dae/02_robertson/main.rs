@@ -83,9 +83,8 @@ impl DAE<f64, SVector<f64, 3>> for RobertsonModel {
 fn main() {
     // DAE solver for stiff chemical kinetics
     let mut method = ImplicitRungeKutta::radau5()
-        .rtol(1e-5)
-        .atol(1e-11)
-        .h0(1e-6);
+        .rtol(1e-4)
+        .atol([1e-6, 1e-10, 1e6]);
 
     // Robertson reaction rate constants
     let k1 = 0.04; // A → B
@@ -103,7 +102,7 @@ fn main() {
 
     // Simulation time - very long time span to see equilibrium
     let t0 = 0.0;
-    let tf = 4.0 * 10f64.powf(5.0);
+    let tf = 10f64.powf(5.0);
 
     let robertson_problem = DAEProblem::new(model, t0, tf, y0);
 

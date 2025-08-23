@@ -21,7 +21,7 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> Radau5<E, T, Y, D> {
 
         // Tolerances
         let ten = T::from_f64(10.0).unwrap();
-        if self.atol <= T::zero() || self.rtol <= ten * self.uround {
+        if self.atol[0] <= T::zero() || self.rtol[0] <= ten * self.uround {
             let e = Error::BadInput {
                 msg: "Tolerances are too small (require ATOL > 0 and RTOL > 10*UROUND)."
                     .to_string(),
@@ -30,10 +30,12 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> Radau5<E, T, Y, D> {
             return Err(e);
         }
         // Preserve ratio and scale
-        let quot = self.atol / self.rtol;
-        let expm = T::from_f64(2.0 / 3.0).unwrap();
-        self.rtol = T::from_f64(0.1).unwrap() * self.rtol.powf(expm);
-        self.atol = self.rtol * quot;
+        for i in 0..n {
+            let quot = self.atol[i] / self.rtol[i];
+            let expm = T::from_f64(2.0 / 3.0).unwrap();
+            self.rtol[i] = T::from_f64(0.1).unwrap() * self.rtol[i].powf(expm);
+            self.atol[i] = self.rtol[i] * quot;
+        }
 
         // NMAX must be positive
         if self.max_steps == 0 {
@@ -72,7 +74,7 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> Radau5<E, T, Y, D> {
         }
 
         // FNEWT: compute default if zero, else validate lower bound
-        let tolst = self.rtol; // after adjust_tolerances
+        let tolst = self.rtol[0]; // after adjust_tolerances
         if self.newton_tol <= T::zero() {
             let upper = T::from_f64(0.03).unwrap().min(tolst.sqrt());
             let lower = T::from_f64(10.0).unwrap() * self.uround / tolst;
@@ -156,9 +158,11 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> Radau5<E, T, Y, D> {
 
         // Step size factor
         self.hhfac = self.h;
+
+        // Calculate tolerance
         for i in 0..n {
             self.scal
-                .set(i, self.atol + self.rtol * self.y.get(i).abs());
+                .set(i, self.atol[i] + self.rtol[i] * self.y.get(i).abs());
         }
 
         // Workspace

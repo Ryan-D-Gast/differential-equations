@@ -7,6 +7,7 @@ use crate::{
     ode::ODE,
     stats::Evals,
     traits::{CallBackData, Real, State},
+    tolerance::Tolerance,
 };
 
 use super::{Algebraic, Delay, Ordinary};
@@ -314,8 +315,8 @@ impl InitialStepSize<Algebraic> {
         tf: T,
         y0: &Y,
         order: usize,
-        rtol: T,
-        atol: T,
+        rtol: &Tolerance<T>,
+        atol: &Tolerance<T>,
         h_min: T,
         h_max: T,
         evals: &mut Evals,
@@ -351,7 +352,7 @@ impl InitialStepSize<Algebraic> {
         let mut dnf = T::zero();
         let mut dny = T::zero();
         for n in 0..dim {
-            let sk = atol + rtol * y0.get(n).abs();
+            let sk = atol[n] + rtol[n] * y0.get(n).abs();
             dny = dny + (y0.get(n) / sk).powi(2);
             if is_diff[n] {
                 dnf = dnf + (f0.get(n) / sk).powi(2);
@@ -388,7 +389,7 @@ impl InitialStepSize<Algebraic> {
             if !is_diff[n] {
                 continue;
             }
-            let sk = atol + rtol * y0.get(n).abs();
+            let sk = atol[n] + rtol[n] * y0.get(n).abs();
             der2 = der2 + ((f1.get(n) - f0.get(n)) / sk).powi(2);
         }
         der2 = der2.sqrt() / h.abs().max(T::default_epsilon());

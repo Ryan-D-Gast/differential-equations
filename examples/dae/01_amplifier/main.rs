@@ -209,7 +209,6 @@ fn main() {
 
             // Print solver statistics
             println!("\nSolver Statistics:");
-            println!("  Tolerance = {:8.2e}", 1.0e-5);
             println!("  Function evaluations: {}", solution.evals.function);
             println!("  Jacobian evaluations: {}", solution.evals.jacobian);
             println!("  LU decompositions: {}", solution.evals.decompositions);

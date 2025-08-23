@@ -2,7 +2,7 @@
 
 use crate::{
     error::Error,
-    linalg::{linear, lu},
+    linalg::{Matrix, linear, lu},
     methods::{Ordinary, h_init::InitialStepSize, irk::radau::Radau5},
     ode::{ODE, OrdinaryNumericalMethod},
     stats::Evals,
@@ -22,9 +22,9 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
 
         // Initial step size
         if self.h0 == T::zero() {
-            // Use ODE-specific heuristic that respects the mass matrix
+            // Use ode-specific heuristic that respects the mass matrix
             self.h0 = InitialStepSize::<Ordinary>::compute(
-                ode, t0, tf, y0, 5, self.rtol, self.atol, self.h_min, self.h_max, &mut evals,
+                ode, t0, tf, y0, 5, self.rtol[0], self.atol[0], self.h_min, self.h_max, &mut evals,
             );
         }
 
@@ -39,11 +39,14 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
         // Delegate to new initializer
         self.initialize(t0, tf, y0)?;
 
-        // Compute initial derivative f(t0, y0)
+        // ODE uses an identity mass matrix
+        let n = y0.len();
+        self.mass = Matrix::identity(n);
+
         ode.diff(self.t, &self.y, &mut self.dydt);
         evals.function += 1;
 
-        // Update previous derivative saved by init_common
+        // Update previous saved derivative
         self.dydt_prev = self.dydt;
 
         Ok(evals)
@@ -62,10 +65,11 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
         if self.call_jac {
             evals.jacobian += 1;
             ode.jacobian(self.t, &self.y, &mut self.jacobian);
+            self.call_jac = false;
         }
 
+        // Compute the matrices E1 and E2 and their decompositions
         if self.call_decomp {
-            // Compute the matrices E1 and E2 and their decompositions
             let fac1 = self.u1 / self.h;
             let alphn = self.alph / self.h;
             let betan = self.beta / self.h;
@@ -77,6 +81,15 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
                 }
             }
             if lu::dec(&mut self.e1, &mut self.ip1).is_err() {
+                self.singular_count += 1;
+                if self.singular_count > 5 {
+                    self.status = Status::Error(Error::LinearAlgebra {
+                        msg: "Repeated singular matrix in step rejection; aborting.".to_string(),
+                    });
+                    return Err(Error::LinearAlgebra {
+                        msg: "Repeated singular matrix in step rejection; aborting.".to_string(),
+                    });
+                }
                 self.unexpected_step_rejection();
                 return Ok(evals);
             }
@@ -90,6 +103,15 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
                 }
             }
             if lu::decc(&mut self.e2r, &mut self.e2i, &mut self.ip2).is_err() {
+                self.singular_count += 1;
+                if self.singular_count > 5 {
+                    self.status = Status::Error(Error::LinearAlgebra {
+                        msg: "Repeated singular matrix in step rejection; aborting.".to_string(),
+                    });
+                    return Err(Error::LinearAlgebra {
+                        msg: "Repeated singular matrix in step rejection; aborting.".to_string(),
+                    });
+                }
                 self.unexpected_step_rejection();
                 return Ok(evals);
             }
@@ -112,7 +134,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
         }
 
         // Step size guard
-        if self.h.abs() < self.h_prev.abs() * T::from_f64(1e-14).unwrap() {
+        if self.h.abs() < self.h_prev.abs() * self.uround {
             self.status = Status::Error(Error::StepSize {
                 t: self.t,
                 y: self.y,
@@ -121,6 +143,17 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
                 t: self.t,
                 y: self.y,
             });
+        }
+
+        // Index-2 scaling: scal[i] /= hhfac for index-2 variables
+        for &i in &self.index2 {
+            let val = self.scal.get(i) / self.hhfac;
+            self.scal.set(i, val);
+        }
+        // Index-3 scaling: scal[i] /= (hhfac * hhfac) for index-3 variables
+        for &i in &self.index3 {
+            let val = self.scal.get(i) / (self.hhfac * self.hhfac);
+            self.scal.set(i, val);
         }
 
         // Starting values for Newton iteration
@@ -134,36 +167,23 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
             let c1q = self.c1 * c3q;
             let c2q = self.c2 * c3q;
 
-            for n in 0..n {
-                let ak1 = self.cont[1].get(n);
-                let ak2 = self.cont[2].get(n);
-                let ak3 = self.cont[3].get(n);
+            let ak1 = self.cont[1];
+            let ak2 = self.cont[2];
+            let ak3 = self.cont[3];
 
-                let z1i = c1q * (ak1 + (c1q - self.c2m1) * (ak2 + (c1q - self.c1m1) * ak3));
-                let z2i = c2q * (ak1 + (c2q - self.c2m1) * (ak2 + (c2q - self.c1m1) * ak3));
-                let z3i = c3q * (ak1 + (c3q - self.c2m1) * (ak2 + (c3q - self.c1m1) * ak3));
-
-                self.z[0].set(n, z1i);
-                self.z[1].set(n, z2i);
-                self.z[2].set(n, z3i);
-
-                let f1 =
-                    self.tinv[(0, 0)] * z1i + self.tinv[(0, 1)] * z2i + self.tinv[(0, 2)] * z3i;
-                let f2 =
-                    self.tinv[(1, 0)] * z1i + self.tinv[(1, 1)] * z2i + self.tinv[(1, 2)] * z3i;
-                let f3 =
-                    self.tinv[(2, 0)] * z1i + self.tinv[(2, 1)] * z2i + self.tinv[(2, 2)] * z3i;
-
-                self.f[0].set(n, f1);
-                self.f[1].set(n, f2);
-                self.f[2].set(n, f3);
-            }
+            self.z[0] = (ak1 + (ak2 + ak3 * (c1q - self.c1m1)) * (c1q - self.c2m1)) * c1q;
+            self.z[1] = (ak1 + (ak2 + ak3 * (c2q - self.c1m1)) * (c2q - self.c2m1)) * c2q;
+            self.z[2] = (ak1 + (ak2 + ak3 * (c3q - self.c1m1)) * (c3q - self.c2m1)) * c3q;
+            
+            self.f[0] = self.z[0] * self.tinv[(0, 0)] + self.z[1] * self.tinv[(0, 1)] + self.z[2] * self.tinv[(0, 2)];
+            self.f[1] = self.z[0] * self.tinv[(1, 0)] + self.z[1] * self.tinv[(1, 1)] + self.z[2] * self.tinv[(1, 2)];
+            self.f[2] = self.z[0] * self.tinv[(2, 0)] + self.z[1] * self.tinv[(2, 1)] + self.z[2] * self.tinv[(2, 2)];
         }
 
         // Loop for simplified newton iteration
         self.faccon = self
             .faccon
-            .max(T::default_epsilon())
+            .max(self.uround)
             .powf(T::from_f64(0.8).unwrap());
         self.theta = self.thet.abs();
         let mut newt_iter: usize = 0;
@@ -261,7 +281,6 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
                     let dyth =
                         self.faccon * dyno * self.theta.powf(T::from_f64(remaining_iters).unwrap())
                             / self.newton_tol;
-
                     if dyth >= T::one() {
                         let qnewt = T::from_f64(1e-4)
                             .unwrap()
@@ -278,7 +297,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
                     return Ok(evals);
                 }
             }
-            self.dynold = dyno.max(T::default_epsilon());
+            self.dynold = dyno.max(self.uround);
 
             // Compute new F and Z
             self.f[0] = self.f[0] + self.z[0];
@@ -305,30 +324,25 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
         let hee1 = self.dd1 / self.h;
         let hee2 = self.dd2 / self.h;
         let hee3 = self.dd3 / self.h;
-
-        // F2 = M * (HEE1*Z1 + HEE2*Z2 + HEE3*Z3)
+        let mut f1 = self.z[0] * hee1 + self.z[1] * hee2 + self.z[2] * hee3;
         let mut f2 = Y::zeros();
+        let mut cont = Y::zeros();
         for i in 0..n {
             let mut sum = T::zero();
             for j in 0..n {
-                let comb =
-                    hee1 * self.z[0].get(j) + hee2 * self.z[1].get(j) + hee3 * self.z[2].get(j);
-                sum = sum + self.mass[(i, j)] * comb;
+                sum = sum + self.mass[(i, j)] * f1.get(j);
             }
             f2.set(i, sum);
+            cont.set(i, sum + self.dydt.get(i));
         }
-
-        // cont = F2 + f(t,y); then solve E1*cont = RHS
-        let mut cont = f2 + self.dydt;
         linear::sol(&self.e1, &mut cont, &self.ip1);
         evals.solves += 1;
 
         // Error estimate
         let mut err = T::zero();
         for i in 0..n {
-            let sc = self.scal.get(i);
-            let v = cont.get(i) / sc;
-            err = err + v * v;
+            let r = cont.get(i) / self.scal.get(i);
+            err = err + r * r;
         }
         let mut err = (err / T::from_usize(n).unwrap())
             .sqrt()
@@ -336,25 +350,23 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
 
         // Optional refinement: on first or rejected step and large error
         if err >= T::one() && (self.first || self.reject) {
-            // y_ref = y + cont, evaluate f at refined point
-            let y_ref = self.y + cont;
-            let mut f1 = Y::zeros();
-            ode.diff(self.t, &y_ref, &mut f1);
+            cont = self.y + cont;
+            f1 = Y::zeros();
+            ode.diff(self.t, &cont, &mut f1);
             evals.function += 1;
 
             // cont = f1 + F2; solve again
-            let mut cont2 = f1 + f2;
-            linear::sol(&self.e1, &mut cont2, &self.ip1);
+            cont = f1 + f2;
+            linear::sol(&self.e1, &mut cont, &self.ip1);
             evals.solves += 1;
 
             // Recompute error
-            let mut e2 = T::zero();
+            err = T::zero();
             for i in 0..n {
-                let sc = self.scal.get(i);
-                let v = cont2.get(i) / sc;
-                e2 = e2 + v * v;
+                let r = cont.get(i) / self.scal.get(i);
+                err = err + r * r;
             }
-            err = (e2 / T::from_usize(n).unwrap())
+            err = (err / T::from_usize(n).unwrap())
                 .sqrt()
                 .max(T::from_f64(1e-10).unwrap());
         }
@@ -425,11 +437,8 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
             // Compute error scale
             for i in 0..n {
                 self.scal
-                    .set(i, self.atol + self.rtol * self.y.get(i).abs());
+                    .set(i, self.atol[i] + self.rtol[i] * self.y.get(i).abs());
             }
-
-            // Reset singular counter
-            self.singular_count = 0;
 
             // Constrain new step size to [h_min, h_max]
             hnew = constrain_step_size(hnew, self.h_min, self.h_max);
@@ -439,9 +448,8 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
                 let posneg = self.h.signum();
                 hnew = posneg * hnew.abs().min(self.h.abs());
                 self.reject = false;
+                self.status = Status::Solving;
             }
-
-            self.status = Status::Solving;
 
             // Sophisticated step size control
             let qt = hnew / self.h;
@@ -461,7 +469,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
                 return Ok(evals);
             }
 
-            // Do all computations
+            // Next step does everything.
             self.call_jac = true;
             self.call_decomp = true;
         } else {
@@ -471,7 +479,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
 
             // If first step, reduce more aggressively
             if self.first {
-                self.h = self.h / T::from_f64(10.0).unwrap();
+                self.h = self.h * T::from_f64(0.1).unwrap();
                 self.hhfac = T::from_f64(0.1).unwrap();
             } else {
                 self.hhfac = hnew / self.h;
