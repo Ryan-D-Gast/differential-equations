@@ -49,8 +49,8 @@ impl InitialStepSize<Ordinary> {
         tf: T,
         y0: &Y,
         order: usize,
-        rtol: T,
-        atol: T,
+        rtol: &Tolerance<T>,
+        atol: &Tolerance<T>,
         h_min: T,
         h_max: T,
         evals: &mut Evals,
@@ -76,7 +76,7 @@ impl InitialStepSize<Ordinary> {
 
         // Loop through all elements to compute weighted norms
         for n in 0..y0.len() {
-            let sk = atol + rtol * y0.get(n).abs();
+            let sk = atol[n] + rtol[n] * y0.get(n).abs();
             dnf += (f0.get(n) / sk).powi(2);
             dny += (y0.get(n) / sk).powi(2);
         }
@@ -102,7 +102,7 @@ impl InitialStepSize<Ordinary> {
         let mut der2 = T::zero();
 
         for n in 0..y0.len() {
-            let sk = atol + rtol * y0.get(n).abs();
+            let sk = atol[n] + rtol[n] * y0.get(n).abs();
             der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
         }
         der2 = der2.sqrt() / h.abs();
@@ -165,8 +165,8 @@ impl InitialStepSize<Delay> {
         tf: T,
         y0: &Y,
         order: usize,
-        rtol: T,
-        atol: T,
+        rtol: &Tolerance<T>,
+        atol: &Tolerance<T>,
         h_min: T,
         h_max: T,
         phi: &impl Fn(T) -> Y,
@@ -185,7 +185,7 @@ impl InitialStepSize<Delay> {
         let mut dnf = T::zero();
         let mut dny = T::zero();
         for n in 0..n_dim {
-            let sk = atol + rtol * y0.get(n).abs();
+            let sk = atol[n] + rtol[n] * y0.get(n).abs();
             if sk <= T::zero() {
                 return h_min.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init;
             }
@@ -271,7 +271,7 @@ impl InitialStepSize<Delay> {
 
         let mut der2 = T::zero();
         for n in 0..n_dim {
-            let sk = atol + rtol * y0.get(n).abs();
+            let sk = atol[n] + rtol[n] * y0.get(n).abs();
             if sk <= T::zero() {
                 der2 = T::infinity();
                 break;

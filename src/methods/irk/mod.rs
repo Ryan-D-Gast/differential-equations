@@ -10,6 +10,7 @@ use crate::{
     linalg::Matrix,
     status::Status,
     traits::{CallBackData, Real, State},
+    tolerance::Tolerance,
 };
 
 /// IRK solver core. Supports fixed/adaptive stepping and common IRK families
@@ -59,8 +60,8 @@ pub struct ImplicitRungeKutta<
     pub max_newton_iter: usize, // Max iterations per solve
 
     // Adaptive settings
-    pub rtol: T,
-    pub atol: T,
+    pub rtol: Tolerance<T>,
+    pub atol: Tolerance<T>,
     pub h_max: T,
     pub h_min: T,
     pub max_steps: usize,
@@ -118,8 +119,8 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
             bh: None,
             newton_tol: T::from_f64(1.0e-10).unwrap(),
             max_newton_iter: 50,
-            rtol: T::from_f64(1.0e-6).unwrap(),
-            atol: T::from_f64(1.0e-6).unwrap(),
+            rtol: Tolerance::Scalar(T::from_f64(1.0e-6).unwrap()),
+            atol: Tolerance::Scalar(T::from_f64(1.0e-6).unwrap()),
             h_max: T::infinity(),
             h_min: T::zero(),
             max_steps: 10_000,
@@ -151,16 +152,17 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
     ImplicitRungeKutta<E, F, T, Y, D, O, S, I>
 {
     /// Set relative tolerance
-    pub fn rtol(mut self, rtol: T) -> Self {
-        self.rtol = rtol;
+    pub fn rtol<V: Into<Tolerance<T>>>(mut self, rtol: V) -> Self {
+        self.rtol = rtol.into();
         self
     }
 
     /// Set absolute tolerance
-    pub fn atol(mut self, atol: T) -> Self {
-        self.atol = atol;
+    pub fn atol<V: Into<Tolerance<T>>>(mut self, atol: V) -> Self {
+        self.atol = atol.into();
         self
     }
+
 
     /// Set initial step size
     pub fn h0(mut self, h0: T) -> Self {

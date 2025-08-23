@@ -12,6 +12,22 @@ pub enum Tolerance<T: Real> {
     Vector(Vec<T>),
 }
 
+impl<T: Real> Tolerance<T> {
+    /// Average Tolerance
+    pub fn average(&self) -> T {
+        match self {
+            Tolerance::Scalar(val) => *val,
+            Tolerance::Vector(vec) => {
+                let mut sum = T::zero();
+                for i in vec {
+                    sum += *i;
+                }
+                sum / T::from_usize(vec.len()).unwrap()
+            }
+        }
+    }
+}
+
 impl<T: Real> Index<usize> for Tolerance<T> {
     type Output = T;
 

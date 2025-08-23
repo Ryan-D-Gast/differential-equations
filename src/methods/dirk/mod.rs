@@ -9,6 +9,7 @@ use crate::{
     linalg::Matrix,
     status::Status,
     traits::{CallBackData, Real, State},
+    tolerance::Tolerance,
 };
 
 /// DIRK/SDIRK core with fixed/adaptive stepping. Stages are solved
@@ -55,8 +56,8 @@ pub struct DiagonallyImplicitRungeKutta<
     bh: Option<[T; S]>, // Embedded weights
 
     // Tolerances
-    pub rtol: T,
-    pub atol: T,
+    pub rtol: Tolerance<T>,
+    pub atol: Tolerance<T>,
 
     // Step-size control
     pub h_min: T,
@@ -121,8 +122,8 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
             a: [[T::zero(); S]; S],
             b: [T::zero(); S],
             bh: None,
-            rtol: T::from_f64(1e-6).unwrap(),
-            atol: T::from_f64(1e-9).unwrap(),
+            rtol: Tolerance::Scalar(T::from_f64(1e-6).unwrap()),
+            atol: Tolerance::Scalar(T::from_f64(1e-9).unwrap()),
             h_min: T::from_f64(1e-14).unwrap(),
             h_max: T::from_f64(1e3).unwrap(),
             safety_factor: T::from_f64(0.9).unwrap(),
@@ -155,14 +156,14 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
     DiagonallyImplicitRungeKutta<E, F, T, Y, D, O, S, I>
 {
     /// Set relative tolerance
-    pub fn rtol(mut self, rtol: T) -> Self {
-        self.rtol = rtol;
+    pub fn rtol<V: Into<Tolerance<T>>>(mut self, rtol: V) -> Self {
+        self.rtol = rtol.into();
         self
     }
 
     /// Set absolute tolerance
-    pub fn atol(mut self, atol: T) -> Self {
-        self.atol = atol;
+    pub fn atol<V: Into<Tolerance<T>>>(mut self, atol: V) -> Self {
+        self.atol = atol.into();
         self
     }
 

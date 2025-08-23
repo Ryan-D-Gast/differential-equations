@@ -76,7 +76,7 @@ impl<
         if self.h0 == T::zero() {
             // Adaptive step size for DDEs
             self.h0 = InitialStepSize::<Delay>::compute(
-                dde, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max, phi,
+                dde, t0, tf, y0, self.order, &self.rtol, &self.atol, self.h_min, self.h_max, phi,
                 &self.k[0], &mut evals,
             );
             evals.function += 2; // h_init performs 2 function evaluations
@@ -194,7 +194,7 @@ impl<
             // Infinity-norm-like error scaled by atol/rtol
             err_norm = T::zero();
             for n in 0..self.y.len() {
-                let tol = self.atol + self.rtol * self.y.get(n).abs().max(y_high.get(n).abs());
+                let tol = self.atol[n] + self.rtol[n] * self.y.get(n).abs().max(y_high.get(n).abs());
                 err_norm = err_norm.max((err_vec.get(n) / tol).abs());
             }
 
@@ -203,8 +203,8 @@ impl<
                 let mut iter_err = T::zero();
                 let n_dim = self.y.len();
                 for d in 0..n_dim {
-                    let scale = self.atol
-                        + self.rtol * y_next_est_prev.get(d).abs().max(y_high.get(d).abs());
+                    let scale = self.atol[d]
+                        + self.rtol[d] * y_next_est_prev.get(d).abs().max(y_high.get(d).abs());
                     if scale > T::zero() {
                         let diff_val = y_high.get(d) - y_next_est_prev.get(d);
                         iter_err += (diff_val / scale).powi(2);
@@ -214,7 +214,7 @@ impl<
                     iter_err = (iter_err / T::from_usize(n_dim).unwrap()).sqrt();
                 }
 
-                if iter_err <= self.rtol * T::from_f64(0.1).unwrap() {
+                if iter_err <= self.rtol.average() * T::from_f64(0.1).unwrap() {
                     y_next_est = y_high;
                     dde.lags(self.t + self.h, &y_next_est, &mut delays);
                     if let Err(e) = self.lagvals(self.t + self.h, &delays, &mut y_delayed, phi) {
@@ -226,7 +226,7 @@ impl<
                     break;
                 }
                 if it == max_iter - 1 {
-                    dde_iter_failed = iter_err > self.rtol * T::from_f64(0.1).unwrap();
+                    dde_iter_failed = iter_err > self.rtol.average() * T::from_f64(0.1).unwrap();
                 }
             }
 

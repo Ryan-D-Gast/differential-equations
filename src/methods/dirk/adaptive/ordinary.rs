@@ -27,7 +27,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         if self.h0 == T::zero() {
             // Implicit initial step size heuristic
             self.h0 = InitialStepSize::<Ordinary>::compute(
-                ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max,
+                ode, t0, tf, y0, self.order, &self.rtol, &self.atol, self.h_min, self.h_max,
                 &mut evals,
             );
         }
@@ -222,10 +222,10 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         let err = y_new - y_low;
 
         // Weighted max-norm
-        for n in 0..self.y.len() {
-            let scale = self.atol + self.rtol * self.y.get(n).abs().max(y_new.get(n).abs());
+        for i in 0..self.y.len() {
+            let scale = self.atol[i] + self.rtol[i] * self.y.get(i).abs().max(y_new.get(i).abs());
             if scale > T::zero() {
-                err_norm = err_norm.max((err.get(n) / scale).abs());
+                err_norm = err_norm.max((err.get(i) / scale).abs());
             }
         }
 

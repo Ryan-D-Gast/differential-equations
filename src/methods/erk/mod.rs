@@ -10,6 +10,7 @@ use crate::{
     methods::Delay,
     status::Status,
     traits::{CallBackData, Real, State},
+    tolerance::Tolerance,
 };
 
 /// Runge-Kutta solver that can handle:
@@ -72,8 +73,8 @@ pub struct ExplicitRungeKutta<
     cont: [Y; O],
 
     // Settings
-    pub rtol: T,
-    pub atol: T,
+    pub rtol: Tolerance<T>,
+    pub atol: Tolerance<T>,
     pub h_max: T,
     pub h_min: T,
     pub max_steps: usize,
@@ -130,8 +131,8 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
             er: None,
             bi: None,
             cont: [Y::zeros(); O],
-            rtol: T::from_f64(1.0e-6).unwrap(),
-            atol: T::from_f64(1.0e-6).unwrap(),
+            rtol: Tolerance::Scalar(T::from_f64(1.0e-6).unwrap()),
+            atol: Tolerance::Scalar(T::from_f64(1.0e-6).unwrap()),
             h_max: T::infinity(),
             h_min: T::zero(),
             max_steps: 10_000,
@@ -158,15 +159,15 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
 impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
     ExplicitRungeKutta<E, F, T, Y, D, O, S, I>
 {
-    /// Set the relative tolerance for error control
-    pub fn rtol(mut self, rtol: T) -> Self {
-        self.rtol = rtol;
+    /// Set relative tolerance
+    pub fn rtol<V: Into<Tolerance<T>>>(mut self, rtol: V) -> Self {
+        self.rtol = rtol.into();
         self
     }
 
-    /// Set the absolute tolerance for error control
-    pub fn atol(mut self, atol: T) -> Self {
-        self.atol = atol;
+    /// Set absolute tolerance
+    pub fn atol<V: Into<Tolerance<T>>>(mut self, atol: V) -> Self {
+        self.atol = atol.into();
         self
     }
 
