@@ -1,5 +1,5 @@
 //! Statistics and performance tracking for Numerical methods
- 
+
 use std::{
     ops::{Add, AddAssign},
     time::Instant,
@@ -8,31 +8,29 @@ use std::{
 use crate::traits::Real;
 
 /// Number of evaluations
-///
-/// # Fields
-/// * `function` - Number of function evaluations
-/// * `jacobian` - Number of jacobian evaluations
-/// * `newton` - Number of Newton iterations
-///
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Evals {
+    /// Number of function evaluations
     pub function: usize,
+    /// Number of jacobian evaluations
     pub jacobian: usize,
+    /// Number of Newton iterations
     pub newton: usize,
+    /// Number of matrix decompositions
+    pub decompositions: usize,
+    /// Number of matrix system solves
+    pub solves: usize,
 }
 
 impl Evals {
-    /// Create a new Evals struct
-    ///
-    /// # Arguments
-    /// * `diff` - Number of differntial equation function evaluations
-    /// * `jacobian`  - Number of jacobian evaluations
-    /// * `newton` - Number of Newton iterations
+    /// Create a new Evals struct with zeroed fields
     pub fn new() -> Self {
         Self {
             function: 0,
             jacobian: 0,
             newton: 0,
+            decompositions: 0,
+            solves: 0,
         }
     }
 }
@@ -45,6 +43,8 @@ impl Add for Evals {
             function: self.function + other.function,
             jacobian: self.jacobian + other.jacobian,
             newton: self.newton + other.newton,
+            decompositions: self.decompositions + other.decompositions,
+            solves: self.solves + other.solves,
         }
     }
 }
@@ -54,18 +54,17 @@ impl AddAssign for Evals {
         self.function += other.function;
         self.jacobian += other.jacobian;
         self.newton += other.newton;
+        self.decompositions += other.decompositions;
+        self.solves += other.solves;
     }
 }
 
 /// Number of Steps
-///
-/// # Fields
-/// * `accepted` - Number of accepted steps
-/// * `rejected` - Number of rejected steps
-///
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Steps {
+    /// Number of accepted steps
     pub accepted: usize,
+    /// Number of rejected steps
     pub rejected: usize,
 }
 

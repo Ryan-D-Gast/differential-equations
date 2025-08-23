@@ -93,6 +93,15 @@ path = "examples/ode/11_schrodinger/main.rs"
 name = "ode_12_brusselator"
 path = "examples/ode/12_brusselator/main.rs"
 
+# Differential-Algebraic Equation (DAE) examples
+[[example]]
+name = "dae_01_amplifier"
+path = "examples/dae/01_amplifier/main.rs"
+
+[[example]]
+name = "dae_02_robertson"
+path = "examples/dae/02_robertson/main.rs"
+
 # Stochastic Differential Equation (SDE) examples
 [[example]]
 name = "sde_01_brownian_motion"

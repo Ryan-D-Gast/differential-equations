@@ -1,7 +1,8 @@
 //! # Example 12: Implicit Solver with Brusselator System
 //!
 //! This example demonstrates solving the stiff Brusselator system
-//! using an implicit Runge-Kutta method (Gauss-Legendre 6th order) with both an
+//! using an implicit Runge-Kutta method (Radau 5th order) with both an
+//! adaptive step size and dense output.
 //!
 //! The Brusselator system is:
 //! dy0/dt = 1 - 4*y0 + y0^2 * y1
@@ -47,26 +48,27 @@ fn main() {
     let problem = ODEProblem::new(ode, t0, tf, y0);
 
     // --- Solve the ODE ---
-    let mut method = ImplicitRungeKutta::gauss_legendre_6()
-        .rtol(1e-6)
-        .atol(1e-6)
-        .h0(1e-3)
-        .max_newton_iter(20); // Set maximum Newton iterations, only for implicit methods
+    let mut method = ImplicitRungeKutta::radau5();
     match problem.even(0.5).solve(&mut method) {
         Ok(solution) => {
             // Print the solution
             println!("Solution successfully obtained.");
             println!("Status: {:?}", solution.status);
             println!("Solution points (t, y0, y1):");
-            for (t, y_val) in solution.iter() {
-                println!("t: {:.4}, y0: {:.4}, y1: {:.4}", t, y_val[0], y_val[1]);
+            for (t, y) in solution.iter() {
+                println!("t: {:.4}, y0: {:.4}, y1: {:.4}", t, y[0], y[1]);
             }
 
             // Print statistics
             println!("\nStatistics:");
             println!("  Function evaluations: {}", solution.evals.function);
-            println!("  jacobian evaluations: {}", solution.evals.jacobian);
+            println!("  Jacobian evaluations: {}", solution.evals.jacobian);
             println!("  Newton iterations: {}", solution.evals.newton);
+            println!(
+                "  Total LU decompositions: {}",
+                solution.evals.decompositions
+            );
+            println!("  Total Ax=b solves: {}", solution.evals.solves);
             println!("  Total steps taken: {}", solution.steps.total());
             println!("  Accepted steps: {}", solution.steps.accepted);
             println!("  Rejected steps: {}", solution.steps.rejected);

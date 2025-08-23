@@ -22,6 +22,7 @@ pub use apc::AdamsPredictorCorrector;
 pub struct Ordinary;
 pub struct Delay;
 pub struct Stochastic;
+pub struct Algebraic;
 
 // --- Typestate Categories for Numerical Methods Families ---
 
@@ -33,3 +34,6 @@ pub struct Adaptive;
 
 /// Explicit Adaptive-step methods by Dormand-Prince
 pub struct DormandPrince;
+
+/// Radau IIA methods
+pub struct Radau;

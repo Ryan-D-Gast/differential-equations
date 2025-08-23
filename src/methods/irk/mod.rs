@@ -2,6 +2,7 @@
 
 mod adaptive;
 mod fixed;
+mod radau;
 
 use std::marker::PhantomData;
 
@@ -137,8 +138,8 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
             dense_stages: I,
             family: PhantomData,
             equation: PhantomData,
-            stage_jacobians: core::array::from_fn(|_| Matrix::zeros(0)),
-            newton_matrix: Matrix::zeros(0),
+            stage_jacobians: core::array::from_fn(|_| Matrix::zeros(0, 0)),
+            newton_matrix: Matrix::zeros(0, 0),
             rhs_newton: Vec::new(),
             delta_k_vec: Vec::new(),
             jacobian_age: 0,

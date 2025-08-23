@@ -1,24 +1,24 @@
 //! Linear solves: A x = b via LU with partial pivoting on a dense copy.
 
-use crate::traits::{Real, State};
+use crate::{
+    error::Error,
+    traits::{Real, State},
+};
 
 use super::base::{Matrix, MatrixStorage};
 
 impl<T: Real> Matrix<T> {
-    /// Solve A x = b (returns same `State<T>` type as `b`). Densifies `A` as needed.
-    pub fn lin_solve<V>(&self, b: V) -> V
+    /// Solve A x = b, Returns Err if the matrix is singular or dimensions are incompatible
+    pub fn lin_solve<Y>(&self, b: Y) -> Result<Y, Error<T, Y>>
     where
-        V: State<T>,
+        Y: State<T>,
     {
-        let n = self.n();
-        assert_eq!(
-            b.len(),
-            n,
-            "dimension mismatch in solve: A is {}x{}, b has length {}",
-            n,
-            n,
-            b.len()
-        );
+        let n = self.n;
+        if b.len() != n {
+            return Err(Error::BadInput {
+                msg: "Incompatible vector length".into(),
+            });
+        }
 
         // 1) Densify A into a Vec<T> of size n*n (row-major)
         let mut a = vec![T::zero(); n * n];
@@ -33,28 +33,27 @@ impl<T: Real> Matrix<T> {
             }
             MatrixStorage::Banded { ml, mu, .. } => {
                 let rows = *ml + *mu + 1;
-                for j in 0..self.ncols {
+                for j in 0..self.m {
                     for r in 0..rows {
                         let k = r as isize - *mu as isize; // i - j
                         let i_signed = j as isize + k;
-                        if i_signed >= 0 && (i_signed as usize) < self.nrows {
+                        if i_signed >= 0 && (i_signed as usize) < self.n {
                             let i = i_signed as usize;
-                            a[i * self.ncols + j] =
-                                a[i * self.ncols + j] + self.data[r * self.ncols + j];
+                            a[i * self.m + j] = a[i * self.m + j] + self.data[r * self.m + j];
                         }
                     }
                 }
             }
         }
 
-        // 2) Copy b into a dense vector x and perform in-place solve
-        let mut x = vec![T::zero(); n];
-        for i in 0..n {
-            x[i] = b.get(i);
-        }
+        // 2) Copy b into a dense vector x and perform solve
+        let mut x = b;
 
-        // 3) LU factorization with partial pivoting (Doolittle-style)
+        // 3) LU factorization with partial pivoting and singularity checking
         let mut piv: Vec<usize> = (0..n).collect();
+        let eps = T::from_f64(1e-14).unwrap(); // Singularity threshold
+
+        let mut swapper;
         for k in 0..n {
             // Find pivot row
             let mut pivot_row = k;
@@ -66,18 +65,27 @@ impl<T: Real> Matrix<T> {
                     pivot_row = i;
                 }
             }
-            if pivot_val == T::zero() {
-                panic!("singular matrix in solve");
+
+            // Check for singularity
+            if pivot_val <= eps {
+                // Note the t, y are not known here and should be updated by caller before returning to user
+                return Err(Error::LinearAlgebra {
+                    msg: "Singular matrix encountered".into(),
+                });
             }
+
             if pivot_row != k {
                 // swap rows in A
                 for j in 0..n {
                     a.swap(k * n + j, pivot_row * n + j);
                 }
-                // swap entries in x (we'll apply permutation to RHS)
-                x.swap(k, pivot_row);
+                // swap entries in x
+                swapper = x.get(k);
+                x.set(k, x.get(pivot_row));
+                x.set(pivot_row, swapper);
                 piv.swap(k, pivot_row);
             }
+
             // Eliminate below the pivot
             let akk = a[k * n + k];
             for i in (k + 1)..n {
@@ -91,33 +99,33 @@ impl<T: Real> Matrix<T> {
 
         // Forward solve Ly = Pb (x currently holds permuted b)
         for i in 0..n {
-            let mut sum = x[i];
+            let mut sum = x.get(i);
             for k in 0..i {
-                sum = sum - a[i * n + k] * x[k];
+                sum = sum - a[i * n + k] * x.get(k);
             }
-            x[i] = sum; // since L has ones on diagonal
+            x.set(i, sum); // since L has ones on diagonal
         }
 
         // Backward solve Ux = y
         for i in (0..n).rev() {
-            let mut sum = x[i];
+            let mut sum = x.get(i);
             for k in (i + 1)..n {
-                sum = sum - a[i * n + k] * x[k];
+                sum = sum - a[i * n + k] * x.get(k);
             }
-            x[i] = sum / a[i * n + i];
+            x.set(i, sum / a[i * n + i]);
         }
 
-        // 6) Build output State from x
-        let mut out = V::zeros();
+        // Build output State from x
+        let mut out = Y::zeros();
         for i in 0..n {
-            out.set(i, x[i]);
+            out.set(i, x.get(i));
         }
-        out
+        Ok(out)
     }
 
     /// In-place solve: overwrites `b` with `x`.
     pub fn lin_solve_mut(&self, b: &mut [T]) {
-        let n = self.n();
+        let n = self.n;
         assert_eq!(
             b.len(),
             n,
@@ -140,14 +148,13 @@ impl<T: Real> Matrix<T> {
             }
             MatrixStorage::Banded { ml, mu, .. } => {
                 let rows = *ml + *mu + 1;
-                for j in 0..self.ncols {
+                for j in 0..self.m {
                     for r in 0..rows {
                         let k = r as isize - *mu as isize;
                         let i_signed = j as isize + k;
-                        if i_signed >= 0 && (i_signed as usize) < self.nrows {
+                        if i_signed >= 0 && (i_signed as usize) < self.n {
                             let i = i_signed as usize;
-                            a[i * self.ncols + j] =
-                                a[i * self.ncols + j] + self.data[r * self.ncols + j];
+                            a[i * self.m + j] = a[i * self.m + j] + self.data[r * self.m + j];
                         }
                     }
                 }
@@ -213,9 +220,13 @@ mod tests {
     #[test]
     fn solve_full_2x2() {
         // A = [[3, 2],[1, 4]], b = [5, 6] -> x = [0.8, 1.3]
-        let a: Matrix<f64> = Matrix::full(2, vec![3.0, 2.0, 1.0, 4.0]);
+        let mut a: Matrix<f64> = Matrix::full(2, 2);
+        a[(0, 0)] = 3.0;
+        a[(0, 1)] = 2.0;
+        a[(1, 0)] = 1.0;
+        a[(1, 1)] = 4.0;
         let b = Vector2::new(5.0, 6.0);
-        let x = a.lin_solve(b);
+        let x = a.lin_solve(b).unwrap();
         // Solve manually: [[3,2],[1,4]] x = [5,6] => x = [ (20-12)/10, (15-5)/10 ] = [0.8, 1.3]
         assert!((x.x - 0.8).abs() < 1e-12);
         assert!((x.y - 1.3).abs() < 1e-12);

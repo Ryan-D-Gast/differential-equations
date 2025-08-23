@@ -137,7 +137,7 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
             newton_iterations: 0,
             jacobian_evaluations: 0,
             lu_decompositions: 0,
-            jacobian: Matrix::zeros(dim),
+            jacobian: Matrix::zeros(dim, dim),
             rhs_newton: Y::zeros(),
             delta_z: Y::zeros(),
             jacobian_age: 0,

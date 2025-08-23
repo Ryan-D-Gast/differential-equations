@@ -70,7 +70,8 @@ fn interpolation() {
         solver_name: APCF4, solver: AdamsPredictorCorrector::f4(0.01),
         solver_name: APCV4, solver: AdamsPredictorCorrector::v4().h0(0.01),
         solver_name: CrankNicolson, solver: ImplicitRungeKutta::crank_nicolson(0.01),
-        solver_name: GaussLegendre6, solver: ImplicitRungeKutta::gauss_legendre_6()
+        solver_name: GaussLegendre6, solver: ImplicitRungeKutta::gauss_legendre_6(),
+        solver_name: Radau5, solver: ImplicitRungeKutta::radau5()
     }
 
     test_interpolation! {

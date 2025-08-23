@@ -57,7 +57,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // Newton workspace
         let dim = y0.len();
-        self.jacobian = Matrix::zeros(dim);
+        self.jacobian = Matrix::zeros(dim, dim);
         self.z = *y0;
         self.jacobian_age = 0;
 
@@ -163,7 +163,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 self.jacobian_age += 1;
 
                 // Solve (I - h*a_ii J) Δz = -F(z) using in-place LU
-                self.delta_z = self.jacobian.lin_solve(self.rhs_newton);
+                self.delta_z = self.jacobian.lin_solve(self.rhs_newton).unwrap();
                 self.lu_decompositions += 1;
 
                 // Update z and increment norm

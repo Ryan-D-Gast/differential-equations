@@ -3,7 +3,7 @@
 use crate::traits::Real;
 
 /// Matrix storage layout.
-#[derive(Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum MatrixStorage<T: Real> {
     /// Identity matrix (implicit). `data` stores [one, zero] to satisfy indexing by reference.
     Identity,
@@ -16,43 +16,74 @@ pub enum MatrixStorage<T: Real> {
 }
 
 /// Generic matrix for linear algebra (typically square in current use).
-#[derive(Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct Matrix<T: Real> {
-    pub nrows: usize,
-    pub ncols: usize,
+    pub n: usize,
+    pub m: usize,
     pub data: Vec<T>,
     pub storage: MatrixStorage<T>,
 }
 
 impl<T: Real> Matrix<T> {
+    /// Number of rows.
+    pub fn nrows(&self) -> usize {
+        self.n
+    }
+
+    /// Number of columns.
+    pub fn ncols(&self) -> usize {
+        self.m
+    }
+
     /// Identity matrix of size n x n.
     pub fn identity(n: usize) -> Self {
         Matrix {
-            nrows: n,
-            ncols: n,
+            n: n,
+            m: n,
             // Keep [one, zero] so indexing can return references.
             data: vec![T::one(), T::zero()],
             storage: MatrixStorage::Identity,
         }
     }
 
-    /// Full matrix from a row-major vector of length n*n.
-    pub fn full(n: usize, data: Vec<T>) -> Self {
-        assert_eq!(data.len(), n * n, "Matrix::full expects data of length n*n");
+    /// Creates a matrix from a vector.
+    pub fn from_vec(n: usize, m: usize, data: Vec<T>) -> Self {
+        assert_eq!(data.len(), n * m, "Incompatible data length");
         Matrix {
-            nrows: n,
-            ncols: n,
+            n,
+            m,
             data,
             storage: MatrixStorage::Full,
         }
     }
 
-    /// Zero matrix of size n x n.
-    pub fn zeros(n: usize) -> Self {
+    /// Full matrix from a row-major vector of length n*m.
+    pub fn full(n: usize, m: usize) -> Self {
+        let data = vec![T::zero(); n * m];
         Matrix {
-            nrows: n,
-            ncols: n,
-            data: vec![T::zero(); n * n],
+            n,
+            m,
+            data,
+            storage: MatrixStorage::Full,
+        }
+    }
+
+    /// Square matrix of size n x n.
+    pub fn square(n: usize) -> Self {
+        Matrix {
+            n,
+            m: n,
+            data: Vec::with_capacity(n * n),
+            storage: MatrixStorage::Full,
+        }
+    }
+
+    /// Zero matrix of size n x m.
+    pub fn zeros(n: usize, m: usize) -> Self {
+        Matrix {
+            n,
+            m,
+            data: vec![T::zero(); n * m],
             storage: MatrixStorage::Full,
         }
     }
@@ -63,8 +94,8 @@ impl<T: Real> Matrix<T> {
         let rows = ml + mu + 1;
         let data = vec![T::zero(); rows * n];
         Matrix {
-            nrows: n,
-            ncols: n,
+            n: n,
+            m: n,
             data,
             storage: MatrixStorage::Banded {
                 ml,
@@ -79,8 +110,8 @@ impl<T: Real> Matrix<T> {
         let n = diag.len();
         // With ml=mu=0, storage is (1,n), so `diag` maps directly to row 0.
         Matrix {
-            nrows: n,
-            ncols: n,
+            n,
+            m: n,
             data: diag,
             storage: MatrixStorage::Banded {
                 ml: 0,
@@ -102,12 +133,94 @@ impl<T: Real> Matrix<T> {
 
     /// Dimensions (nrows, ncols).
     pub fn dims(&self) -> (usize, usize) {
-        (self.nrows, self.ncols)
+        (self.n, self.m)
     }
 
-    /// Convenience: n for an n x n matrix.
-    pub fn n(&self) -> usize {
-        self.dims().0
+    /// Checks if the matrix is an identity matrix.
+    pub fn is_identity(&self) -> bool {
+        if let MatrixStorage::Identity = self.storage {
+            return true;
+        } else if let MatrixStorage::Full = self.storage {
+            for i in 0..self.n {
+                for j in 0..self.m {
+                    if i == j && self.data[i * self.m + j] != T::one() {
+                        return false;
+                    } else if i != j && self.data[i * self.m + j] != T::zero() {
+                        return false;
+                    }
+                }
+            }
+        } else if let MatrixStorage::Banded {
+            ml: _ml,
+            mu: _mu,
+            zero,
+        } = self.storage
+        {
+            for i in 0..self.n {
+                for j in 0..self.m {
+                    if i == j && self.data[i * self.m + j] != T::one() {
+                        return false;
+                    } else if i != j && self.data[i * self.m + j] != zero {
+                        return false;
+                    }
+                }
+            }
+        }
+        true
+    }
+
+    /// Swap two rows in-place for Full storage. For Banded storage, performs a logical swap
+    /// of accessible entries within the band; for Identity, no-op unless swapping equal indices.
+    pub fn swap_rows(&mut self, r1: usize, r2: usize) {
+        assert!(r1 < self.n && r2 < self.n, "row index out of bounds");
+        if r1 == r2 {
+            return;
+        }
+        match &mut self.storage {
+            MatrixStorage::Full => {
+                for j in 0..self.m {
+                    self.data.swap(r1 * self.m + j, r2 * self.m + j);
+                }
+            }
+            MatrixStorage::Identity => {
+                // Identity is stored as [one, zero]; swapping has no effect on implicit structure.
+                // Clients should not attempt to permute Identity rows; we ignore to keep API simple.
+            }
+            MatrixStorage::Banded { ml, mu, .. } => {
+                // Only swap entries that are actually stored (within band).
+                // For each column j, if (r1,j) and/or (r2,j) are in band, swap.
+                let mlv = *ml as isize;
+                let muv = *mu as isize;
+                for j in 0..self.m {
+                    let k1 = r1 as isize - j as isize;
+                    let k2 = r2 as isize - j as isize;
+                    let in1 = k1 >= -muv && k1 <= mlv;
+                    let in2 = k2 >= -muv && k2 <= mlv;
+                    if in1 && in2 {
+                        let row1 = (k1 + *mu as isize) as usize;
+                        let row2 = (k2 + *mu as isize) as usize;
+                        self.data.swap(row1 * self.m + j, row2 * self.m + j);
+                    } else if in1 || in2 {
+                        // One entry is implicit zero; swapping sets stored one to zero and vice versa
+                        // This best-effort maintains logical swap within band footprint.
+                        if in1 {
+                            let row1 = (k1 + *mu as isize) as usize;
+                            let idx1 = row1 * self.m + j;
+                            self.data[idx1] = T::zero();
+                        } else {
+                            let row2 = (k2 + *mu as isize) as usize;
+                            let idx2 = row2 * self.m + j;
+                            self.data[idx2] = T::zero();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Fill the matrix with a constant value.
+    pub fn fill(&mut self, value: T) {
+        self.data.fill(value);
     }
 }
 

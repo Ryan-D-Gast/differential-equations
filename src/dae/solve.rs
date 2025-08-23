@@ -1,39 +1,35 @@
-//! Solve SDE function
+//! Solve DAEProblem function
 
 use crate::{
     control::ControlFlag,
+    dae::{AlgebraicNumericalMethod, DAE},
     error::Error,
     interpolate::Interpolation,
-    sde::{SDE, StochasticNumericalMethod},
     solout::*,
     solution::Solution,
     status::Status,
     traits::{CallBackData, Real, State},
 };
 
-/// Solves a Stochastic Differential Equation (SDE) for a system of stochastic differential equations.
+/// Solves an Initial Value Problem (DAEProblem) for a system of differential algebraic equations.
 ///
-/// This is the core solution function that drives the numerical integration of SDEs.
+/// This is the core solution function that drives the numerical integration of DAEs.
 /// It handles initialization, time stepping, event detection, and solution output
 /// according to the provided output strategy.
 ///
-/// Note that it is recommended to use the `SDEProblem` struct to solve SDEs,
-/// as it provides a more feature-rich and convenient interface which
+/// Note that it is recommend to use the `DAEProblem` struct to solve the DAEs,
+/// as it provides far more feature rich and convenient interface which
 /// wraps this function. See examples on github for more details.
 ///
 /// # Overview
 ///
-/// A Stochastic Differential Equation takes the form:
+/// An Initial Value Problem takes the form:
 ///
 /// ```text
-/// dY = a(t, Y)dt + b(t, Y)dW,  t ∈ [t0, tf],  Y(t0) = y0
+/// m·dy/dt = f(t, y),  t ∈ [t0, tf],  y(t0) = y0
 /// ```
 ///
-/// where:
-/// - a(t, Y) is the drift term (deterministic part)
-/// - b(t, Y) is the diffusion term (stochastic part)
-/// - dW represents a Wiener process increment
-///
+/// Where m is the mass matrix that can contain zeros for algebraic constraints.
 /// This function solves such a problem by:
 ///
 /// 1. Initializing the solver with the system and initial conditions
@@ -44,8 +40,8 @@ use crate::{
 ///
 /// # Arguments
 ///
-/// * `solver` - Configured solver instance with appropriate settings (e.g., step size)
-/// * `system` - The SDE system that implements the `SDE` trait
+/// * `solver` - Configured solver instance with appropriate settings (e.g., tolerances)
+/// * `system` - The DAE system that implements the `DAE` trait
 /// * `t0` - Initial time point
 /// * `tf` - Final time point (can be less than `t0` for backward integration)
 /// * `y0` - Initial state vector
@@ -54,19 +50,21 @@ use crate::{
 /// # Returns
 ///
 /// * `Ok(Solution)` - If integration completes successfully or is terminated by an event
-/// * `Err(Status)` - If an error occurs (e.g., maximum steps reached)
+/// * `Err(Status)` - If an error occurs (e.g., excessive stiffness, maximum steps reached)
 ///
 /// # Solution Object
 ///
 /// The returned `Solution` object contains:
 ///
-/// * `t`      - Vector of time points
-/// * `y`      - Vector of state vectors at each time point
+/// * `t` - Vector of time points
+/// * `y` - Vector of state vectors at each time point
 /// * `solout` - Struct of the solution output strategy used
 /// * `status` - Final solver status (Complete or Interrupted)
-/// * `evals`  - Number of function evaluations performed
-/// * `steps`  - Total number of steps attempted
-/// * `timer`  - Timer object for tracking solve time
+/// * `evals` - Number of function evaluations performed
+/// * `steps` - Total number of steps attempted
+/// * `rejected_steps` - Number of steps rejected by the error control
+/// * `accepted_steps` - Number of steps accepted by the error control
+/// * `solve_time` - Wall time taken for the integration
 ///
 /// # Event Handling
 ///
@@ -74,79 +72,28 @@ use crate::{
 /// If an event returns `ControlFlag::Terminate`, the integration stops and interpolates
 /// to find the precise point where the event occurred, using a modified regula falsi method.
 ///
-/// # Examples
-///
-/// ```
-/// use differential_equations::{
-///     prelude::*,
-///     sde::solve_sde,
-///     solout::DefaultSolout,
-/// };
-/// use nalgebra::SVector;
-/// use rand::SeedableRng;
-/// use rand_distr::{Distribution, Normal};
-///
-/// struct GBM {
-///     rng: rand::rngs::StdRng,
-/// }
-///
-/// impl GBM {
-///     fn new(seed: u64) -> Self {
-///         Self {
-///             rng: rand::rngs::StdRng::seed_from_u64(seed),
-///         }
-///     }
-/// }
-///
-/// impl SDE<f64, SVector<f64, 1>> for GBM {
-///     fn drift(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
-///         dydt[0] = 0.1 * y[0]; // μS
-///     }
-///     
-///     fn diffusion(&self, _t: f64, y: &SVector<f64, 1>, dydw: &mut SVector<f64, 1>) {
-///         dydw[0] = 0.2 * y[0]; // σS
-///     }
-///     
-///     fn noise(&mut self, dt: f64, dw: &mut SVector<f64, 1>) {
-///         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
-///         dw[0] = normal.sample(&mut self.rng);
-///     }
-/// }
-///
-/// let t0 = 0.0;
-/// let tf = 1.0;
-/// let y0 = SVector::<f64, 1>::new(100.0);
-/// let mut gbm = GBM::new(42);
-/// let mut solver = ExplicitRungeKutta::euler(0.01);
-/// let mut solout = DefaultSolout::new();
-///
-/// // Solve the SDE
-/// let result = solve_sde(&mut solver, &mut gbm, t0, tf, &y0, &mut solout);
-/// ```
-///
 /// # Notes
 ///
 /// * For forward integration, `tf` should be greater than `t0`.
 /// * For backward integration, `tf` should be less than `t0`.
 /// * The `tf == t0` case is considered an error (no integration to perform).
 /// * The output points depend on the chosen `Solout` implementation.
-/// * Due to the stochastic nature, each run will produce different results unless a specific seed is used.
 ///
-pub fn solve_sde<T, Y, D, S, F, O>(
+pub fn solve_dae<T, V, D, S, F, O>(
     solver: &mut S,
-    sde: &mut F,
+    dae: &F,
     t0: T,
     tf: T,
-    y0: &Y,
+    y0: &V,
     solout: &mut O,
-) -> Result<Solution<T, Y, D>, Error<T, Y>>
+) -> Result<Solution<T, V, D>, Error<T, V>>
 where
     T: Real,
-    Y: State<T>,
+    V: State<T>,
     D: CallBackData,
-    F: SDE<T, Y, D>,
-    S: StochasticNumericalMethod<T, Y, D> + Interpolation<T, Y>,
-    O: Solout<T, Y, D>,
+    F: DAE<T, V, D>,
+    S: AlgebraicNumericalMethod<T, V, D> + Interpolation<T, V>,
+    O: Solout<T, V, D>,
 {
     // Initialize the Solution object
     let mut solution = Solution::new();
@@ -166,7 +113,7 @@ where
     };
 
     // Clear statistics in case it was used before and reset solver and check for errors
-    match solver.init(sde, t0, tf, y0) {
+    match solver.init(dae, t0, tf, y0) {
         Ok(evals) => {
             solution.evals += evals;
         }
@@ -187,7 +134,7 @@ where
         ControlFlag::Continue => {}
         ControlFlag::ModifyState(tm, ym) => {
             // Reinitialize the solver with the modified state
-            match solver.init(sde, tm, tf, &ym) {
+            match solver.init(dae, tm, tf, &ym) {
                 Ok(evals) => {
                     solution.evals += evals;
                 }
@@ -206,11 +153,11 @@ where
     let mut ts: T;
 
     // Check Terminate before starting incase the initial conditions trigger it
-    match sde.event(t0, y0) {
+    match dae.event(t0, y0) {
         ControlFlag::Continue => {}
         ControlFlag::ModifyState(tm, ym) => {
             // Reinitialize the solver with the modified state
-            match solver.init(sde, tm, tf, &ym) {
+            match solver.init(dae, tm, tf, &ym) {
                 Ok(evals) => {
                     solution.evals += evals;
                 }
@@ -224,7 +171,7 @@ where
         }
     }
 
-    // Set StochasticNumericalMethod to Solving
+    // Set OrdinaryNumericalMethod to Solving
     solver.set_status(Status::Solving);
     solution.status = Status::Solving;
 
@@ -249,11 +196,20 @@ where
         }
 
         // Perform a step
-        match solver.step(sde) {
+        match solver.step(dae) {
             Ok(evals) => {
                 // Update function evaluations
                 solution.evals += evals;
-                solution.steps.accepted += 1;
+
+                // Check for a RejectedStep
+                if let Status::RejectedStep = solver.status() {
+                    // Update rejected steps and re-do the step
+                    solution.steps.rejected += 1;
+                    continue;
+                } else {
+                    // Update accepted steps and continue to processing
+                    solution.steps.accepted += 1;
+                }
             }
             Err(e) => {
                 // Set solver status to error and return error
@@ -275,7 +231,7 @@ where
             ControlFlag::Continue => {}
             ControlFlag::ModifyState(tm, ym) => {
                 // Reinitialize the solver with the modified state
-                match solver.init(sde, tm, tf, &ym) {
+                match solver.init(dae, tm, tf, &ym) {
                     Ok(evals) => {
                         solution.evals += evals;
                     }
@@ -290,7 +246,7 @@ where
         }
 
         // Check event condition
-        match sde.event(solver.t(), solver.y()) {
+        match dae.event(solver.t(), solver.y()) {
             ControlFlag::Continue => {
                 // Update last continue point
                 tc = solver.t();
@@ -344,7 +300,7 @@ where
                     let y = solver.interpolate(t_guess).unwrap();
 
                     // Check event at guess point
-                    match sde.event(t_guess, &y) {
+                    match dae.event(t_guess, &y) {
                         ControlFlag::Continue => {
                             tc = t_guess;
 
@@ -403,7 +359,7 @@ where
                         solution.push(tm, ym);
 
                         // Reinitialize the solver with the modified state at the precise time
-                        match solver.init(sde, tm, tf, &ym) {
+                        match solver.init(dae, tm, tf, &ym) {
                             Ok(evals) => {
                                 solution.evals += evals;
                             }

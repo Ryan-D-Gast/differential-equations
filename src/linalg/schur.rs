@@ -20,19 +20,19 @@ pub fn schur_complement<T: Real, V: State<T>>(
     r: V,
     s: V,
 ) -> (V, V) {
-    let n = a.n();
-    assert_eq!(b.n(), n, "block size mismatch: B");
-    assert_eq!(c.n(), n, "block size mismatch: C");
-    assert_eq!(d.n(), n, "block size mismatch: D");
+    let n = a.n;
+    assert_eq!(b.n, n, "block size mismatch: B");
+    assert_eq!(c.n, n, "block size mismatch: C");
+    assert_eq!(d.n, n, "block size mismatch: D");
     assert_eq!(r.len(), n, "rhs r size mismatch");
     assert_eq!(s.len(), n, "rhs s size mismatch");
 
     // Helper: solve with A and D using existing dense LU path
-    let solve_a = |rhs: V| a.lin_solve(rhs);
+    let solve_a = |rhs: V| a.lin_solve(rhs).unwrap();
 
     // Build dense Schur complement S = D - C A^{-1} B, as a dense Full matrix
     // We'll fill column-by-column using basis vectors e_j.
-    let mut s_dense = Matrix::zeros(n);
+    let mut s_dense = Matrix::zeros(n, n);
     for j in 0..n {
         // e_j
         let mut e = V::zeros();
@@ -64,7 +64,7 @@ pub fn schur_complement<T: Real, V: State<T>>(
     }
 
     // Solve S y = w
-    let y = s_dense.lin_solve(w);
+    let y = s_dense.lin_solve(w).unwrap();
 
     // Back-substitute for x: A x = r - B y
     let by = b.mul_state(&y);
@@ -90,8 +90,8 @@ mod tests {
     fn schur_trivial_identity_blocks() {
         let a: Matrix<f64> = Matrix::identity(2);
         let d: Matrix<f64> = Matrix::identity(2);
-        let b: Matrix<f64> = Matrix::zeros(2);
-        let c: Matrix<f64> = Matrix::zeros(2);
+        let b: Matrix<f64> = Matrix::zeros(2, 2);
+        let c: Matrix<f64> = Matrix::zeros(2, 2);
 
         let x_true = Vector2::new(1.0, -2.0);
         let y_true = Vector2::new(3.0, 4.0);
@@ -110,10 +110,10 @@ mod tests {
     #[test]
     fn schur_mixed_blocks_small_dense() {
         // Choose small invertible A and D, and simple B, C
-        let a: Matrix<f64> = Matrix::full(2, vec![3.0, 1.0, 2.0, 4.0]);
-        let d: Matrix<f64> = Matrix::full(2, vec![2.0, 0.5, 1.0, 3.0]);
-        let b: Matrix<f64> = Matrix::full(2, vec![1.0, 0.0, 0.0, 1.0]);
-        let c: Matrix<f64> = Matrix::full(2, vec![0.5, 0.0, 0.0, 0.5]);
+        let a: Matrix<f64> = Matrix::from_vec(2, 2, vec![3.0, 1.0, 2.0, 4.0]);
+        let d: Matrix<f64> = Matrix::from_vec(2, 2, vec![2.0, 0.5, 1.0, 3.0]);
+        let b: Matrix<f64> = Matrix::from_vec(2, 2, vec![1.0, 0.0, 0.0, 1.0]);
+        let c: Matrix<f64> = Matrix::from_vec(2, 2, vec![0.5, 0.0, 0.0, 0.5]);
 
         let x_true = Vector2::new(1.0, -2.0);
         let y_true = Vector2::new(3.0, 4.0);

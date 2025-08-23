@@ -13,33 +13,33 @@ impl<T: Real> Sub for Matrix<T> {
         match (self, rhs) {
             (
                 Matrix {
-                    nrows: n1,
+                    n: n1,
                     storage: MatrixStorage::Identity,
                     ..
                 },
                 Matrix {
-                    nrows: n2,
+                    n: n2,
                     storage: MatrixStorage::Identity,
                     ..
                 },
             ) => {
                 assert_eq!(n1, n2, "dimension mismatch in Matrix - Matrix");
                 Matrix {
-                    nrows: n1,
-                    ncols: n1,
+                    n: n1,
+                    m: n1,
                     data: vec![T::zero(); n1 * n1],
                     storage: MatrixStorage::Full,
                 }
             }
             (
                 Matrix {
-                    nrows: n,
+                    n,
                     data: mut a,
                     storage: MatrixStorage::Full,
                     ..
                 },
                 Matrix {
-                    nrows: n2,
+                    n: n2,
                     data: b,
                     storage: MatrixStorage::Full,
                     ..
@@ -50,21 +50,21 @@ impl<T: Real> Sub for Matrix<T> {
                     *x = *x - *y;
                 }
                 Matrix {
-                    nrows: n,
-                    ncols: n,
+                    n: n,
+                    m: n,
                     data: a,
                     storage: MatrixStorage::Full,
                 }
             }
             (
                 Matrix {
-                    nrows: n,
+                    n,
                     data: a,
                     storage: MatrixStorage::Banded { ml, mu, .. },
                     ..
                 },
                 Matrix {
-                    nrows: n2,
+                    n: n2,
                     data: b,
                     storage:
                         MatrixStorage::Banded {
@@ -78,8 +78,8 @@ impl<T: Real> Sub for Matrix<T> {
                 let mu_out = mu.max(mu2);
                 let rows_out = ml_out + mu_out + 1;
                 let mut out = Matrix {
-                    nrows: n,
-                    ncols: n,
+                    n: n,
+                    m: n,
                     data: vec![T::zero(); rows_out * n],
                     storage: MatrixStorage::Banded {
                         ml: ml_out,
@@ -114,13 +114,13 @@ impl<T: Real> Sub for Matrix<T> {
             // Mixed storage: densify
             (
                 Matrix {
-                    nrows: n1,
+                    n: n1,
                     data: a,
                     storage: sa,
                     ..
                 },
                 Matrix {
-                    nrows: n2,
+                    n: n2,
                     data: b,
                     storage: sb,
                     ..
@@ -161,8 +161,8 @@ impl<T: Real> Sub for Matrix<T> {
                     .map(|(x, y)| x - y)
                     .collect();
                 Matrix {
-                    nrows: n1,
-                    ncols: n1,
+                    n: n1,
+                    m: n1,
                     data,
                     storage: MatrixStorage::Full,
                 }
@@ -176,8 +176,8 @@ impl<T: Real> Sub for Matrix<T> {
 // Sub-assign by value
 impl<T: Real> SubAssign<Matrix<T>> for Matrix<T> {
     fn sub_assign(&mut self, rhs: Matrix<T>) {
-        let n = self.n();
-        let lhs = core::mem::replace(self, Matrix::zeros(n));
+        let n = self.n;
+        let lhs = core::mem::replace(self, Matrix::zeros(n, n));
         *self = lhs - rhs;
     }
 }
@@ -185,8 +185,8 @@ impl<T: Real> SubAssign<Matrix<T>> for Matrix<T> {
 // Sub-assign by reference (clones rhs)
 impl<T: Real> SubAssign<&Matrix<T>> for Matrix<T> {
     fn sub_assign(&mut self, rhs: &Matrix<T>) {
-        let n = self.n();
-        let lhs = core::mem::replace(self, Matrix::zeros(n));
+        let n = self.n;
+        let lhs = core::mem::replace(self, Matrix::zeros(n, n));
         *self = lhs - rhs.clone();
     }
 }
@@ -196,14 +196,14 @@ impl<T: Real> Matrix<T> {
     pub fn component_sub(mut self, rhs: T) -> Self {
         match &mut self.storage {
             MatrixStorage::Identity => {
-                let n = self.nrows;
+                let n = self.n;
                 let mut data = vec![T::zero() - rhs; n * n];
                 for i in 0..n {
                     data[i * n + i] = T::one() - rhs;
                 }
                 Matrix {
-                    nrows: n,
-                    ncols: n,
+                    n: n,
+                    m: n,
                     data,
                     storage: MatrixStorage::Full,
                 }
@@ -215,7 +215,7 @@ impl<T: Real> Matrix<T> {
                 self
             }
             MatrixStorage::Banded { ml, mu, .. } => {
-                let n = self.nrows;
+                let n = self.n;
                 if rhs == T::zero() {
                     self
                 } else {
@@ -233,8 +233,8 @@ impl<T: Real> Matrix<T> {
                         }
                     }
                     Matrix {
-                        nrows: n,
-                        ncols: n,
+                        n: n,
+                        m: n,
                         data: dense,
                         storage: MatrixStorage::Full,
                     }
@@ -250,7 +250,7 @@ mod tests {
 
     #[test]
     fn sub_scalar_full() {
-        let m: Matrix<f64> = Matrix::full(2, vec![1.0, 2.0, 3.0, 4.0]);
+        let m: Matrix<f64> = Matrix::from_vec(2, 2, vec![1.0, 2.0, 3.0, 4.0]);
         let r = m.component_sub(1.0);
         assert_eq!(r[(0, 0)], 0.0);
         assert_eq!(r[(0, 1)], 1.0);
@@ -271,8 +271,8 @@ mod tests {
 
     #[test]
     fn sub_matrix_full_full() {
-        let a: Matrix<f64> = Matrix::full(2, vec![1.0, 2.0, 3.0, 4.0]);
-        let b: Matrix<f64> = Matrix::full(2, vec![4.0, 3.0, 2.0, 1.0]);
+        let a: Matrix<f64> = Matrix::from_vec(2, 2, vec![1.0, 2.0, 3.0, 4.0]);
+        let b: Matrix<f64> = Matrix::from_vec(2, 2, vec![4.0, 3.0, 2.0, 1.0]);
         let r = a - b;
         assert_eq!(r[(0, 0)], -3.0);
         assert_eq!(r[(0, 1)], -1.0);

@@ -1,13 +1,15 @@
 //! Initial step size picker
 
 use crate::{
+    dae::DAE,
     dde::DDE,
+    linalg::Matrix,
     ode::ODE,
     stats::Evals,
     traits::{CallBackData, Real, State},
 };
 
-use super::{Delay, Ordinary};
+use super::{Algebraic, Delay, Ordinary};
 
 /// Initial step size estimator using typestates for different equation types
 pub struct InitialStepSize<Kind> {
@@ -119,11 +121,13 @@ impl InitialStepSize<Ordinary> {
             (T::from_f64(0.01).unwrap() / der12).powf(T::one() / order_t)
         };
 
-        // Final bounds checking
+        // Final bounds checking (also cap by the interval length)
+        let interval = (tf - t0).abs();
         h = (h.abs() * T::from_f64(100.0).unwrap())
             .min(h1)
             .min(h_max)
-            .max(h_min); // Return with proper sign
+            .max(h_min)
+            .min(interval);
         h * posneg
     }
 }
@@ -293,6 +297,122 @@ impl InitialStepSize<Delay> {
         if h_min.abs() > T::zero() {
             h = h.max(h_min.abs());
         }
+        h = h.min((tf - t0).abs());
         h * posneg_init
+    }
+}
+
+impl InitialStepSize<Algebraic> {
+    /// Compute an initial step size for DAEs using the mass matrix structure.
+    ///
+    /// Heuristic mirrors the ODE estimator but only measures derivative norms on
+    /// differential components (rows of M with non-negligible entries). We avoid
+    /// inverting the mass matrix; algebraic rows are ignored in derivative norms.
+    pub fn compute<T, F, Y, D>(
+        dae: &F,
+        t0: T,
+        tf: T,
+        y0: &Y,
+        order: usize,
+        rtol: T,
+        atol: T,
+        h_min: T,
+        h_max: T,
+        evals: &mut Evals,
+    ) -> T
+    where
+        T: Real,
+        Y: State<T>,
+        F: DAE<T, Y, D>,
+        D: CallBackData,
+    {
+        let posneg = (tf - t0).signum();
+        let dim = y0.len();
+
+        // Mass matrix to determine which equations are differential vs algebraic
+        let mut m = Matrix::zeros(dim, dim);
+        dae.mass_matrix(&mut m);
+        let eps = T::from_f64(1e-14).unwrap();
+        let mut is_diff = vec![false; dim];
+        for i in 0..dim {
+            let mut row_sum = T::zero();
+            for j in 0..dim {
+                row_sum = row_sum + m[(i, j)].abs();
+            }
+            is_diff[i] = row_sum > eps;
+        }
+
+        // f(t0, y0)
+        let mut f0 = Y::zeros();
+        dae.diff(t0, y0, &mut f0);
+        evals.function += 1;
+
+        // Weighted norms (derivative norm only on differential rows)
+        let mut dnf = T::zero();
+        let mut dny = T::zero();
+        for n in 0..dim {
+            let sk = atol + rtol * y0.get(n).abs();
+            dny = dny + (y0.get(n) / sk).powi(2);
+            if is_diff[n] {
+                dnf = dnf + (f0.get(n) / sk).powi(2);
+            }
+        }
+
+        // If there are no differential equations, fall back to a tiny step
+        if !is_diff.iter().any(|&b| b) {
+            return h_min.abs().max(T::from_f64(1e-6).unwrap()) * posneg;
+        }
+
+        // Initial step guess
+        let mut h: T =
+            if dnf <= T::from_f64(1.0e-10).unwrap() || dny <= T::from_f64(1.0e-10).unwrap() {
+                T::from_f64(1.0e-6).unwrap()
+            } else {
+                (dny / dnf).sqrt() * T::from_f64(0.01).unwrap()
+            };
+
+        // Bound and sign
+        h = h.min(h_max.abs());
+        h = h.max(h_min.abs());
+        h = h * posneg;
+
+        // One explicit Euler predictor (uses f0 directly; avoids M^{-1})
+        let y1 = *y0 + f0 * h;
+        let mut f1 = Y::zeros();
+        dae.diff(t0 + h, &y1, &mut f1);
+        evals.function += 1;
+
+        // Second derivative estimate on differential components only
+        let mut der2 = T::zero();
+        for n in 0..dim {
+            if !is_diff[n] {
+                continue;
+            }
+            let sk = atol + rtol * y0.get(n).abs();
+            der2 = der2 + ((f1.get(n) - f0.get(n)) / sk).powi(2);
+        }
+        der2 = der2.sqrt() / h.abs().max(T::default_epsilon());
+
+        // Use method order to scale an h that enforces ~1% local error
+        let der12 = dnf.sqrt().max(der2);
+        let h1 = if der12 <= T::from_f64(1.0e-15).unwrap() {
+            h.abs()
+                * T::from_f64(1.0e-3)
+                    .unwrap()
+                    .max(T::from_f64(1.0e-6).unwrap())
+        } else {
+            let order_t = T::from_usize(order).unwrap();
+            (T::from_f64(0.01).unwrap() / der12).powf(T::one() / order_t)
+        };
+
+        // Final bounds (cap by interval length as well)
+        let mut h_final = (h.abs() * T::from_f64(100.0).unwrap())
+            .min(h1)
+            .min(h_max.abs());
+        if h_min.abs() > T::zero() {
+            h_final = h_final.max(h_min.abs());
+        }
+        h_final = h_final.min((tf - t0).abs());
+        h_final * posneg
     }
 }
