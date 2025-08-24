@@ -152,6 +152,10 @@ fn main() {
     let mut method = ImplicitRungeKutta::radau5()
         .rtol(1.0e-5)
         .atol(1.0e-11)
+        // Note on index-2 and 3 DAEs indicating which index the respective
+        // equations are in the system is required using .index2_equations([...])
+        // where the index of the state variable is specified.
+        // see example 03_pendulum for more details.
         .h0(1.0e-6);
 
     // Circuit model
