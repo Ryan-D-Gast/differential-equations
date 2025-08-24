@@ -102,17 +102,17 @@ fn main() {
 
     // Simulation time - very long time span to see equilibrium
     let t0 = 0.0;
-    let tf = 10f64.powf(5.0);
+    let tf = 4.0 * 10f64.powf(6.0);
 
     let robertson_problem = DAEProblem::new(model, t0, tf, y0);
 
-    // Output points: ~200 log-spaced points between 1e-5 and 1e5
+    // Output points: ~200 log-spaced points between 1e-6 and 1e6
     let n_pts = 200usize;
-    let exp_min = -5.0f64;
-    let exp_max = 5.0f64;
+    let exp_min = -6.0f64;
+    let exp_max = 6.0f64;
     let step = (exp_max - exp_min) / ((n_pts - 1) as f64);
     let points = (0..n_pts)
-        .map(|i| 10f64.powf(exp_min + (i as f64) * step))
+        .map(|i| 4.0f64 * 10f64.powf(exp_min + (i as f64) * step))
         .collect::<Vec<_>>();
 
     // Solve the DAE
