@@ -31,6 +31,9 @@ where
 
     /// Not enough history retained to evaluate a delayed state
     InsufficientHistory { t_delayed: T, t_prev: T, t_curr: T },
+
+    /// General linear algebra error
+    LinearAlgebra { msg: String },
 }
 
 impl<T, Y> Display for Error<T, Y>
@@ -88,6 +91,7 @@ where
                     t_delayed, t_prev, t_curr
                 )
             }
+            Self::LinearAlgebra { msg } => write!(f, "Linear algebra error: {}", msg),
         }
     }
 }
@@ -151,6 +155,7 @@ where
                     t_delayed, t_prev, t_curr
                 )
             }
+            Self::LinearAlgebra { msg } => write!(f, "Linear algebra error: {}", msg),
         }
     }
 }

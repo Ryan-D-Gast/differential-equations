@@ -77,7 +77,7 @@ impl<
         // Initial step size
         if self.h0 == T::zero() {
             self.h0 = InitialStepSize::<Delay>::compute(
-                dde, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max, phi,
+                dde, t0, tf, y0, self.order, &self.rtol, &self.atol, self.h_min, self.h_max, phi,
                 &self.k[0], &mut evals,
             );
         }
@@ -197,7 +197,7 @@ impl<
             let mut erri;
             for i in 0..n {
                 // Calculate the error scale
-                let sk = self.atol + self.rtol * self.y.get(i).abs().max(y_new.get(i).abs());
+                let sk = self.atol[i] + self.rtol[i] * self.y.get(i).abs().max(y_new.get(i).abs());
 
                 // Primary error term
                 erri = T::zero();
@@ -227,8 +227,9 @@ impl<
                 let mut dde_iteration_error = T::zero();
                 let n_dim = self.y.len();
                 for i_dim in 0..n_dim {
-                    let scale = self.atol
-                        + self.rtol * y_next_est_prev.get(i_dim).abs().max(y_new.get(i_dim).abs());
+                    let scale = self.atol[i_dim]
+                        + self.rtol[i_dim]
+                            * y_next_est_prev.get(i_dim).abs().max(y_new.get(i_dim).abs());
                     if scale > T::zero() {
                         let diff_val = y_new.get(i_dim) - y_next_est_prev.get(i_dim);
                         dde_iteration_error += (diff_val / scale).powi(2);
@@ -239,11 +240,12 @@ impl<
                         (dde_iteration_error / T::from_usize(n_dim).unwrap()).sqrt();
                 }
 
-                if dde_iteration_error <= self.rtol * T::from_f64(0.1).unwrap() {
+                if dde_iteration_error <= self.rtol.average() * T::from_f64(0.1).unwrap() {
                     break;
                 }
                 if it == max_iter - 1 {
-                    dde_iter_failed = dde_iteration_error > self.rtol * T::from_f64(0.1).unwrap();
+                    dde_iter_failed =
+                        dde_iteration_error > self.rtol.average() * T::from_f64(0.1).unwrap();
                 }
             }
             y_next_est = y_new;

@@ -26,6 +26,7 @@
 - [Solout Control](./solout-control.md)
 - [Solution Handling](./solution-handling.md)
 - [Ordinary Differential Equations](./ode.md)
+- [Differential Algebraic Equations](./dae.md)
 - [Delay Differential Equations](./dde.md)
 - [Stochastic Differential Equations](./sde.md)
 

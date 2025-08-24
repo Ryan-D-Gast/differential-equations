@@ -24,7 +24,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         if self.h0 == T::zero() {
             // Only use adaptive step size calculation if the method supports it
             self.h0 = InitialStepSize::<Ordinary>::compute(
-                ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max,
+                ode, t0, tf, y0, self.order, &self.rtol, &self.atol, self.h_min, self.h_max,
                 &mut evals,
             );
             evals.function += 2;
@@ -124,7 +124,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // Iterate through state elements
         for n in 0..self.y.len() {
-            let tol = self.atol + self.rtol * self.y.get(n).abs().max(y_high.get(n).abs());
+            let tol = self.atol[n] + self.rtol[n] * self.y.get(n).abs().max(y_high.get(n).abs());
             err_norm = err_norm.max((err.get(n) / tol).abs());
         }
 

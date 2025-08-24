@@ -10,8 +10,9 @@ use super::base::{Matrix, MatrixStorage};
 // Add-assign by value
 impl<T: Real> AddAssign<Matrix<T>> for Matrix<T> {
     fn add_assign(&mut self, rhs: Matrix<T>) {
-        let n = self.n();
-        let lhs = core::mem::replace(self, Matrix::zeros(n));
+        let n = self.n;
+        let m = self.m;
+        let lhs = core::mem::replace(self, Matrix::zeros(n, m));
         *self = lhs + rhs;
     }
 }
@@ -21,22 +22,19 @@ impl<T: Real> Add for Matrix<T> {
     type Output = Matrix<T>;
 
     fn add(self, rhs: Matrix<T>) -> Self::Output {
-        assert_eq!(
-            self.nrows, rhs.nrows,
-            "dimension mismatch in Matrix + Matrix"
-        );
-        let n = self.nrows;
+        assert_eq!(self.n, rhs.n, "dimension mismatch in Matrix + Matrix");
+        let n = self.n;
         match (self, rhs) {
             (
                 Matrix {
-                    nrows: n1,
-                    ncols: _,
+                    n: n1,
+                    m: _,
                     data: _,
                     storage: MatrixStorage::Identity,
                 },
                 Matrix {
-                    nrows: n2,
-                    ncols: _,
+                    n: n2,
+                    m: _,
                     data: _,
                     storage: MatrixStorage::Identity,
                 },
@@ -47,8 +45,8 @@ impl<T: Real> Add for Matrix<T> {
                     data[i * n + i] = T::one() + T::one();
                 }
                 Matrix {
-                    nrows: n,
-                    ncols: n,
+                    n: n,
+                    m: n,
                     data,
                     storage: MatrixStorage::Full,
                 }
@@ -71,8 +69,8 @@ impl<T: Real> Add for Matrix<T> {
                     .map(|(x, y)| x + y)
                     .collect();
                 Matrix {
-                    nrows: n,
-                    ncols: n,
+                    n: n,
+                    m: n,
                     data,
                     storage: MatrixStorage::Full,
                 }
@@ -96,8 +94,8 @@ impl<T: Real> Add for Matrix<T> {
                 let mu_out = mu.max(mu2);
                 let rows_out = ml_out + mu_out + 1;
                 let mut out = Matrix {
-                    nrows: n,
-                    ncols: n,
+                    n: n,
+                    m: n,
                     data: vec![T::zero(); rows_out * n],
                     storage: MatrixStorage::Banded {
                         ml: ml_out,
@@ -176,8 +174,8 @@ impl<T: Real> Add for Matrix<T> {
                     .map(|(x, y)| x + y)
                     .collect();
                 Matrix {
-                    nrows: n,
-                    ncols: n,
+                    n: n,
+                    m: n,
                     data,
                     storage: MatrixStorage::Full,
                 }
@@ -192,14 +190,14 @@ impl<T: Real> Matrix<T> {
         match &mut self.storage {
             MatrixStorage::Identity => {
                 // I + c -> Full with diag 1+c and off-diag c
-                let n = self.nrows;
+                let n = self.n;
                 let mut data = vec![rhs; n * n];
                 for i in 0..n {
                     data[i * n + i] = rhs + T::one();
                 }
                 Matrix {
-                    nrows: n,
-                    ncols: n,
+                    n: n,
+                    m: n,
                     data,
                     storage: MatrixStorage::Full,
                 }
@@ -211,7 +209,7 @@ impl<T: Real> Matrix<T> {
                 self
             }
             MatrixStorage::Banded { ml, mu, .. } => {
-                let n = self.nrows;
+                let n = self.n;
                 if rhs == T::zero() {
                     self
                 } else {
@@ -229,8 +227,8 @@ impl<T: Real> Matrix<T> {
                         }
                     }
                     Matrix {
-                        nrows: n,
-                        ncols: n,
+                        n: n,
+                        m: n,
                         data: dense,
                         storage: MatrixStorage::Full,
                     }
@@ -246,7 +244,11 @@ mod tests {
 
     #[test]
     fn add_scalar_full() {
-        let m: Matrix<f64> = Matrix::full(2, vec![1.0, 2.0, 3.0, 4.0]);
+        let mut m: Matrix<f64> = Matrix::full(2, 2);
+        m[(0, 0)] = 1.0;
+        m[(0, 1)] = 2.0;
+        m[(1, 0)] = 3.0;
+        m[(1, 1)] = 4.0;
         let r = m.component_add(1.0);
         assert_eq!(r[(0, 0)], 2.0);
         assert_eq!(r[(0, 1)], 3.0);
@@ -267,8 +269,16 @@ mod tests {
 
     #[test]
     fn add_matrix_full_full() {
-        let a: Matrix<f64> = Matrix::full(2, vec![1.0, 2.0, 3.0, 4.0]);
-        let b: Matrix<f64> = Matrix::full(2, vec![4.0, 3.0, 2.0, 1.0]);
+        let mut a: Matrix<f64> = Matrix::full(2, 2);
+        a[(0, 0)] = 1.0;
+        a[(0, 1)] = 2.0;
+        a[(1, 0)] = 3.0;
+        a[(1, 1)] = 4.0;
+        let mut b: Matrix<f64> = Matrix::full(2, 2);
+        b[(0, 0)] = 4.0;
+        b[(0, 1)] = 3.0;
+        b[(1, 0)] = 2.0;
+        b[(1, 1)] = 1.0;
         let r = a + b;
         assert_eq!(r[(0, 0)], 5.0);
         assert_eq!(r[(0, 1)], 5.0);

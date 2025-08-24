@@ -10,6 +10,7 @@
 //! This library provides numerical solvers for:
 //!
 //! - **[Ordinary Differential Equations (ODE)](crate::ode)**: initial value problems, fixed/adaptive step, event detection, flexible output
+//! - **[Differential Algebraic Equations (DAE)](crate::dae)**: equations in the form M f' = f(t,y) where M can be singular
 //! - **[Delay Differential Equations (DDE)](crate::dde)**: constant/state-dependent delays, same features as ODE
 //! - **[Stochastic Differential Equations (SDE)](crate::sde)**: drift-diffusion, user RNG, same features as ODE
 //!
@@ -78,6 +79,7 @@ pub mod methods;
 pub mod tableau;
 
 // Differential Equations
+pub mod dae;
 pub mod dde;
 pub mod ode;
 pub mod sde;
@@ -91,6 +93,7 @@ pub mod error;
 pub mod solution;
 pub mod stats;
 pub mod status;
+pub mod tolerance;
 
 // Shared Traits & Utilities
 pub mod interpolate;

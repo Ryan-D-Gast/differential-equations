@@ -8,6 +8,7 @@ use crate::{
     ode::{ODE, OrdinaryNumericalMethod},
     stats::Evals,
     status::Status,
+    tolerance::Tolerance,
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
@@ -81,8 +82,9 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
         // If h0 is zero, calculate initial step size
         if self.h0 == T::zero() {
             // Only use adaptive step size calculation if the method supports it
+            let tol = Tolerance::Scalar(self.tol);
             self.h0 = InitialStepSize::<Ordinary>::compute(
-                ode, t0, tf, y0, 4, self.tol, self.tol, self.h_min, self.h_max, &mut evals,
+                ode, t0, tf, y0, 4, &tol, &tol, self.h_min, self.h_max, &mut evals,
             );
             evals.function += 2;
         }

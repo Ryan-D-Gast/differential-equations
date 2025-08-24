@@ -159,7 +159,11 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: ImplicitRungeKutta::gauss_legendre_6(),
-        tolerance: 1e-3
+        tolerance: 1e-3,
+
+        solver_name: Radau5,
+        solver: ImplicitRungeKutta::radau5(),
+        tolerance: 1e1
     }
 
     test_ode! {
@@ -260,6 +264,10 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: ImplicitRungeKutta::gauss_legendre_6(),
+        tolerance: 1e-3,
+
+        solver_name: Radau5,
+        solver: ImplicitRungeKutta::radau5(),
         tolerance: 1e-3
     }
 
@@ -361,6 +369,10 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: ImplicitRungeKutta::gauss_legendre_6(),
+        tolerance: 1e1,
+
+        solver_name: Radau5,
+        solver: ImplicitRungeKutta::radau5(),
         tolerance: 1e1
     }
 
@@ -462,6 +474,10 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: ImplicitRungeKutta::gauss_legendre_6(),
+        tolerance: 1e-3,
+
+        solver_name: Radau5,
+        solver: ImplicitRungeKutta::radau5(),
         tolerance: 1e-3
     }
 
@@ -565,6 +581,10 @@ fn accuracy() {
         solver: ImplicitRungeKutta::gauss_legendre_6(),
         tolerance: 1e-3,
 
+        solver_name: Radau5,
+        solver: ImplicitRungeKutta::radau5(),
+        tolerance: 1e-3,
+
         // Diagonally implicit methods
 
         solver_name: SDIRK21,
@@ -595,6 +615,10 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: ImplicitRungeKutta::gauss_legendre_6().rtol(1e-6).atol(1e-8),
+        tolerance: 1e-3,
+
+        solver_name: Radau5,
+        solver: ImplicitRungeKutta::radau5(),
         tolerance: 1e-3,
 
         // DIRK methods
@@ -639,6 +663,10 @@ fn accuracy() {
 
         solver_name: GaussLegendre6,
         solver: ImplicitRungeKutta::gauss_legendre_6().rtol(1e-4).atol(1e-6),
+        tolerance: 1e-1,
+
+        solver_name: Radau5,
+        solver: ImplicitRungeKutta::radau5(),
         tolerance: 1e-1,
 
         // High-order DIRK methods

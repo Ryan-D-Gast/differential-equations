@@ -13,26 +13,27 @@
 //!
 //! ## Solver Naming
 //!
-//! Solvers are accessed as `MethodType::solver_name`, e.g. `ExplicitRungeKutta::dop853`, `ImplicitRungeKutta::gauss_legendre6`.
+//! Solvers are accessed as `MethodType::solver_name`, e.g. `ExplicitRungeKutta::dop853`, `ImplicitRungeKutta::radau5`.
 //! This keeps the API organized and avoids naming conflicts.
 //!
 //! ## Example Solvers
 //!
 //! - `ExplicitRungeKutta::dop853`, `dopri5`, `euler`, `rk4`, `rkv65e`, `rkv98e`
-//! - `ImplicitRungeKutta::gauss_legendre6`
+//! - `ImplicitRungeKutta::radau5`
 //! - `DiagonallyImplicitRungeKutta::kvaerno745`
 //!
 //! ## Method Support Table
 //!
-//! | Method                        | ODE | DDE | SDE |
-//! |-------------------------------|:---:|:---:|:---:|
-//! | ExplicitRungeKutta            |  X  |  X  | (X) |
-//! | ImplicitRungeKutta            |  X  |     |     |
-//! | DiagonallyImplicitRungeKutta  |  X  |     |     |
-//! | AdamsPredictorCorrector       |  X  |     |     |
+//! | Method                        | ODE | DDE | SDE | DAE |
+//! |-------------------------------|:---:|:---:|:---:|:---:|
+//! | ExplicitRungeKutta            |  X  |  X  | (X) |     |
+//! | ImplicitRungeKutta            |  X  |     |     | {X} |
+//! | DiagonallyImplicitRungeKutta  |  X  |     |     |     |
+//! | AdamsPredictorCorrector       |  X  |     |     |     |
 //!
 //! - `X` = Supported
 //! - `(X)` = Supported for fixed step only (e.g., Euler, RK4)
+//! - `{X}` = Supported using ImplicitRungeKutta::radau5 solver only
 //!
 //! For full examples and advanced usage, see the [examples directory](https://github.com/Ryan-D-Gast/differential-equations/tree/master/examples).
 //!
@@ -43,6 +44,7 @@ pub use crate::methods::{
 };
 
 // Problem Types & Traits
+pub use crate::dae::{DAE, DAEProblem};
 pub use crate::dde::{DDE, DDEProblem};
 pub use crate::ode::{ODE, ODEProblem};
 pub use crate::sde::{SDE, SDEProblem};

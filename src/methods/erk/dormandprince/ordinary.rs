@@ -25,7 +25,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         if self.h0 == T::zero() {
             // Use adaptive step size calculation for Dormand-Prince methods
             self.h0 = InitialStepSize::<Ordinary>::compute(
-                ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max,
+                ode, t0, tf, y0, self.order, &self.rtol, &self.atol, self.h_min, self.h_max,
                 &mut evals,
             );
         }
@@ -127,7 +127,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         let mut erri;
         for i in 0..n {
             // Calculate the error scale
-            let sk = self.atol + self.rtol * self.y.get(i).abs().max(y_new.get(i).abs());
+            let sk = self.atol[i] + self.rtol[i] * self.y.get(i).abs().max(y_new.get(i).abs());
 
             // Primary error term
             erri = T::zero();

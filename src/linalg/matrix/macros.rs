@@ -24,7 +24,7 @@ macro_rules! matrix {
         assert!(rows_vec.iter().all(|r| r.len() == n), "matrix! requires a square n x n list of rows");
         let mut data = Vec::with_capacity(n*n);
         for r in rows_vec.into_iter() { data.extend(r.into_iter()); }
-        $crate::linalg::matrix::Matrix::full(n, data)
+        $crate::linalg::matrix::Matrix::from_vec(n, n, data)
     }};
     ( $( [ $( $x:expr ),* $(,)? ] ),+ $(,)? ) => {{
         // Collect rows into a Vec<Vec<_>> first
@@ -91,7 +91,7 @@ mod tests {
     #[test]
     fn macro_full_matrix() {
         let m: Matrix<f64> = matrix![ 1.0, 2.0; 3.0, 4.0 ];
-        assert_eq!(m.n(), 2);
+        assert_eq!(m.n, 2);
         assert_eq!(m[(0, 0)], 1.0);
         assert_eq!(m[(0, 1)], 2.0);
         assert_eq!(m[(1, 0)], 3.0);

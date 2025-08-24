@@ -13,7 +13,7 @@ impl<T: Real> Index<(usize, usize)> for Matrix<T> {
 
     fn index(&self, index: (usize, usize)) -> &Self::Output {
         let (i, j) = index;
-        assert!(i < self.nrows && j < self.ncols, "Index out of bounds");
+        assert!(i < self.n && j < self.m, "Index out of bounds");
         match &self.storage {
             MatrixStorage::Identity => {
                 if i == j {
@@ -22,14 +22,14 @@ impl<T: Real> Index<(usize, usize)> for Matrix<T> {
                     &self.data[1]
                 }
             }
-            MatrixStorage::Full => &self.data[i * self.ncols + j],
+            MatrixStorage::Full => &self.data[i * self.m + j],
             MatrixStorage::Banded { ml, mu, zero } => {
                 let k = i as isize - j as isize;
                 if k < -(*mu as isize) || k > *ml as isize {
                     zero
                 } else {
                     let row = (k + *mu as isize) as usize;
-                    &self.data[row * self.ncols + j]
+                    &self.data[row * self.m + j]
                 }
             }
         }
@@ -39,9 +39,9 @@ impl<T: Real> Index<(usize, usize)> for Matrix<T> {
 /// 2D indexing by (i, j), mutable (where supported).
 impl<T: Real> IndexMut<(usize, usize)> for Matrix<T> {
     fn index_mut(&mut self, (i, j): (usize, usize)) -> &mut Self::Output {
-        assert!(i < self.nrows && j < self.ncols, "Index out of bounds");
+        assert!(i < self.n && j < self.m, "Index out of bounds");
         match &mut self.storage {
-            MatrixStorage::Full => &mut self.data[i * self.ncols + j],
+            MatrixStorage::Full => &mut self.data[i * self.m + j],
             MatrixStorage::Identity => {
                 panic!(
                     "cannot mutate Identity matrix via indexing; convert explicitly to Full first"
@@ -51,7 +51,7 @@ impl<T: Real> IndexMut<(usize, usize)> for Matrix<T> {
                 let k = i as isize - j as isize;
                 if k >= -(*mu as isize) && k <= *ml as isize {
                     let row = (k + *mu as isize) as usize;
-                    &mut self.data[row * self.ncols + j]
+                    &mut self.data[row * self.m + j]
                 } else {
                     panic!(
                         "attempted to write outside band of Banded matrix: i-j={} not in [-mu, ml] = [-{}, {}]",
@@ -68,7 +68,7 @@ where
     T: Real + Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let (nr, nc) = (self.nrows, self.ncols);
+        let (nr, nc) = (self.n, self.m);
         for i in 0..nr {
             f.write_str("[")?;
             for j in 0..nc {
@@ -120,7 +120,7 @@ mod tests {
 
     #[test]
     fn full_index_read_write() {
-        let mut m: Matrix<f64> = Matrix::zeros(2);
+        let mut m: Matrix<f64> = Matrix::zeros(2, 2);
         m[(0, 0)] = 1.0;
         m[(0, 1)] = 2.0;
         m[(1, 0)] = 3.0;

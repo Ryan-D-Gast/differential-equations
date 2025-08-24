@@ -26,7 +26,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         if self.h0 == T::zero() {
             // Implicit initial step size heuristic
             self.h0 = InitialStepSize::<Ordinary>::compute(
-                ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max,
+                ode, t0, tf, y0, self.order, &self.rtol, &self.atol, self.h_min, self.h_max,
                 &mut evals,
             );
         }
@@ -57,8 +57,8 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         // Linear algebra workspace
         let dim = y0.len();
         let newton_system_size = self.stages * dim;
-        self.stage_jacobians = core::array::from_fn(|_| Matrix::zeros(dim));
-        self.newton_matrix = Matrix::zeros(newton_system_size);
+        self.stage_jacobians = core::array::from_fn(|_| Matrix::zeros(dim, dim));
+        self.newton_matrix = Matrix::zeros(newton_system_size, newton_system_size);
         // Use State<T> storage for RHS and solution vectors
         self.rhs_newton = vec![T::zero(); newton_system_size];
         self.delta_k_vec = vec![T::zero(); newton_system_size];
@@ -172,7 +172,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 // Build Newton matrix: I - h*(A ⊗ J)
                 // Zero the block Newton matrix (ensure Full storage)
                 let nsys = self.stages * dim;
-                let mut nm = Matrix::zeros(nsys);
+                let mut nm = Matrix::zeros(nsys, nsys);
                 // Fill blocks
                 for i in 0..self.stages {
                     for j in 0..self.stages {
@@ -267,7 +267,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // Weighted max-norm
         for n in 0..self.y.len() {
-            let scale = self.atol + self.rtol * self.y.get(n).abs().max(y_new.get(n).abs());
+            let scale = self.atol[n] + self.rtol[n] * self.y.get(n).abs().max(y_new.get(n).abs());
             if scale > T::zero() {
                 err_norm = err_norm.max((err.get(n) / scale).abs());
             }

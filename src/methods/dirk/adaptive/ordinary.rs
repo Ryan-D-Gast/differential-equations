@@ -27,7 +27,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         if self.h0 == T::zero() {
             // Implicit initial step size heuristic
             self.h0 = InitialStepSize::<Ordinary>::compute(
-                ode, t0, tf, y0, self.order, self.rtol, self.atol, self.h_min, self.h_max,
+                ode, t0, tf, y0, self.order, &self.rtol, &self.atol, self.h_min, self.h_max,
                 &mut evals,
             );
         }
@@ -57,7 +57,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
         // Newton workspace
         let dim = y0.len();
-        self.jacobian = Matrix::zeros(dim);
+        self.jacobian = Matrix::zeros(dim, dim);
         self.z = *y0;
         self.jacobian_age = 0;
 
@@ -163,7 +163,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                 self.jacobian_age += 1;
 
                 // Solve (I - h*a_ii J) Δz = -F(z) using in-place LU
-                self.delta_z = self.jacobian.lin_solve(self.rhs_newton);
+                self.delta_z = self.jacobian.lin_solve(self.rhs_newton).unwrap();
                 self.lu_decompositions += 1;
 
                 // Update z and increment norm
@@ -222,10 +222,10 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         let err = y_new - y_low;
 
         // Weighted max-norm
-        for n in 0..self.y.len() {
-            let scale = self.atol + self.rtol * self.y.get(n).abs().max(y_new.get(n).abs());
+        for i in 0..self.y.len() {
+            let scale = self.atol[i] + self.rtol[i] * self.y.get(i).abs().max(y_new.get(i).abs());
             if scale > T::zero() {
-                err_norm = err_norm.max((err.get(n) / scale).abs());
+                err_norm = err_norm.max((err.get(i) / scale).abs());
             }
         }
 

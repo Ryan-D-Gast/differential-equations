@@ -229,8 +229,7 @@ where
     solution.status = Status::Solving;
 
     // Main Loop
-    let mut solving = true;
-    while solving {
+    loop {
         // Check if next step overshoots tf
         if (solver.t() + solver.h() - tf) * integration_direction > T::zero() {
             // New step size to reach tf
@@ -247,7 +246,6 @@ where
 
             // Correct step size to reach tf
             solver.set_h(h_new);
-            solving = false;
         }
 
         // Perform a step
@@ -431,6 +429,11 @@ where
                     }
                 }
             }
+        }
+
+        // If we've essentially reached tf, exit the loop and finalize
+        if (tf - solver.t()).abs() <= T::default_epsilon() * T::from_f64(10.0).unwrap() {
+            break;
         }
     }
 

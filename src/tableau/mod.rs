@@ -9,7 +9,6 @@ mod verner;
 // Implicit Runge-Kutta methods
 mod gauss_legendre;
 mod lobatto;
-mod radau;
 
 // Diagonally Implicit Runge-Kutta methods
 pub mod dirk;

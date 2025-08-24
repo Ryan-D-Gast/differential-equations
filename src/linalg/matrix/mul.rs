@@ -9,7 +9,7 @@ impl<T: Real> Matrix<T> {
     /// Return a new matrix where each stored entry is multiplied by `rhs`.
     pub fn component_mul(mut self, rhs: T) -> Self {
         match &mut self.storage {
-            MatrixStorage::Identity => Matrix::diagonal(vec![rhs; self.nrows]),
+            MatrixStorage::Identity => Matrix::diagonal(vec![rhs; self.n]),
             MatrixStorage::Full => {
                 for v in &mut self.data {
                     *v = *v * rhs;
@@ -17,11 +17,11 @@ impl<T: Real> Matrix<T> {
                 self
             }
             MatrixStorage::Banded { ml, mu, .. } => {
-                let n = self.nrows;
+                let n = self.n;
                 let data = self.data.into_iter().map(|x| x * rhs).collect();
                 Matrix {
-                    nrows: n,
-                    ncols: n,
+                    n: n,
+                    m: n,
                     data,
                     storage: MatrixStorage::Banded {
                         ml: *ml,
@@ -39,7 +39,7 @@ impl<T: Real> Matrix<T> {
         match &mut self.storage {
             MatrixStorage::Identity => {
                 // Become diagonal with rhs on the main diagonal
-                let n = self.nrows;
+                let n = self.n;
                 self.data = vec![rhs; n];
                 self.storage = MatrixStorage::Banded {
                     ml: 0,
@@ -61,7 +61,7 @@ impl<T: Real> Matrix<T> {
     }
 
     pub fn mul_state<V: State<T>>(&self, vec: &V) -> V {
-        let n = self.n();
+        let n = self.n;
         assert_eq!(vec.len(), n, "dimension mismatch in Matrix::mul_state");
 
         let mut result = V::zeros();
@@ -82,7 +82,7 @@ mod tests {
 
     #[test]
     fn mul_matrix_full() {
-        let a: Matrix<f64> = Matrix::full(2, vec![1.0, 2.0, 3.0, 4.0]);
+        let a: Matrix<f64> = Matrix::from_vec(2, 2, vec![1.0, 2.0, 3.0, 4.0]);
         let s = 5.0;
         let out = a.component_mul(s);
         assert_eq!(out[(0, 0)], 5.0);
