@@ -356,7 +356,7 @@ impl InitialStepSize<Algebraic> {
         for i in 0..dim {
             let mut row_sum = T::zero();
             for j in 0..dim {
-                row_sum = row_sum + m[(i, j)].abs();
+                row_sum += m[(i, j)].abs();
             }
             is_diff[i] = row_sum > eps;
         }
@@ -371,9 +371,9 @@ impl InitialStepSize<Algebraic> {
         let mut dny = T::zero();
         for n in 0..dim {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
-            dny = dny + (y0.get(n) / sk).powi(2);
+            dny += (y0.get(n) / sk).powi(2);
             if is_diff[n] {
-                dnf = dnf + (f0.get(n) / sk).powi(2);
+                dnf += (f0.get(n) / sk).powi(2);
             }
         }
 
@@ -393,7 +393,7 @@ impl InitialStepSize<Algebraic> {
         // Bound and sign
         h = h.min(h_max.abs());
         h = h.max(h_min.abs());
-        h = h * posneg;
+        h *= posneg;
 
         // One explicit Euler predictor (uses f0 directly; avoids M^{-1})
         let y1 = *y0 + f0 * h;
@@ -408,7 +408,7 @@ impl InitialStepSize<Algebraic> {
                 continue;
             }
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
-            der2 = der2 + ((f1.get(n) - f0.get(n)) / sk).powi(2);
+            der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
         }
         der2 = der2.sqrt() / h.abs().max(T::default_epsilon());
 

@@ -38,7 +38,7 @@ impl<T: Real> Matrix<T> {
     /// Identity matrix of size n x n.
     pub fn identity(n: usize) -> Self {
         Matrix {
-            n: n,
+            n,
             m: n,
             // Keep [one, zero] so indexing can return references.
             data: vec![T::one(), T::zero()],
@@ -94,7 +94,7 @@ impl<T: Real> Matrix<T> {
         let rows = ml + mu + 1;
         let data = vec![T::zero(); rows * n];
         Matrix {
-            n: n,
+            n,
             m: n,
             data,
             storage: MatrixStorage::Banded {

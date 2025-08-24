@@ -187,7 +187,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
                     // Add identity on block diagonal
                     for d_idx in 0..dim {
                         let idx = i * dim + d_idx;
-                        nm[(idx, idx)] = nm[(idx, idx)] + T::one();
+                        nm[(idx, idx)] += T::one();
                     }
                 }
                 self.newton_matrix = nm;

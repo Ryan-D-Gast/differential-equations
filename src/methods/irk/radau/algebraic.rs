@@ -235,9 +235,9 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
                 let mut s3 = T::zero();
                 for j in 0..n {
                     let mij = self.mass[(i, j)];
-                    s1 = s1 - mij * self.f[0].get(j);
-                    s2 = s2 - mij * self.f[1].get(j);
-                    s3 = s3 - mij * self.f[2].get(j);
+                    s1 -= mij * self.f[0].get(j);
+                    s2 -= mij * self.f[1].get(j);
+                    s3 -= mij * self.f[2].get(j);
                 }
                 self.z[0].set(i, self.z[0].get(i) + s1 * fac1);
                 self.z[1].set(i, self.z[1].get(i) + s2 * alphn - s3 * betan);
@@ -289,7 +289,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
                             .max(T::from_f64(20.0).unwrap().min(dyth));
                         let exponent = -T::one() / T::from_f64(4.0 + remaining_iters).unwrap();
                         self.hhfac = T::from_f64(0.8).unwrap() * qnewt.powf(exponent);
-                        self.h = self.h * self.hhfac;
+                        self.h *= self.hhfac;
                         self.status = Status::RejectedStep;
                         self.reject = true;
                         return Ok(evals);
@@ -302,9 +302,9 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
             self.dynold = dyno.max(self.uround);
 
             // Compute new F and Z
-            self.f[0] = self.f[0] + self.z[0];
-            self.f[1] = self.f[1] + self.z[1];
-            self.f[2] = self.f[2] + self.z[2];
+            self.f[0] += self.z[0];
+            self.f[1] += self.z[1];
+            self.f[2] += self.z[2];
 
             self.z[0] = self.f[0] * self.tmat[(0, 0)]
                 + self.f[1] * self.tmat[(0, 1)]
@@ -332,7 +332,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
         for i in 0..n {
             let mut sum = T::zero();
             for j in 0..n {
-                sum = sum + self.mass[(i, j)] * f1.get(j);
+                sum += self.mass[(i, j)] * f1.get(j);
             }
             f2.set(i, sum);
             cont.set(i, sum + self.dydt.get(i));
@@ -344,7 +344,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
         let mut err = T::zero();
         for i in 0..n {
             let r = cont.get(i) / self.scal.get(i);
-            err = err + r * r;
+            err += r * r;
         }
         let mut err = (err / T::from_usize(n).unwrap())
             .sqrt()
@@ -365,7 +365,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
             err = T::zero();
             for i in 0..n {
                 let r = cont.get(i) / self.scal.get(i);
-                err = err + r * r;
+                err += r * r;
             }
             err = (err / T::from_usize(n).unwrap())
                 .sqrt()
@@ -410,8 +410,8 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
             self.h_prev = self.h;
 
             // y_{n+1} = y_n + z₃; t_{n+1} = t_n + h
-            self.y = self.y + self.z[2];
-            self.t = self.t + self.h;
+            self.y += self.z[2];
+            self.t += self.h;
 
             // New derivative at (y_{n+1}, t_{n+1})
             dae.diff(self.t, &self.y, &mut self.dydt);
@@ -470,7 +470,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
 
             // If first step, reduce more aggressively
             if self.first {
-                self.h = self.h * T::from_f64(0.1).unwrap();
+                self.h *= T::from_f64(0.1).unwrap();
                 self.hhfac = T::from_f64(0.1).unwrap();
             } else {
                 self.hhfac = hnew / self.h;

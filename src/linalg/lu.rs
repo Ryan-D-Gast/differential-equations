@@ -273,7 +273,7 @@ pub fn lu_decomp_complex<T: Real>(
 
         // Complex reciprocal 1/(tr + i*ti) stored as (tr, ti) = (tr/den, -ti/den)
         let den = tr * tr + ti * ti;
-        tr = tr / den;
+        tr /= den;
         ti = -ti / den;
 
         // Scale column - store negative multipliers
@@ -306,24 +306,24 @@ pub fn lu_decomp_complex<T: Real>(
                     for i in kp1..n {
                         let prod_r = ar[(i, k)] * mr;
                         let prod_i = ai[(i, k)] * mr;
-                        ar[(i, j)] = ar[(i, j)] + prod_r;
-                        ai[(i, j)] = ai[(i, j)] + prod_i;
+                        ar[(i, j)] += prod_r;
+                        ai[(i, j)] += prod_i;
                     }
                 } else if mr == T::zero() {
                     // imaginary-only multiplier
                     for i in kp1..n {
                         let prod_r = -ai[(i, k)] * mi;
                         let prod_i = ar[(i, k)] * mi;
-                        ar[(i, j)] = ar[(i, j)] + prod_r;
-                        ai[(i, j)] = ai[(i, j)] + prod_i;
+                        ar[(i, j)] += prod_r;
+                        ai[(i, j)] += prod_i;
                     }
                 } else {
                     // general complex multiplier
                     for i in kp1..n {
                         let prod_r = ar[(i, k)] * mr - ai[(i, k)] * mi;
                         let prod_i = ai[(i, k)] * mr + ar[(i, k)] * mi;
-                        ar[(i, j)] = ar[(i, j)] + prod_r;
-                        ai[(i, j)] = ai[(i, j)] + prod_i;
+                        ar[(i, j)] += prod_r;
+                        ai[(i, j)] += prod_i;
                     }
                 }
             }

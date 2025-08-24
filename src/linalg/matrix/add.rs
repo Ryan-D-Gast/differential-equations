@@ -45,7 +45,7 @@ impl<T: Real> Add for Matrix<T> {
                     data[i * n + i] = T::one() + T::one();
                 }
                 Matrix {
-                    n: n,
+                    n,
                     m: n,
                     data,
                     storage: MatrixStorage::Full,
@@ -65,11 +65,11 @@ impl<T: Real> Add for Matrix<T> {
             ) => {
                 let data = a
                     .into_iter()
-                    .zip(b.into_iter())
+                    .zip(b)
                     .map(|(x, y)| x + y)
                     .collect();
                 Matrix {
-                    n: n,
+                    n,
                     m: n,
                     data,
                     storage: MatrixStorage::Full,
@@ -94,7 +94,7 @@ impl<T: Real> Add for Matrix<T> {
                 let mu_out = mu.max(mu2);
                 let rows_out = ml_out + mu_out + 1;
                 let mut out = Matrix {
-                    n: n,
+                    n,
                     m: n,
                     data: vec![T::zero(); rows_out * n],
                     storage: MatrixStorage::Banded {
@@ -110,7 +110,7 @@ impl<T: Real> Add for Matrix<T> {
                         let i_signed = j as isize + k;
                         if i_signed >= 0 && (i_signed as usize) < n {
                             let row_out = (k + mu_out as isize) as usize;
-                            out.data[row_out * n + j] = out.data[row_out * n + j] + a[r * n + j];
+                            out.data[row_out * n + j] += a[r * n + j];
                         }
                     }
                 }
@@ -121,7 +121,7 @@ impl<T: Real> Add for Matrix<T> {
                         let i_signed = j as isize + k;
                         if i_signed >= 0 && (i_signed as usize) < n {
                             let row_out = (k + mu_out as isize) as usize;
-                            out.data[row_out * n + j] = out.data[row_out * n + j] + b[r * n + j];
+                            out.data[row_out * n + j] += b[r * n + j];
                         }
                     }
                 }
@@ -158,7 +158,7 @@ impl<T: Real> Add for Matrix<T> {
                                     let i_signed = j as isize + k;
                                     if i_signed >= 0 && (i_signed as usize) < n {
                                         let i = i_signed as usize;
-                                        d[i * n + j] = d[i * n + j] + data[r * n + j];
+                                        d[i * n + j] += data[r * n + j];
                                     }
                                 }
                             }
@@ -170,11 +170,11 @@ impl<T: Real> Add for Matrix<T> {
                 let bb = to_full(n, b, sb);
                 let data = aa
                     .into_iter()
-                    .zip(bb.into_iter())
+                    .zip(bb)
                     .map(|(x, y)| x + y)
                     .collect();
                 Matrix {
-                    n: n,
+                    n,
                     m: n,
                     data,
                     storage: MatrixStorage::Full,
@@ -196,7 +196,7 @@ impl<T: Real> Matrix<T> {
                     data[i * n + i] = rhs + T::one();
                 }
                 Matrix {
-                    n: n,
+                    n,
                     m: n,
                     data,
                     storage: MatrixStorage::Full,
@@ -204,7 +204,7 @@ impl<T: Real> Matrix<T> {
             }
             MatrixStorage::Full => {
                 for v in &mut self.data {
-                    *v = *v + rhs;
+                    *v += rhs;
                 }
                 self
             }
@@ -227,7 +227,7 @@ impl<T: Real> Matrix<T> {
                         }
                     }
                     Matrix {
-                        n: n,
+                        n,
                         m: n,
                         data: dense,
                         storage: MatrixStorage::Full,

@@ -39,7 +39,7 @@ impl<T: Real> Matrix<T> {
                         let i_signed = j as isize + k;
                         if i_signed >= 0 && (i_signed as usize) < self.n {
                             let i = i_signed as usize;
-                            a[i * self.m + j] = a[i * self.m + j] + self.data[r * self.m + j];
+                            a[i * self.m + j] += self.data[r * self.m + j];
                         }
                     }
                 }
@@ -101,7 +101,7 @@ impl<T: Real> Matrix<T> {
         for i in 0..n {
             let mut sum = x.get(i);
             for k in 0..i {
-                sum = sum - a[i * n + k] * x.get(k);
+                sum -= a[i * n + k] * x.get(k);
             }
             x.set(i, sum); // since L has ones on diagonal
         }
@@ -110,7 +110,7 @@ impl<T: Real> Matrix<T> {
         for i in (0..n).rev() {
             let mut sum = x.get(i);
             for k in (i + 1)..n {
-                sum = sum - a[i * n + k] * x.get(k);
+                sum -= a[i * n + k] * x.get(k);
             }
             x.set(i, sum / a[i * n + i]);
         }
@@ -154,7 +154,7 @@ impl<T: Real> Matrix<T> {
                         let i_signed = j as isize + k;
                         if i_signed >= 0 && (i_signed as usize) < self.n {
                             let i = i_signed as usize;
-                            a[i * self.m + j] = a[i * self.m + j] + self.data[r * self.m + j];
+                            a[i * self.m + j] += self.data[r * self.m + j];
                         }
                     }
                 }
@@ -197,7 +197,7 @@ impl<T: Real> Matrix<T> {
         for i in 0..n {
             let mut sum = b[i];
             for k in 0..i {
-                sum = sum - a[i * n + k] * b[k];
+                sum -= a[i * n + k] * b[k];
             }
             b[i] = sum;
         }
@@ -205,7 +205,7 @@ impl<T: Real> Matrix<T> {
         for i in (0..n).rev() {
             let mut sum = b[i];
             for k in (i + 1)..n {
-                sum = sum - a[i * n + k] * b[k];
+                sum -= a[i * n + k] * b[k];
             }
             b[i] = sum / a[i * n + i];
         }

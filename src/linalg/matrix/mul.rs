@@ -12,7 +12,7 @@ impl<T: Real> Matrix<T> {
             MatrixStorage::Identity => Matrix::diagonal(vec![rhs; self.n]),
             MatrixStorage::Full => {
                 for v in &mut self.data {
-                    *v = *v * rhs;
+                    *v *= rhs;
                 }
                 self
             }
@@ -20,7 +20,7 @@ impl<T: Real> Matrix<T> {
                 let n = self.n;
                 let data = self.data.into_iter().map(|x| x * rhs).collect();
                 Matrix {
-                    n: n,
+                    n,
                     m: n,
                     data,
                     storage: MatrixStorage::Banded {
@@ -49,12 +49,12 @@ impl<T: Real> Matrix<T> {
             }
             MatrixStorage::Full => {
                 for v in &mut self.data {
-                    *v = *v * rhs;
+                    *v *= rhs;
                 }
             }
             MatrixStorage::Banded { .. } => {
                 for v in &mut self.data {
-                    *v = *v * rhs;
+                    *v *= rhs;
                 }
             }
         }
@@ -68,7 +68,7 @@ impl<T: Real> Matrix<T> {
         for i in 0..n {
             let mut sum = T::zero();
             for j in 0..n {
-                sum = sum + self[(i, j)] * vec.get(j);
+                sum += self[(i, j)] * vec.get(j);
             }
             result.set(i, sum);
         }

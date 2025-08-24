@@ -146,7 +146,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
                 // Update z and increment norm
                 increment_norm = T::zero();
-                self.z = self.z + self.delta_z;
+                self.z += self.delta_z;
                 for row_idx in 0..dim {
                     // Calculate infinity norm of increment
                     increment_norm = increment_norm.max(self.delta_z.get(row_idx).abs());
