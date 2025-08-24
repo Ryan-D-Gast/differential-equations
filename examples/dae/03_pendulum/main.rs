@@ -1,14 +1,29 @@
-//! Example 03: Constrained Pendulum (index-2 DAE)
+//! # Example 03: Constrained pendulum (index-2 DAE)
 //!
-//! This example demonstrates a constrained pendulum written as a DAE with a
-//! Lagrange multiplier. The system variables are [x, y, vx, vy, lambda]
-//! where (x,y) is the Cartesian position of the mass, (vx,vy) the velocity,
-//! and lambda the Lagrange multiplier enforcing the holonomic constraint
-//! x^2 + y^2 = L^2.  The DAE is arranged so that the last equation is the
-//! algebraic constraint (mass matrix row = 0) and the dynamics contain the
-//! multiplier.  This formulation is a classic index-2 test problem for DAE
-//! solvers. Note how during solver setup, we specify the index-2 equations
-//! to ensure the solver can handle the algebraic constraints properly.
+//! This example demonstrates a constrained pendulum formulated as an
+//! index-2 DAE using a Lagrange multiplier. The state vector is
+//! [x, y, vx, vy, lambda], where (x,y) is the Cartesian position of the
+//! mass, (vx,vy) the velocity, and lambda the Lagrange multiplier that
+//! enforces the holonomic constraint x^2 + y^2 = L^2.
+//!
+//! Equations:
+//! dx/dt = vx
+//! dy/dt = vy
+//! dvx/dt = -lambda * x
+//! dvy/dt = -lambda * y - g
+//! 0 = x^2 + y^2 - L^2   (index-2 algebraic constraint)
+//!
+//! Initial conditions used in this example:
+//! theta(0) = pi/4, x(0) = L*sin(theta), y(0) = -L*cos(theta), vx(0)=0, vy(0)=0
+//! lambda(0) is computed consistently from the second derivative of the
+//! constraint: x*ax + y*ay + vx^2 + vy^2 = 0.
+//!
+//! Jacobian (non-zero structure, rows = equations, cols = [x,y,vx,vy,lambda]):
+//! J = [ 0, 0, 1, 0, 0
+//!       0, 0, 0, 1, 0
+//!      -lambda, 0, 0, 0, -x
+//!       0, -lambda,0, 0, -y
+//!       2x, 2y, 0, 0, 0 ]
 
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
@@ -43,7 +58,7 @@ impl DAE<f64, SVector<f64, 5>> for Pendulum {
         f[2] = -lambda * x;
         f[3] = -lambda * yy - self.g;
 
-        // algebraic constraint: position must remain on circle of radius L
+        // index-2 algebraic constraint: position must remain on circle of radius L
         f[4] = x * x + yy * yy - self.l * self.l;
     }
 
