@@ -29,7 +29,6 @@ use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 use quill::prelude::*;
 
-/// Constrained pendulum model (cartesian coordinates)
 struct Pendulum {
     g: f64,
     l: f64,
@@ -63,7 +62,6 @@ impl DAE<f64, SVector<f64, 5>> for Pendulum {
     }
 
     fn mass(&self, m: &mut Matrix<f64>) {
-        // Differential eqns have mass 1, constraint is algebraic (mass 0)
         m[(0, 0)] = 1.0;
         m[(1, 1)] = 1.0;
         m[(2, 2)] = 1.0;
@@ -119,7 +117,7 @@ fn main() {
         .rtol(1e-8)
         .atol([1e-10, 1e-10, 1e-10, 1e-10, 1e-12])
         // Required for index-2 (or index-3) dae problems otherwise step size will converge to zero.
-        .index2_equations_idxs(vec![4]);
+        .index2_equations([4]);
 
     let g = 9.81;
     let l = 1.0;
@@ -142,14 +140,23 @@ fn main() {
     let problem = DAEProblem::new(model, t0, tf, y0);
     match problem.even(0.05).solve(&mut method) {
         Ok(solution) => {
-            println!("Function evaluations: {}", solution.evals.function);
-            println!("Steps: {}", solution.steps.total());
-
+            // Solution points
             println!("\nConstrained pendulum solution (x, y):");
             println!("{:>8}  {:>12}  {:>12}  {:>12}", "Time", "x", "y", "lambda");
             for (t, y) in solution.iter() {
                 println!("{:8.4}  {:12.8}  {:12.8}  {:12.8}", t, y[0], y[1], y[4]);
             }
+
+            // Print solver statistics
+            println!("\nSolver Statistics:");
+            println!("  Function evaluations: {}", solution.evals.function);
+            println!("  Jacobian evaluations: {}", solution.evals.jacobian);
+            println!("  LU decompositions: {}", solution.evals.decompositions);
+            println!("  Linear solves: {}", solution.evals.solves);
+            println!("  Accepted steps: {}", solution.steps.accepted);
+            println!("  Rejected steps: {}", solution.steps.rejected);
+            println!("  Total steps: {}", solution.steps.total());
+            println!("  Solve time: {}", solution.timer.elapsed());
 
             // Plot x and y vs time
             let s1: Vec<(f64, f64)> = solution.iter().map(|(t, y)| (*t, y[0])).collect();

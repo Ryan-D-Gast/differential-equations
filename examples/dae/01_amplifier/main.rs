@@ -196,9 +196,10 @@ fn main() {
         Ok(solution) => {
             // Print the solution
             println!("Amplifier DAE Solution:");
-            println!("Time     Y[0]              Y[1]              NSTEP");
-            for (i, (t, y)) in solution.iter().enumerate() {
-                println!("{:7.4}   {:16.10e}   {:16.10e}   {:4}", t, y[0], y[1], i);
+            // Print a clean table with Time, Y[0], and Y[1]
+            println!("{:>10}  {:>20}  {:>20}", "Time", "Y[0]", "Y[1]");
+            for (t, y) in solution.iter() {
+                println!("{:10.4}  {:20.10e}  {:20.10e}", t, y[0], y[1]);
             }
 
             // Print final result
@@ -221,19 +222,3 @@ fn main() {
         Err(e) => panic!("Error solving DAE: {:?}", e),
     }
 }
-
-/*
-Fortran output
-X = 0.0275    Y =  0.2467076493E+00  0.5756038700E+01    NSTEP = 124
- X = 0.0300    Y =  0.2426560786E+00  0.5765652267E+01    NSTEP = 128
- X = 0.0325    Y = -0.4129386794E+01  0.1315181672E+01    NSTEP = 145
- X = 0.0350    Y = -0.1493819637E+01  0.3773941357E+01    NSTEP = 156
- X = 0.0375    Y =  0.3712447894E+00  0.5631351277E+01    NSTEP = 172
- X = 0.0400    Y =  0.3637331115E+00  0.5644330299E+01    NSTEP = 176
- X = 0.0425    Y = -0.4017313718E+01  0.1190761752E+01    NSTEP = 192
- X = 0.0450    Y = -0.1382850300E+01  0.3654630903E+01    NSTEP = 203
- X = 0.0475    Y =  0.4832264317E+00  0.5519257543E+01    NSTEP = 218
- X = 0.0500    Y =  0.4726948107E+00  0.5535355822E+01
-       tol=0.10D-04
- fcn= 2596 jac= 214 step= 276 accpt= 221 rejct= 18 dec= 274 sol=  791
-*/

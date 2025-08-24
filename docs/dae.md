@@ -14,10 +14,8 @@ The `DAE` trait defines the system in the form `M·y' = f(t, y)`, where `M` is t
 ### DAE Trait
 * `diff` - Right-hand side function `f(t, &y, &mut f)`.
 * `mass` - Mass matrix function `mass(&mut M)`.
+* `jac` - Jacobian matrix function `jac(t, &y, &mut J)`.
 * `event` - Optional event function to interrupt the solver when a condition is met, returning `ControlFlag::Terminate(reason: CallBackData)`.
-
-### Solout Trait
-* `solout` - Function to choose which points to save in the solution. Common implementations are included in the `solout` module. The `DAEProblem` trait implements methods to use them easily, e.g. `even`, `dense`, and `t_eval`.
 
 ### Implementation (Amplifier DAE example)
 
@@ -187,42 +185,32 @@ fn main() {
 }
 ```
 
-## Examples
-
-For more examples, see the `examples` directory. The examples demonstrate different systems, methods, and output methods for different use cases.
-
-| Example | Description & Demonstrated Features |
-|---|---|
-| [Amplifier DAE](../examples/dae/01_amplifier/main.rs) | Simple index-1 DAE for an amplifier circuit. |
-| [Robertson DAE](../examples/dae/02_robertson/main.rs) | Stiff chemical kinetics DAE with conservation constraint. |
-| [Pendulum DAE](../examples/dae/03_pendulum/main.rs) | Index-2 DAE for a constrained pendulum. |
-
-### Amplifier DAE Example Output
+#### Amplifier DAE Example Output
 
 ```
 Amplifier DAE Solution:
-Time     Y[0]              Y[1]              NSTEP
- 0.0000     0.0000000000e0     6.0000000000e0      0
- 0.0025    4.3516991222e-3     6.0045583009e0      1
- 0.0050    4.2278512534e-3     6.0046728642e0      2
- 0.0075    4.1165476872e-3     6.0047930921e0      3
- 0.0100    4.0045517143e-3     6.0049066607e0      4
- 0.0125    -2.5259407749e0     3.4634019125e0      5
- 0.0150    -1.7525423226e0     4.0560492607e0      6
- 0.0175    1.0822010043e-1     5.8946214149e0      7
- 0.0200    1.0814698817e-1     5.9006241065e0      8
- 0.0225    -4.2534133306e0     1.4541357784e0      9
- 0.0250    -1.6167649413e0     3.9071049103e0     10
- 0.0275    2.4666792313e-1     5.7559985011e0     11
- 0.0300    2.4277052064e-1     5.7657672155e0     12
- 0.0325    -4.1294779779e0     1.3150897876e0     13
- 0.0350    -1.4939802105e0     3.7737789902e0     14
- 0.0375    3.7115418728e-1     5.6312596348e0     15
- 0.0400    3.6364762672e-1     5.6442455894e0     16
- 0.0425    -4.0171912750e0     1.1908843667e0     17
- 0.0450    -1.3829565815e0     3.6545229219e0     18
- 0.0475    4.8339787186e-1     5.5194284082e0     19
- 0.0500    4.7269794728e-1     5.5353588484e0     20
+      Time                  Y[0]                  Y[1]
+    0.0000        0.0000000000e0        6.0000000000e0
+    0.0025       4.3516991222e-3        6.0045583009e0
+    0.0050       4.2278512534e-3        6.0046728642e0
+    0.0075       4.1165476872e-3        6.0047930921e0
+    0.0100       4.0045517143e-3        6.0049066607e0
+    0.0125       -2.5259407749e0        3.4634019125e0
+    0.0150       -1.7525423226e0        4.0560492607e0
+    0.0175       1.0822010043e-1        5.8946214149e0
+    0.0200       1.0814698817e-1        5.9006241065e0
+    0.0225       -4.2534133306e0        1.4541357784e0
+    0.0250       -1.6167649413e0        3.9071049103e0
+    0.0275       2.4666792313e-1        5.7559985011e0
+    0.0300       2.4277052064e-1        5.7657672155e0
+    0.0325       -4.1294779779e0        1.3150897876e0
+    0.0350       -1.4939802105e0        3.7737789902e0
+    0.0375       3.7115418728e-1        5.6312596348e0
+    0.0400       3.6364762672e-1        5.6442455894e0
+    0.0425       -4.0171912750e0        1.1908843667e0
+    0.0450       -1.3829565815e0        3.6545229219e0
+    0.0475       4.8339787186e-1        5.5194284082e0
+    0.0500       4.7269794728e-1        5.5353588484e0
 
 Final solution at t =  0.0500:
   Y[0] =    4.7269794728e-1
@@ -236,5 +224,15 @@ Solver Statistics:
   Successful steps: 124
   Rejected steps: 63
   Total steps: 187
-  Solve time: 0.0372095
+  Solve time: 0.036072
 ```
+
+## Examples
+
+For more examples, see the `examples` directory. The examples demonstrate different systems, methods, and output methods for different use cases.
+
+| Example | Description & Demonstrated Features |
+|---|---|
+| [Amplifier DAE](../examples/dae/01_amplifier/main.rs) | Simple index-1 DAE for an amplifier circuit. |
+| [Robertson DAE](../examples/dae/02_robertson/main.rs) | Stiff chemical kinetics DAE with conservation constraint. |
+| [Pendulum DAE](../examples/dae/03_pendulum/main.rs) | Index-2 DAE for a constrained pendulum. |``

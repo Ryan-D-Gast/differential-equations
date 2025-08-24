@@ -174,11 +174,3 @@ fn main() {
         Err(e) => panic!("Error solving Robertson DAE: {:?}", e),
     }
 }
-
-/*
-Output from FORTRAN Version
-S C:\Users\Ryan\Desktop\Code\Rust\differential-equations\examples\dae\01_robertson> .\rob_radau5.exe
- X = 1.0E+05    Y =  0.1786592545E-01  0.7274753875E-07  0.9821340018E+00
-       tol=0.10D-04
- fcn=  699 jac=  81 step=  91 accpt=  90 rejct=  1 dec=  91 sol=  203
-*/

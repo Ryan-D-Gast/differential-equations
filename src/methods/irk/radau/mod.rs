@@ -453,14 +453,24 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> Radau5<E, T, Y, D> {
     }
 
     /// Indexes in the state vector of the index two algebraic equations
-    pub fn index2_equations_idxs(mut self, index2eqs: Vec<usize>) -> Self {
-        self.index2 = index2eqs;
+    /// If this isn not set DAE's with index two equation will likely
+    /// cause step-size/error issues leading to a failed solve.
+    pub fn index2_equations<Idxs>(mut self, idxs: Idxs) -> Self
+    where
+        Idxs: Into<Vec<usize>>,
+    {
+        self.index2 = idxs.into();
         self
     }
 
     /// Indexes in the state vector of the index three algebraic equations
-    pub fn index3_equations_idxs(mut self, index3eqs: Vec<usize>) -> Self {
-        self.index3 = index3eqs;
+    /// If this isn not set DAE's with index three equation will likely
+    /// cause step-size/error issues leading to a failed solve.
+    pub fn index3_equations<Idxs>(mut self, idxs: Idxs) -> Self
+    where
+        Idxs: Into<Vec<usize>>,
+    {
+        self.index3 = idxs.into();
         self
     }
 
