@@ -50,10 +50,10 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> ImplicitRungeKutta<E, Radau, T, Y
 /// - `examples/dae/02_robertson` - stiff chemical kinetics DAE benchmark
 /// - `examples/dae/03_pendulum` - constrained pendulum of index-2
 /// - `examples/ode/13_vanderpol` - Very Stiff Van der Pol oscillator
-/// 
+///
 /// # Notes
 /// - The real and absolute tolerances are modified during initialization
-///   to ensure proper error control based on other settings. Thus an 
+///   to ensure proper error control based on other settings. Thus an
 ///   inputted `atol` of `1e-6` will become a different value to reflect
 ///   the desired accuracy. This matches the original Radau5 implementation.
 ///
