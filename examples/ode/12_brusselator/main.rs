@@ -48,7 +48,7 @@ fn main() {
     let problem = ODEProblem::new(ode, t0, tf, y0);
 
     // --- Solve the ODE ---
-    let mut method = ImplicitRungeKutta::radau5();
+    let mut method = ImplicitRungeKutta::gauss_legendre_6();
     match problem.even(0.5).solve(&mut method) {
         Ok(solution) => {
             // Print the solution

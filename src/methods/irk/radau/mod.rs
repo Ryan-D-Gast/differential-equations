@@ -1,7 +1,5 @@
 //! IRK with Newton solves and adaptive step size.
 
-// TODO: Currently Stiff problems result in too many rejected steps and high error/step requirement often failing. Nonstiff problems work fine. There is probably a bug somewhere.
-
 mod algebraic;
 mod initialize;
 mod interpolate;
@@ -21,12 +19,46 @@ use crate::{
 /// Constructor for Radau5
 impl<E, T: Real, Y: State<T>, D: CallBackData> ImplicitRungeKutta<E, Radau, T, Y, D, 5, 3, 3> {
     /// Creates a new Radau IIA 3-stage implicit Runge-Kutta method of order 5.
+    ///
+    /// For full usage details, DAE index handling, tuning notes and examples,
+    /// see the documentation on the [`Radau5`] type.
     pub fn radau5() -> Radau5<E, T, Y, D> {
         Radau5::default()
     }
 }
 
-/// Radau IIA(5) implicit RK with adaptive step size and dense output.
+/// Radau IIA 5th-order implicit Runge–Kutta (3-stage) with Newton solves,
+/// adaptive step-size control and dense (continuous) output.
+///
+/// # Overview
+/// - Solves stiff ODEs and DAEs expressed in the form M·y' = f(t, y).
+/// - Uses a 3-stage Radau IIA collocation of order 5 with embedded error
+///   estimation and optional Gustafsson predictive step controller.
+///
+/// # DAE support and index handling
+/// - This implementation supports index-1, index-2 and index-3 DAE systems.
+/// - For index-2 and index-3 problems the solver needs to know which
+///   equations are algebraic (constraints). Use the builder helpers
+///   `.index2_equations([...])` and `.index3_equations([...])` to
+///   declare the equation indices that correspond to higher-index algebraic
+///   constraints. Supplying this information changes how the mass/jacobian
+///   rows are treated and prevents step-size collapse on higher-index DAEs.
+/// - Indices are 0-based and refer to positions in the state vector `y`.
+///
+/// # Examples
+/// - `examples/dae/01_amplifier` - Amplifier circuit of index-1
+/// - `examples/dae/02_robertson` - stiff chemical kinetics DAE benchmark
+/// - `examples/dae/03_pendulum` - constrained pendulum of index-2
+/// - `examples/ode/13_vanderpol` - Very Stiff Van der Pol oscillator
+/// 
+/// # Notes
+/// - The real and absolute tolerances are modified during initialization
+///   to ensure proper error control based on other settings. Thus an 
+///   inputted `atol` of `1e-6` will become a different value to reflect
+///   the desired accuracy. This matches the original Radau5 implementation.
+///
+/// # References
+/// - Hairer, E., & Wanner, G. (1996). "Solving Ordinary Differential Equations II."
 pub struct Radau5<E, T: Real, Y: State<T>, D: CallBackData> {
     // Configuration
     /// Relative error tolerance for adaptive step size control
