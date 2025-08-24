@@ -193,8 +193,9 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 
 | Example | Description & Demonstrated Features |
 |---|---|
-| [Amplifier DAE](../../examples/dae/01_amplifier/main.rs) | Simple index-1 DAE for an amplifier circuit. |
-| [Robertson DAE](../../examples/dae/02_robertson/main.rs) | Stiff chemical kinetics DAE with conservation constraint. |
+| [Amplifier DAE](../examples/dae/01_amplifier/main.rs) | Simple index-1 DAE for an amplifier circuit. |
+| [Robertson DAE](../examples/dae/02_robertson/main.rs) | Stiff chemical kinetics DAE with conservation constraint. |
+| [Pendulum DAE](../examples/dae/03_pendulum/main.rs) | Index-2 DAE for a constrained pendulum. |
 
 ### Amplifier DAE Example Output
 
