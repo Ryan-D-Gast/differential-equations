@@ -227,7 +227,9 @@ impl<
                 let mut dde_iteration_error = T::zero();
                 let n_dim = self.y.len();
                 for i_dim in 0..n_dim {
-                    let scale = self.atol[i_dim] + self.rtol[i_dim] * y_next_est_prev.get(i_dim).abs().max(y_new.get(i_dim).abs());
+                    let scale = self.atol[i_dim]
+                        + self.rtol[i_dim]
+                            * y_next_est_prev.get(i_dim).abs().max(y_new.get(i_dim).abs());
                     if scale > T::zero() {
                         let diff_val = y_new.get(i_dim) - y_next_est_prev.get(i_dim);
                         dde_iteration_error += (diff_val / scale).powi(2);
@@ -242,7 +244,8 @@ impl<
                     break;
                 }
                 if it == max_iter - 1 {
-                    dde_iter_failed = dde_iteration_error > self.rtol.average() * T::from_f64(0.1).unwrap();
+                    dde_iter_failed =
+                        dde_iteration_error > self.rtol.average() * T::from_f64(0.1).unwrap();
                 }
             }
             y_next_est = y_new;

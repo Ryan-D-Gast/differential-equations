@@ -106,6 +106,10 @@ path = "examples/dae/01_amplifier/main.rs"
 name = "dae_02_robertson"
 path = "examples/dae/02_robertson/main.rs"
 
+[[example]]
+name = "dae_03_pendulum"
+path = "examples/dae/03_pendulum/main.rs"
+
 # Stochastic Differential Equation (SDE) examples
 [[example]]
 name = "sde_01_brownian_motion"

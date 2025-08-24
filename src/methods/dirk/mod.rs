@@ -8,8 +8,8 @@ use std::marker::PhantomData;
 use crate::{
     linalg::Matrix,
     status::Status,
-    traits::{CallBackData, Real, State},
     tolerance::Tolerance,
+    traits::{CallBackData, Real, State},
 };
 
 /// DIRK/SDIRK core with fixed/adaptive stepping. Stages are solved

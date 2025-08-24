@@ -9,8 +9,8 @@ use std::{collections::VecDeque, marker::PhantomData};
 use crate::{
     methods::Delay,
     status::Status,
-    traits::{CallBackData, Real, State},
     tolerance::Tolerance,
+    traits::{CallBackData, Real, State},
 };
 
 /// Runge-Kutta solver that can handle:

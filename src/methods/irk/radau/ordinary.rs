@@ -24,16 +24,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
         if self.h0 == T::zero() {
             // Use ode-specific heuristic that respects the mass matrix
             self.h0 = InitialStepSize::<Ordinary>::compute(
-                ode,
-                t0,
-                tf,
-                y0,
-                5,
-                &self.rtol,
-                &self.atol,
-                self.h_min,
-                self.h_max,
-                &mut evals,
+                ode, t0, tf, y0, 5, &self.rtol, &self.atol, self.h_min, self.h_max, &mut evals,
             );
         }
 

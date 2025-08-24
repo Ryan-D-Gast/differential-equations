@@ -70,7 +70,10 @@ fn main() {
             println!("  Function evaluations: {}", solution.evals.function);
             println!("  Jacobian evaluations: {}", solution.evals.jacobian);
             println!("  Newton iterations: {}", solution.evals.newton);
-            println!("  Total LU decompositions: {}", solution.evals.decompositions);
+            println!(
+                "  Total LU decompositions: {}",
+                solution.evals.decompositions
+            );
             println!("  Total Ax=b solves: {}", solution.evals.solves);
             println!("  Total steps taken: {}", solution.steps.total());
             println!("  Accepted steps: {}", solution.steps.accepted);
@@ -81,7 +84,6 @@ fn main() {
         }
     }
 }
-
 
 /* Fortran Radau5 output
 PS C:\Users\Ryan\Desktop\Code\Rust\differential-equations\tools\radau_vanderpol_test> .\radau_vanderpol.exe

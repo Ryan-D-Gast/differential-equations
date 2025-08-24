@@ -194,7 +194,8 @@ impl<
             // Infinity-norm-like error scaled by atol/rtol
             err_norm = T::zero();
             for n in 0..self.y.len() {
-                let tol = self.atol[n] + self.rtol[n] * self.y.get(n).abs().max(y_high.get(n).abs());
+                let tol =
+                    self.atol[n] + self.rtol[n] * self.y.get(n).abs().max(y_high.get(n).abs());
                 err_norm = err_norm.max((err_vec.get(n) / tol).abs());
             }
 

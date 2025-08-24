@@ -9,8 +9,8 @@ use std::marker::PhantomData;
 use crate::{
     linalg::Matrix,
     status::Status,
-    traits::{CallBackData, Real, State},
     tolerance::Tolerance,
+    traits::{CallBackData, Real, State},
 };
 
 /// IRK solver core. Supports fixed/adaptive stepping and common IRK families
@@ -162,7 +162,6 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
         self.atol = atol.into();
         self
     }
-
 
     /// Set initial step size
     pub fn h0(mut self, h0: T) -> Self {

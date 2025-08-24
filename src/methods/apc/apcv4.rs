@@ -8,9 +8,9 @@ use crate::{
     ode::{ODE, OrdinaryNumericalMethod},
     stats::Evals,
     status::Status,
+    tolerance::Tolerance,
     traits::{CallBackData, Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
-    tolerance::Tolerance,
 };
 
 use super::AdamsPredictorCorrector;
