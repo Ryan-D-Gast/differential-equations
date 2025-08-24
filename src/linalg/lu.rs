@@ -51,12 +51,12 @@ use crate::{
 ///
 /// # Examples
 /// ```rust,ignore
-/// use differential_equations::linalg::{Matrix, lu::dec};
+/// use differential_equations::linalg::{Matrix, lu::lu_decomp};
 ///
 /// let mut a = Matrix::from_vec(2, 2, vec![2.0, 1.0, 1.0, 1.0]);
 /// let mut ip = [0; 2];
 ///
-/// match dec(&mut a, &mut ip) {
+/// match lu_decomp(&mut a, &mut ip) {
 ///     Ok(()) => println!("Decomposition successful"),
 ///     Err(err) => println!("Decomposition failed: {}", err),
 /// }
@@ -64,7 +64,7 @@ use crate::{
 ///
 /// # Errors
 /// Returns [`LinalgError`] if the matrix is not square, pivot slice has wrong size, or matrix is singular.
-pub fn dec<T: Real>(a: &mut Matrix<T>, ip: &mut [usize]) -> Result<(), LinalgError> {
+pub fn lu_decomp<T: Real>(a: &mut Matrix<T>, ip: &mut [usize]) -> Result<(), LinalgError> {
     let n = a.nrows();
     if n != a.ncols() {
         return Err(LinalgError::BadInput {
@@ -129,7 +129,7 @@ pub fn dec<T: Real>(a: &mut Matrix<T>, ip: &mut [usize]) -> Result<(), LinalgErr
             // take T = original A(m,j)
             let tj = a[(m, j)];
 
-            // swap the rest of the row entries between m and k (as DEC does)
+            // swap the rest of the row entries between m and k (as lu_decomp does)
             if m != k {
                 let temp = a[(m, j)];
                 a[(m, j)] = a[(k, j)];
@@ -189,13 +189,13 @@ pub fn dec<T: Real>(a: &mut Matrix<T>, ip: &mut [usize]) -> Result<(), LinalgErr
 ///
 /// # Examples
 /// ```rust,ignore
-/// use differential_equations::linalg::{Matrix, lu::decc};
+/// use differential_equations::linalg::{Matrix, lu_decomp_complex};
 ///
 /// let mut ar = Matrix::from_vec(2, 2, vec![1.0, 0.0, 0.0, 1.0]);
 /// let mut ai = Matrix::from_vec(2, 2, vec![0.0, 1.0, 1.0, 0.0]);
 /// let mut ip = [0; 2];
 ///
-/// match decc(&mut ar, &mut ai, &mut ip) {
+/// match lu_decomp_complex(&mut ar, &mut ai, &mut ip) {
 ///     Ok(()) => println!("Complex decomposition successful"),
 ///     Err(err) => println!("Complex decomposition failed: {}", err),
 /// }
@@ -203,7 +203,7 @@ pub fn dec<T: Real>(a: &mut Matrix<T>, ip: &mut [usize]) -> Result<(), LinalgErr
 ///
 /// # Errors
 /// Returns [`LinalgError`] if matrices have inconsistent dimensions, pivot slice has wrong size, or matrix is singular.
-pub fn decc<T: Real>(
+pub fn lu_decomp_complex<T: Real>(
     ar: &mut Matrix<T>,
     ai: &mut Matrix<T>,
     ip: &mut [usize],
@@ -348,7 +348,7 @@ mod tests {
         let mut a = Matrix::from_vec(2, 2, vec![2.0_f64, 1.0, 4.0, 3.0]);
         let mut ip = [0; 2];
 
-        let result = dec(&mut a, &mut ip);
+        let result = lu_decomp(&mut a, &mut ip);
         assert!(result.is_ok());
 
         // The matrix should be factorized in-place
@@ -363,7 +363,7 @@ mod tests {
         let mut a = Matrix::from_vec(2, 2, vec![1.0_f64, 0.0, 0.0, 0.0]);
         let mut ip = [0; 2];
 
-        let result = dec(&mut a, &mut ip);
+        let result = lu_decomp(&mut a, &mut ip);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), LinalgError::Singular { step: 2 });
     }
@@ -374,7 +374,7 @@ mod tests {
         let mut a = Matrix::from_vec(1, 1, vec![5.0_f64]);
         let mut ip = [0; 1];
 
-        let result = dec(&mut a, &mut ip);
+        let result = lu_decomp(&mut a, &mut ip);
         assert!(result.is_ok());
         assert_eq!(ip[0], 0);
     }
@@ -385,7 +385,7 @@ mod tests {
         let mut a = Matrix::from_vec(1, 1, vec![0.0_f64]);
         let mut ip = [0; 1];
 
-        let result = dec(&mut a, &mut ip);
+        let result = lu_decomp(&mut a, &mut ip);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), LinalgError::Singular { step: 1 });
     }
@@ -397,7 +397,7 @@ mod tests {
         let mut ai = Matrix::from_vec(2, 2, vec![0.0, 1.0, 1.0, 0.0]);
         let mut ip = [0; 2];
 
-        let result = decc(&mut ar, &mut ai, &mut ip);
+        let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
         assert!(result.is_ok());
 
         // Verify that the diagonal elements have non-zero magnitude
@@ -414,7 +414,7 @@ mod tests {
         let mut ai = Matrix::from_vec(2, 2, vec![0.0_f64, 0.0, 0.0, 0.0]);
         let mut ip = [0; 2];
 
-        let result = decc(&mut ar, &mut ai, &mut ip);
+        let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
         assert!(result.is_err());
     }
 
@@ -425,7 +425,7 @@ mod tests {
         let mut ai = Matrix::from_vec(1, 1, vec![4.0_f64]); // 3 + 4i
         let mut ip = [0; 1];
 
-        let result = decc(&mut ar, &mut ai, &mut ip);
+        let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
         assert!(result.is_ok());
         assert_eq!(ip[0], 0);
     }
@@ -437,7 +437,7 @@ mod tests {
         let mut ai = Matrix::from_vec(1, 1, vec![0.0_f64]);
         let mut ip = [0; 1];
 
-        let result = decc(&mut ar, &mut ai, &mut ip);
+        let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
         assert!(result.is_err());
     }
 }

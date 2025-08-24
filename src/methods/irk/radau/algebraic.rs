@@ -3,7 +3,7 @@
 use crate::{
     dae::{AlgebraicNumericalMethod, DAE},
     error::Error,
-    linalg::{Matrix, linear, lu},
+    linalg::{Matrix, lin_solve, lin_solve_complex, lu_decomp, lu_decomp_complex},
     methods::{Algebraic, h_init::InitialStepSize, irk::radau::Radau5},
     stats::Evals,
     status::Status,
@@ -81,7 +81,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
                     self.e1[(i, j)] = self.mass[(i, j)] * fac1 - self.jacobian[(i, j)];
                 }
             }
-            if lu::dec(&mut self.e1, &mut self.ip1).is_err() {
+            if lu_decomp(&mut self.e1, &mut self.ip1).is_err() {
                 self.singular_count += 1;
                 if self.singular_count > 5 {
                     self.status = Status::Error(Error::LinearAlgebra {
@@ -103,7 +103,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
                     self.e2i[(i, j)] = m * betan;
                 }
             }
-            if lu::decc(&mut self.e2r, &mut self.e2i, &mut self.ip2).is_err() {
+            if lu_decomp_complex(&mut self.e2r, &mut self.e2i, &mut self.ip2).is_err() {
                 self.singular_count += 1;
                 if self.singular_count > 5 {
                     self.status = Status::Error(Error::LinearAlgebra {
@@ -245,13 +245,13 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
             }
 
             // Solve E1 * Z1 = RHS1 (real system)
-            linear::sol(&self.e1, &mut self.z[0], &self.ip1);
+            lin_solve(&self.e1, &mut self.z[0], &self.ip1);
 
             // Solve complex system for (Z2, Z3)
             let (z12, z3) = self.z.split_at_mut(2);
             let z2 = &mut z12[1];
             let z3 = &mut z3[0];
-            linear::solc(&self.e2r, &self.e2i, z2, z3, &self.ip2);
+            lin_solve_complex(&self.e2r, &self.e2i, z2, z3, &self.ip2);
 
             // Record solves
             evals.solves += 2;
@@ -337,7 +337,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
             f2.set(i, sum);
             cont.set(i, sum + self.dydt.get(i));
         }
-        linear::sol(&self.e1, &mut cont, &self.ip1);
+        lin_solve(&self.e1, &mut cont, &self.ip1);
         evals.solves += 1;
 
         // Error estimate
@@ -358,7 +358,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
 
             // cont = f1 + F2; solve again
             cont = f1 + f2;
-            linear::sol(&self.e1, &mut cont, &self.ip1);
+            lin_solve(&self.e1, &mut cont, &self.ip1);
             evals.solves += 1;
 
             // Recompute error
