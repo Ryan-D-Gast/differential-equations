@@ -243,40 +243,40 @@ pub struct Radau5<E, T: Real, Y: State<T>, D: CallBackData> {
 impl<E, T: Real, Y: State<T>, D: CallBackData> Default for Radau5<E, T, Y, D> {
     fn default() -> Self {
         // Radau IIA(5) constants
-        let c1_t = T::from_f64(0.155051025721682190).unwrap();
-        let c2_t = T::from_f64(0.644948974278317810).unwrap();
-        let c1m1 = T::from_f64(-0.844948974278317810).unwrap();
-        let c2m1 = T::from_f64(-0.355051025721682190).unwrap();
-        let c1mc2 = T::from_f64(-0.489897948556635620).unwrap();
+        let c1_t = T::from_f64(0.155_051_025_721_682_2).unwrap();
+        let c2_t = T::from_f64(0.644_948_974_278_317_8).unwrap();
+        let c1m1 = T::from_f64(-0.844_948_974_278_317_8).unwrap();
+        let c2m1 = T::from_f64(-0.355_051_025_721_682_2).unwrap();
+        let c1mc2 = T::from_f64(-0.489_897_948_556_635_6).unwrap();
 
-        let dd1 = T::from_f64(-10.0488093998274156).unwrap();
-        let dd2 = T::from_f64(1.38214273316074890).unwrap();
-        let dd3 = T::from_f64(-0.333333333333333333).unwrap();
+        let dd1 = T::from_f64(-10.048_809_399_827_416).unwrap();
+        let dd2 = T::from_f64(1.382_142_733_160_749).unwrap();
+        let dd3 = T::from_f64(-0.333_333_333_333_333_3).unwrap();
 
-        let u1 = T::from_f64(3.63783425274449573).unwrap();
-        let alph = T::from_f64(2.68108287362775213).unwrap();
-        let beta = T::from_f64(3.05043019924741057).unwrap();
+        let u1 = T::from_f64(3.637_834_252_744_496).unwrap();
+        let alph = T::from_f64(2.681_082_873_627_752_3).unwrap();
+        let beta = T::from_f64(3.050_430_199_247_410_5).unwrap();
 
         // Transformation matrices
         let mut tmat = Matrix::zeros(3, 3);
-        tmat[(0, 0)] = T::from_f64(9.1232394870892942792E-02).unwrap();
-        tmat[(0, 1)] = T::from_f64(-0.14125529502095420843E0).unwrap();
-        tmat[(0, 2)] = T::from_f64(-3.0029194105147424492E-02).unwrap();
-        tmat[(1, 0)] = T::from_f64(0.24171793270710701896E0).unwrap();
-        tmat[(1, 1)] = T::from_f64(0.20412935229379993199E0).unwrap();
-        tmat[(1, 2)] = T::from_f64(0.38294211275726193779E0).unwrap();
-        tmat[(2, 0)] = T::from_f64(0.96604818261509293619E0).unwrap();
+        tmat[(0, 0)] = T::from_f64(9.123_239_487_089_295E-2).unwrap();
+        tmat[(0, 1)] = T::from_f64(-1.412_552_950_209_542E-1).unwrap();
+        tmat[(0, 2)] = T::from_f64(-3.002_919_410_514_742_4E-2).unwrap();
+        tmat[(1, 0)] = T::from_f64(2.417_179_327_071_07E-1).unwrap();
+        tmat[(1, 1)] = T::from_f64(2.041_293_522_937_999_4E-1).unwrap();
+        tmat[(1, 2)] = T::from_f64(3.829_421_127_572_619E-1).unwrap();
+        tmat[(2, 0)] = T::from_f64(9.660_481_826_150_93E-1).unwrap();
 
         let mut tinv = Matrix::zeros(3, 3);
-        tinv[(0, 0)] = T::from_f64(4.3255798900631553510E0).unwrap();
-        tinv[(0, 1)] = T::from_f64(0.33919925181580986954E0).unwrap();
-        tinv[(0, 2)] = T::from_f64(0.54177053993587487119E0).unwrap();
-        tinv[(1, 0)] = T::from_f64(-4.1787185915519047273E0).unwrap();
-        tinv[(1, 1)] = T::from_f64(-0.32768282076106238708E0).unwrap();
-        tinv[(1, 2)] = T::from_f64(0.47662355450055045196E0).unwrap();
-        tinv[(2, 0)] = T::from_f64(-0.50287263494578687595E0).unwrap();
-        tinv[(2, 1)] = T::from_f64(2.5719269498556054292E0).unwrap();
-        tinv[(2, 2)] = T::from_f64(-0.59603920482822492497E0).unwrap();
+        tinv[(0, 0)] = T::from_f64(4.325_579_890_063_155).unwrap();
+        tinv[(0, 1)] = T::from_f64(3.391_992_518_158_098_4E-1).unwrap();
+        tinv[(0, 2)] = T::from_f64(5.417_705_399_358_749E-1).unwrap();
+        tinv[(1, 0)] = T::from_f64(-4.178_718_591_551_905).unwrap();
+        tinv[(1, 1)] = T::from_f64(-3.276_828_207_610_623_7E-1).unwrap();
+        tinv[(1, 2)] = T::from_f64(4.766_235_545_005_504_4E-1).unwrap();
+        tinv[(2, 0)] = T::from_f64(-5.028_726_349_457_868E-1).unwrap();
+        tinv[(2, 1)] = T::from_f64(2.571_926_949_855_605).unwrap();
+        tinv[(2, 2)] = T::from_f64(-5.960_392_048_282_249E-1).unwrap();
 
         // Step-size controller and Newton tolerance
         let safety_factor = T::from_f64(0.9).unwrap();
@@ -288,7 +288,7 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> Default for Radau5<E, T, Y, D> {
         let rtol_default = T::from_f64(0.000001).unwrap();
         let atol_default = T::from_f64(0.000001).unwrap();
         let uround = T::from_f64(1e-16).unwrap();
-        let newton_tol_default = T::from_f64(0.00316227766016837933).unwrap();
+        let newton_tol_default = T::from_f64(0.003_162_277_660_168_379_4).unwrap();
 
         Self {
             // Settings
