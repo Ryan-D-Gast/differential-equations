@@ -353,7 +353,6 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
         // Optional refinement: on first or rejected step and large error
         if err >= T::one() && (self.first || self.reject) {
             cont = self.y + cont;
-            f1 = Y::zeros();
             dae.diff(self.t, &cont, &mut f1);
             evals.function += 1;
 

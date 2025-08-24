@@ -103,43 +103,43 @@ pub fn dec<T: Real>(a: &mut Matrix<T>, ip: &mut [usize]) -> Result<(), LinalgErr
         }
 
         ip[k] = m;
+        // store pivot value (original A(m,k)) before any swapping of row entries
         let pivot = a[(m, k)];
-
-        // Swap rows if needed for pivoting
-        if m != k {
-            for j in 0..n {
-                let temp = a[(m, j)];
-                a[(m, j)] = a[(k, j)];
-                a[(k, j)] = temp;
-            }
-        }
 
         // Check for singularity
         if pivot == T::zero() {
             return Err(LinalgError::Singular { step: k + 1 });
         }
 
-        // Scale column - store negative multipliers
+        // If m != k, swap only the k-th column entries between rows m and k now
+        if m != k {
+            let tmp = a[(m, k)];
+            a[(m, k)] = a[(k, k)];
+            a[(k, k)] = tmp;
+        }
+
+        // Scale column - store negative multipliers (uses original A(i,k))
         let t = T::one() / pivot;
         for i in kp1..n {
             a[(i, k)] = -a[(i, k)] * t;
         }
 
-        // Update remaining submatrix using outer product
+        // Update remaining submatrix using original A(m,j) as multiplier (Fortran uses T=A(M,J))
         for j in kp1..n {
-            let ajk = a[(k, j)];
+            // take T = original A(m,j)
+            let tj = a[(m, j)];
 
-            // Apply row exchange to this column if needed
+            // swap the rest of the row entries between m and k (as DEC does)
             if m != k {
                 let temp = a[(m, j)];
                 a[(m, j)] = a[(k, j)];
                 a[(k, j)] = temp;
             }
 
-            // Apply elimination if the pivot column element is non-zero
-            if ajk != T::zero() {
+            // Apply elimination using the original A(m,j)
+            if tj != T::zero() {
                 for i in kp1..n {
-                    a[(i, j)] = a[(i, j)] + a[(i, k)] * ajk;
+                    a[(i, j)] = a[(i, j)] + a[(i, k)] * tj;
                 }
             }
         }
@@ -252,27 +252,26 @@ pub fn decc<T: Real>(
         }
 
         ip[k] = m;
+        // store original pivot (AR(M,K) + i*AI(M,K))
         let mut tr = ar[(m, k)];
         let mut ti = ai[(m, k)];
-
-        // Swap rows if needed
-        if m != k {
-            for j in 0..n {
-                let temp_r = ar[(m, j)];
-                let temp_i = ai[(m, j)];
-                ar[(m, j)] = ar[(k, j)];
-                ai[(m, j)] = ai[(k, j)];
-                ar[(k, j)] = temp_r;
-                ai[(k, j)] = temp_i;
-            }
-        }
 
         // Check for singularity
         if tr.abs() + ti.abs() == T::zero() {
             return Err(LinalgError::Singular { step: k + 1 });
         }
 
-        // Complex division: 1/(tr + i*ti) = (tr - i*ti)/(tr^2 + ti^2)
+        // If m != k, swap only the (m,k) and (k,k) entries now
+        if m != k {
+            let tmp_r = ar[(m, k)];
+            let tmp_i = ai[(m, k)];
+            ar[(m, k)] = ar[(k, k)];
+            ai[(m, k)] = ai[(k, k)];
+            ar[(k, k)] = tmp_r;
+            ai[(k, k)] = tmp_i;
+        }
+
+        // Complex reciprocal 1/(tr + i*ti) stored as (tr, ti) = (tr/den, -ti/den)
         let den = tr * tr + ti * ti;
         tr = tr / den;
         ti = -ti / den;
@@ -285,12 +284,13 @@ pub fn decc<T: Real>(
             ai[(i, k)] = -prod_i;
         }
 
-        // Update remaining matrix
+        // Update remaining matrix using original AR(M,J), AI(M,J) as multiplier
         for j in kp1..n {
-            let mut ajk_r = ar[(k, j)];
-            let mut ajk_i = ai[(k, j)];
+            // take multiplier = original A(m,j)
+            let mr = ar[(m, j)];
+            let mi = ai[(m, j)];
 
-            // Swap if needed
+            // swap the rest of the row entries between m and k
             if m != k {
                 let temp_r = ar[(m, j)];
                 let temp_i = ai[(m, j)];
@@ -298,33 +298,30 @@ pub fn decc<T: Real>(
                 ai[(m, j)] = ai[(k, j)];
                 ar[(k, j)] = temp_r;
                 ai[(k, j)] = temp_i;
-                ajk_r = temp_r;
-                ajk_i = temp_i;
             }
 
-            if ajk_r.abs() + ajk_i.abs() != T::zero() {
-                // Optimized cases for better performance
-                if ajk_i == T::zero() {
-                    // Real multiplication
+            if mr.abs() + mi.abs() != T::zero() {
+                if mi == T::zero() {
+                    // real multiplier
                     for i in kp1..n {
-                        let prod_r = ar[(i, k)] * ajk_r;
-                        let prod_i = ai[(i, k)] * ajk_r;
+                        let prod_r = ar[(i, k)] * mr;
+                        let prod_i = ai[(i, k)] * mr;
                         ar[(i, j)] = ar[(i, j)] + prod_r;
                         ai[(i, j)] = ai[(i, j)] + prod_i;
                     }
-                } else if ajk_r == T::zero() {
-                    // Imaginary multiplication
+                } else if mr == T::zero() {
+                    // imaginary-only multiplier
                     for i in kp1..n {
-                        let prod_r = -ai[(i, k)] * ajk_i;
-                        let prod_i = ar[(i, k)] * ajk_i;
+                        let prod_r = -ai[(i, k)] * mi;
+                        let prod_i = ar[(i, k)] * mi;
                         ar[(i, j)] = ar[(i, j)] + prod_r;
                         ai[(i, j)] = ai[(i, j)] + prod_i;
                     }
                 } else {
-                    // Full complex multiplication
+                    // general complex multiplier
                     for i in kp1..n {
-                        let prod_r = ar[(i, k)] * ajk_r - ai[(i, k)] * ajk_i;
-                        let prod_i = ai[(i, k)] * ajk_r + ar[(i, k)] * ajk_i;
+                        let prod_r = ar[(i, k)] * mr - ai[(i, k)] * mi;
+                        let prod_i = ai[(i, k)] * mr + ar[(i, k)] * mi;
                         ar[(i, j)] = ar[(i, j)] + prod_r;
                         ai[(i, j)] = ai[(i, j)] + prod_i;
                     }
