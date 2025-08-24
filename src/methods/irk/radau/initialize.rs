@@ -137,6 +137,7 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> Radau5<E, T, Y, D> {
         // Reset stats
         self.steps = 0;
         self.rejects = 0;
+        self.n_accepted = 0;
         self.jacobian_age = 0;
 
         // Initialize state

@@ -211,34 +211,19 @@ pub struct Radau5<E, T: Real, Y: State<T>, D: CallBackData> {
 impl<E, T: Real, Y: State<T>, D: CallBackData> Default for Radau5<E, T, Y, D> {
     fn default() -> Self {
         // Radau IIA(5) constants
+        let c1_t = T::from_f64(0.155051025721682190).unwrap();
+        let c2_t = T::from_f64(0.644948974278317810).unwrap();
+        let c1m1 = T::from_f64(-0.844948974278317810).unwrap();
+        let c2m1 = T::from_f64(-0.355051025721682190).unwrap();
+        let c1mc2 = T::from_f64(-0.489897948556635620).unwrap();
 
-        // Collocation points for Radau IIA(5)
-        let sqrt6 = 6.0_f64.sqrt();
-        let sq6 = T::from_f64(sqrt6).unwrap();
-        let c1_t = (T::from_f64(4.0).unwrap() - sq6) / T::from_f64(10.0).unwrap();
-        let c2_t = (T::from_f64(4.0).unwrap() + sq6) / T::from_f64(10.0).unwrap();
-        let c1m1 = c1_t - T::one();
-        let c2m1 = c2_t - T::one();
-        let c1mc2 = c1_t - c2_t;
+        let dd1 = T::from_f64(-10.0488093998274156).unwrap();
+        let dd2 = T::from_f64(1.38214273316074890).unwrap();
+        let dd3 = T::from_f64(-0.333333333333333333).unwrap();
 
-        // Error estimation coefficients
-        let dd1 = -(T::from_f64(13.0).unwrap() + T::from_f64(7.0).unwrap() * sq6)
-            / T::from_f64(3.0).unwrap();
-        let dd2 = (-T::from_f64(13.0).unwrap() + T::from_f64(7.0).unwrap() * sq6)
-            / T::from_f64(3.0).unwrap();
-        let dd3 = -T::one() / T::from_f64(3.0).unwrap();
-
-        // Coefficients for Newton iteration
-        let p81_13 = T::from_f64(81.0_f64.powf(1.0 / 3.0)).unwrap();
-        let p9_13 = T::from_f64(9.0_f64.powf(1.0 / 3.0)).unwrap();
-        let sqrt3 = T::from_f64(3.0_f64.sqrt()).unwrap();
-        let mut u1 = (T::from_f64(6.0).unwrap() + p81_13 - p9_13) / T::from_f64(30.0).unwrap();
-        let mut alph = (T::from_f64(12.0).unwrap() - p81_13 + p9_13) / T::from_f64(60.0).unwrap();
-        let mut beta = (p81_13 + p9_13) * sqrt3 / T::from_f64(60.0).unwrap();
-        let cno = alph * alph + beta * beta;
-        u1 = T::one() / u1;
-        alph = alph / cno;
-        beta = beta / cno;
+        let u1 = T::from_f64(3.63783425274449573).unwrap();
+        let alph = T::from_f64(2.68108287362775213).unwrap();
+        let beta = T::from_f64(3.05043019924741057).unwrap();
 
         // Transformation matrices
         let mut tmat = Matrix::zeros(3, 3);
@@ -261,23 +246,17 @@ impl<E, T: Real, Y: State<T>, D: CallBackData> Default for Radau5<E, T, Y, D> {
         tinv[(2, 1)] = T::from_f64(2.5719269498556054292E0).unwrap();
         tinv[(2, 2)] = T::from_f64(-0.59603920482822492497E0).unwrap();
 
-        // Default step-size controller parameters
+        // Step-size controller and Newton tolerance
         let safety_factor = T::from_f64(0.9).unwrap();
         let max_newton_iter_usize: usize = 7;
-        let cfac_default = safety_factor
-            * (T::one()
-                + T::from_f64(2.0).unwrap() * T::from_usize(max_newton_iter_usize).unwrap());
+        let cfac_default = T::from_f64(13.5).unwrap();
         let facl_default = T::from_f64(5.0).unwrap();
-        let facr_default = T::from_f64(1.0 / 8.0).unwrap();
+        let facr_default = T::from_f64(0.125).unwrap();
 
-        // Default tolerances and derived Newton tolerance
-        let rtol_default = T::from_f64(1e-6).unwrap();
-        let atol_default = T::from_f64(1e-6).unwrap();
+        let rtol_default = T::from_f64(0.000001).unwrap();
+        let atol_default = T::from_f64(0.000001).unwrap();
         let uround = T::from_f64(1e-16).unwrap();
-        let tolst = T::from_f64(0.1).unwrap() * rtol_default.powf(T::from_f64(2.0 / 3.0).unwrap());
-        let fn_upper = T::from_f64(0.03).unwrap().min(tolst.sqrt());
-        let fn_lower = T::from_f64(10.0).unwrap() * uround / tolst;
-        let newton_tol_default = fn_lower.max(fn_upper);
+        let newton_tol_default = T::from_f64(0.00316227766016837933).unwrap();
 
         Self {
             // Settings

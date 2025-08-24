@@ -253,8 +253,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
             }
 
             // Solve E1 * Z1 = RHS1 (real system)
-            let z1 = &mut self.z[0];
-            linear::sol(&self.e1, z1, &self.ip1);
+            linear::sol(&self.e1, &mut self.z[0], &self.ip1);
 
             // Solve complex system for (Z2, Z3)
             let (z12, z3) = self.z.split_at_mut(2);
@@ -429,22 +428,12 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
             evals.function += 1;
 
             // Dense output coefficients
-            let z1 = self.z[0];
-            let z2 = self.z[1];
-            let z3 = self.z[2];
-
-            let c1 = (z2 - z3) / self.c2m1;
-            let ak = (z1 - z2) / self.c1mc2;
-            let mut acont3 = z1 / self.c1;
-            acont3 = (ak - acont3) / self.c2;
-            let c2 = (ak - c1) / self.c1m1;
-            let c3 = c2 - acont3;
-
-            self.cont = [Y::zeros(); 4];
             self.cont[0] = self.y;
-            self.cont[1] = c1;
-            self.cont[2] = c2;
-            self.cont[3] = c3;
+            self.cont[1] = (self.z[1] - self.z[2]) / self.c2m1;
+            let ak = (self.z[0] - self.z[1]) / self.c1mc2;
+            let acont3 = (ak - (self.z[0] / self.c1)) / self.c2;
+            self.cont[2] = (ak - self.cont[1]) / self.c1m1;
+            self.cont[3] = self.cont[2] - acont3;
 
             // Compute error scale
             for i in 0..n {
