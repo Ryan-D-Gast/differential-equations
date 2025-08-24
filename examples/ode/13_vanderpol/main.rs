@@ -17,7 +17,6 @@
 use differential_equations::prelude::*;
 use nalgebra::Vector2;
 
-/// Van der Pol ODE: y' = f(t, y)
 struct VanderPol {
     mu: f64,
 }
