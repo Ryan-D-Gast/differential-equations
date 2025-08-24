@@ -85,7 +85,6 @@ fn main() {
     let mut method = ImplicitRungeKutta::radau5()
         .rtol(1e-5)
         .atol([1e-6, 1e-10, 1e6]);
-        
 
     // Robertson reaction rate constants
     let k1 = 0.04; // A → B
