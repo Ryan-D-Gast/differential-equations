@@ -7,7 +7,6 @@ Thank you for your interest in contributing to the Differential Equations librar
 If you're looking for ways to contribute, here are some areas where we could use help. In addition if you have ideas to create a pull request to add more.
 
 ### Add Differential Equation Types
-- [ ] Differential Algebraic Equations (DAEs)
 - [ ] Stochastic Delay Differential Equations (SDDEs)
 - Add more if you have ideas!
 
