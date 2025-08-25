@@ -5,7 +5,7 @@
 //! and is a classic test case for DAE solvers.
 //!
 //! The DAE system is in the form:
-//! M * y' = f(t, y)
+//! M y' = f(t, y)
 //!
 //! where:
 //! - M is a singular mass matrix representing the circuit topology
