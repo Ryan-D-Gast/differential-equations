@@ -1,6 +1,6 @@
 //! # differential-equations
 //!
-//! A Rust library for solving ODE, DDE, and SDE initial value problems.
+//! A Rust library for solving ODE, DAE, DDE, and SDE initial value problems.
 //!
 //! [![GitHub](https://img.shields.io/badge/GitHub-differential--equations-blue)](https://github.com/Ryan-D-Gast/differential-equations)
 //! [![Documentation](https://docs.rs/differential-equations/badge.svg)](https://docs.rs/differential-equations)
