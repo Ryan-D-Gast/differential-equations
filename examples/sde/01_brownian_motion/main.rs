@@ -57,12 +57,12 @@ fn main() {
     let y0 = 1.0;
     let sigma = 0.5;
     let seed = 42;
-    let sde = BrownianMotion::new(sigma, seed);
+    let mut sde = BrownianMotion::new(sigma, seed);
 
     // --- Solve the SDE ---
     let dt = 0.01;
     let mut solver = ExplicitRungeKutta::euler(dt);
-    let mut problem = SDEProblem::new(sde, t0, tf, y0);
+    let mut problem = SDEProblem::new(&mut sde, t0, tf, y0);
     let solution = problem.solve(&mut solver).unwrap();
 
     println!("Simulating Brownian motion with σ = {}", sigma);

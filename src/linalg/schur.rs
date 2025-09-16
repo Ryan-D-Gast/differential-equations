@@ -109,7 +109,7 @@ mod tests {
 
     #[test]
     fn schur_mixed_blocks_small_dense() {
-        // Choose small invertible A and D, and simple B, C
+        // Choose small invertible A and and simple B, C
         let a: Matrix<f64> = Matrix::from_vec(2, 2, vec![3.0, 1.0, 2.0, 4.0]);
         let d: Matrix<f64> = Matrix::from_vec(2, 2, vec![2.0, 0.5, 1.0, 3.0]);
         let b: Matrix<f64> = Matrix::from_vec(2, 2, vec![1.0, 0.0, 0.0, 1.0]);

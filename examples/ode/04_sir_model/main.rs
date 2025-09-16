@@ -36,7 +36,7 @@ struct SIRModel {
 // 1. Instead of having the ControlFlag contain a string, we have a custom enum PopulationMonitor that contains the reason for termination.
 // 2. Instead of a float type, or nalgabra matrix/vector type, we use the derive state macro to create our own struct
 //    that contains the state variables of the SIR model. This struct implements the State trait, which allows us to use it with the ODE solver.
-impl ODE<f64, SIRState<f64>, PopulationMonitor> for SIRModel {
+impl ODE<f64, SIRState<f64>> for SIRModel {
     fn diff(&self, _t: f64, y: &SIRState<f64>, dydt: &mut SIRState<f64>) {
         let s = y.susceptible;
         let i = y.infected;
@@ -46,37 +46,16 @@ impl ODE<f64, SIRState<f64>, PopulationMonitor> for SIRModel {
         dydt.infected = self.beta * s * i / self.population - self.gamma * i;
         dydt.recovered = self.gamma * i;
     }
+}
 
-    fn event(
-        &self,
-        _t: f64,
-        y: &SIRState<f64>,
-    ) -> ControlFlag<f64, SIRState<f64>, PopulationMonitor> {
-        let i = y.infected;
-
-        // Terminate the simulation when the number of infected individuals falls below 1
-        if i < 1.0 {
-            ControlFlag::Terminate(PopulationMonitor::InfectedBelowOne)
-        } else if y.population() < 1.0 {
-            ControlFlag::Terminate(PopulationMonitor::PopulationDiedOut)
-        } else {
-            ControlFlag::Continue
-        }
+impl Event<f64, SIRState<f64>> for SIRModel {
+    fn config(&self) -> EventConfig {
+        EventConfig::default().terminal() // Will terminate after the first event
     }
-}
 
-#[derive(Debug, Clone)]
-enum PopulationMonitor {
-    InfectedBelowOne,
-    PopulationDiedOut,
-}
-
-impl std::fmt::Display for PopulationMonitor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PopulationMonitor::InfectedBelowOne => write!(f, "Infected population is below 1"),
-            PopulationMonitor::PopulationDiedOut => write!(f, "Population died out"),
-        }
+    /// Check when the number of infected individuals drops below 1 and if so, terminate the solver.
+    fn event(&self, _t: f64, y: &SIRState<f64>) -> f64 {
+        y.infected - 1.0
     }
 }
 
@@ -117,11 +96,11 @@ fn main() {
     let sir_problem = ODEProblem::new(&ode, t0, tf, y0);
 
     // Solve the SIR model problem with even output points every 1.0 time unit
-    match sir_problem.even(1.0).solve(&mut method) {
+    match sir_problem.even(1.0).event(&ode).solve(&mut method) {
         Ok(solution) => {
             // Check for event termination
-            if let Status::Interrupted(ref reason) = solution.status {
-                println!("solver stopped: {}", reason);
+            if let Status::Interrupted = solution.status {
+                println!("solver stopped by event: Infected population dropped below 1");
             }
 
             // Print the solution

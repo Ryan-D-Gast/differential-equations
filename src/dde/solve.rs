@@ -9,7 +9,7 @@ use crate::{
     solout::*,
     solution::Solution,
     status::Status,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 /// Solves an Initial Value Problem for a system of Delay Differential Equations (DDEs).
@@ -53,7 +53,7 @@ use crate::{
 ///
 /// # Returns
 ///
-/// * `Ok(Solution<T, Y, D>)`: If the integration completes successfully (reaches `tf`) or is
+/// * `Ok(Solution<T, Y>)`: If the integration completes successfully (reaches `tf`) or is
 ///   cleanly interrupted by an event detected by `dde.event()` or `solout.solout()`.
 ///   The [`Solution`] struct contains the time points, corresponding state vectors,
 ///   solver statistics, and potentially event data (`D`).
@@ -62,7 +62,7 @@ use crate::{
 ///   (`Error::StepSizeTooSmall`), exceeding the maximum number of steps (`Error::MaxSteps`),
 ///   or potential stiffness detected by the solver (`Error::Stiffness`).
 ///
-pub fn solve_dde<const L: usize, T, Y, D, S, F, H, O>(
+pub fn solve_dde<const L: usize, T, Y, S, F, H, O>(
     solver: &mut S,
     dde: &F,
     t0: T,
@@ -70,15 +70,14 @@ pub fn solve_dde<const L: usize, T, Y, D, S, F, H, O>(
     y0: &Y,
     phi: H,
     solout: &mut O,
-) -> Result<Solution<T, Y, D>, Error<T, Y>>
+) -> Result<Solution<T, Y>, Error<T, Y>>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
-    F: DDE<L, T, Y, D>,
+    F: DDE<L, T, Y>,
     H: Fn(T) -> Y + Clone,
-    S: DelayNumericalMethod<L, T, Y, H, D> + Interpolation<T, Y>,
-    O: Solout<T, Y, D>,
+    S: DelayNumericalMethod<L, T, Y, H> + Interpolation<T, Y>,
+    O: Solout<T, Y>,
 {
     // Initialize the Solution object
     let mut solution = Solution::new();
@@ -124,31 +123,8 @@ where
                 Err(e) => return Err(e),
             }
         }
-        ControlFlag::Terminate(reason) => {
-            solution.status = Status::Interrupted(reason);
-            solution.timer.complete();
-            return Ok(solution);
-        }
-    }
-
-    // For event detection
-    let mut tc: T = t0;
-    let mut ts: T;
-
-    // Check Terminate event at the start
-    match dde.event(t0, y0) {
-        ControlFlag::Continue => {}
-        ControlFlag::ModifyState(tm, ym) => {
-            // Reinitialize the solver with the modified state
-            match solver.init(dde, tm, tf, &ym, &phi) {
-                Ok(evals) => {
-                    solution.evals += evals;
-                }
-                Err(e) => return Err(e),
-            }
-        }
-        ControlFlag::Terminate(reason) => {
-            solution.status = Status::Interrupted(reason);
+        ControlFlag::Terminate => {
+            solution.status = Status::Interrupted;
             solution.timer.complete();
             return Ok(solution);
         }
@@ -216,151 +192,10 @@ where
                     Err(e) => return Err(e),
                 }
             }
-            ControlFlag::Terminate(reason) => {
-                solution.status = Status::Interrupted(reason);
+            ControlFlag::Terminate => {
+                solution.status = Status::Interrupted;
                 solution.timer.complete();
                 return Ok(solution);
-            }
-        }
-
-        // Check event condition
-        match dde.event(solver.t(), solver.y()) {
-            ControlFlag::Continue => {
-                tc = solver.t();
-            }
-            // Any non-continue flag means we need to root-find for the precise event time
-            evt @ (ControlFlag::ModifyState(_, _) | ControlFlag::Terminate(_)) => {
-                // Store the initial event that was detected
-                let initial_event = evt;
-
-                // Update last event point
-                ts = solver.t();
-
-                // Root-finding to determine the precise point where event is triggered
-                // Method: Regula Falsi (False Position) with Illinois adjustment
-                let mut side_count = 0; // Illinois method counter
-
-                // For Illinois method adjustment
-                let mut f_low: T = T::from_f64(-1.0).unwrap(); // Continue represented as -1
-                let mut f_high: T = T::from_f64(1.0).unwrap(); // Event represented as +1
-                let mut t_guess: T;
-
-                // The final event we'll detect (might change during root finding)
-                let mut final_event = initial_event.clone();
-
-                let max_iterations = 20; // Prevent infinite loops
-                let tol = T::from_f64(1e-10).unwrap(); // Tolerance for convergence
-
-                // Track the initial interval size for relative comparison
-                let initial_interval = (ts - tc).abs();
-
-                // False position method with Illinois adjustment
-                for _ in 0..max_iterations {
-                    // Check if we've reached desired precision (relative to initial interval)
-                    let current_interval = (ts - tc).abs();
-                    if current_interval <= tol * initial_interval {
-                        break;
-                    }
-
-                    // False position formula with Illinois adjustment
-                    t_guess = (tc * f_high - ts * f_low) / (f_high - f_low);
-
-                    // Protect against numerical issues
-                    if !t_guess.is_finite()
-                        || (integration_direction > T::zero() && (t_guess <= tc || t_guess >= ts))
-                        || (integration_direction < T::zero() && (t_guess >= tc || t_guess <= ts))
-                    {
-                        t_guess = (tc + ts) / T::from_f64(2.0).unwrap(); // Fall back to bisection
-                    }
-
-                    // Interpolate state at guess point
-                    let y = solver.interpolate(t_guess).unwrap();
-
-                    // Check event at guess point
-                    match dde.event(t_guess, &y) {
-                        ControlFlag::Continue => {
-                            tc = t_guess;
-
-                            // Illinois adjustment to improve convergence
-                            side_count += 1;
-                            if side_count >= 2 {
-                                f_high /= T::from_f64(2.0).unwrap(); // Reduce influence of high point
-                                side_count = 0;
-                            }
-                        }
-                        // Any non-continue flag indicates we've found an event
-                        evt @ (ControlFlag::ModifyState(_, _) | ControlFlag::Terminate(_)) => {
-                            final_event = evt; // Update the event we found
-                            ts = t_guess; // Update the event time
-                            side_count = 0;
-                            f_low = T::from_f64(-1.0).unwrap(); // Reset low point influence
-                        }
-                    }
-                }
-
-                // Get the final event point
-                let event_time = ts;
-                let event_state = solver.interpolate(ts).unwrap();
-
-                // Remove points after the event point incase solout wrote them
-                // Find the cutoff index based on integration direction
-                let cutoff_index = if integration_direction > T::zero() {
-                    // Forward integration - find first index where t > event_time
-                    solution.t.iter().position(|&t| t > event_time)
-                } else {
-                    // Backward integration - find first index where t < event_time
-                    solution.t.iter().position(|&t| t < event_time)
-                };
-
-                // If we found a cutoff point, truncate both vectors
-                if let Some(idx) = cutoff_index {
-                    solution.truncate(idx);
-                }
-
-                // Check if event time is very close to the last recorded point and remove it to avoid duplicates
-                if !solution.t.is_empty() {
-                    let last_t = *solution.t.last().unwrap();
-                    let time_diff = (event_time - last_t).abs();
-
-                    // Check if the time difference is within a small tolerance
-                    if time_diff <= tol * initial_interval {
-                        // Remove the last point (t, y) to avoid very close duplicates
-                        solution.pop();
-                    }
-                }
-
-                // Now handle the event based on its type
-                match final_event {
-                    ControlFlag::ModifyState(tm, ym) => {
-                        // Record the modified state point
-                        solution.push(tm, ym);
-
-                        // Reinitialize the solver with the modified state at the precise time
-                        match solver.init(dde, tm, tf, &ym, &phi) {
-                            Ok(evals) => {
-                                solution.evals += evals;
-                            }
-                            Err(e) => return Err(e),
-                        }
-
-                        // Update tc to the event time
-                        tc = event_time;
-                    }
-                    ControlFlag::Terminate(reason) => {
-                        // Add the event point
-                        solution.push(event_time, event_state);
-
-                        // Set solution parameters
-                        solution.status = Status::Interrupted(reason);
-                        solution.timer.complete();
-
-                        return Ok(solution);
-                    }
-                    ControlFlag::Continue => {
-                        // This shouldn't happen, but if it does, just continue
-                        tc = event_time;
-                    }
-                }
             }
         }
 

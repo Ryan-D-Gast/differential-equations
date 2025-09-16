@@ -78,7 +78,7 @@ fn main() {
     let tf = 10.0;
     let y0 = Vector3::new(1.0, 1.0, 1.0);
     let phi = |_t: f64| -> Vector3<f64> { y0 };
-    let problem = DDEProblem::new(dde, t0, tf, y0, phi);
+    let problem = DDEProblem::new(&dde, t0, tf, y0, phi);
 
     // --- Solve the Problem ---
     println!(

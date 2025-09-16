@@ -4,9 +4,8 @@
 //! given a condition or event.
 
 use crate::{
-    control::ControlFlag,
     linalg::Matrix,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 /// ODE Trait for Differential Equations
@@ -24,11 +23,10 @@ use crate::{
 /// Note that the event and jacobian functions are optional and can be left out when implementing.
 ///
 #[allow(unused_variables)]
-pub trait ODE<T = f64, Y = f64, D = String>
+pub trait ODE<T = f64, Y = f64>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
 {
     /// Differential Equation dydt = f(t, y)
     ///
@@ -50,23 +48,6 @@ where
     /// * `dydt` - Derivative point.
     ///
     fn diff(&self, t: T, y: &Y, dydt: &mut Y);
-
-    /// Event function to detect significant conditions during integration.
-    ///
-    /// Called after each step to detect events like threshold crossings,
-    /// singularities, or other mathematically/physically significant conditions.
-    /// Can be used to terminate integration when conditions occur.
-    ///
-    /// # Arguments
-    /// * `t`    - Current independent variable point.
-    /// * `y`    - Current dependent variable point.
-    ///
-    /// # Returns
-    /// * `ControlFlag` - Command to continue or stop solver.
-    ///
-    fn event(&self, t: T, y: &Y) -> ControlFlag<T, Y, D> {
-        ControlFlag::Continue
-    }
 
     /// jacobian matrix J = df/dy
     ///

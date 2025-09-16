@@ -54,7 +54,7 @@ pub use crate::control::ControlFlag;
 pub use crate::derive::State;
 pub use crate::error::Error;
 pub use crate::interpolate::Interpolation;
-pub use crate::solout::{CrossingDirection, Solout};
+pub use crate::solout::{CrossingDirection, Event, EventConfig, Solout};
 pub use crate::solution::Solution;
 pub use crate::stats::Evals;
 pub use crate::status::Status;

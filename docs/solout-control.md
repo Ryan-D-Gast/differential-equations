@@ -17,7 +17,7 @@ The `Solout` trait defines how solution points are recorded during the integrati
 At its core, the `Solout` trait has a single required method:
 
 ```rust
-pub trait Solout<T, Y, D = String>
+pub trait Solout<T, Y>
 where
     T: Real,
     Y: State<T>,
@@ -30,8 +30,8 @@ where
         y_curr: &Y,     // Current state vector
         y_prev: &Y,     // Previous state vector
         interpolator: &mut I,  // Interpolator for dense output
-        solution: &mut Solution<T, Y, D>,  // Solution to store points in
-    ) -> ControlFlag<T, Y, D>  // Flag to continue or terminate integration
+        solution: &mut Solution<T, Y>,  // Solution to store points in
+    ) -> ControlFlag<T, Y>  // Flag to continue or terminate integration
     where
         I: Interpolation<T, Y>;
 }

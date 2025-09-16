@@ -5,18 +5,17 @@ use crate::{
     error::Error,
     stats::Evals,
     status::Status,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 /// Trait for DDE solvers.
 ///
 /// Implemented by types that can solve DDEs via repeated calls to `step`.
-pub trait DelayNumericalMethod<const L: usize, T, Y, H, D = String>
+pub trait DelayNumericalMethod<const L: usize, T, Y, H>
 where
     T: Real,
     Y: State<T>,
     H: Fn(T) -> Y,
-    D: CallBackData,
 {
     /// Initialize the solver before integration
     ///
@@ -32,7 +31,7 @@ where
     ///
     fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &Y, phi: &H) -> Result<Evals, Error<T, Y>>
     where
-        F: DDE<L, T, Y, D>;
+        F: DDE<L, T, Y>;
 
     /// Advance the solution by one step
     ///
@@ -44,7 +43,7 @@ where
     ///
     fn step<F>(&mut self, dde: &F, phi: &H) -> Result<Evals, Error<T, Y>>
     where
-        F: DDE<L, T, Y, D>;
+        F: DDE<L, T, Y>;
 
     // Accessors
 
@@ -67,8 +66,8 @@ where
     fn set_h(&mut self, h: T);
 
     /// Current solver status
-    fn status(&self) -> &Status<T, Y, D>;
+    fn status(&self) -> &Status<T, Y>;
 
     /// Set solver status
-    fn set_status(&mut self, status: Status<T, Y, D>);
+    fn set_status(&mut self, status: Status<T, Y>);
 }

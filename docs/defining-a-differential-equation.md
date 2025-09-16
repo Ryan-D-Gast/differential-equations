@@ -16,7 +16,7 @@ The `ODE` trait is generic over three types:
 Here's the basic structure:
 
 ```rust
-pub trait ODE<T = f64, Y = f64, D = String>
+pub trait ODE<T = f64, Y = f64>
 where
     T: Real,
     Y: State<T>,
@@ -24,7 +24,7 @@ where
 {
     fn diff(&self, t: T, y: &Y, dydt: &mut Y);
     
-    fn event(&self, t: T, y: &Y) -> ControlFlag<T, Y, D> {
+    fn event(&self, t: T, y: &Y) -> ControlFlag<T, Y> {
         ControlFlag::Continue
     }
     
@@ -108,9 +108,9 @@ fn event(&self, _t: f64, y: &SIRState<f64>) -> ControlFlag<PopulationMonitor> {
 }
 ```
 
-The return type `ControlFlag<T, Y, D>` can be:
+The return type `ControlFlag<T, Y>` can be:
 - `ControlFlag::Continue` - Continue integration
-- `ControlFlag::Terminate(reason)` - Stop integration and return the provided reason
+- `ControlFlag::Terminate` - Stop integration and return the provided reason
 
 ## Custom Event Types
 

@@ -70,11 +70,10 @@ pub struct DenseSolout {
     n: usize,
 }
 
-impl<T, Y, D> Solout<T, Y, D> for DenseSolout
+impl<T, Y> Solout<T, Y> for DenseSolout
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
 {
     fn solout<I>(
         &mut self,
@@ -83,8 +82,8 @@ where
         y_curr: &Y,
         _y_prev: &Y,
         interpolator: &mut I,
-        solution: &mut Solution<T, Y, D>,
-    ) -> ControlFlag<T, Y, D>
+        solution: &mut Solution<T, Y>,
+    ) -> ControlFlag<T, Y>
     where
         I: Interpolation<T, Y>,
     {

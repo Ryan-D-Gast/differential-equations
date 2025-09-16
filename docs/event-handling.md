@@ -338,7 +338,7 @@ fn main() {
         .solve(&mut solver)
     {
         Ok(solution) => {
-            if let Status::Interrupted(reason) = solution.status {
+            if let Status::Interrupted = solution.status {
                 println!("Integration stopped: {}", reason);
             }
             // Process solution...
@@ -366,7 +366,7 @@ let result = problem
 
 // Check if solver was terminated by an event
 if let Ok(solution) = result {
-    if let Status::Interrupted(reason) = &solution.status {
+    if let Status::Interrupted = &solution.status {
         println!("Solver stopped due to event: {}", reason);
     }
 }
@@ -451,7 +451,7 @@ fn main() {
     match problem.dense().solve(&mut solver) {
         Ok(solution) => {
             // Check if solver terminated due to an event
-            if let Status::Interrupted(reason) = &solution.status {
+            if let Status::Interrupted = &solution.status {
                 println!("Solver terminated: {}", reason);
             }
             

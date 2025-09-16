@@ -6,14 +6,14 @@ mod ordinary;
 use crate::{
     methods::{Adaptive, ExplicitRungeKutta},
     tableau::ButcherTableau,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 // Macro for adaptive step constructors
 macro_rules! impl_erk_adaptive_step_constructor {
     ($method_name:ident, $fsal_val:expr, $order_val:expr, $s_val:expr, $m_val:expr, $doc:expr) => {
-        impl<E, T: Real, Y: State<T>, D: CallBackData>
-            ExplicitRungeKutta<E, Adaptive, T, Y, D, $order_val, $s_val, $m_val>
+        impl<E, T: Real, Y: State<T>>
+            ExplicitRungeKutta<E, Adaptive, T, Y, $order_val, $s_val, $m_val>
         {
             #[doc = $doc]
             pub fn $method_name() -> Self {

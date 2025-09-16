@@ -5,17 +5,16 @@ use crate::{
     ode::ODE,
     stats::Evals,
     status::Status,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 /// Trait for ODE solvers.
 ///
 /// Implemented by types that can solve ODEs via repeated calls to `step`.
-pub trait OrdinaryNumericalMethod<T, Y, D = String>
+pub trait OrdinaryNumericalMethod<T, Y>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
 {
     /// Initialize the solver before integration
     ///
@@ -30,7 +29,7 @@ where
     ///
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y, D>;
+        F: ODE<T, Y>;
 
     /// Advance the solution by one step
     ///
@@ -42,7 +41,7 @@ where
     ///
     fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y, D>;
+        F: ODE<T, Y>;
 
     // Accessors
 
@@ -65,8 +64,8 @@ where
     fn set_h(&mut self, h: T);
 
     /// Current solver status
-    fn status(&self) -> &Status<T, Y, D>;
+    fn status(&self) -> &Status<T, Y>;
 
     /// Set solver status
-    fn set_status(&mut self, status: Status<T, Y, D>);
+    fn set_status(&mut self, status: Status<T, Y>);
 }

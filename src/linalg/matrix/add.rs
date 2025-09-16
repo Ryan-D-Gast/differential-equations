@@ -63,11 +63,7 @@ impl<T: Real> Add for Matrix<T> {
                     ..
                 },
             ) => {
-                let data = a
-                    .into_iter()
-                    .zip(b)
-                    .map(|(x, y)| x + y)
-                    .collect();
+                let data = a.into_iter().zip(b).map(|(x, y)| x + y).collect();
                 Matrix {
                     n,
                     m: n,
@@ -168,11 +164,7 @@ impl<T: Real> Add for Matrix<T> {
                 };
                 let aa = to_full(n, a, sa);
                 let bb = to_full(n, b, sb);
-                let data = aa
-                    .into_iter()
-                    .zip(bb)
-                    .map(|(x, y)| x + y)
-                    .collect();
+                let data = aa.into_iter().zip(bb).map(|(x, y)| x + y).collect();
                 Matrix {
                     n,
                     m: n,

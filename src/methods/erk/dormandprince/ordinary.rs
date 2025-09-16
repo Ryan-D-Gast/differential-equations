@@ -7,17 +7,16 @@ use crate::{
     ode::{ODE, OrdinaryNumericalMethod},
     stats::Evals,
     status::Status,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
-impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    OrdinaryNumericalMethod<T, Y, D>
-    for ExplicitRungeKutta<Ordinary, DormandPrince, T, Y, D, O, S, I>
+impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
+    OrdinaryNumericalMethod<T, Y> for ExplicitRungeKutta<Ordinary, DormandPrince, T, Y, O, S, I>
 {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y, D>,
+        F: ODE<T, Y>,
     {
         let mut evals = Evals::new();
 
@@ -31,7 +30,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
         }
 
         // Check bounds
-        match validate_step_size_parameters::<T, Y, D>(self.h0, self.h_min, self.h_max, t0, tf) {
+        match validate_step_size_parameters::<T, Y>(self.h0, self.h_min, self.h_max, t0, tf) {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
@@ -59,7 +58,7 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
 
     fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y, D>,
+        F: ODE<T, Y>,
     {
         let mut evals = Evals::new();
 
@@ -291,16 +290,16 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
     fn set_h(&mut self, h: T) {
         self.h = h;
     }
-    fn status(&self) -> &Status<T, Y, D> {
+    fn status(&self) -> &Status<T, Y> {
         &self.status
     }
-    fn set_status(&mut self, status: Status<T, Y, D>) {
+    fn set_status(&mut self, status: Status<T, Y>) {
         self.status = status;
     }
 }
 
-impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    Interpolation<T, Y> for ExplicitRungeKutta<Ordinary, DormandPrince, T, Y, D, O, S, I>
+impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Interpolation<T, Y>
+    for ExplicitRungeKutta<Ordinary, DormandPrince, T, Y, O, S, I>
 {
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         // Check if interpolation is out of bounds

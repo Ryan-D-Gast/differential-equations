@@ -10,7 +10,7 @@ use crate::{
     linalg::Matrix,
     status::Status,
     tolerance::Tolerance,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 /// IRK solver core. Supports fixed/adaptive stepping and common IRK families
@@ -23,7 +23,6 @@ pub struct ImplicitRungeKutta<
     F,
     T: Real,
     Y: State<T>,
-    D: CallBackData,
     const O: usize,
     const S: usize,
     const I: usize,
@@ -83,7 +82,7 @@ pub struct ImplicitRungeKutta<
     lu_decompositions: usize,    // Total LU decompositions
 
     // Status
-    status: Status<T, Y, D>,
+    status: Status<T, Y>,
 
     // Method info
     order: usize,
@@ -97,8 +96,8 @@ pub struct ImplicitRungeKutta<
     equation: PhantomData<E>,
 }
 
-impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    Default for ImplicitRungeKutta<E, F, T, Y, D, O, S, I>
+impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Default
+    for ImplicitRungeKutta<E, F, T, Y, O, S, I>
 {
     fn default() -> Self {
         Self {
@@ -148,8 +147,8 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
     }
 }
 
-impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    ImplicitRungeKutta<E, F, T, Y, D, O, S, I>
+impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
+    ImplicitRungeKutta<E, F, T, Y, O, S, I>
 {
     /// Set relative tolerance
     pub fn rtol<V: Into<Tolerance<T>>>(mut self, rtol: V) -> Self {

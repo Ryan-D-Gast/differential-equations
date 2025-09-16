@@ -155,11 +155,7 @@ impl<T: Real> Sub for Matrix<T> {
                 };
                 let aa = to_full(n1, a, sa);
                 let bb = to_full(n2, b, sb);
-                let data = aa
-                    .into_iter()
-                    .zip(bb)
-                    .map(|(x, y)| x - y)
-                    .collect();
+                let data = aa.into_iter().zip(bb).map(|(x, y)| x - y).collect();
                 Matrix {
                     n: n1,
                     m: n1,

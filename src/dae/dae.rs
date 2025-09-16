@@ -6,7 +6,7 @@
 use crate::{
     control::ControlFlag,
     linalg::Matrix,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 /// DAE Trait for Differential Algebraic Equations
@@ -26,11 +26,10 @@ use crate::{
 /// in which case it will be set to return Continue by default.
 ///
 #[allow(unused_variables)]
-pub trait DAE<T = f64, V = f64, D = String>
+pub trait DAE<T = f64, V = f64>
 where
     T: Real,
     V: State<T>,
-    D: CallBackData,
 {
     /// Right-hand side function f(t, y)
     ///
@@ -81,7 +80,7 @@ where
     /// # Returns
     /// * `ControlFlag` - Command to continue or stop solver.
     ///
-    fn event(&self, t: T, y: &V) -> ControlFlag<T, V, D> {
+    fn event(&self, t: T, y: &V) -> ControlFlag<T, V> {
         ControlFlag::Continue
     }
 

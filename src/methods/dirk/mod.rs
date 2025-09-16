@@ -9,7 +9,7 @@ use crate::{
     linalg::Matrix,
     status::Status,
     tolerance::Tolerance,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 /// DIRK/SDIRK core with fixed/adaptive stepping. Stages are solved
@@ -23,7 +23,6 @@ pub struct DiagonallyImplicitRungeKutta<
     F,
     T: Real,
     Y: State<T>,
-    D: CallBackData,
     const O: usize,
     const S: usize,
     const I: usize,
@@ -88,7 +87,7 @@ pub struct DiagonallyImplicitRungeKutta<
     jacobian_age: usize,
 
     // Status
-    status: Status<T, Y, D>,
+    status: Status<T, Y>,
 
     // Method info
     order: usize,
@@ -101,8 +100,8 @@ pub struct DiagonallyImplicitRungeKutta<
     equation: PhantomData<E>,
 }
 
-impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    Default for DiagonallyImplicitRungeKutta<E, F, T, Y, D, O, S, I>
+impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Default
+    for DiagonallyImplicitRungeKutta<E, F, T, Y, O, S, I>
 {
     fn default() -> Self {
         let dim = 1; // Will be resized during init
@@ -152,8 +151,8 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
 }
 
 // Builder methods
-impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    DiagonallyImplicitRungeKutta<E, F, T, Y, D, O, S, I>
+impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
+    DiagonallyImplicitRungeKutta<E, F, T, Y, O, S, I>
 {
     /// Set relative tolerance
     pub fn rtol<V: Into<Tolerance<T>>>(mut self, rtol: V) -> Self {

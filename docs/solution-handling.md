@@ -7,7 +7,7 @@ After successfully solving a differential equation, the result is returned as a 
 The `Solution` struct contains the numerical solution data as well as metadata about the solving process. It provides methods for accessing, iterating over, and exporting the solution.
 
 ```rust
-pub struct Solution<T, Y, D>
+pub struct Solution<T, Y>
 where
     T: Real,
     Y: State<T>,
@@ -15,7 +15,7 @@ where
 {
     pub t: Vec<T>,             // Time points
     pub y: Vec<Y>,             // State vectors at each time point
-    pub status: Status<T, Y, D>, // Solver status (success, error, or interrupted)
+    pub status: Status<T, Y>, // Solver status (success, error, or interrupted)
     pub evals: usize,          // Number of function evaluations
     pub jacobian_evals: usize,      // Number of jacobian evaluations
     pub steps: usize,          // Total number of steps taken

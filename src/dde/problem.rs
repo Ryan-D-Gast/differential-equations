@@ -6,9 +6,8 @@ use crate::{
     interpolate::Interpolation,
     solout::*,
     solution::Solution,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
-use std::marker::PhantomData;
 
 /// Initial Value Problem for Delay Differential Equations (DDEs)
 ///
@@ -76,31 +75,26 @@ use std::marker::PhantomData;
 ///
 /// Each returns a solver configuration that can be executed with `.solve(&mut solver)`.
 #[derive(Clone, Debug)] // Note: Clone requires F and H to be Clone
-pub struct DDEProblem<const L: usize, T, Y, D, F, H>
+pub struct DDEProblem<'a, const L: usize, T, Y, F, H>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
-    F: DDE<L, T, Y, D>,
+    F: DDE<L, T, Y>,
     H: Fn(T) -> Y,
 {
     // Initial Value Problem Fields
-    pub dde: F, // DDE containing the Differential Equation and Optional Terminate Function.
-    pub t0: T,  // Initial Time.
-    pub tf: T,  // Final Time.
-    pub y0: Y,  // Initial State Vector.
-    pub phi: H, // Initial History Function.
-
-    // Phantom Data for Users event output
-    _event_output_type: PhantomData<D>,
+    pub dde: &'a F, // DDE containing the Differential Equation and Optional Terminate Function.
+    pub t0: T,      // Initial Time.
+    pub tf: T,      // Final Time.
+    pub y0: Y,      // Initial State Vector.
+    pub phi: H,     // Initial History Function.
 }
 
-impl<const L: usize, T, Y, D, F, H> DDEProblem<L, T, Y, D, F, H>
+impl<'a, const L: usize, T, Y, F, H> DDEProblem<'a, L, T, Y, F, H>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
-    F: DDE<L, T, Y, D>,
+    F: DDE<L, T, Y>,
     H: Fn(T) -> Y + Clone, // Require Clone for H if DDEProblem needs Clone
 {
     /// Create a new Initial Value Problem for DDEs
@@ -115,31 +109,30 @@ where
     /// # Returns
     /// * DDEProblem Problem ready to be solved.
     ///
-    pub fn new(dde: F, t0: T, tf: T, y0: Y, phi: H) -> Self {
+    pub fn new(dde: &'a F, t0: T, tf: T, y0: Y, phi: H) -> Self {
         DDEProblem {
             dde,
             t0,
             tf,
             y0,
             phi,
-            _event_output_type: PhantomData,
         }
     }
 
     /// Solve the DDEProblem using a default solout, e.g. outputting solutions at calculated steps.
     ///
     /// # Returns
-    /// * `Result<Solution<T, Y, D>, Error<T, Y>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered.
+    /// * `Result<Solution<T, Y>, Error<T, Y>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered.
     ///
-    pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, Y, D>, Error<T, Y>>
+    pub fn solve<S>(&self, solver: &mut S) -> Result<Solution<T, Y>, Error<T, Y>>
     where
-        S: DelayNumericalMethod<L, T, Y, H, D> + Interpolation<T, Y>,
+        S: DelayNumericalMethod<L, T, Y, H> + Interpolation<T, Y>,
         H: Clone, // phi needs to be cloneable for solve_dde
     {
         let mut default_solout = DefaultSolout::new(); // Default solout implementation
         solve_dde(
             solver,
-            &self.dde,
+            self.dde,
             self.t0,
             self.tf,
             &self.y0,
@@ -153,10 +146,10 @@ where
     /// # Returns
     /// * DDEProblem DelayNumericalMethod with the provided solout function ready for .solve() method.
     ///
-    pub fn solout<'a, O: Solout<T, Y, D>>(
+    pub fn solout<O: Solout<T, Y>>(
         &'a self,
         solout: &'a mut O,
-    ) -> DDEProblemMutRefSoloutPair<'a, L, T, Y, D, F, H, O> {
+    ) -> DDEProblemMutRefSoloutPair<'a, L, T, Y, F, H, O> {
         DDEProblemMutRefSoloutPair::new(self, solout)
     }
 
@@ -169,7 +162,7 @@ where
     /// # Returns
     /// * DDEProblem DelayNumericalMethod with Even Solout function ready for .solve() method.
     ///
-    pub fn even(&self, dt: T) -> DDEProblemSoloutPair<'_, L, T, Y, D, F, H, EvenSolout<T>> {
+    pub fn even(&self, dt: T) -> DDEProblemSoloutPair<'_, L, T, Y, F, H, EvenSolout<T>> {
         let even_solout = EvenSolout::new(dt, self.t0, self.tf); // Even solout implementation
         DDEProblemSoloutPair::new(self, even_solout)
     }
@@ -183,7 +176,7 @@ where
     /// # Returns
     /// * DDEProblem DelayNumericalMethod with Dense Output function ready for .solve() method.
     ///
-    pub fn dense(&self, n: usize) -> DDEProblemSoloutPair<'_, L, T, Y, D, F, H, DenseSolout> {
+    pub fn dense(&self, n: usize) -> DDEProblemSoloutPair<'_, L, T, Y, F, H, DenseSolout> {
         let dense_solout = DenseSolout::new(n); // Dense solout implementation
         DDEProblemSoloutPair::new(self, dense_solout)
     }
@@ -200,7 +193,7 @@ where
     pub fn t_eval(
         &self,
         points: impl AsRef<[T]>,
-    ) -> DDEProblemSoloutPair<'_, L, T, Y, D, F, H, TEvalSolout<T>> {
+    ) -> DDEProblemSoloutPair<'_, L, T, Y, F, H, TEvalSolout<T>> {
         let t_eval_solout = TEvalSolout::new(points, self.t0, self.tf); // Custom time evaluation solout implementation
         DDEProblemSoloutPair::new(self, t_eval_solout)
     }
@@ -221,7 +214,7 @@ where
         component_idx: usize,
         threshhold: T,
         direction: CrossingDirection,
-    ) -> DDEProblemSoloutPair<'_, L, T, Y, D, F, H, CrossingSolout<T>> {
+    ) -> DDEProblemSoloutPair<'_, L, T, Y, F, H, CrossingSolout<T>> {
         let crossing_solout =
             CrossingSolout::new(component_idx, threshhold).with_direction(direction); // Crossing solout implementation
         DDEProblemSoloutPair::new(self, crossing_solout)
@@ -245,7 +238,7 @@ where
         normal: Y1,
         extractor: fn(&Y) -> Y1,
         direction: CrossingDirection,
-    ) -> DDEProblemSoloutPair<'_, L, T, Y, D, F, H, HyperplaneCrossingSolout<T, Y1, Y>>
+    ) -> DDEProblemSoloutPair<'_, L, T, Y, F, H, HyperplaneCrossingSolout<T, Y1, Y>>
     where
         Y1: State<T>,
     {
@@ -254,30 +247,40 @@ where
 
         DDEProblemSoloutPair::new(self, solout)
     }
+
+    /// Uses an `EventSolout` to detect zero crossings g(t,y)=0 of a user-defined event function.
+    pub fn event<E>(
+        &self,
+        event: &'a E,
+    ) -> DDEProblemSoloutPair<'_, L, T, Y, F, H, EventSolout<'_, T, Y, E>>
+    where
+        E: Event<T, Y>,
+    {
+        let solout = EventSolout::new(event, self.t0, self.tf);
+        DDEProblemSoloutPair::new(self, solout)
+    }
 }
 
 /// DDEProblemMutRefSoloutPair serves as an intermediate between the DDEProblem struct and a custom solout provided by the user.
-pub struct DDEProblemMutRefSoloutPair<'a, const L: usize, T, Y, D, F, H, O>
+pub struct DDEProblemMutRefSoloutPair<'a, const L: usize, T, Y, F, H, O>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
-    F: DDE<L, T, Y, D>,
+    F: DDE<L, T, Y>,
     H: Fn(T) -> Y,
-    O: Solout<T, Y, D>,
+    O: Solout<T, Y>,
 {
-    pub problem: &'a DDEProblem<L, T, Y, D, F, H>, // Reference to the DDEProblem struct
-    pub solout: &'a mut O,                         // Reference to the solout implementation
+    pub problem: &'a DDEProblem<'a, L, T, Y, F, H>, // Reference to the DDEProblem struct
+    pub solout: &'a mut O,                          // Reference to the solout implementation
 }
 
-impl<'a, const L: usize, T, Y, D, F, H, O> DDEProblemMutRefSoloutPair<'a, L, T, Y, D, F, H, O>
+impl<'a, const L: usize, T, Y, F, H, O> DDEProblemMutRefSoloutPair<'a, L, T, Y, F, H, O>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
-    F: DDE<L, T, Y, D>,
+    F: DDE<L, T, Y>,
     H: Fn(T) -> Y + Clone, // Require Clone for H
-    O: Solout<T, Y, D>,
+    O: Solout<T, Y>,
 {
     /// Create a new DDEProblemMutRefSoloutPair
     ///
@@ -285,7 +288,7 @@ where
     /// * `problem` - Reference to the DDEProblem struct
     /// * `solout` - Mutable reference to the solout implementation
     ///
-    pub fn new(problem: &'a DDEProblem<L, T, Y, D, F, H>, solout: &'a mut O) -> Self {
+    pub fn new(problem: &'a DDEProblem<L, T, Y, F, H>, solout: &'a mut O) -> Self {
         DDEProblemMutRefSoloutPair { problem, solout }
     }
 
@@ -295,15 +298,15 @@ where
     /// * `solver` - DelayNumericalMethod to use for solving the DDEProblem
     ///
     /// # Returns
-    /// * `Result<Solution<T, Y, D>, Error<T, Y>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered.
+    /// * `Result<Solution<T, Y>, Error<T, Y>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered.
     ///
-    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, Y, D>, Error<T, Y>>
+    pub fn solve<S>(&mut self, solver: &mut S) -> Result<Solution<T, Y>, Error<T, Y>>
     where
-        S: DelayNumericalMethod<L, T, Y, H, D> + Interpolation<T, Y>,
+        S: DelayNumericalMethod<L, T, Y, H> + Interpolation<T, Y>,
     {
         solve_dde(
             solver,
-            &self.problem.dde,
+            self.problem.dde,
             self.problem.t0,
             self.problem.tf,
             &self.problem.y0,
@@ -315,27 +318,25 @@ where
 
 /// DDEProblemSoloutPair serves as an intermediate between the DDEProblem struct and solve_dde when a predefined solout is used.
 #[derive(Clone, Debug)]
-pub struct DDEProblemSoloutPair<'a, const L: usize, T, Y, D, F, H, O>
+pub struct DDEProblemSoloutPair<'a, const L: usize, T, Y, F, H, O>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
-    F: DDE<L, T, Y, D>,
+    F: DDE<L, T, Y>,
     H: Fn(T) -> Y,
-    O: Solout<T, Y, D>,
+    O: Solout<T, Y>,
 {
-    pub problem: &'a DDEProblem<L, T, Y, D, F, H>,
+    pub problem: &'a DDEProblem<'a, L, T, Y, F, H>,
     pub solout: O,
 }
 
-impl<'a, const L: usize, T, Y, D, F, H, O> DDEProblemSoloutPair<'a, L, T, Y, D, F, H, O>
+impl<'a, const L: usize, T, Y, F, H, O> DDEProblemSoloutPair<'a, L, T, Y, F, H, O>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
-    F: DDE<L, T, Y, D>,
+    F: DDE<L, T, Y>,
     H: Fn(T) -> Y + Clone,
-    O: Solout<T, Y, D>,
+    O: Solout<T, Y>,
 {
     /// Create a new DDEProblemSoloutPair
     ///
@@ -343,7 +344,7 @@ where
     /// * `problem` - Reference to the DDEProblem struct
     /// * `solout` - Solout implementation
     ///
-    pub fn new(problem: &'a DDEProblem<L, T, Y, D, F, H>, solout: O) -> Self {
+    pub fn new(problem: &'a DDEProblem<L, T, Y, F, H>, solout: O) -> Self {
         DDEProblemSoloutPair { problem, solout }
     }
 
@@ -353,20 +354,35 @@ where
     /// * `solver` - DelayNumericalMethod to use for solving the DDEProblem
     ///
     /// # Returns
-    /// * `Result<Solution<T, Y, D>, Error<T, Y>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered.
+    /// * `Result<Solution<T, Y>, Error<T, Y>>` - `Ok(Solution)` if successful or interrupted by events, `Err(Error)` if errors or issues are encountered.
     ///
-    pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, Y, D>, Error<T, Y>>
+    pub fn solve<S>(mut self, solver: &mut S) -> Result<Solution<T, Y>, Error<T, Y>>
     where
-        S: DelayNumericalMethod<L, T, Y, H, D> + Interpolation<T, Y>,
+        S: DelayNumericalMethod<L, T, Y, H> + Interpolation<T, Y>,
     {
         solve_dde(
             solver,
-            &self.problem.dde,
+            self.problem.dde,
             self.problem.t0,
             self.problem.tf,
             &self.problem.y0,
             self.problem.phi.clone(),
             &mut self.solout,
         )
+    }
+
+    /// Wrap current solout with event detection while preserving original output strategy.
+    pub fn event<E>(
+        self,
+        event: &'a E,
+    ) -> DDEProblemSoloutPair<'a, L, T, Y, F, H, EventWrappedSolout<'a, T, Y, O, E>>
+    where
+        E: Event<T, Y>,
+    {
+        let wrapped = EventWrappedSolout::new(self.solout, event, self.problem.t0, self.problem.tf);
+        DDEProblemSoloutPair {
+            problem: self.problem,
+            solout: wrapped,
+        }
     }
 }

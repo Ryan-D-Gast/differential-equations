@@ -96,8 +96,8 @@ impl Solout<f64, SVector<f64, 2>> for PendulumSolout {
         y_curr: &SVector<f64, 2>,
         _y_prev: &SVector<f64, 2>,
         _interpolator: &mut I,
-        solution: &mut Solution<f64, SVector<f64, 2>, String>,
-    ) -> ControlFlag<f64, SVector<f64, 2>, String>
+        solution: &mut Solution<f64, SVector<f64, 2>>,
+    ) -> ControlFlag<f64, SVector<f64, 2>>
     where
         I: Interpolation<f64, SVector<f64, 2>>,
     {

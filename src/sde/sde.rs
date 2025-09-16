@@ -3,10 +3,7 @@
 //! Includes a stochastic differential equation and optional event function to interupt solver
 //! given a condition or event.
 
-use crate::{
-    control::ControlFlag,
-    traits::{CallBackData, Real, State},
-};
+use crate::traits::{Real, State};
 
 /// SDE Trait for Stochastic Differential Equations
 ///
@@ -24,11 +21,10 @@ use crate::{
 /// Note that the event function is optional and can be left out when implementing.
 ///
 #[allow(unused_variables)]
-pub trait SDE<T = f64, Y = f64, D = String>
+pub trait SDE<T = f64, Y = f64>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
 {
     /// Drift function a(t,Y) - deterministic part of the SDE
     ///
@@ -77,21 +73,4 @@ where
     /// * `dw` - Vector to store generated noise increments.
     ///
     fn noise(&mut self, dt: T, dw: &mut Y);
-
-    /// Event function to detect significant conditions during integration.
-    ///
-    /// Called after each step to detect events like threshold crossings,
-    /// singularities, or other mathematically/physically significant conditions.
-    /// Can be used to terminate integration when conditions occur.
-    ///
-    /// # Arguments
-    /// * `t`    - Current independent variable point.
-    /// * `y`    - Current dependent variable point.
-    ///
-    /// # Returns
-    /// * `ControlFlag` - Command to continue or stop solver.
-    ///
-    fn event(&self, t: T, y: &Y) -> ControlFlag<T, Y, D> {
-        ControlFlag::Continue
-    }
 }

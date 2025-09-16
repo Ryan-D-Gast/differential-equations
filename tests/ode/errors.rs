@@ -1,7 +1,7 @@
 //! Suite of test cases for numerical method error handling
 
 use differential_equations::{
-    control::ControlFlag,
+    solout::{Event, EventConfig},
     error::Error,
     methods::{AdamsPredictorCorrector, ExplicitRungeKutta, ImplicitRungeKutta},
     ode::{ODE, ODEProblem},
@@ -15,13 +15,16 @@ impl ODE<f64, SVector<f64, 1>> for SimpleODE {
     fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
         dydt[0] = y[0];
     }
+}
 
-    fn event(&self, t: f64, _y: &SVector<f64, 1>) -> ControlFlag<f64, SVector<f64, 1>> {
-        if t == 10.0 {
-            ControlFlag::Terminate("Initial condition trigger".to_string())
-        } else {
-            ControlFlag::Continue
-        }
+impl Event<f64, SVector<f64, 1>> for SimpleODE {
+    fn config(&self) -> EventConfig {
+        EventConfig::default().terminal()
+    }
+
+    fn event(&self, t: f64, _y: &SVector<f64, 1>) -> f64 {
+        // Trigger event at t = 10.0
+        t - 10.0
     }
 }
 
@@ -47,7 +50,7 @@ macro_rules! test_solver_error {
             let mut solver = $solver;
 
             // Solve the system
-            let results = problem.solve(&mut solver);
+            let results = problem.event(&system).solve(&mut solver);
 
             // Assert the result matches expected error
             match results {
@@ -177,7 +180,7 @@ fn terminate_initial_conditions_trigger() {
         t0: 10.0,
         tf: 20.0,
         y0: vector![1.0],
-        expected_status: Status::<f64, SVector<f64, 1>, String>::Interrupted("Initial condition trigger".to_string()),
+        expected_status: Status::<f64, SVector<f64, 1>>::Interrupted,
         solver_name: DOP853, solver: ExplicitRungeKutta::dop853(),
         solver_name: DOPRI5, solver: ExplicitRungeKutta::dopri5(),
         solver_name: RKF, solver: ExplicitRungeKutta::rkf45().h0(0.1),
