@@ -80,7 +80,7 @@ fn main() {
     let tf = 3.0; // Simulate for 3 seconds
 
     // --- Solve the ODE ---
-    let matrix_problem = ODEProblem::new(matrix_ode, t0, tf, y0);
+    let matrix_problem = ODEProblem::new(&matrix_ode, t0, tf, y0);
     let result = matrix_problem
         // Dense output means for every step, 5 evenly spaced points will be outputted
         .dense(5)

@@ -66,7 +66,7 @@ fn main() {
     let b = 0.2; // Damping coefficient (kg/s)
     let m = 1.0; // Mass of the pendulum bob (kg)
     let ode = DampedPendulumModel { g, l, b, m };
-    let pendulum_problem = ODEProblem::new(ode, t0, tf, y0);
+    let pendulum_problem = ODEProblem::new(&ode, t0, tf, y0);
 
     // --- Numerically Solve the ODE ---
     let mut method = ExplicitRungeKutta::rkf45();

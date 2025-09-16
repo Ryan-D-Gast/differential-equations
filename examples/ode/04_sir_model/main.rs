@@ -114,7 +114,7 @@ fn main() {
         gamma,
         population,
     };
-    let sir_problem = ODEProblem::new(ode, t0, tf, y0);
+    let sir_problem = ODEProblem::new(&ode, t0, tf, y0);
 
     // Solve the SIR model problem with even output points every 1.0 time unit
     match sir_problem.even(1.0).solve(&mut method) {

@@ -45,7 +45,7 @@ fn main() {
     let t0 = 0.0;
     let tf = 20.0;
     let ode = BrusselatorSystem;
-    let problem = ODEProblem::new(ode, t0, tf, y0);
+    let problem = ODEProblem::new(&ode, t0, tf, y0);
 
     // --- Solve the ODE ---
     let mut method = ImplicitRungeKutta::gauss_legendre_6();

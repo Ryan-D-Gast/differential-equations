@@ -33,7 +33,7 @@ macro_rules! test_ode {
             let y0 = $y0;
 
             // Create Initial Value Problem (ODEProblem) for the system
-            let problem = ODEProblem::new(system, t0, tf, y0);
+            let problem = ODEProblem::new(&system, t0, tf, y0);
 
             // Initialize the solver
             let mut solver = $solver;

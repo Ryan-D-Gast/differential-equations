@@ -51,7 +51,7 @@ bench_adaptive_step!(
     bench_rkf_ho,
     ExplicitRungeKutta::rkf45(),
     "RKF45",
-    HarmonicOscillator,
+    &HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
     10.0,
@@ -63,7 +63,7 @@ bench_adaptive_step!(
     bench_cashkarp_ho,
     ExplicitRungeKutta::cash_karp(),
     "CashKarp",
-    HarmonicOscillator,
+    &HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
     10.0,
@@ -75,7 +75,7 @@ bench_dormand_prince!(
     bench_dopri5_ho,
     ExplicitRungeKutta::dopri5(),
     "DOPRI5",
-    HarmonicOscillator,
+    &HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
     10.0,
@@ -87,7 +87,7 @@ bench_dormand_prince!(
     bench_dop853_ho,
     ExplicitRungeKutta::dop853(),
     "DOP853",
-    HarmonicOscillator,
+    &HarmonicOscillator,
     vector![1.0, 0.0],
     0.0,
     10.0,
@@ -101,7 +101,7 @@ bench_adaptive_step!(
     bench_rkf_vdp,
     ExplicitRungeKutta::rkf45(),
     "RKF45",
-    VanDerPol { mu: 1.0 },
+    &VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
     10.0,
@@ -113,7 +113,7 @@ bench_adaptive_step!(
     bench_cashkarp_vdp,
     ExplicitRungeKutta::cash_karp(),
     "CashKarp",
-    VanDerPol { mu: 1.0 },
+    &VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
     10.0,
@@ -125,7 +125,7 @@ bench_dormand_prince!(
     bench_dopri5_vdp,
     ExplicitRungeKutta::dopri5(),
     "DOPRI5",
-    VanDerPol { mu: 1.0 },
+    &VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
     10.0,
@@ -137,7 +137,7 @@ bench_dormand_prince!(
     bench_dop853_vdp,
     ExplicitRungeKutta::dop853(),
     "DOP853",
-    VanDerPol { mu: 1.0 },
+    &VanDerPol { mu: 1.0 },
     vector![2.0, 0.0],
     0.0,
     10.0,
@@ -151,7 +151,7 @@ bench_adaptive_step!(
     bench_rkf_lorenz,
     ExplicitRungeKutta::rkf45(),
     "RKF45",
-    Lorenz {
+    &Lorenz {
         sigma: 10.0,
         rho: 28.0,
         beta: 8.0 / 3.0
@@ -167,7 +167,7 @@ bench_adaptive_step!(
     bench_cashkarp_lorenz,
     ExplicitRungeKutta::cash_karp(),
     "CashKarp",
-    Lorenz {
+    &Lorenz {
         sigma: 10.0,
         rho: 28.0,
         beta: 8.0 / 3.0
@@ -183,7 +183,7 @@ bench_dormand_prince!(
     bench_dopri5_lorenz,
     ExplicitRungeKutta::dopri5(),
     "DOPRI5",
-    Lorenz {
+    &Lorenz {
         sigma: 10.0,
         rho: 28.0,
         beta: 8.0 / 3.0
@@ -199,7 +199,7 @@ bench_dormand_prince!(
     bench_dop853_lorenz,
     ExplicitRungeKutta::dop853(),
     "DOP853",
-    Lorenz {
+    &Lorenz {
         sigma: 10.0,
         rho: 28.0,
         beta: 8.0 / 3.0
@@ -217,7 +217,7 @@ bench_adaptive_step!(
     bench_rkf_exp,
     ExplicitRungeKutta::rkf45(),
     "RKF45",
-    Exponential { lambda: -0.5 },
+    &Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,
     10.0,
@@ -229,7 +229,7 @@ bench_adaptive_step!(
     bench_cashkarp_exp,
     ExplicitRungeKutta::cash_karp(),
     "CashKarp",
-    Exponential { lambda: -0.5 },
+    &Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,
     10.0,
@@ -241,7 +241,7 @@ bench_dormand_prince!(
     bench_dopri5_exp,
     ExplicitRungeKutta::dopri5(),
     "DOPRI5",
-    Exponential { lambda: -0.5 },
+    &Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,
     10.0,
@@ -253,7 +253,7 @@ bench_dormand_prince!(
     bench_dop853_exp,
     ExplicitRungeKutta::dop853(),
     "DOP853",
-    Exponential { lambda: -0.5 },
+    &Exponential { lambda: -0.5 },
     vector![1.0],
     0.0,
     10.0,

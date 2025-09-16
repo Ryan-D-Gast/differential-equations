@@ -46,7 +46,7 @@ fn main() {
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
-    let logistic_growth_problem = ODEProblem::new(ode, t0, tf, y0);
+    let logistic_growth_problem = ODEProblem::new(&ode, t0, tf, y0);
 
     // Between a problem and the calling of solve, output settings can be adjusted.
     // Here we set the output interval to 2.0 seconds via the even method.

@@ -98,24 +98,27 @@ use crate::{
 /// let results = problem.dense(4).solve(&mut method).unwrap();
 /// ```
 #[derive(Clone, Debug)]
-pub struct ODEProblem<T, Y, D, F>
+pub struct ODEProblem<'a, T, Y, D, F>
 where
     T: Real,
     Y: State<T>,
     D: CallBackData,
     F: ODE<T, Y, D>,
 {
-    // Initial Value Problem Fields
-    pub ode: F, // ODE containing the Differential Equation and Optional Terminate Function.
-    pub t0: T,  // Initial Time.
-    pub tf: T,  // Final Time.
-    pub y0: Y,  // Initial State Vector.
+    /// ODE object implementing [`ODE`](crate::ode::ODE) trait
+    pub ode: &'a F,
+    /// Initial Time
+    pub t0: T,
+    /// Final Time
+    pub tf: T,
+    /// Initial State Vector
+    pub y0: Y,
 
     // Phantom Data for Users event output
     _event_output_type: std::marker::PhantomData<D>,
 }
 
-impl<T, Y, D, F> ODEProblem<T, Y, D, F>
+impl<'a, T, Y, D, F> ODEProblem<'a, T, Y, D, F>
 where
     T: Real,
     Y: State<T>,
@@ -133,7 +136,7 @@ where
     /// # Returns
     /// * ODEProblem Problem ready to be solved.
     ///
-    pub fn new(ode: F, t0: T, tf: T, y0: Y) -> Self {
+    pub fn new(ode: &'a F, t0: T, tf: T, y0: Y) -> Self {
         ODEProblem {
             ode,
             t0,
@@ -155,7 +158,7 @@ where
         let mut default_solout = DefaultSolout::new();
         solve_ode(
             solver,
-            &self.ode,
+            self.ode,
             self.t0,
             self.tf,
             &self.y0,
@@ -168,7 +171,7 @@ where
     /// # Returns
     /// * ODEProblem OrdinaryNumericalMethod with the provided solout function ready for .solve() method.
     ///
-    pub fn solout<'a, O: Solout<T, Y, D>>(
+    pub fn solout<O: Solout<T, Y, D>>(
         &'a self,
         solout: &'a mut O,
     ) -> ODEProblemMutRefSoloutPair<'a, T, Y, D, F, O> {
@@ -280,7 +283,7 @@ where
     F: ODE<T, Y, D>,
     O: Solout<T, Y, D>,
 {
-    pub problem: &'a ODEProblem<T, Y, D, F>,
+    pub problem: &'a ODEProblem<'a, T, Y, D, F>,
     pub solout: &'a mut O,
 }
 
@@ -315,7 +318,7 @@ where
     {
         solve_ode(
             solver,
-            &self.problem.ode,
+            self.problem.ode,
             self.problem.t0,
             self.problem.tf,
             &self.problem.y0,
@@ -334,7 +337,7 @@ where
     F: ODE<T, Y, D>,
     O: Solout<T, Y, D>,
 {
-    pub problem: &'a ODEProblem<T, Y, D, F>,
+    pub problem: &'a ODEProblem<'a, T, Y, D, F>,
     pub solout: O,
 }
 
@@ -370,7 +373,7 @@ where
     {
         solve_ode(
             solver,
-            &self.problem.ode,
+            self.problem.ode,
             self.problem.t0,
             self.problem.tf,
             &self.problem.y0,

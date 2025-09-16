@@ -157,7 +157,7 @@ fn main() {
     let y0 = vector![theta0, 0.0];
     let t0 = 0.0;
     let tf = 10.0;
-    let problem = ODEProblem::new(pendulum, t0, tf, y0);
+    let problem = ODEProblem::new(&pendulum, t0, tf, y0);
 
     // --- Solout and Solver Configuration ---
     let mut solout = PendulumSolout::new(g, l, 0.1).with_boost(0.05);

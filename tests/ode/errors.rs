@@ -43,7 +43,7 @@ macro_rules! test_solver_error {
             let tf = $tf;
             let y0 = $y0;
 
-            let problem = ODEProblem::new(system, t0, tf, y0);
+            let problem = ODEProblem::new(&system, t0, tf, y0);
             let mut solver = $solver;
 
             // Solve the system
@@ -98,7 +98,7 @@ macro_rules! test_solver_status {
             let tf = $tf;
             let y0 = $y0;
 
-            let problem = ODEProblem::new(system, t0, tf, y0);
+            let problem = ODEProblem::new(&system, t0, tf, y0);
             let mut solver = $solver;
 
             // Solve the system

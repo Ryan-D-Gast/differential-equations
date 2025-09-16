@@ -25,7 +25,7 @@ macro_rules! test_interpolation {
             let system = ExponentialGrowth { k: 1.0 };
 
             // Create Initial Value Problem (ODEProblem) for the system
-            let problem = ODEProblem::new(system, t0, tf, y0);
+            let problem = ODEProblem::new(&system, t0, tf, y0);
 
             // Initialize the solver
             let mut solver = $solver;

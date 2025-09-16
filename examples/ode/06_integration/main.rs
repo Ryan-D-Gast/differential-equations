@@ -33,7 +33,7 @@ fn main() {
     let t0 = 0.0;
     let tf = 5.0;
     let y0 = 0.0;
-    let problem = ODEProblem::new(ode, t0, tf, y0);
+    let problem = ODEProblem::new(&ode, t0, tf, y0);
 
     // --- Solve the ODE ---
     let mut method = ExplicitRungeKutta::rkf45();
