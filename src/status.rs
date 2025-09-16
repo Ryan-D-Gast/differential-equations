@@ -28,6 +28,8 @@ where
     /// Uninitialized state
     Uninitialized,
     /// Initialized state
+    Initialized,
+    /// General Error pass through from solver
     Error(Error<T, Y>),
     /// Currently being solved
     Solving,
