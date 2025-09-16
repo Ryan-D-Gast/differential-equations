@@ -23,12 +23,12 @@ where
     /// * `sde`    - System of SDEs to solve.
     /// * `t0`     - Initial time.
     /// * `tf`     - Final time.
-    /// * `y`      - Initial state.
+    /// * `y0`     - Initial state.
     ///
     /// # Returns
     /// * Result<Evals, Error<T, Y>> - Ok with number of evaluations if initialization is successful
     ///
-    fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y: &Y) -> Result<Evals, Error<T, Y>>
+    fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
         F: SDE<T, Y, D>;
 

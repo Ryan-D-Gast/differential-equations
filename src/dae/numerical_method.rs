@@ -27,12 +27,12 @@ where
     /// * `system` - System of DAEs to solve.
     /// * `t0`     - Initial time.
     /// * `tf`     - Final time.
-    /// * `y`      - Initial state.
+    /// * `y0`     - Initial state.
     ///
     /// # Returns
     /// * Result<Evals, Error<T, V>> - Ok if initialization is successful,
     ///
-    fn init<F>(&mut self, dae: &F, t0: T, tf: T, y: &V) -> Result<Evals, Error<T, V>>
+    fn init<F>(&mut self, dae: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
         F: DAE<T, V, D>;
 
