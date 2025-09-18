@@ -12,11 +12,16 @@ The `ode` module provides tools for solving ordinary differential equations (ODE
 
 ## Defining an ODE
 
-The `ODE` trait defines the differential equation `dydt = f(t, y)` for the solver. The differential equation is used to solve the ordinary differential equation. The trait also includes a `event` function to interrupt the solver when a condition is met or an event occurs.
+The `ODE` trait defines the differential equation `dydt = f(t, y)` for the solver. The differential equation is used to solve the ordinary differential equation.
 
 ### ODE Trait
 * `diff` - Differential Equation `dydt = f(t, y)` in the form `f(t, &y, &mut dydt)`.
-* `event` - Optional event function to interrupt the solver when a condition is met by returning `ControlFlag::Terminate(reason: CallBackData)`. The `event` function by default returns `ControlFlag::Continue` and thus is ignored. Note that `CallBackData` is by default a `String` but can be replaced with anything implementing `Clone + Debug`.
+
+### Event Trait
+For event detection with precise zero-crossing detection, implement the separate `Event` trait:
+
+* `config` - Configure event detection parameters (direction filtering, termination count)
+* `event` - Event function `g(t,y)` whose zero crossings are detected using Brent-Dekker root finding
 
 ### Solout Trait
 * `solout` - function to choose which points to save in the solution. This is useful when you want to save only points that meet certain criteria. Common implementations are included in the `solout` module. The `ODEProblem` trait implements methods to use them easily without direct interaction as well e.g. `even`, `dense`, and `t_eval`.
@@ -27,23 +32,29 @@ The `ODE` trait defines the differential equation `dydt = f(t, y)` for the solve
 // Less common methods are in the `methods` module
 use differential_equations::prelude::*; 
 use nalgebra::{SVector, vector};
+use differential_equations::solout::{Event, EventConfig, CrossingDirection};
 
 struct LogisticGrowth {
     k: f64,
     m: f64,
 }
 
-impl ODE<f64, SVector<f64, 1>> for LogisticGrowth {
-    fn diff(&self, t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
-        dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
+impl ODE for LogisticGrowth {
+    fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
+        *dydt = self.k * y * (1.0 - y / self.m);
+    }
+}
+
+// Separate event detection implementation
+impl Event for LogisticGrowth {
+    fn config(&self) -> EventConfig {
+        EventConfig::new(CrossingDirection::Positive, Some(1)) // Terminate after first event
     }
 
-    fn event(&self, t: f64, y: &SVector<f64, 1>) -> ControlFlag {
-        if y[0] > 0.9 * self.m {
-            ControlFlag::Terminate("Reached 90% of carrying capacity".to_string())
-        } else {
-            ControlFlag::Continue
-        }
+    fn event(&self, _t: f64, y: &f64) -> f64 {
+        // Event function g(t,y) = y - 0.9*m
+        // Zero crossing occurs when y = 0.9*m
+        y - 0.9 * self.m
     }
 }
 ```
@@ -57,26 +68,26 @@ The `ODEProblem` trait is used to solve the system using the solver. The trait i
 ```rust
 fn main() {
     let mut method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
-    let y0 = vector![1.0];
+    let y0 = 1.0;
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
     let logistic_growth_problem = ODEProblem::new(ode, t0, tf, y0);
     match logistic_growth_problem
         .even(1.0)          // uses EvenSolout to save with dt of 1.0
+        .event(&ode)        // Add event detection using the Event trait implementation
         .solve(&mut method) // Solve the system and return the solution
     {
         Ok(solution) => {
-            // Check if the solver stopped due to the event command
-            if let Status::Interrupted(ref reason) = solution.status {
-                // State the reason why the solver stopped
-                println!("Solver stopped: {}", reason);
+            // Check if the solver stopped due to event detection
+            if let Status::Interrupted = solution.status {
+                println!("Solver stopped due to event detection");
             }
 
             // Print the solution
             println!("Solution:");
             for (t, y) in solution.iter() {
-                println!("({:.4}, {:.4})", t, y[0]);
+                println!("({:.4}, {:.4})", t, y);
             }
 
             // Print the statistics
