@@ -92,8 +92,8 @@ fn main() {
     };
 
     // Create the Heston model SDE problem
-    let sde = HestonModel::new(mu, kappa, theta, sigma, rho, seed);
-    let mut problem = SDEProblem::new(sde, t0, tf, y0);
+    let mut sde = HestonModel::new(mu, kappa, theta, sigma, rho, seed);
+    let mut problem = SDEProblem::new(&mut sde, t0, tf, y0);
 
     // --- Solve the SDE ---
     let dt = 0.01;

@@ -58,7 +58,7 @@ fn main() {
     let phi = |_t: f64| -> f64 { y0 };
 
     // Define the DDE problem
-    let problem = DDEProblem::new(dde, t0, tf, y0, phi);
+    let problem = DDEProblem::new(&dde, t0, tf, y0, phi);
 
     // --- Solve the Problem ---
     println!("Solving Mackey-Glass equation from t={} to t={}...", t0, tf);

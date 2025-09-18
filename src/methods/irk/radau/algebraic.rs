@@ -7,16 +7,14 @@ use crate::{
     methods::{Algebraic, h_init::InitialStepSize, irk::radau::Radau5},
     stats::Evals,
     status::Status,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
-impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
-    for Radau5<Algebraic, T, Y, D>
-{
+impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, T, Y> {
     fn init<F>(&mut self, dae: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: DAE<T, Y, D>,
+        F: DAE<T, Y>,
     {
         let mut evals = Evals::new();
 
@@ -29,7 +27,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
         }
 
         // Validate h0 and align sign with tf direction
-        match validate_step_size_parameters::<T, Y, D>(self.h0, self.h_min, self.h_max, t0, tf) {
+        match validate_step_size_parameters::<T, Y>(self.h0, self.h_min, self.h_max, t0, tf) {
             Ok(h0) => {
                 self.h = h0;
             }
@@ -55,7 +53,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
 
     fn step<F>(&mut self, dae: &F) -> Result<Evals, Error<T, Y>>
     where
-        F: DAE<T, Y, D>,
+        F: DAE<T, Y>,
     {
         let mut evals = Evals::new();
 
@@ -502,10 +500,10 @@ impl<T: Real, Y: State<T>, D: CallBackData> AlgebraicNumericalMethod<T, Y, D>
     fn set_h(&mut self, h: T) {
         self.h = h;
     }
-    fn status(&self) -> &Status<T, Y, D> {
+    fn status(&self) -> &Status<T, Y> {
         &self.status
     }
-    fn set_status(&mut self, status: Status<T, Y, D>) {
+    fn set_status(&mut self, status: Status<T, Y>) {
         self.status = status;
     }
 }

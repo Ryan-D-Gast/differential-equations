@@ -1,9 +1,6 @@
 //! Defines the trait for systems of Delay Differential Equations (DDEs) used by numerical solvers.
 
-use crate::{
-    control::ControlFlag,
-    traits::{CallBackData, Real, State},
-};
+use crate::traits::{Real, State};
 
 /// Trait for defining a system of Delay Differential Equations (DDEs).
 ///
@@ -12,11 +9,10 @@ use crate::{
 /// where `y` is the state vector, `t` is time, and `y(t - tau_i)` represents
 /// the state at some past time (a delay).
 ///
-pub trait DDE<const L: usize, T = f64, Y = f64, D = String>
+pub trait DDE<const L: usize, T = f64, Y = f64>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
 {
     /// Computes the time derivative `dy/dt` of the system state.
     ///
@@ -56,29 +52,4 @@ where
     /// * `lags`: A mutable reference to an array of lags, where the computed lags should be stored.
     ///
     fn lags(&self, t: T, y: &Y, lags: &mut [T; L]);
-
-    /// Optional event function to detect specific conditions and potentially terminate integration.
-    ///
-    /// This function is called by the solver after each successful step (and potentially
-    /// during step refinement for accurate event localization). It allows checking if a
-    /// certain condition based on the current time `t` and state `y` has been met.
-    ///
-    /// # Arguments
-    ///
-    /// * `t`: The current time `t`.
-    /// * `y`: A reference to the current state vector `y(t)`.
-    ///
-    /// # Returns
-    ///
-    /// * [`ControlFlag::Continue`]: If the integration should continue normally.
-    /// * [`ControlFlag::Terminate(D)`]: If the integration should stop because an event has occurred.
-    ///   The associated data `D` (e.g., a string describing the event) will be stored in the [`Solution`].
-    ///
-    /// # Default Implementation
-    ///
-    /// The default implementation always returns [`ControlFlag::Continue`], meaning no events
-    /// are detected unless this method is overridden.
-    fn event(&self, _t: T, _y: &Y) -> ControlFlag<T, Y, D> {
-        ControlFlag::Continue
-    }
 }

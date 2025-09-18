@@ -22,7 +22,12 @@ The trait also includes a `noise` method to generate random increments and an op
 * `drift` - Deterministic part a(t,Y) of the SDE in form `drift(t, &y, &mut dydt)`.
 * `diffusion` - Stochastic part b(t,Y) of the SDE in form `diffusion(t, &y, &mut dydw)`.
 * `noise` - Generates random noise increments for the SDE.
-* `event` - Optional event function to interrupt the solver when a condition is met.
+
+### Event Trait
+For event detection with precise zero-crossing detection, implement the separate `Event` trait:
+
+* `config` - Configure event detection parameters (direction filtering, termination count)
+* `event` - Event function `g(t,y)` whose zero crossings are detected using Brent-Dekker root finding
 
 ### Implementation
 ```rust
@@ -65,14 +70,18 @@ impl SDE<f64, SVector<f64, 1>> for GBM {
         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
         dw[0] = normal.sample(&mut self.rng.clone());
     }
-    
-    // Optional: event detection
-    fn event(&self, t: f64, y: &SVector<f64, 1>) -> ControlFlag<String> {
-        if y[0] > 150.0 {
-            ControlFlag::Terminate("Price exceeded threshold".to_string())
-        } else {
-            ControlFlag::Continue
-        }
+}
+
+// Separate event detection implementation
+impl Event<f64, SVector<f64, 1>> for GBM {
+    fn config(&self) -> EventConfig {
+        EventConfig::new(CrossingDirection::Positive, Some(1)) // Terminate after first event
+    }
+
+    fn event(&self, _t: f64, y: &SVector<f64, 1>) -> f64 {
+        // Event function g(t,y) = y - 150.0
+        // Zero crossing occurs when y = 150.0
+        y[0] - 150.0
     }
 }
 ```
@@ -98,8 +107,16 @@ fn main() {
     let mut solver = ExplicitRungeKutta::rk4(0.01);
     
     // Create and solve the problem
-    let problem = SDEProblem::new(sde, t0, tf, y0);
-    let solution = problem.solve(&mut solver).unwrap();
+    let problem = SDEProblem::new(&sde, t0, tf, y0);
+    let solution = problem
+        .event(&sde)  // Add event detection
+        .solve(&mut solver)
+        .unwrap();
+    
+    // Check if solver terminated due to event
+    if let Status::Interrupted = solution.status {
+        println!("Solver terminated due to event detection");
+    }
     
     // Access solution
     println!("Final price: {:.4}", solution.y.last().unwrap()[0]);

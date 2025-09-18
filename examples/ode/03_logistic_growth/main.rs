@@ -27,16 +27,17 @@ impl ODE for LogisticGrowth {
     fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
         *dydt = self.k * y * (1.0 - y / self.m);
     }
+}
 
-    // Define the event function to stop the solver when y reaches 90% of carrying capacity
-    // This is useful for models where we want to stop at a certain threshold because we are
-    // searching for when or where the solution reaches a specific value.
-    fn event(&self, _t: f64, y: &f64) -> ControlFlag {
-        if *y > 0.9 * self.m {
-            ControlFlag::Terminate("Reached 90% of carrying capacity".to_string())
-        } else {
-            ControlFlag::Continue
-        }
+impl Event for LogisticGrowth {
+    fn config(&self) -> EventConfig {
+        EventConfig::default().terminal() // Will terminate after the first event
+    }
+
+    /// Event function g(t,y) = y - 0.9*m
+    fn event(&self, _t: f64, y: &f64) -> f64 {
+        // Event function g(t,y) = y - 0.9*m
+        y - 0.9 * self.m
     }
 }
 
@@ -46,16 +47,20 @@ fn main() {
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
-    let logistic_growth_problem = ODEProblem::new(ode, t0, tf, y0);
+    let logistic_growth_problem = ODEProblem::new(&ode, t0, tf, y0);
 
     // Between a problem and the calling of solve, output settings can be adjusted.
     // Here we set the output interval to 2.0 seconds via the even method.
-    match logistic_growth_problem.even(2.0).solve(&mut method) {
+    match logistic_growth_problem
+        .even(2.0)
+        .event(&ode)
+        .solve(&mut method)
+    {
         Ok(solution) => {
             // Check if the solver stopped due to the event command
-            if let Status::Interrupted(ref reason) = solution.status {
+            if let Status::Interrupted = solution.status {
                 // State the reason why the solver stopped
-                println!("Numerical Method stopped: {}", reason);
+                println!("Numerical Method interrupted");
             }
 
             // The output points, (t, y), can be iterated over

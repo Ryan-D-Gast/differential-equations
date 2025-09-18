@@ -76,7 +76,7 @@ fn main() {
     };
     let t0 = 0.0;
     let tf = 3.0 * 1.509263667286943; // Period of the orbit (sv(t0) ~= sv(tf / 3.0))
-    let cr3bp_problem = ODEProblem::new(ode, t0, tf, sv);
+    let cr3bp_problem = ODEProblem::new(&ode, t0, tf, sv);
 
     // Defines a function to extract the state vector into a Vector3 for hyperplane crossing detection
     fn extractor(sv: &StateVector<f64>) -> Vector3<f64> {

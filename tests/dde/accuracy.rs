@@ -28,7 +28,7 @@ macro_rules! test_dde {
             let history_fn = $history;
 
             // Create Initial Value Problem (DDEProblem) for the system
-            let problem = DDEProblem::new(system, t0, tf, y0, history_fn);
+            let problem = DDEProblem::new(&system, t0, tf, y0, history_fn);
 
             // Initialize the solver
             let mut solver = $solver;

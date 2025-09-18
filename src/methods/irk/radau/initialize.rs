@@ -2,9 +2,9 @@ use crate::error::Error;
 use crate::linalg::Matrix;
 use crate::methods::irk::radau::Radau5;
 use crate::status::Status;
-use crate::traits::{CallBackData, Real, State};
+use crate::traits::{Real, State};
 
-impl<E, T: Real, Y: State<T>, D: CallBackData> Radau5<E, T, Y, D> {
+impl<E, T: Real, Y: State<T>> Radau5<E, T, Y> {
     /// Initialize Radau5: combines `set_parameters` and common workspace setup.
     pub fn initialize(&mut self, t0: T, tf: T, y0: &Y) -> Result<(), Error<T, Y>> {
         // Dimension of system

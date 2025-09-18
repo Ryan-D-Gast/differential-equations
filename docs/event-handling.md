@@ -1,465 +1,361 @@
 # Event Handling
 
-Event handling is a powerful feature that allows you to detect specific conditions during the numerical integration of differential equations. This guide explains how to implement and use event functions effectively in this library.
+Event handling in this library has been redesigned to provide robust, SciPy-like event detection with precise zero-crossing detection using Brent-Dekker root finding. This guide explains how to implement and use the new event system effectively.
 
-## Overview
+## The Event Trait
 
-Events in differential equation solvers serve multiple purposes:
-
-1. **Termination conditions**: Stop the integration when a specific condition is met
-2. **State monitoring**: Track when the system reaches critical thresholds  
-3. **Discontinuity handling**: Detect and handle discontinuities in the solution
-4. **Special point detection**: Record when the system passes through points of interest
-
-This library supports robust event handling through the `event` method in the differential equation traits (e.g., `ODE`, `DDE`) and flexible callback data types.
-
-## Basic Event Handling
-
-The most straightforward way to implement event handling is through the `event` method in your differential equation implementation:
+The core of the new event system is the `Event` trait:
 
 ```rust
-impl ODE for MySystem {
-    fn diff(&self, t: f64, y: &f64, dydt: &mut f64) {
-        // Differential equation implementation
-        *dydt = /* ... */;
+pub trait Event<T: Real = f64, Y: State<T> = f64> {
+    /// Configure the event detection parameters (called once at initialization).
+    fn config(&self) -> EventConfig {
+        EventConfig::default()
     }
 
-    fn event(&self, t: f64, y: &f64) -> ControlFlag<String> {
-        if *y > 10.0 {
-            // Integration will stop when y exceeds 10.0
-            ControlFlag::Terminate("y exceeded threshold".to_string())
-        } else {
-            // Continue integration
-            ControlFlag::Continue
-        }
+    /// Event function g(t,y) whose zero crossings are detected.
+    fn event(&self, t: T, y: &Y) -> T;
+}
+```
+
+### EventConfig
+
+The `EventConfig` struct controls how events are detected:
+
+```rust
+pub struct EventConfig {
+    /// Direction of zero crossing to detect
+    pub direction: CrossingDirection,
+    /// Number of events before termination
+    pub terminate: Option<u32>,
+}
+```
+
+#### CrossingDirection
+
+- `CrossingDirection::Both`: Detect crossings in either direction
+- `CrossingDirection::Positive`: Only detect when g(t,y) crosses from negative to positive
+- `CrossingDirection::Negative`: Only detect when g(t,y) crosses from positive to negative
+
+### Basic Event Implementation
+
+```rust
+use differential_equations::prelude::*;
+use differential_equations::solout::{Event, EventConfig, CrossingDirection};
+
+struct PopulationThreshold {
+    threshold: f64,
+}
+
+impl PopulationThreshold {
+    fn new(threshold: f64) -> Self {
+        Self { threshold }
+    }
+}
+
+impl Event for PopulationThreshold {
+    fn config(&self) -> EventConfig {
+        EventConfig::new(CrossingDirection::Positive, Some(1)) // Terminate after first event
+    }
+
+    fn event(&self, _t: f64, y: &f64) -> f64 {
+        // Event function: g(t,y) = y - threshold
+        // Zero crossing occurs when y = threshold
+        y - self.threshold
     }
 }
 ```
 
-The `event` method is called after each successful step of the numerical method. It receives the current time `t` and state `y`, and returns a `ControlFlag` indicating whether to continue or terminate the integration.
+## Using Events with Problems
 
-## The `ControlFlag` Enum
+All problem types (ODE, SDE, DDE, DAE) support the new event system through the `.event()` method:
 
-The `ControlFlag` enum has two variants:
-
-1. `ControlFlag::Continue` - Continue the integration
-2. `ControlFlag::Terminate(data)` - Stop the integration and return the provided data
-
-The data type of the termination reason is generic, allowing you to use any type that implements the `CallBackData` trait.
-
-## Using String Callbacks (Default)
-
-The simplest approach is to use `String` as your callback data type:
+### ODE Problems
 
 ```rust
-fn event(&self, _t: f64, y: &f64) -> ControlFlag<String> {
-    if *y > 10.0 {
-        ControlFlag::Terminate("y exceeded threshold".to_string())
-    } else {
-        ControlFlag::Continue
+let event_detector = PopulationThreshold::new(9.0);
+let problem = ODEProblem::new(system, t0, tf, y0);
+
+// Add event detection to the problem
+let solution = problem
+    .even(1.0)        // Output every 1.0 time units
+    .event(&event_detector)  // Add event detection
+    .solve(&mut solver)
+    .unwrap();
+
+// Check if solver terminated due to event
+if let Status::Interrupted = solution.status {
+    println!("Integration terminated by event");
+}
+```
+
+### SDE, DDE, and DAE Problems
+
+The same pattern works for all problem types:
+
+```rust
+// SDE example
+let sde_problem = SDEProblem::new(system, t0, tf, y0);
+let solution = sde_problem.event(&event_detector).solve(&mut solver).unwrap();
+
+// DDE example
+let dde_problem = DDEProblem::new(system, t0, tf, y0, history_fn);
+let solution = dde_problem.event(&event_detector).solve(&mut solver).unwrap();
+
+// DAE example
+let dae_problem = DAEProblem::new(system, t0, tf, y0);
+let solution = dae_problem.event(&event_detector).solve(&mut solver).unwrap();
+```
+
+## Event Detection Algorithm
+
+The event detection uses a robust algorithm:
+
+1. **Sign monitoring**: Track the sign of `g(t,y)` across solver steps
+2. **Zero-crossing detection**: Detect when `g(t,y)` changes sign
+3. **Direction filtering**: Apply the configured `CrossingDirection` filter
+4. **Root finding**: Use Brent-Dekker algorithm to locate the exact event time
+5. **Point recording**: Add the precise event point to the solution
+6. **Termination control**: Terminate integration if configured
+
+### Brent-Dekker Root Finding
+
+The library uses the Brent-Dekker algorithm for robust root finding:
+
+- **Hybrid approach**: Combines bisection, secant, and inverse quadratic interpolation
+- **Guaranteed convergence**: Always converges to a root within the bracket
+- **High accuracy**: Achieves machine precision for most problems
+- **Robust bracketing**: Handles edge cases and numerical instabilities
+
+## Advanced Event Configuration
+
+### Multiple Events
+
+You can detect multiple events by configuring the termination count:
+
+```rust
+impl Event for MultipleThresholds {
+    fn config(&self) -> EventConfig {
+        EventConfig::new(CrossingDirection::Both, Some(5)) // Detect 5 events
+    }
+
+    fn event(&self, _t: f64, y: &f64) -> f64 {
+        y - self.threshold
     }
 }
 ```
 
-This is the default if you don't specify a callback type when implementing the `ODE` trait:
+### Continuous Monitoring
+
+For continuous monitoring without termination:
 
 ```rust
-// Using the default String callback type
-impl ODE for LogisticGrowth {
-    // Implementation...
+impl Event for ContinuousMonitor {
+    fn config(&self) -> EventConfig {
+        EventConfig::new(CrossingDirection::Both, None) // No termination
+    }
+
+    fn event(&self, _t: f64, y: &f64) -> f64 {
+        y - self.threshold
+    }
 }
 ```
 
-### Example: Logistic Growth Model
-
-Here's a complete example of using string callbacks with a logistic growth model:
+### Direction-Specific Detection
 
 ```rust
+// Only detect when crossing from below to above
+let config = EventConfig::new(CrossingDirection::Positive, Some(1));
+
+// Only detect when crossing from above to below
+let config = EventConfig::new(CrossingDirection::Negative, Some(1));
+
+// Detect crossings in both directions
+let config = EventConfig::new(CrossingDirection::Both, Some(1));
+```
+
+## Combining Events with Other Solout Methods
+
+The event system is designed to compose with other output methods:
+
+```rust
+let solution = problem
+    .dense(10)        // Dense output with 10 points per step
+    .event(&detector) // Plus event detection
+    .solve(&mut solver)
+    .unwrap();
+```
+
+This creates an `EventWrappedSolout` that:
+1. Delegates to the base solout (dense output in this case)
+2. Adds event detection on top
+3. Records both regular output points and event points
+
+## Custom Event Implementations
+
+### Multi-Component Events
+
+```rust
+struct MultiComponentEvent {
+    x_threshold: f64,
+    y_threshold: f64,
+}
+
+impl Event<f64, Vector2<f64>> for MultiComponentEvent {
+    fn config(&self) -> EventConfig {
+        EventConfig::new(CrossingDirection::Both, Some(1))
+    }
+
+    fn event(&self, _t: f64, y: &Vector2<f64>) -> f64 {
+        // Event when either component crosses its threshold
+        // Using min() creates a compound event function
+        (y[0] - self.x_threshold).min(y[1] - self.y_threshold)
+    }
+}
+```
+
+### Time-Based Events
+
+```rust
+struct PeriodicEvent {
+    period: f64,
+    phase: f64,
+}
+
+impl Event for PeriodicEvent {
+    fn config(&self) -> EventConfig {
+        EventConfig::new(CrossingDirection::Positive, None)
+    }
+
+    fn event(&self, t: f64, _y: &f64) -> f64 {
+        // Event at regular time intervals
+        (t - self.phase).sin() * self.period
+    }
+}
+```
+
+## Event Solout Internals
+
+For advanced users, you can use `EventSolout` directly:
+
+```rust
+use differential_equations::solout::{EventSolout, EventWrappedSolout};
+
+// Direct EventSolout usage
+let mut event_solout = EventSolout::new(&event_detector, t0, tf);
+let solution = problem.solout(&mut event_solout).solve(&mut solver).unwrap();
+
+// EventWrappedSolout for composition
+let base_solout = EvenSolout::new(1.0);
+let mut wrapped = EventWrappedSolout::new(base_solout, &event_detector, t0, tf);
+let solution = problem.solout(&mut wrapped).solve(&mut solver).unwrap();
+```
+
+## Examples
+
+### Logistic Growth with Event Detection
+
+```rust
+use differential_equations::prelude::*;
+use differential_equations::solout::{Event, EventConfig, CrossingDirection};
+
 struct LogisticGrowth {
-    k: f64,  // Growth rate
-    m: f64,  // Carrying capacity
+    k: f64,
+    m: f64,
 }
 
 impl ODE for LogisticGrowth {
     fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
         *dydt = self.k * y * (1.0 - y / self.m);
     }
+}
 
-    fn event(&self, _t: f64, y: &f64) -> ControlFlag<String> {
-        if *y > 0.9 * self.m {
-            // Stop when population reaches 90% of carrying capacity
-            ControlFlag::Terminate("Reached 90% of carrying capacity".to_string())
-        } else {
-            ControlFlag::Continue
-        }
+impl Event for LogisticGrowth {
+    fn config(&self) -> EventConfig {
+        EventConfig::new(CrossingDirection::Positive, Some(1))
     }
-}
-```
 
-## Custom Callback Types
-
-For more structured and type-safe event handling, you can define custom types to represent different termination conditions:
-
-```rust
-// Custom enum for different termination conditions
-#[derive(Debug, Clone)]
-enum PopulationMonitor {
-    InfectedBelowOne,
-    PopulationDiedOut,
-}
-
-// Implement Display for better error messages
-impl std::fmt::Display for PopulationMonitor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PopulationMonitor::InfectedBelowOne => write!(f, "Infected population is below 1"),
-            PopulationMonitor::PopulationDiedOut => write!(f, "Population died out"),
-        }
-    }
-}
-```
-
-When using custom callback types, you need to explicitly specify them when implementing the ODE trait:
-
-```rust
-impl ODE<f64, SIRState<f64>, PopulationMonitor> for SIRModel {
-    // Implementation...
-    
-    fn event(&self, _t: f64, y: &SIRState<f64>) -> ControlFlag<PopulationMonitor> {
-        if y.infected < 1.0 {
-            ControlFlag::Terminate(PopulationMonitor::InfectedBelowOne)
-        } else if y.population() < 1.0 {
-            ControlFlag::Terminate(PopulationMonitor::PopulationDiedOut)
-        } else {
-            ControlFlag::Continue
-        }
-    }
-}
-```
-
-### Example: SIR Epidemiological Model
-
-Here's a complete example using custom callback types with the SIR (Susceptible-Infected-Recovered) model:
-
-```rust
-/// SIR Model
-struct SIRModel {
-    beta: f64,       // Transmission rate
-    gamma: f64,      // Recovery rate
-    population: f64, // Total population
-}
-
-#[derive(Debug, Clone)]
-enum PopulationMonitor {
-    InfectedBelowOne,
-    PopulationDiedOut,
-}
-
-impl std::fmt::Display for PopulationMonitor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PopulationMonitor::InfectedBelowOne => write!(f, "Infected population is below 1"),
-            PopulationMonitor::PopulationDiedOut => write!(f, "Population died out"),
-        }
+    fn event(&self, _t: f64, y: &f64) -> f64 {
+        // Detect when population reaches 90% of carrying capacity
+        y - 0.9 * self.m
     }
 }
 
-// Custom state type with the State trait derived
-#[derive(State)]
-struct SIRState<T> {
-    susceptible: T,
-    infected: T,
-    recovered: T,
-}
-
-impl SIRState<f64> {
-    fn population(&self) -> f64 {
-        self.susceptible + self.infected + self.recovered
-    }
-}
-
-impl ODE<f64, SIRState<f64>, PopulationMonitor> for SIRModel {
-    fn diff(&self, _t: f64, y: &SIRState<f64>, dydt: &mut SIRState<f64>) {
-        let s = y.susceptible;
-        let i = y.infected;
-        
-        dydt.susceptible = -self.beta * s * i / self.population;
-        dydt.infected = self.beta * s * i / self.population - self.gamma * i;
-        dydt.recovered = self.gamma * i;
-    }
-
-    fn event(&self, _t: f64, y: &SIRState<f64>) -> ControlFlag<PopulationMonitor> {
-        if y.infected < 1.0 {
-            ControlFlag::Terminate(PopulationMonitor::InfectedBelowOne)
-        } else if y.population() < 1.0 {
-            ControlFlag::Terminate(PopulationMonitor::PopulationDiedOut)
-        } else {
-            ControlFlag::Continue
-        }
-    }
-}
-```
-
-## Accessing Event Results
-
-When a solver terminates due to an event, the reason is stored in the `Status::Interrupted` variant of the solution's status:
-
-```rust
-match problem.solve(&mut method) {
-    Ok(solution) => {
-        if let Status::Interrupted(ref reason) = solution.status {
-            println!("Solver stopped: {}", reason);
-            // For custom types, you can pattern match
-            if let Some(PopulationMonitor::InfectedBelowOne) = reason.downcast_ref() {
-                println!("The infection has been contained!");
-            }
-        }
-        // Process solution...
-    },
-    Err(e) => panic!("Error: {:?}", e),
-};
-```
-
-## Root-Finding for Event Detection
-
-When an event is triggered, the solver performs root-finding to accurately locate the time and state at which the event occurred. This ensures that events are detected precisely, not just at the solver's integration steps.
-
-The root-finding algorithm:
-
-1. Detects when the event function changes from `Continue` to `Terminate` between steps
-2. Uses interpolation to find the exact time where the event occurs
-3. Updates the final time and state to the event point
-4. Returns the appropriate callback data
-
-## Advanced Event Handling
-
-### Multiple Conditions
-
-You can check multiple conditions within a single event function:
-
-```rust
-fn event(&self, t: f64, y: &MyState<f64>) -> ControlFlag<MyEvents> {
-    if y.temperature > self.critical_temperature {
-        ControlFlag::Terminate(MyEvents::TemperatureExceeded)
-    } else if y.pressure > self.max_pressure {
-        ControlFlag::Terminate(MyEvents::PressureExceeded)
-    } else if t > self.time_limit {
-        ControlFlag::Terminate(MyEvents::TimeExceeded)
-    } else {
-        ControlFlag::Continue
-    }
-}
-```
-
-### Combining with Solout
-
-For more complex event handling scenarios, you can implement custom `Solout` implementations that return appropriate control flags:
-
-```rust
-use differential_equations::{ControlFlag, Solution, prelude::*};
-
-// Define a custom Solout implementation
-struct CustomEventSolout<T: Real> {
-    threshold: T,
-    event_happened: bool,
-}
-
-impl<T: Real> CustomEventSolout<T> {
-    fn new(threshold: T) -> Self {
-        Self {
-            threshold,
-            event_happened: false,
-        }
-    }
-}
-
-// Implement the Solout trait for our custom solout
-impl<T: Real, Y: State<T>> Solout<T, Y> for CustomEventSolout<T> {
-    fn solout<I>(
-        &mut self,
-        t_curr: T,
-        t_prev: T,
-        y_curr: &Y,
-        y_prev: &Y,
-        interpolator: &mut I,
-        solution: &mut Solution<T, Y>,
-    ) -> ControlFlag<String>
-    where
-        I: Interpolation<T, Y>,
-    {
-        // Add the current point to the solution
-        solution.push(t_curr, *y_curr);
-        
-        // Check for our event condition using both current and interpolated values
-        if !self.event_happened {
-            // Get a value from the state (e.g., first component for vector states)
-            let value = if y_curr.len() > 0 { y_curr.get(0) } else { *y_curr };
-            
-            // Check if our threshold was crossed
-            if value > self.threshold {
-                self.event_happened = true;
-                
-                // Find the exact crossing point through interpolation
-                let mut t_event = t_prev;
-                let mut t_step = (t_curr - t_prev) / T::from_f64(10.0).unwrap();
-                let mut event_found = false;
-                
-                // Simple bisection search for the event point
-                while t_event < t_curr && !event_found {
-                    let y_interp = interpolator.interpolate(t_event).unwrap();
-                    let interp_value = if y_interp.len() > 0 { y_interp.get(0) } else { y_interp };
-                    
-                    if interp_value > self.threshold {
-                        event_found = true;
-                        // Add the exact event point to the solution
-                        solution.push(t_event, y_interp);
-                        return ControlFlag::Terminate("Threshold exceeded".to_string());
-                    }
-                    t_event += t_step;
-                }
-                
-                // If exact point not found, still terminate
-                return ControlFlag::Terminate("Threshold exceeded".to_string());
-            }
-        }
-        
-        ControlFlag::Continue
-    }
-}
-
-// Using the custom solout
 fn main() {
-    let problem = ODEProblem::new(/* ... */);
-    let mut solver = DOPRI5::new();
-    let mut custom_solout = CustomEventSolout::new(5.0); // Threshold of 5.0
-    
-    match problem
-        .solout(&mut custom_solout)
-        .solve(&mut solver)
+    let mut method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
+    let y0 = 1.0;
+    let t0 = 0.0;
+    let tf = 10.0;
+    let ode = LogisticGrowth { k: 1.0, m: 10.0 };
+    let logistic_growth_problem = ODEProblem::new(&ode, t0, tf, y0);
+
+    match logistic_growth_problem
+        .even(1.0)
+        .event(&ode)
+        .solve(&mut method)
     {
         Ok(solution) => {
-            if let Status::Interrupted(reason) = solution.status {
-                println!("Integration stopped: {}", reason);
+            if let Status::Interrupted = solution.status {
+                println!("Solver stopped due to event detection");
             }
-            // Process solution...
-        },
-        Err(e) => println!("Error: {:?}", e),
+
+            println!("Solution points:");
+            for (t, y) in solution.iter() {
+                println!("({:.4}, {:.4})", t, y);
+            }
+
+            println!("Function evaluations: {}", solution.evals.function);
+            println!("Steps: {}", solution.steps.total());
+        }
+        Err(e) => panic!("Error: {:?}", e),
     }
 }
 ```
 
-This approach gives you complete control over:
-1. When and how to interpolate between steps
-2. The criteria for event detection
-3. How the event points are added to the solution
-4. What information is returned in the event message
-
-### Using Built-in Output Options with Event Detection
-
-The library's built-in output handlers like `even` or `dense` already implement the `Solout` trait and can be combined with the event function:
-
-```rust
-// Combining even output with event detection
-let result = problem
-    .even(0.1) // Output at evenly spaced points with dt = 0.1
-    .solve(&mut solver);
-
-// Check if solver was terminated by an event
-if let Ok(solution) = result {
-    if let Status::Interrupted(reason) = &solution.status {
-        println!("Solver stopped due to event: {}", reason);
-    }
-}
-```
-
-## Example: Oscillator with Amplitude Threshold
-
-Here's a complete example of an oscillator that terminates when the amplitude exceeds a threshold:
+### Oscillator with Amplitude Monitoring
 
 ```rust
 use differential_equations::prelude::*;
-use nalgebra::{Vector2, vector};
+use nalgebra::Vector2;
 
-struct OscillatorWithDamping {
-    damping: f64,
-    drive_strength: f64,
-    drive_freq: f64,
-    threshold: f64,
+struct OscillatorEvent {
+    amplitude_threshold: f64,
 }
 
-#[derive(Debug, Clone)]
-enum OscillatorEvent {
-    AmplitudeExceeded,
-    EnergyDissipated,
-}
+impl Event<f64, Vector2<f64>> for OscillatorEvent {
+    fn config(&self) -> EventConfig {
+        EventConfig::new(CrossingDirection::Both, Some(3)) // Detect 3 crossings
+    }
 
-impl std::fmt::Display for OscillatorEvent {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            OscillatorEvent::AmplitudeExceeded => write!(f, "Oscillator amplitude exceeded threshold"),
-            OscillatorEvent::EnergyDissipated => write!(f, "Energy fully dissipated"),
-        }
+    fn event(&self, _t: f64, y: &Vector2<f64>) -> f64 {
+        // Event when position crosses amplitude threshold
+        y[0].abs() - self.amplitude_threshold
     }
 }
 
-impl ODE<f64, Vector2<f64>, OscillatorEvent> for OscillatorWithDamping {
-    fn diff(&self, t: f64, y: &Vector2<f64>, dydt: &mut Vector2<f64>) {
-        let position = y[0];
-        let velocity = y[1];
-        
-        // dx/dt = v
-        dydt[0] = velocity;
-        
-        // dv/dt = -x - c*v + F*sin(w*t)  [damped, driven oscillator]
-        dydt[1] = -position - self.damping * velocity + 
-                  self.drive_strength * (self.drive_freq * t).sin();
-    }
-    
-    fn event(&self, _t: f64, y: &Vector2<f64>) -> ControlFlag<OscillatorEvent> {
-        let position = y[0];
-        let velocity = y[1];
-        
-        // Calculate amplitude (position)
-        if position.abs() > self.threshold {
-            ControlFlag::Terminate(OscillatorEvent::AmplitudeExceeded)
-        }
-        // Check if energy (position^2 + velocity^2) is nearly dissipated
-        else if position.powi(2) + velocity.powi(2) < 1e-6 {
-            ControlFlag::Terminate(OscillatorEvent::EnergyDissipated)
-        } 
-        else {
-            ControlFlag::Continue
-        }
+struct HarmonicOscillator;
+
+impl ODE<f64, Vector2<f64>> for HarmonicOscillator {
+    fn diff(&self, _t: f64, y: &Vector2<f64>, dydt: &mut Vector2<f64>) {
+        dydt[0] = y[1];       // dx/dt = v
+        dydt[1] = -y[0];      // dv/dt = -x (no damping)
     }
 }
 
 fn main() {
-    let oscillator = OscillatorWithDamping {
-        damping: 0.1,
-        drive_strength: 0.5,
-        drive_freq: 1.0,
-        threshold: 3.0,
-    };
+    let oscillator = HarmonicOscillator;
+    let event_detector = OscillatorEvent { amplitude_threshold: 0.8 };
     
-    // Initial conditions: position = 0, velocity = 1
-    let y0 = vector![0.0, 1.0];
+    let y0 = vector![1.0, 0.0]; // Start at maximum displacement
+    let problem = ODEProblem::new(oscillator, 0.0, 20.0, y0);
     
-    // Solve from t=0 to t=50
-    let mut solver = DOPRI5::new().rtol(1e-6).atol(1e-9);
-    let problem = ODEProblem::new(oscillator, 0.0, 50.0, y0);
+    let solution = problem
+        .dense(5)
+        .event(&event_detector)
+        .solve(&mut ExplicitRungeKutta::dop853())
+        .unwrap();
     
-    match problem.dense().solve(&mut solver) {
-        Ok(solution) => {
-            // Check if solver terminated due to an event
-            if let Status::Interrupted(reason) = &solution.status {
-                println!("Solver terminated: {}", reason);
-            }
-            
-            // Process solution...
-            println!("Final time: {}", solution.last().unwrap().0);
-            println!("Solution points: {}", solution.len());
-        },
-        Err(e) => println!("Error: {:?}", e),
-    }
+    println!("Detected {} amplitude crossings", 
+             solution.t.len() - 1); // -1 for initial point
 }
 ```

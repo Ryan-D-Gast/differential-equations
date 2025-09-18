@@ -5,7 +5,7 @@ use crate::{
     error::Error,
     stats::Evals,
     status::Status,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 /// AlgebraicNumericalMethod Trait for DAE NumericalMethods
@@ -15,11 +15,10 @@ use crate::{
 /// By implementing this trait, different functions can use a user provided
 /// DAE solver to solve the DAE that fits their requirements.
 ///
-pub trait AlgebraicNumericalMethod<T, V, D = String>
+pub trait AlgebraicNumericalMethod<T, V>
 where
     T: Real,
     V: State<T>,
-    D: CallBackData,
 {
     /// Initialize AlgebraicNumericalMethod before solving DAE
     ///
@@ -27,14 +26,14 @@ where
     /// * `system` - System of DAEs to solve.
     /// * `t0`     - Initial time.
     /// * `tf`     - Final time.
-    /// * `y`      - Initial state.
+    /// * `y0`     - Initial state.
     ///
     /// # Returns
     /// * Result<Evals, Error<T, V>> - Ok if initialization is successful,
     ///
-    fn init<F>(&mut self, dae: &F, t0: T, tf: T, y: &V) -> Result<Evals, Error<T, V>>
+    fn init<F>(&mut self, dae: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
-        F: DAE<T, V, D>;
+        F: DAE<T, V>;
 
     /// Step through solving the DAE by one step
     ///
@@ -46,7 +45,7 @@ where
     ///
     fn step<F>(&mut self, dae: &F) -> Result<Evals, Error<T, V>>
     where
-        F: DAE<T, V, D>;
+        F: DAE<T, V>;
 
     // Access fields of the solver
 
@@ -69,8 +68,8 @@ where
     fn set_h(&mut self, h: T);
 
     /// Status of solver
-    fn status(&self) -> &Status<T, V, D>;
+    fn status(&self) -> &Status<T, V>;
 
     /// Set status of solver
-    fn set_status(&mut self, status: Status<T, V, D>);
+    fn set_status(&mut self, status: Status<T, V>);
 }

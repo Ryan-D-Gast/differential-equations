@@ -96,8 +96,8 @@ impl Solout<f64, SVector<f64, 2>> for PendulumSolout {
         y_curr: &SVector<f64, 2>,
         _y_prev: &SVector<f64, 2>,
         _interpolator: &mut I,
-        solution: &mut Solution<f64, SVector<f64, 2>, String>,
-    ) -> ControlFlag<f64, SVector<f64, 2>, String>
+        solution: &mut Solution<f64, SVector<f64, 2>>,
+    ) -> ControlFlag<f64, SVector<f64, 2>>
     where
         I: Interpolation<f64, SVector<f64, 2>>,
     {
@@ -157,7 +157,7 @@ fn main() {
     let y0 = vector![theta0, 0.0];
     let t0 = 0.0;
     let tf = 10.0;
-    let problem = ODEProblem::new(pendulum, t0, tf, y0);
+    let problem = ODEProblem::new(&pendulum, t0, tf, y0);
 
     // --- Solout and Solver Configuration ---
     let mut solout = PendulumSolout::new(g, l, 0.1).with_boost(0.05);

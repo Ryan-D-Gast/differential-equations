@@ -15,7 +15,7 @@ Key components of the `ODE` trait:
 *   `event(t, y)`: An optional method to define conditions for interrupting the solver.
     *   It receives the current time `t` and state `y`.
     *   It should return a `ControlFlag`. By default, it returns `ControlFlag::Continue`.
-    *   To terminate, return `ControlFlag::Terminate(reason)`, where `reason` can be any type implementing `Clone + Debug` (defaults to `String`).
+    *   To terminate, return `ControlFlag::Terminate`, where `reason` can be any type implementing `Clone + Debug` (defaults to `String`).
 
 ## Example Implementation
 

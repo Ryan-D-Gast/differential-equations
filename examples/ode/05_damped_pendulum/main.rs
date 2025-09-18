@@ -39,17 +39,19 @@ impl ODE<f64, SVector<f64, 2>> for DampedPendulumModel {
         dydt[0] = omega;
         dydt[1] = -(self.b / self.m) * omega - (self.g / self.l) * theta.sin();
     }
+}
 
-    fn event(&self, _t: f64, y: &SVector<f64, 2>) -> ControlFlag<f64, SVector<f64, 2>> {
+impl Event<f64, SVector<f64, 2>> for DampedPendulumModel {
+    fn config(&self) -> EventConfig {
+        EventConfig::default().terminal() // Will terminate after the first event
+    }
+
+    /// Event function to detect when the pendulum is near equilibrium
+    fn event(&self, _t: f64, y: &SVector<f64, 2>) -> f64 {
         let theta = y[0];
         let omega = y[1];
-
-        // If the pendulum is close to equilibrium (theta and omega are near zero), terminate the simulation
-        if theta.abs() < 0.01 && omega.abs() < 0.01 {
-            ControlFlag::Terminate("Pendulum reached equilibrium".to_string())
-        } else {
-            ControlFlag::Continue
-        }
+        // Event function g(t,y) = max(|theta|, |omega|) - 0.01
+        theta.abs().max(omega.abs()) - 0.01
     }
 }
 
@@ -66,16 +68,16 @@ fn main() {
     let b = 0.2; // Damping coefficient (kg/s)
     let m = 1.0; // Mass of the pendulum bob (kg)
     let ode = DampedPendulumModel { g, l, b, m };
-    let pendulum_problem = ODEProblem::new(ode, t0, tf, y0);
+    let pendulum_problem = ODEProblem::new(&ode, t0, tf, y0);
 
     // --- Numerically Solve the ODE ---
     let mut method = ExplicitRungeKutta::rkf45();
     let t_out = [0.0, 1.0, 3.0, 4.5, 6.9, 10.0];
-    match pendulum_problem.t_eval(t_out).solve(&mut method) {
+    match pendulum_problem.t_eval(t_out).event(&ode).solve(&mut method) {
         Ok(solution) => {
             // Check if the solver stopped early due to the event condition
-            if let Status::Interrupted(ref reason) = solution.status {
-                println!("NumericalMethod stopped: {:?}", reason);
+            if let Status::Interrupted = solution.status {
+                println!("NumericalMethod stopped: Pendulum reached near equilibrium");
             }
 
             // Print the solution

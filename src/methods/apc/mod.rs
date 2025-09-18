@@ -7,10 +7,10 @@ use std::marker::PhantomData;
 
 use crate::{
     status::Status,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
-pub struct AdamsPredictorCorrector<E, F, T: Real, Y: State<T>, D: CallBackData, const S: usize> {
+pub struct AdamsPredictorCorrector<E, F, T: Real, Y: State<T>, const S: usize> {
     // Initial Step Size
     pub h0: T,
 
@@ -42,7 +42,7 @@ pub struct AdamsPredictorCorrector<E, F, T: Real, Y: State<T>, D: CallBackData, 
     steps: usize,
 
     // Status
-    status: Status<T, Y, D>,
+    status: Status<T, Y>,
 
     // Settings
     pub tol: T,
@@ -60,8 +60,8 @@ pub struct AdamsPredictorCorrector<E, F, T: Real, Y: State<T>, D: CallBackData, 
     equation: PhantomData<E>,
 }
 
-impl<E, F, T: Real, Y: State<T>, D: CallBackData, const S: usize> Default
-    for AdamsPredictorCorrector<E, F, T, Y, D, S>
+impl<E, F, T: Real, Y: State<T>, const S: usize> Default
+    for AdamsPredictorCorrector<E, F, T, Y, S>
 {
     fn default() -> Self {
         Self {
@@ -91,9 +91,7 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const S: usize> Default
     }
 }
 
-impl<E, F, T: Real, Y: State<T>, D: CallBackData, const S: usize>
-    AdamsPredictorCorrector<E, F, T, Y, D, S>
-{
+impl<E, F, T: Real, Y: State<T>, const S: usize> AdamsPredictorCorrector<E, F, T, Y, S> {
     /// Set the tolerance for error control
     pub fn tol(mut self, rtol: T) -> Self {
         self.tol = rtol;

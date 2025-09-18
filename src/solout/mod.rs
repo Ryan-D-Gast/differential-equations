@@ -13,13 +13,14 @@ use crate::{
     control::ControlFlag,
     interpolate::Interpolation,
     solution::Solution,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 mod crossing;
 mod default;
 mod dense;
 mod even;
+mod event;
 mod hyperplane;
 mod solout;
 mod t_eval;
@@ -28,6 +29,7 @@ pub use crossing::CrossingSolout;
 pub use default::DefaultSolout;
 pub use dense::DenseSolout;
 pub use even::EvenSolout;
+pub use event::{Event, EventConfig, EventSolout, EventWrappedSolout};
 pub use hyperplane::HyperplaneCrossingSolout;
 pub use solout::Solout;
 pub use t_eval::TEvalSolout;
@@ -41,4 +43,14 @@ pub enum CrossingDirection {
     Positive,
     /// Detect only crossings from above to below the threshold (negative direction)
     Negative,
+}
+
+impl From<i8> for CrossingDirection {
+    fn from(value: i8) -> Self {
+        match value {
+            1 => CrossingDirection::Positive,
+            -1 => CrossingDirection::Negative,
+            _ => CrossingDirection::Both,
+        }
+    }
 }

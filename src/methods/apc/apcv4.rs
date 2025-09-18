@@ -9,15 +9,13 @@ use crate::{
     stats::Evals,
     status::Status,
     tolerance::Tolerance,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
 use super::AdamsPredictorCorrector;
 
-impl<T: Real, Y: State<T>, D: CallBackData>
-    AdamsPredictorCorrector<Ordinary, Adaptive, T, Y, D, 4>
-{
+impl<T: Real, Y: State<T>> AdamsPredictorCorrector<Ordinary, Adaptive, T, Y, 4> {
     ///// Adams-Predictor-Corrector 4th Order Variable Step Size Method.
     ///
     /// The Adams-Predictor-Corrector method is an explicit method that
@@ -68,12 +66,12 @@ impl<T: Real, Y: State<T>, D: CallBackData>
 }
 
 // Implement OrdinaryNumericalMethod Trait for APCV4
-impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
-    for AdamsPredictorCorrector<Ordinary, Adaptive, T, Y, D, 4>
+impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
+    for AdamsPredictorCorrector<Ordinary, Adaptive, T, Y, 4>
 {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y, D>,
+        F: ODE<T, Y>,
     {
         let mut evals = Evals::new();
 
@@ -90,7 +88,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
         }
 
         // Check that the initial step size is set
-        match validate_step_size_parameters::<T, Y, D>(self.h0, T::zero(), T::infinity(), t0, tf) {
+        match validate_step_size_parameters::<T, Y>(self.h0, T::zero(), T::infinity(), t0, tf) {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
@@ -146,7 +144,7 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
 
     fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y, D>,
+        F: ODE<T, Y>,
     {
         let mut evals = Evals::new();
 
@@ -368,18 +366,18 @@ impl<T: Real, Y: State<T>, D: CallBackData> OrdinaryNumericalMethod<T, Y, D>
         self.h = h;
     }
 
-    fn status(&self) -> &Status<T, Y, D> {
+    fn status(&self) -> &Status<T, Y> {
         &self.status
     }
 
-    fn set_status(&mut self, status: Status<T, Y, D>) {
+    fn set_status(&mut self, status: Status<T, Y>) {
         self.status = status;
     }
 }
 
 // Implement the Interpolation trait for APCV4
-impl<T: Real, Y: State<T>, D: CallBackData> Interpolation<T, Y>
-    for AdamsPredictorCorrector<Ordinary, Adaptive, T, Y, D, 4>
+impl<T: Real, Y: State<T>> Interpolation<T, Y>
+    for AdamsPredictorCorrector<Ordinary, Adaptive, T, Y, 4>
 {
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         // Check if t is within the range of the solver

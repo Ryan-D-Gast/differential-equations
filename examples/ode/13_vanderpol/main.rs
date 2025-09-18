@@ -48,7 +48,7 @@ fn main() {
     let tf = 2.0;
     let mu = 1.0e-6; // small parameter -> stiff
     let model = VanderPol::new(mu);
-    let problem = ODEProblem::new(model, t0, tf, y0);
+    let problem = ODEProblem::new(&model, t0, tf, y0);
 
     // --- Solve the ODE ---
     let mut method = ImplicitRungeKutta::radau5()

@@ -203,12 +203,11 @@ where
     }
 }
 
-impl<T, Y1, Y2, D: CallBackData> Solout<T, Y2, D> for HyperplaneCrossingSolout<T, Y1, Y2>
+impl<T, Y1, Y2> Solout<T, Y2> for HyperplaneCrossingSolout<T, Y1, Y2>
 where
     T: Real,
     Y1: State<T>,
     Y2: State<T>,
-    D: CallBackData,
 {
     fn solout<I>(
         &mut self,
@@ -217,8 +216,8 @@ where
         y_curr: &Y2,
         _y_prev: &Y2,
         interpolator: &mut I,
-        solution: &mut Solution<T, Y2, D>,
-    ) -> ControlFlag<T, Y2, D>
+        solution: &mut Solution<T, Y2>,
+    ) -> ControlFlag<T, Y2>
     where
         I: Interpolation<T, Y2>,
     {

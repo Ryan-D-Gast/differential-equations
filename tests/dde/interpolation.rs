@@ -29,7 +29,7 @@ macro_rules! test_dde_interpolation {
             // For L=0, the history function's exact form for t < t0 is less critical
             // as long as it provides a value at t0 if needed by an internal mechanism.
             // The primary check is for t > t0 via interpolation.
-            let problem = DDEProblem::new(system.clone(), t0, tf, y0, phi);
+            let problem = DDEProblem::new(&system, t0, tf, y0, phi);
 
             // Initialize the solver
             let mut solver = $solver;

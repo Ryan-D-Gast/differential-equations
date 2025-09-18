@@ -10,7 +10,7 @@ use crate::{
     methods::Delay,
     status::Status,
     tolerance::Tolerance,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 /// Runge-Kutta solver that can handle:
@@ -33,7 +33,6 @@ pub struct ExplicitRungeKutta<
     F,
     T: Real,
     Y: State<T>,
-    D: CallBackData,
     const O: usize,
     const S: usize,
     const I: usize,
@@ -89,7 +88,7 @@ pub struct ExplicitRungeKutta<
     steps: usize,
 
     // Status
-    status: Status<T, Y, D>,
+    status: Status<T, Y>,
 
     // Method info
     order: usize,
@@ -108,8 +107,8 @@ pub struct ExplicitRungeKutta<
     max_delay: Option<T>,         // Minimum delay for DDEs so that buffer can be emptied
 }
 
-impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    Default for ExplicitRungeKutta<E, F, T, Y, D, O, S, I>
+impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Default
+    for ExplicitRungeKutta<E, F, T, Y, O, S, I>
 {
     fn default() -> Self {
         Self {
@@ -156,8 +155,8 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
     }
 }
 
-impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    ExplicitRungeKutta<E, F, T, Y, D, O, S, I>
+impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
+    ExplicitRungeKutta<E, F, T, Y, O, S, I>
 {
     /// Set relative tolerance
     pub fn rtol<V: Into<Tolerance<T>>>(mut self, rtol: V) -> Self {
@@ -235,8 +234,8 @@ impl<E, F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize
     }
 }
 
-impl<F, T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    ExplicitRungeKutta<Delay, F, T, Y, D, O, S, I>
+impl<F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
+    ExplicitRungeKutta<Delay, F, T, Y, O, S, I>
 {
     /// Set the maximum delay for DDEs
     pub fn max_delay(mut self, max_delay: T) -> Self {

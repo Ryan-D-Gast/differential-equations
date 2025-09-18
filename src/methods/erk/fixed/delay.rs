@@ -9,7 +9,7 @@ use crate::{
     methods::{Delay, ExplicitRungeKutta, Fixed},
     stats::Evals,
     status::Status,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
     utils::validate_step_size_parameters,
 };
 
@@ -18,15 +18,14 @@ impl<
     T: Real,
     Y: State<T>,
     H: Fn(T) -> Y,
-    D: CallBackData,
     const O: usize,
     const S: usize,
     const I: usize,
-> DelayNumericalMethod<L, T, Y, H, D> for ExplicitRungeKutta<Delay, Fixed, T, Y, D, O, S, I>
+> DelayNumericalMethod<L, T, Y, H> for ExplicitRungeKutta<Delay, Fixed, T, Y, O, S, I>
 {
     fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &Y, phi: &H) -> Result<Evals, Error<T, Y>>
     where
-        F: DDE<L, T, Y, D>,
+        F: DDE<L, T, Y>,
     {
         // Initialize solver state
         let mut evals = Evals::new();
@@ -78,7 +77,7 @@ impl<
         }
 
         // Validate and set initial step size h
-        match validate_step_size_parameters::<T, Y, D>(self.h0, self.h_min, self.h_max, t0, tf) {
+        match validate_step_size_parameters::<T, Y>(self.h0, self.h_min, self.h_max, t0, tf) {
             Ok(h0) => self.h = h0,
             Err(status) => return Err(status),
         }
@@ -87,7 +86,7 @@ impl<
 
     fn step<F>(&mut self, dde: &F, phi: &H) -> Result<Evals, Error<T, Y>>
     where
-        F: DDE<L, T, Y, D>,
+        F: DDE<L, T, Y>,
     {
         let mut evals = Evals::new();
 
@@ -304,16 +303,16 @@ impl<
     fn set_h(&mut self, h: T) {
         self.h = h;
     }
-    fn status(&self) -> &Status<T, Y, D> {
+    fn status(&self) -> &Status<T, Y> {
         &self.status
     }
-    fn set_status(&mut self, status: Status<T, Y, D>) {
+    fn set_status(&mut self, status: Status<T, Y>) {
         self.status = status;
     }
 }
 
-impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    ExplicitRungeKutta<Delay, Fixed, T, Y, D, O, S, I>
+impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
+    ExplicitRungeKutta<Delay, Fixed, T, Y, O, S, I>
 {
     pub fn lagvals<const L: usize, H>(
         &mut self,
@@ -412,8 +411,8 @@ impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, cons
     }
 }
 
-impl<T: Real, Y: State<T>, D: CallBackData, const O: usize, const S: usize, const I: usize>
-    Interpolation<T, Y> for ExplicitRungeKutta<Delay, Fixed, T, Y, D, O, S, I>
+impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Interpolation<T, Y>
+    for ExplicitRungeKutta<Delay, Fixed, T, Y, O, S, I>
 {
     /// Interpolates the solution at time `t_interp` within the last accepted step.
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {

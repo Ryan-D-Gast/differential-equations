@@ -66,8 +66,8 @@ fn main() {
     let y0 = 5.0; // Initial value, far from mean
 
     // Create the Ornstein-Uhlenbeck SDE problem
-    let sde = OrnsteinUhlenbeck::new(theta, mu, sigma, seed);
-    let mut problem = SDEProblem::new(sde, t0, tf, y0);
+    let mut sde = OrnsteinUhlenbeck::new(theta, mu, sigma, seed);
+    let mut problem = SDEProblem::new(&mut sde, t0, tf, y0);
 
     // --- Solve the SDE ---
     let dt = 0.01;

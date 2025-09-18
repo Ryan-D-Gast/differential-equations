@@ -5,14 +5,14 @@ mod ordinary;
 use crate::{
     methods::{DiagonallyImplicitRungeKutta, Fixed},
     tableau::ButcherTableau,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 // Fixed-step constructors
 macro_rules! impl_dirk_fixed_step_constructor {
     ($method_name:ident, $order_val:expr, $s_val:expr, $m_val:expr, $doc:expr) => {
-        impl<E, T: Real, Y: State<T>, D: CallBackData>
-            DiagonallyImplicitRungeKutta<E, Fixed, T, Y, D, $order_val, $s_val, $m_val>
+        impl<E, T: Real, Y: State<T>>
+            DiagonallyImplicitRungeKutta<E, Fixed, T, Y, $order_val, $s_val, $m_val>
         {
             #[doc = $doc]
             pub fn $method_name(h0: T) -> Self {

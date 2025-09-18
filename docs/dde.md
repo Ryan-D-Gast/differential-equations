@@ -17,7 +17,12 @@ The `DDE` trait defines the delay differential equation `dydt = f(t, y(t), y(t -
 ### DDE Trait
 *   `diff(&self, t: T, y: &Y, yd: &[Y; L], dydt: &mut Y)`: Defines the differential equation. `y` is the current state `y(t)`, and `yd` is an array slice containing the delayed states `[y(t - lag_1), ..., y(t - lag_L)]`. `L` is a const generic parameter indicating the number of constant/state-dependent lags.
 *   `lags(&self, t: T, y: &Y, lags: &mut [T; L])`: Defines the actual time lag values `[lag_1, ..., lag_L]` at time `t` and state `y`. These lags determine the past times `t - lag_i` at which the solution is evaluated.
-*   `event(&self, t: T, y: &Y) -> ControlFlag<T, Y, D>`: Optional event function, similar to the ODE trait, to interrupt the solver. `D` is the type for event data, defaulting to `String`. By default, it returns `ControlFlag::Continue`.
+
+### Event Trait
+For event detection with precise zero-crossing detection, implement the separate `Event` trait:
+
+* `config` - Configure event detection parameters (direction filtering, termination count)
+* `event` - Event function `g(t,y)` whose zero crossings are detected using Brent-Dekker root finding
 
 ### Solout Trait
 The `Solout` trait works similarly to how it does for ODEs, allowing customization of which points are saved in the solution.
@@ -59,18 +64,22 @@ impl DDE<1, f64, Vector3<f64>> for BreastCancerModel {
         // Define the constant lag
         lags[0] = self.tau;
     }
+}
 
-    // Optional event function
-    // fn event(&self, t: f64, y: &Vector3<f64>) -> ControlFlag<T, Y, D> { // D defaults to String
-    //     if y[0] < 0.0 { // Example: check if first component is negative
-    //         ControlFlag::Terminate("u1 became negative".to_string())
-    //     } else {
-    //         ControlFlag::Continue
-    //     }
-    // }
+// Separate event detection implementation
+impl Event<f64, Vector3<f64>> for BreastCancerModel {
+    fn config(&self) -> EventConfig {
+        EventConfig::new(CrossingDirection::Negative, Some(1)) // Terminate when u1 becomes negative
+    }
+
+    fn event(&self, _t: f64, y: &Vector3<f64>) -> f64 {
+        // Event function g(t,y) = y[0] - 0.0
+        // Zero crossing occurs when y[0] = 0.0 (first component becomes negative)
+        y[0]
+    }
 }
 ```
-Generics `<const L: usize, T, Y, D>` are used: `L` is the number of discrete lags, `T` is the float type (e.g., `f64`), `Y` is the state vector type, and `D` is the type for event data (defaulting to `String`).
+Generics `<const L: usize, T, Y>` are used: `L` is the number of discrete lags, `T` is the float type (e.g., `f64`), `Y` is the state vector type, and `D` is the type for event data (defaulting to `String`).
 
 ## The History Function
 
@@ -112,15 +121,17 @@ fn main() {
         y0 // Return initial state for all t <= t0
     };
 
-    let problem = DDEProblem::new(system, t0, tf, y0, history_fn);
+    let problem = DDEProblem::new(&system, t0, tf, y0, history_fn);
 
     match problem
         .even(0.5) // Example: Save solution every 0.5 time units
+        .event(&system) // Add event detection
         .solve(&mut method)
     {
         Ok(solution) => {
-            if let Status::Interrupted(ref reason) = solution.status {
-                println!("Solver stopped: {}", reason);
+            // Check if solver terminated due to event
+            if let Status::Interrupted = solution.status {
+                println!("Solver terminated due to event detection");
             }
             println!("Solution (Breast Cancer Model):");
             for (t, u_vec) in solution.iter() {

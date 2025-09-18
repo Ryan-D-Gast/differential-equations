@@ -6,7 +6,7 @@ use polars::prelude::*;
 use crate::{
     stats::{Evals, Steps, Timer},
     status::Status,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 /// The result produced by differential equation solvers.
@@ -20,11 +20,10 @@ use crate::{
 /// * `timer`          - Timer for tracking solution time.
 ///
 #[derive(Debug, Clone)]
-pub struct Solution<T, Y, D>
+pub struct Solution<T, Y>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
 {
     /// Outputted independent variable points.
     pub t: Vec<T>,
@@ -33,7 +32,7 @@ where
     pub y: Vec<Y>,
 
     /// Status of the solver.
-    pub status: Status<T, Y, D>,
+    pub status: Status<T, Y>,
 
     /// Number of function, Jacobian, and related evaluations.
     pub evals: Evals,
@@ -46,22 +45,20 @@ where
 }
 
 // Initial methods for the solution
-impl<T, Y, D> Default for Solution<T, Y, D>
+impl<T, Y> Default for Solution<T, Y>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T, Y, D> Solution<T, Y, D>
+impl<T, Y> Solution<T, Y>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
 {
     /// Creates a new Solution object.
     pub fn new() -> Self {
@@ -77,11 +74,10 @@ where
 }
 
 // Methods used during solving
-impl<T, Y, D> Solution<T, Y, D>
+impl<T, Y> Solution<T, Y>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
 {
     /// Push a new `(t, y)` point into the solution.
     ///
@@ -120,11 +116,10 @@ where
 }
 
 // Post-processing methods for the solution
-impl<T, Y, D> Solution<T, Y, D>
+impl<T, Y> Solution<T, Y>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
 {
     /// Consume the solution into `(t, y)` vectors.
     ///

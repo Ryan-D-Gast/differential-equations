@@ -45,7 +45,7 @@ fn main() {
     let t0 = 0.0;
     let tf = 10.0;
     let ode = ExponentialGrowth { k: 1.0 };
-    let exponential_growth_problem = ODEProblem::new(ode, t0, tf, y0);
+    let exponential_growth_problem = ODEProblem::new(&ode, t0, tf, y0);
 
     // ODE Problems are solved by chaining the solve method with the numerical method
     let solution = match exponential_growth_problem.solve(&mut method) {

@@ -7,7 +7,7 @@ use crate::{
     ode::ODE,
     stats::Evals,
     tolerance::Tolerance,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 use super::{Algebraic, Delay, Ordinary};
@@ -43,7 +43,7 @@ impl InitialStepSize<Ordinary> {
     /// # Returns
     ///
     /// The estimated initial step size
-    pub fn compute<T, F, Y, D>(
+    pub fn compute<T, F, Y>(
         ode: &F,
         t0: T,
         tf: T,
@@ -58,8 +58,7 @@ impl InitialStepSize<Ordinary> {
     where
         T: Real,
         Y: State<T>,
-        F: ODE<T, Y, D>,
-        D: CallBackData,
+        F: ODE<T, Y>,
     {
         // Direction of integration
         let posneg = (tf - t0).signum();
@@ -159,7 +158,7 @@ impl InitialStepSize<Delay> {
     /// # Returns
     ///
     /// The estimated initial step size
-    pub fn compute<const L: usize, T, Y, D, F>(
+    pub fn compute<const L: usize, T, Y, F>(
         dde: &F,
         t0: T,
         tf: T,
@@ -176,8 +175,7 @@ impl InitialStepSize<Delay> {
     where
         T: Real,
         Y: State<T>,
-        D: CallBackData,
-        F: DDE<L, T, Y, D>,
+        F: DDE<L, T, Y>,
     {
         let posneg_init = (tf - t0).signum();
         let n_dim = y0.len();
@@ -327,7 +325,7 @@ impl InitialStepSize<Algebraic> {
     /// # Returns
     ///
     /// The estimated initial step size
-    pub fn compute<T, F, Y, D>(
+    pub fn compute<T, F, Y>(
         dae: &F,
         t0: T,
         tf: T,
@@ -342,8 +340,7 @@ impl InitialStepSize<Algebraic> {
     where
         T: Real,
         Y: State<T>,
-        F: DAE<T, Y, D>,
-        D: CallBackData,
+        F: DAE<T, Y>,
     {
         let posneg = (tf - t0).signum();
         let dim = y0.len();

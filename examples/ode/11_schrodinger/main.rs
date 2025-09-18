@@ -49,7 +49,7 @@ fn main() {
     let psi0 = Complex::new(1.0, 0.0); // Initial state with amplitude 1 and phase 0
     let t0 = 0.0;
     let tf = 10.0; // Simulate for 10 time units
-    let schrodinger_problem = ODEProblem::new(ode, t0, tf, psi0);
+    let schrodinger_problem = ODEProblem::new(&ode, t0, tf, psi0);
 
     // --- Solve the ODE ---
     let mut method = DiagonallyImplicitRungeKutta::kvaerno745()

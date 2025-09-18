@@ -5,17 +5,16 @@ use crate::{
     sde::SDE,
     stats::Evals,
     status::Status,
-    traits::{CallBackData, Real, State},
+    traits::{Real, State},
 };
 
 /// Trait for SDE solvers.
 ///
 /// Implemented by types that can solve SDEs via repeated calls to `step`.
-pub trait StochasticNumericalMethod<T, Y, D = String>
+pub trait StochasticNumericalMethod<T, Y>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
 {
     /// Initialize the solver before integration
     ///
@@ -23,14 +22,14 @@ where
     /// * `sde`    - System of SDEs to solve.
     /// * `t0`     - Initial time.
     /// * `tf`     - Final time.
-    /// * `y`      - Initial state.
+    /// * `y0`     - Initial state.
     ///
     /// # Returns
     /// * Result<Evals, Error<T, Y>> - Ok with number of evaluations if initialization is successful
     ///
-    fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y: &Y) -> Result<Evals, Error<T, Y>>
+    fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: SDE<T, Y, D>;
+        F: SDE<T, Y>;
 
     /// Advance the solution by one step
     ///
@@ -42,7 +41,7 @@ where
     ///
     fn step<F>(&mut self, sde: &mut F) -> Result<Evals, Error<T, Y>>
     where
-        F: SDE<T, Y, D>;
+        F: SDE<T, Y>;
 
     // Accessors
 
@@ -65,8 +64,8 @@ where
     fn set_h(&mut self, h: T);
 
     /// Current solver status
-    fn status(&self) -> &Status<T, Y, D>;
+    fn status(&self) -> &Status<T, Y>;
 
     /// Set solver status
-    fn set_status(&mut self, status: Status<T, Y, D>);
+    fn set_status(&mut self, status: Status<T, Y>);
 }
