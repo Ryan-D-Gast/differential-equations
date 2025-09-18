@@ -32,7 +32,6 @@ For event detection with precise zero-crossing detection, implement the separate
 // Less common methods are in the `methods` module
 use differential_equations::prelude::*; 
 use nalgebra::{SVector, vector};
-use differential_equations::solout::{Event, EventConfig, CrossingDirection};
 
 struct LogisticGrowth {
     k: f64,

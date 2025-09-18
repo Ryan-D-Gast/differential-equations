@@ -32,7 +32,6 @@ For event detection with precise zero-crossing detection, implement the separate
 ### Implementation
 ```rust
 use differential_equations::prelude::*;
-use differential_equations::solout::{Event, EventConfig, CrossingDirection};
 use nalgebra::SVector;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
