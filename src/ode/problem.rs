@@ -308,7 +308,7 @@ where
     /// let solution = problem.event(&ZeroUp).solve(&mut solver).unwrap();
     /// // solution.t now contains zero-up crossing times
     /// ```
-    pub fn event<E>(&self, event: &'a E) -> ODEProblemSoloutPair<'_, T, Y, F, EventSolout<T, Y, E>>
+    pub fn event<E>(&'a self, event: &'a E) -> ODEProblemSoloutPair<'a, T, Y, F, EventSolout<'a, T, Y, E>>
     where
         E: Event<T, Y>,
     {
