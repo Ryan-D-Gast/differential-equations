@@ -19,17 +19,35 @@ use std::{
 ///
 pub trait Real: Copy + RealField {
     fn infinity() -> Self;
+    fn to_f64(&self) -> f64;
+    fn to_f32(&self) -> f32;
 }
 
 impl Real for f32 {
     fn infinity() -> Self {
         f32::INFINITY
     }
+
+    fn to_f64(&self) -> f64 {
+        *self as f64
+    }
+
+    fn to_f32(&self) -> f32 {
+        *self
+    }
 }
 
 impl Real for f64 {
     fn infinity() -> Self {
         f64::INFINITY
+    }
+
+    fn to_f64(&self) -> f64 {
+        *self
+    }
+
+    fn to_f32(&self) -> f32 {
+        *self as f32
     }
 }
 
