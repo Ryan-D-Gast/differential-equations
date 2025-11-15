@@ -1,5 +1,8 @@
 //! Status for solving differential equations
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 use std::fmt::{Debug, Display};
 
 use crate::{
@@ -18,6 +21,7 @@ use crate::{
 /// * `Interrupted`   - NumericalMethod was interrupted by Solout with reason.
 /// * `Complete`      - NumericalMethod completed.
 ///
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Clone)]
 pub enum Status<T, Y>
 where

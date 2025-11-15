@@ -1,5 +1,8 @@
 //! Statistics and performance tracking for Numerical methods
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 use std::{
     ops::{Add, AddAssign},
     time::Instant,
@@ -8,6 +11,7 @@ use std::{
 use crate::traits::Real;
 
 /// Number of evaluations
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Evals {
     /// Number of function evaluations
@@ -60,6 +64,7 @@ impl AddAssign for Evals {
 }
 
 /// Number of Steps
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Steps {
     /// Number of accepted steps
@@ -102,9 +107,11 @@ impl AddAssign for Steps {
 }
 
 /// Timer for tracking solution time
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone)]
 pub enum Timer<T: Real> {
     Off,
+    #[cfg_attr(feature = "serde", serde(skip_serializing, skip_deserializing))]
     Running(Instant),
     Completed(T),
 }

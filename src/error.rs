@@ -1,10 +1,14 @@
 //! Errors for Differential Equations Crate
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 use std::fmt::{Debug, Display};
 
 use crate::traits::{Real, State};
 
 /// Error for Differential Equations Crate
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Clone)]
 pub enum Error<T, Y>
 where
