@@ -3,6 +3,9 @@
 #[cfg(feature = "polars")]
 use polars::prelude::*;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 use crate::{
     stats::{Evals, Steps, Timer},
     status::Status,
@@ -19,6 +22,7 @@ use crate::{
 /// * `steps`          - Number of steps.
 /// * `timer`          - Timer for tracking solution time.
 ///
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone)]
 pub struct Solution<T, Y>
 where
