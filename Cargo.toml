@@ -1,6 +1,6 @@
 [package]
 name = "differential-equations"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["Ryan D. Gast <ryan.d.gast@gmail.com>"]
 description = "A Rust library for solving differential equations."
 edition = "2024"
