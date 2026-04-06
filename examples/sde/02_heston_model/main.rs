@@ -26,7 +26,6 @@ struct HestonState<T> {
     variance: T,
 }
 
-#[derive(Clone)]
 struct HestonModel {
     mu: f64,
     kappa: f64,
