@@ -43,6 +43,7 @@ serde = { version = "1.0.228", features = ["derive"], optional = true } # soluti
 [dev-dependencies]
 quill = "0.2.0" # Plotting for examples
 criterion = { version = "0.8.2", features = ["html_reports"] } # Benchmarking library
+num-dual = "0.13.6" # Dual numbers
 rand = "0.10.0" # Random number generation for SDE examples
 rand_distr = "0.6.0" # Random distributions for SDE examples
 
@@ -98,6 +99,10 @@ path = "examples/ode/12_brusselator/main.rs"
 [[example]]
 name = "ode_13_vanderpol"
 path = "examples/ode/13_vanderpol/main.rs"
+
+[[example]]
+name = "ode_14_r2bp_stm"
+path = "examples/ode/14_r2bp_stm/main.rs"
 
 # Differential-Algebraic Equation (DAE) examples
 [[example]]
