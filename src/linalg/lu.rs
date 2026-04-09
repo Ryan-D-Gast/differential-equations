@@ -7,7 +7,7 @@
 //!   Stiff and Differential-Algebraic Problems. Springer.
 
 use crate::{
-    linalg::{error::LinalgError, Matrix},
+    linalg::{Matrix, error::LinalgError},
     traits::Real,
 };
 

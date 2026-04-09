@@ -79,7 +79,7 @@ pub fn schur_complement<T: Real, V: State<T>>(
 
 #[cfg(test)]
 mod tests {
-    use super::{schur_complement, Matrix};
+    use super::{Matrix, schur_complement};
     use nalgebra::Vector2;
 
     fn approx_eq(a: f64, b: f64) {

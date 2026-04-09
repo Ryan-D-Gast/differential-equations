@@ -3,8 +3,8 @@
 use crate::{
     dae::{AlgebraicNumericalMethod, DAE},
     error::Error,
-    linalg::{lin_solve, lin_solve_complex, lu_decomp, lu_decomp_complex, Matrix},
-    methods::{h_init::InitialStepSize, irk::radau::Radau5, Algebraic},
+    linalg::{Matrix, lin_solve, lin_solve_complex, lu_decomp, lu_decomp_complex},
+    methods::{Algebraic, h_init::InitialStepSize, irk::radau::Radau5},
     stats::Evals,
     status::Status,
     traits::{Real, State},

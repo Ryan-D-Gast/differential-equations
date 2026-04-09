@@ -2,10 +2,10 @@
 
 use crate::{
     error::Error,
-    interpolate::{linear_interpolate, Interpolation},
+    interpolate::{Interpolation, linear_interpolate},
     linalg::component_multiply,
     methods::{ExplicitRungeKutta, Fixed, Stochastic},
-    sde::{StochasticNumericalMethod, SDE},
+    sde::{SDE, StochasticNumericalMethod},
     stats::Evals,
     status::Status,
     traits::{Real, State},

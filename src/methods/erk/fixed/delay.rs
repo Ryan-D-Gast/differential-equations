@@ -3,9 +3,9 @@
 use std::collections::VecDeque;
 
 use crate::{
-    dde::{DelayNumericalMethod, DDE},
+    dde::{DDE, DelayNumericalMethod},
     error::Error,
-    interpolate::{cubic_hermite_interpolate, Interpolation},
+    interpolate::{Interpolation, cubic_hermite_interpolate},
     methods::{Delay, ExplicitRungeKutta, Fixed},
     stats::Evals,
     status::Status,
@@ -14,14 +14,14 @@ use crate::{
 };
 
 impl<
-        const L: usize,
-        T: Real,
-        Y: State<T>,
-        H: Fn(T) -> Y,
-        const O: usize,
-        const S: usize,
-        const I: usize,
-    > DelayNumericalMethod<L, T, Y, H> for ExplicitRungeKutta<Delay, Fixed, T, Y, O, S, I>
+    const L: usize,
+    T: Real,
+    Y: State<T>,
+    H: Fn(T) -> Y,
+    const O: usize,
+    const S: usize,
+    const I: usize,
+> DelayNumericalMethod<L, T, Y, H> for ExplicitRungeKutta<Delay, Fixed, T, Y, O, S, I>
 {
     fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &Y, phi: &H) -> Result<Evals, Error<T, Y>>
     where

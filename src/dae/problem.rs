@@ -1,7 +1,7 @@
 //! Initial Value Problem Struct and Constructors
 
 use crate::{
-    dae::{solve_dae, AlgebraicNumericalMethod, DAE},
+    dae::{AlgebraicNumericalMethod, DAE, solve_dae},
     error::Error,
     interpolate::Interpolation,
     solout::*,

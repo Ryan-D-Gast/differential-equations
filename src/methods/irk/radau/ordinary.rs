@@ -2,9 +2,9 @@
 
 use crate::{
     error::Error,
-    linalg::{lin_solve, lin_solve_complex, lu_decomp, lu_decomp_complex, Matrix},
-    methods::{h_init::InitialStepSize, irk::radau::Radau5, Ordinary},
-    ode::{OrdinaryNumericalMethod, ODE},
+    linalg::{Matrix, lin_solve, lin_solve_complex, lu_decomp, lu_decomp_complex},
+    methods::{Ordinary, h_init::InitialStepSize, irk::radau::Radau5},
+    ode::{ODE, OrdinaryNumericalMethod},
     stats::Evals,
     status::Status,
     traits::{Real, State},

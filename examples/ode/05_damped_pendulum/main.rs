@@ -73,7 +73,11 @@ fn main() {
     // --- Numerically Solve the ODE ---
     let mut method = ExplicitRungeKutta::rkf45();
     let t_out = [0.0, 1.0, 3.0, 4.5, 6.9, 10.0];
-    match pendulum_problem.t_eval(t_out).event(&ode).solve(&mut method) {
+    match pendulum_problem
+        .t_eval(t_out)
+        .event(&ode)
+        .solve(&mut method)
+    {
         Ok(solution) => {
             // Check if the solver stopped early due to the event condition
             if let Status::Interrupted = solution.status {

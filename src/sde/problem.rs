@@ -3,7 +3,7 @@
 use crate::{
     error::Error,
     interpolate::Interpolation,
-    sde::{solve_sde, StochasticNumericalMethod, SDE},
+    sde::{SDE, StochasticNumericalMethod, solve_sde},
     solout::*,
     solution::Solution,
     traits::{Real, State},

@@ -230,7 +230,7 @@ impl InitialStepSize<Delay> {
                     }
                     let t_delayed = t1 - current_lags_init[i];
                     if (t_delayed - t0) * posneg_init < -T::default_epsilon() { // t_delayed is "before" t0
-                         // This is fine, phi will be used.
+                        // This is fine, phi will be used.
                     } else {
                         // t_delayed is "at or after" t0. This means current h is too large.
                         // We need t1 - lag <= t0  => h + t0 - lag <= t0 => h <= lag

@@ -44,10 +44,10 @@ pub use crate::methods::{
 };
 
 // Problem Types & Traits
-pub use crate::dae::{DAEProblem, DAE};
-pub use crate::dde::{DDEProblem, DDE};
-pub use crate::ode::{ODEProblem, ODE};
-pub use crate::sde::{SDEProblem, SDE};
+pub use crate::dae::{DAE, DAEProblem};
+pub use crate::dde::{DDE, DDEProblem};
+pub use crate::ode::{ODE, ODEProblem};
+pub use crate::sde::{SDE, SDEProblem};
 
 // Output, Events, and Solution Types
 pub use crate::control::ControlFlag;

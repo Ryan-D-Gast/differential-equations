@@ -1,10 +1,10 @@
 //! Suite of test cases for numerical method error handling
 
 use differential_equations::{
-    solout::{Event, EventConfig},
     error::Error,
     methods::{AdamsPredictorCorrector, ExplicitRungeKutta, ImplicitRungeKutta},
     ode::{ODE, ODEProblem},
+    solout::{Event, EventConfig},
 };
 use nalgebra::{SVector, vector};
 

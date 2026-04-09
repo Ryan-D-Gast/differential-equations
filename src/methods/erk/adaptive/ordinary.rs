@@ -2,9 +2,9 @@
 
 use crate::{
     error::Error,
-    interpolate::{cubic_hermite_interpolate, Interpolation},
-    methods::{h_init::InitialStepSize, Adaptive, ExplicitRungeKutta, Ordinary},
-    ode::{OrdinaryNumericalMethod, ODE},
+    interpolate::{Interpolation, cubic_hermite_interpolate},
+    methods::{Adaptive, ExplicitRungeKutta, Ordinary, h_init::InitialStepSize},
+    ode::{ODE, OrdinaryNumericalMethod},
     stats::Evals,
     status::Status,
     traits::{Real, State},

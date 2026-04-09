@@ -103,7 +103,7 @@ mod tests {
         b[(2, 2)] = 10.0; // main diag
         b[(1, 2)] = 5.0; // upper-1
         b[(3, 2)] = 7.0; // lower-1
-                         // stays valid and values accessible
+        // stays valid and values accessible
         assert_eq!(b[(2, 2)], 10.0);
         assert_eq!(b[(1, 2)], 5.0);
         assert_eq!(b[(3, 2)], 7.0);

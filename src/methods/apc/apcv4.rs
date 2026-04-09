@@ -2,10 +2,10 @@
 
 use crate::{
     error::Error,
-    interpolate::{cubic_hermite_interpolate, Interpolation},
+    interpolate::{Interpolation, cubic_hermite_interpolate},
     linalg::norm,
-    methods::{h_init::InitialStepSize, Adaptive, Ordinary},
-    ode::{OrdinaryNumericalMethod, ODE},
+    methods::{Adaptive, Ordinary, h_init::InitialStepSize},
+    ode::{ODE, OrdinaryNumericalMethod},
     stats::Evals,
     status::Status,
     tolerance::Tolerance,

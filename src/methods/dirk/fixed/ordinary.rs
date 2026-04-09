@@ -2,10 +2,10 @@
 
 use crate::{
     error::Error,
-    interpolate::{cubic_hermite_interpolate, Interpolation},
+    interpolate::{Interpolation, cubic_hermite_interpolate},
     linalg::Matrix,
     methods::{DiagonallyImplicitRungeKutta, Fixed, Ordinary},
-    ode::{OrdinaryNumericalMethod, ODE},
+    ode::{ODE, OrdinaryNumericalMethod},
     stats::Evals,
     status::Status,
     traits::{Real, State},

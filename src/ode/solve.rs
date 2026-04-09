@@ -4,7 +4,7 @@ use crate::{
     control::ControlFlag,
     error::Error,
     interpolate::Interpolation,
-    ode::{OrdinaryNumericalMethod, ODE},
+    ode::{ODE, OrdinaryNumericalMethod},
     solout::*,
     solution::Solution,
     status::Status,
