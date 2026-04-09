@@ -1,4 +1,4 @@
-//! Example 14: Reduced Two-Body Problem with State Transition Matrix
+//! Example 14: Restricted Two-Body Problem with State Transition Matrix
 //!
 //! This example integrates the Kepler two-body problem and propagates the
 //! 6x6 state transition matrix (STM) alongside the state. It demonstrates two
@@ -16,7 +16,7 @@
 
 use differential_equations::prelude::*;
 use differential_equations::{ode::ODE, traits::Real};
-use nalgebra::{stack, Dim, Matrix3, Matrix6, SVector, Vector6};
+use nalgebra::{Dim, Matrix3, Matrix6, SVector, Vector6, stack};
 use num_dual::{Derivative, DualSVec64, DualStruct};
 use std::{f64::consts::PI, iter::zip};
 
