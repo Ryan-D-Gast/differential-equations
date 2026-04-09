@@ -15,11 +15,11 @@ license = "Apache-2.0"
 proc-macro = true
 
 [dependencies]
-syn = "2.0.100"
-quote = "1.0.40"
-proc-macro2 = "1.0.95"
+syn = "2.0.117"
+quote = "1.0.45"
+proc-macro2 = "1.0.106"
 
 [dev-dependencies]
-differential-equations = "0.3.7"
-nalgebra = "0.33.2"
+differential-equations = "0.5.2"
+nalgebra = "0.34.2"
 num-complex = "0.4.6"

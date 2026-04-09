@@ -81,6 +81,7 @@ pub struct ExplicitRungeKutta<
     pub safety_factor: T,
     pub min_scale: T,
     pub max_scale: T,
+    pub filter: fn(T) -> T,
 
     // Iteration tracking
     stiffness_counter: usize,
@@ -139,6 +140,7 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             safety_factor: T::from_f64(0.9).unwrap(),
             min_scale: T::from_f64(0.2).unwrap(),
             max_scale: T::from_f64(10.0).unwrap(),
+            filter: |h| h,
             stiffness_counter: 0,
             non_stiffness_counter: 0,
             steps: 0,
@@ -215,6 +217,12 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     /// Set the maximum scale factor for step size changes (default: 10.0)
     pub fn max_scale(mut self, max_scale: T) -> Self {
         self.max_scale = max_scale;
+        self
+    }
+
+    /// Set the step size filter (default: identity)
+    pub fn filter(mut self, filter: fn(T) -> T) -> Self {
+        self.filter = filter;
         self
     }
 

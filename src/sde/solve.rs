@@ -4,7 +4,7 @@ use crate::{
     control::ControlFlag,
     error::Error,
     interpolate::Interpolation,
-    sde::{SDE, StochasticNumericalMethod},
+    sde::{StochasticNumericalMethod, SDE},
     solout::*,
     solution::Solution,
     status::Status,

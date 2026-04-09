@@ -135,6 +135,7 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 | [Custom Solout](../../examples/ode/10_custom_solout/main.rs) | Demonstrates how to create a custom `Solout` implementation to save points based on a custom condition. In addition inside the Solout struct additional calculations are stored each step and accessible after solving is complete. |
 | [Schrodinger](../../examples/ode/11_schrodinger/main.rs) | Solves the time-dependent Schrödinger equation using the `dop853` method. Demonstrates the use of complex numbers in the ODE system. |
 | [Brusselator](../../examples/ode/12_brusselator/main.rs) | Demonstrates solving a stiff system using implicit Runge-Kutta methods (`gauss_legendre_6`) with analytical jacobian provided to accelerate Newton iterations. |
+| [Reduced Two-Body Problem with STM](../../examples/ode/14_r2bp_stm/main.rs) | Propagates a Kepler two-body orbit together with its state transition matrix. Demonstrates dual-number sensitivities, variational equations, and the solver `filter` hook for step-size post-processing. |
 
 ## Benchmarks
 

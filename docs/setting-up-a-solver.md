@@ -84,6 +84,20 @@ let mut solver = ExplicitRungeKutta::dopri5()
 
 - **Maximum steps (`max_steps`)**: Prevents infinite loops in case of convergence issues.
 
+### Step Size Filtering
+
+Some solvers also support a `filter` hook for the step size:
+
+```rust
+let mut solver = ExplicitRungeKutta::dopri5()
+    .filter(|h| h);
+```
+
+The filter runs on each accepted step size before it is used internally. It is useful when you want to:
+
+1. Remove metadata from a step size, such as the derivative part of a dual number used for sensitivity analysis.
+2. Normalize step sizes for repeatability, for example by clamping or quantizing them to a fixed grid.
+
 ## Solver-Specific Settings
 
 Each solver may have additional parameters specific to its algorithm. For example, DOPRI5 has parameters for step size control:

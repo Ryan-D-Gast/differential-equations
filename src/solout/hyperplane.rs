@@ -78,7 +78,7 @@ pub type ExtractorFn<Y, P> = fn(&Y) -> P;
 /// let plane_normal = vector![0.0, 1.0, 1.0]; // Normal vector (z-axis)
 ///
 /// // Solve and get only the plane crossing points
-/// let problem = ODEProblem::new(system, t0, tf, y0);
+/// let problem = ODEProblem::new(&system, t0, tf, y0);
 /// let solution = problem.hyperplane_crossing(plane_point, plane_normal, extract_position, CrossingDirection::Both).solve(&mut solver).unwrap();
 ///
 /// // solution now contains only the points where the trajectory crosses the z=0 plane

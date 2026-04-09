@@ -49,7 +49,7 @@ use super::*;
 /// let mut crossing_detector = CrossingSolout::new(0, 0.0);
 ///
 /// // Solve and get only the crossing points
-/// let problem = ODEProblem::new(system, t0, tf, y0);
+/// let problem = ODEProblem::new(&system, t0, tf, y0);
 /// let solution = problem.solout(&mut crossing_detector).solve(&mut solver).unwrap();
 ///
 /// // solution now contains only the points where position crosses zero

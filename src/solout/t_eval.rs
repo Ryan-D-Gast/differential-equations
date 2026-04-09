@@ -51,7 +51,7 @@ use super::*;
 /// let mut t_eval_output = TEvalSolout::new(evaluation_points, t0, tf);
 ///
 /// // Solve with specific evaluation points
-/// let problem = ODEProblem::new(system, t0, tf, y0);
+/// let problem = ODEProblem::new(&system, t0, tf, y0);
 /// let solution = problem.solout(&mut t_eval_output).solve(&mut solver).unwrap();
 ///
 /// // Note: This is equivalent to using the convenience method:

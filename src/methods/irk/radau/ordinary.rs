@@ -2,9 +2,9 @@
 
 use crate::{
     error::Error,
-    linalg::{Matrix, lin_solve, lin_solve_complex, lu_decomp, lu_decomp_complex},
-    methods::{Ordinary, h_init::InitialStepSize, irk::radau::Radau5},
-    ode::{ODE, OrdinaryNumericalMethod},
+    linalg::{lin_solve, lin_solve_complex, lu_decomp, lu_decomp_complex, Matrix},
+    methods::{h_init::InitialStepSize, irk::radau::Radau5, Ordinary},
+    ode::{OrdinaryNumericalMethod, ODE},
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -29,7 +29,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
         // Validate h0 and align sign with tf direction
         match validate_step_size_parameters::<T, Y>(self.h0, self.h_min, self.h_max, t0, tf) {
             Ok(h0) => {
-                self.h = h0;
+                self.h = (self.filter)(h0);
             }
             Err(status) => return Err(status),
         }
@@ -288,6 +288,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
                         let exponent = -T::one() / T::from_f64(4.0 + remaining_iters).unwrap();
                         self.hhfac = T::from_f64(0.8).unwrap() * qnewt.powf(exponent);
                         self.h *= self.hhfac;
+                        self.h = (self.filter)(self.h);
                         self.status = Status::RejectedStep;
                         self.reject = true;
                         return Ok(evals);
@@ -440,6 +441,9 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
                 self.status = Status::Solving;
             }
 
+            // Apply step size filter
+            hnew = (self.filter)(hnew);
+
             // Sophisticated step size control
             let qt = hnew / self.h;
             self.hhfac = self.h;
@@ -477,6 +481,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
 
             // Constrain step size to [h_min, h_max]
             self.h = constrain_step_size(self.h, self.h_min, self.h_max);
+            self.h = (self.filter)(self.h);
         }
 
         Ok(evals)
@@ -498,7 +503,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
         self.h
     }
     fn set_h(&mut self, h: T) {
-        self.h = h;
+        self.h = (self.filter)(h);
     }
     fn status(&self) -> &Status<T, Y> {
         &self.status

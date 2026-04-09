@@ -2,10 +2,10 @@
 
 use crate::{
     error::Error,
-    interpolate::{Interpolation, cubic_hermite_interpolate},
+    interpolate::{cubic_hermite_interpolate, Interpolation},
     linalg::norm,
-    methods::{Adaptive, Ordinary, h_init::InitialStepSize},
-    ode::{ODE, OrdinaryNumericalMethod},
+    methods::{h_init::InitialStepSize, Adaptive, Ordinary},
+    ode::{OrdinaryNumericalMethod, ODE},
     stats::Evals,
     status::Status,
     tolerance::Tolerance,
@@ -49,7 +49,7 @@ impl<T: Real, Y: State<T>> AdamsPredictorCorrector<Ordinary, Adaptive, T, Y, 4> 
     /// let tf = 10.0;
     /// let y0 = vector![1.0, 0.0];
     /// let system = HarmonicOscillator { k: 1.0 };
-    /// let results = ODEProblem::new(system, t0, tf, y0).solve(&mut apcv4).unwrap();
+    /// let results = ODEProblem::new(&system, t0, tf, y0).solve(&mut apcv4).unwrap();
     /// let expected = vector![-0.83907153, 0.54402111];
     /// assert!((results.y.last().unwrap()[0] - expected[0]).abs() < 1e-6);
     /// assert!((results.y.last().unwrap()[1] - expected[1]).abs() < 1e-6);
@@ -89,7 +89,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
 
         // Check that the initial step size is set
         match validate_step_size_parameters::<T, Y>(self.h0, T::zero(), T::infinity(), t0, tf) {
-            Ok(h0) => self.h = h0,
+            Ok(h0) => self.h = (self.filter)(h0),
             Err(status) => return Err(status),
         }
 
@@ -252,6 +252,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
             };
 
             self.h = constrain_step_size(self.h, self.h_min, h_max_effective);
+            self.h = (self.filter)(self.h);
 
             // Calculate Previous Steps with new step size
             self.t_prev[0] = self.t;
@@ -302,6 +303,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
             } else {
                 q * self.h
             };
+            self.h = (self.filter)(self.h);
 
             // Calculate Previous Steps with new step size
             self.t_prev[0] = self.t;
@@ -363,7 +365,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
     }
 
     fn set_h(&mut self, h: T) {
-        self.h = h;
+        self.h = (self.filter)(h);
     }
 
     fn status(&self) -> &Status<T, Y> {

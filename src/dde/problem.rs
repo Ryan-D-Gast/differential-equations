@@ -1,7 +1,7 @@
 //! Initial Value Problem Struct and Constructors for Delay Differential Equations (DDEs)
 
 use crate::{
-    dde::{DDE, numerical_method::DelayNumericalMethod, solve_dde},
+    dde::{numerical_method::DelayNumericalMethod, solve_dde, DDE},
     error::Error,
     interpolate::Interpolation,
     solout::*,
@@ -45,7 +45,7 @@ use crate::{
 ///        lags[0] = 1.0; // Fixed delay of 1.0
 ///     }
 /// }
-/// let solution = DDEProblem::new(Example, t0, tf, y0, phi).solve(&mut rkf45).unwrap();
+/// let solution = DDEProblem::new(&Example, t0, tf, y0, phi).solve(&mut rkf45).unwrap();
 ///
 /// let (t, y) = solution.last().unwrap();
 /// println!("Solution: ({}, {})", t, y);
