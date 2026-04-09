@@ -2,8 +2,8 @@
 
 use crate::{
     control::ControlFlag,
-    dde::DDE,
     dde::numerical_method::DelayNumericalMethod,
+    dde::DDE,
     error::Error,
     interpolate::Interpolation,
     solout::*,

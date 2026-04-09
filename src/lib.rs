@@ -40,7 +40,7 @@
 //!     let t0 = 0.0;
 //!     let tf = 1.0;
 //!     let y0 = vector![1.0];
-//!     let problem = ODEProblem::new(system, t0, tf, y0);
+//!     let problem = ODEProblem::new(&system, t0, tf, y0);
 //!     let mut solver = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-6);
 //!     let solution = match problem.solve(&mut solver) {
 //!         Ok(sol) => sol,

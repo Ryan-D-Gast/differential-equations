@@ -47,7 +47,7 @@ use super::*;
 /// let mut even_output = EvenSolout::new(0.1, t0, tf);
 ///
 /// // Solve with evenly spaced output
-/// let problem = ODEProblem::new(system, t0, tf, y0);
+/// let problem = ODEProblem::new(&system, t0, tf, y0);
 /// let solution = problem.solout(&mut even_output).solve(&mut solver).unwrap();
 ///
 /// // Note: This is equivalent to using the convenience method:

@@ -49,7 +49,7 @@ impl<T: Real, Y: State<T>> AdamsPredictorCorrector<Ordinary, Adaptive, T, Y, 4> 
     /// let tf = 10.0;
     /// let y0 = vector![1.0, 0.0];
     /// let system = HarmonicOscillator { k: 1.0 };
-    /// let results = ODEProblem::new(system, t0, tf, y0).solve(&mut apcv4).unwrap();
+    /// let results = ODEProblem::new(&system, t0, tf, y0).solve(&mut apcv4).unwrap();
     /// let expected = vector![-0.83907153, 0.54402111];
     /// assert!((results.y.last().unwrap()[0] - expected[0]).abs() < 1e-6);
     /// assert!((results.y.last().unwrap()[1] - expected[1]).abs() < 1e-6);

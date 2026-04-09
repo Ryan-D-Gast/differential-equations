@@ -3,7 +3,7 @@
 use crate::{
     error::Error,
     interpolate::Interpolation,
-    sde::{SDE, StochasticNumericalMethod, solve_sde},
+    sde::{solve_sde, StochasticNumericalMethod, SDE},
     solout::*,
     solution::Solution,
     traits::{Real, State},
@@ -62,8 +62,8 @@ use crate::{
 /// let tf = 1.0;
 /// let y0 = SVector::<f64, 1>::new(100.0);
 /// let mut solver = ExplicitRungeKutta::three_eighths(0.01);
-/// let gbm = GBM::new(42);
-/// let mut gbm_problem = SDEProblem::new(gbm, t0, tf, y0);
+/// let mut gbm = GBM::new(42);
+/// let mut gbm_problem = SDEProblem::new(&mut gbm, t0, tf, y0);
 ///
 /// // Solve the SDE
 /// let result = gbm_problem.solve(&mut solver);
@@ -385,7 +385,8 @@ where
     where
         E: Event<T, Y>,
     {
-        let wrapped = EventWrappedSolout::new(self.solout, event, self.sde_problem.t0, self.sde_problem.tf);
+        let wrapped =
+            EventWrappedSolout::new(self.solout, event, self.sde_problem.t0, self.sde_problem.tf);
         SDEProblemSoloutPair::new(self.sde_problem, wrapped)
     }
 }

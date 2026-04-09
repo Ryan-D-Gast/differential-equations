@@ -47,7 +47,7 @@ use super::*;
 /// let mut default_output = DefaultSolout::new();
 ///
 /// // Solve with default output
-/// let problem = ODEProblem::new(system, t0, tf, y0);
+/// let problem = ODEProblem::new(&system, t0, tf, y0);
 /// let solution = problem.solout(&mut default_output).solve(&mut solver).unwrap();
 ///
 /// // Note: This is equivalent to the default behavior

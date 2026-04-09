@@ -3,7 +3,7 @@
 use crate::{
     error::Error,
     interpolate::Interpolation,
-    ode::{ODE, OrdinaryNumericalMethod, solve_ode},
+    ode::{solve_ode, OrdinaryNumericalMethod, ODE},
     solout::*,
     solution::Solution,
     traits::{Real, State},
@@ -42,7 +42,7 @@ use crate::{
 /// let mut solver = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-6);
 ///
 /// // Basic usage:
-/// let problem = ODEProblem::new(ode, t0, tf, y0);
+/// let problem = ODEProblem::new(&ode, t0, tf, y0);
 /// let solution = problem.solve(&mut solver).unwrap();
 ///
 /// // Advanced output control:
@@ -91,7 +91,7 @@ use crate::{
 /// let mut method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
 ///
 /// // Basic usage with default output points
-/// let problem = ODEProblem::new(ode, 0.0, 10.0, vector![1.0, 0.0]);
+/// let problem = ODEProblem::new(&ode, 0.0, 10.0, vector![1.0, 0.0]);
 /// let results = problem.solve(&mut method).unwrap();
 ///
 /// // Advanced: evenly spaced output with 0.1 time intervals
@@ -293,22 +293,25 @@ where
     ///         // Force only positive crossings
     ///         EventConfig::default().direction(CrossingDirection::Positive)
     ///     }
-    /// 
+    ///
     ///     fn event(&self, _t: f64, y: &Vector2<f64>) -> f64 {
     ///         y[0]
     ///     }
     /// }
     ///
-    /// let osc = SHO; 
-    /// let t0 = 0.0; 
-    /// let tf = 10.0; 
+    /// let osc = SHO;
+    /// let t0 = 0.0;
+    /// let tf = 10.0;
     /// let y0 = vector![1.0, 0.0];
     /// let problem = ODEProblem::new(&osc, t0, tf, y0);
     /// let mut solver = ExplicitRungeKutta::dop853();
     /// let solution = problem.event(&ZeroUp).solve(&mut solver).unwrap();
     /// // solution.t now contains zero-up crossing times
     /// ```
-    pub fn event<E>(&'a self, event: &'a E) -> ODEProblemSoloutPair<'a, T, Y, F, EventSolout<'a, T, Y, E>>
+    pub fn event<E>(
+        &'a self,
+        event: &'a E,
+    ) -> ODEProblemSoloutPair<'a, T, Y, F, EventSolout<'a, T, Y, E>>
     where
         E: Event<T, Y>,
     {
