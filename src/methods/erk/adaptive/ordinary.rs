@@ -2,9 +2,9 @@
 
 use crate::{
     error::Error,
-    interpolate::{Interpolation, cubic_hermite_interpolate},
-    methods::{Adaptive, ExplicitRungeKutta, Ordinary, h_init::InitialStepSize},
-    ode::{ODE, OrdinaryNumericalMethod},
+    interpolate::{cubic_hermite_interpolate, Interpolation},
+    methods::{h_init::InitialStepSize, Adaptive, ExplicitRungeKutta, Ordinary},
+    ode::{OrdinaryNumericalMethod, ODE},
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -32,7 +32,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // Check bounds
         match validate_step_size_parameters::<T, Y>(self.h0, self.h_min, self.h_max, t0, tf) {
-            Ok(h0) => self.h = h0,
+            Ok(h0) => self.h = (self.filter)(h0),
             Err(status) => return Err(status),
         }
 
@@ -207,6 +207,9 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // Ensure step size is within bounds
         self.h = constrain_step_size(self.h, self.h_min, self.h_max);
 
+        // Apply step size filter
+        self.h = (self.filter)(self.h);
+
         Ok(evals)
     }
 
@@ -226,7 +229,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         self.h
     }
     fn set_h(&mut self, h: T) {
-        self.h = h;
+        self.h = (self.filter)(h);
     }
     fn status(&self) -> &Status<T, Y> {
         &self.status

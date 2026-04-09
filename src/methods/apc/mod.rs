@@ -49,6 +49,7 @@ pub struct AdamsPredictorCorrector<E, F, T: Real, Y: State<T>, const S: usize> {
     pub h_max: T,
     pub h_min: T,
     pub max_steps: usize,
+    pub filter: fn(T) -> T,
 
     // Method info
     pub stages: usize,
@@ -84,6 +85,7 @@ impl<E, F, T: Real, Y: State<T>, const S: usize> Default
             h_max: T::infinity(),
             h_min: T::zero(),
             max_steps: 10_000,
+            filter: |h| h,
             stages: S,
             family: PhantomData,
             equation: PhantomData,
@@ -119,6 +121,12 @@ impl<E, F, T: Real, Y: State<T>, const S: usize> AdamsPredictorCorrector<E, F, T
     /// Set the maximum number of steps allowed
     pub fn max_steps(mut self, max_steps: usize) -> Self {
         self.max_steps = max_steps;
+        self
+    }
+
+    /// Set the step size filter (default: identity)
+    pub fn filter(mut self, filter: fn(T) -> T) -> Self {
+        self.filter = filter;
         self
     }
 

@@ -72,6 +72,7 @@ pub struct DiagonallyImplicitRungeKutta<
     // Adaptive step control
     pub max_steps: usize,
     pub max_rejects: usize,
+    pub filter: fn(T) -> T,
 
     // Statistics
     steps: usize,
@@ -132,6 +133,7 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             max_newton_iter: 20,
             max_steps: 10_000,
             max_rejects: 10,
+            filter: |h| h,
             steps: 0,
             stiffness_counter: 0,
             newton_iterations: 0,
@@ -223,6 +225,12 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     /// Set max Newton iterations per stage (default: 20)
     pub fn max_newton_iter(mut self, max_newton_iter: usize) -> Self {
         self.max_newton_iter = max_newton_iter;
+        self
+    }
+
+    /// Set the step size filter (default: identity)
+    pub fn filter(mut self, filter: fn(T) -> T) -> Self {
+        self.filter = filter;
         self
     }
 

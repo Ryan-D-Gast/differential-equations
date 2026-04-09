@@ -3,8 +3,8 @@
 use crate::{
     error::Error,
     interpolate::Interpolation,
-    methods::{DormandPrince, ExplicitRungeKutta, Ordinary, h_init::InitialStepSize},
-    ode::{ODE, OrdinaryNumericalMethod},
+    methods::{h_init::InitialStepSize, DormandPrince, ExplicitRungeKutta, Ordinary},
+    ode::{OrdinaryNumericalMethod, ODE},
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -291,7 +291,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         self.h
     }
     fn set_h(&mut self, h: T) {
-        self.h = h;
+        self.h = (self.filter)(h);
     }
     fn status(&self) -> &Status<T, Y> {
         &self.status
@@ -323,10 +323,18 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
         let poly = (1..ilast).rev().fold(self.cont[ilast], |acc, i| {
             let factor = if i >= 4 {
                 // For the higher-order part (conpar), alternate s and s1 based on index parity
-                if (ilast - i) % 2 == 1 { s1 } else { s }
+                if (ilast - i) % 2 == 1 {
+                    s1
+                } else {
+                    s
+                }
             } else {
                 // For the main polynomial part, pattern is [s1, s, s1] for indices [3, 2, 1]
-                if i % 2 == 1 { s1 } else { s }
+                if i % 2 == 1 {
+                    s1
+                } else {
+                    s
+                }
             };
             acc * factor + self.cont[i]
         });

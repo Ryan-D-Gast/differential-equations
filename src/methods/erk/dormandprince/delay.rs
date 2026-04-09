@@ -3,10 +3,10 @@
 use std::collections::VecDeque;
 
 use crate::{
-    dde::{DDE, DelayNumericalMethod},
+    dde::{DelayNumericalMethod, DDE},
     error::Error,
-    interpolate::{Interpolation, cubic_hermite_interpolate},
-    methods::{Delay, DormandPrince, ExplicitRungeKutta, h_init::InitialStepSize},
+    interpolate::{cubic_hermite_interpolate, Interpolation},
+    methods::{h_init::InitialStepSize, Delay, DormandPrince, ExplicitRungeKutta},
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -14,14 +14,14 @@ use crate::{
 };
 
 impl<
-    const L: usize,
-    T: Real,
-    Y: State<T>,
-    H: Fn(T) -> Y,
-    const O: usize,
-    const S: usize,
-    const I: usize,
-> DelayNumericalMethod<L, T, Y, H> for ExplicitRungeKutta<Delay, DormandPrince, T, Y, O, S, I>
+        const L: usize,
+        T: Real,
+        Y: State<T>,
+        H: Fn(T) -> Y,
+        const O: usize,
+        const S: usize,
+        const I: usize,
+    > DelayNumericalMethod<L, T, Y, H> for ExplicitRungeKutta<Delay, DormandPrince, T, Y, O, S, I>
 {
     fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &Y, phi: &H) -> Result<Evals, Error<T, Y>>
     where
@@ -82,7 +82,7 @@ impl<
 
         // Validate and set initial step size h
         match validate_step_size_parameters::<T, Y>(self.h0, self.h_min, self.h_max, t0, tf) {
-            Ok(h0) => self.h = h0,
+            Ok(h0) => self.h = (self.filter)(h0),
             Err(status) => return Err(status),
         }
         Ok(evals)
@@ -260,6 +260,7 @@ impl<
                 self.h = min_delay_abs * sign;
             }
             self.h = constrain_step_size(self.h, self.h_min, self.h_max);
+            self.h = (self.filter)(self.h);
             self.status = Status::RejectedStep;
             return Ok(evals);
         }
@@ -479,6 +480,8 @@ impl<
         self.h *= scale;
         // Enforce bounds
         self.h = constrain_step_size(self.h, self.h_min, self.h_max);
+        // Apply step size filter
+        self.h = (self.filter)(self.h);
 
         Ok(evals)
     }
@@ -499,7 +502,7 @@ impl<
         self.h
     }
     fn set_h(&mut self, h: T) {
-        self.h = h;
+        self.h = (self.filter)(h);
     }
     fn status(&self) -> &Status<T, Y> {
         &self.status

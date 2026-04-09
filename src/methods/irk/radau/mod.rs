@@ -87,6 +87,8 @@ pub struct Radau5<E, T: Real, Y: State<T>> {
     pub max_scale: T,
     /// Enable predictive (Gustafsson) step-size controller
     pub predictive: bool,
+    /// Step size filter (default: identity)
+    pub filter: fn(T) -> T,
 
     // State
     /// Current time
@@ -310,6 +312,7 @@ impl<E, T: Real, Y: State<T>> Default for Radau5<E, T, Y> {
 
             // Algorithm toggles
             predictive: true,
+            filter: |h| h,
 
             // State
             t: T::zero(),
@@ -495,6 +498,12 @@ impl<E, T: Real, Y: State<T>> Radau5<E, T, Y> {
         self
     }
 
+    /// Set the step size filter (default: identity)
+    pub fn filter(mut self, filter: fn(T) -> T) -> Self {
+        self.filter = filter;
+        self
+    }
+
     /// Indexes in the state vector of the index three algebraic equations
     /// If this isn not set DAE's with index three equation will likely
     /// cause step-size/error issues leading to a failed solve.
@@ -510,6 +519,7 @@ impl<E, T: Real, Y: State<T>> Radau5<E, T, Y> {
     fn unexpected_step_rejection(&mut self) {
         self.hhfac = T::from_f64(0.5).unwrap();
         self.h = constrain_step_size(self.h * self.hhfac, self.h_min, self.h_max);
+        self.h = (self.filter)(self.h);
         self.reject = true;
         self.status = Status::RejectedStep;
     }
