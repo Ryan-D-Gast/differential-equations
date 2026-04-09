@@ -6,6 +6,13 @@
 //!
 //! - automatic differentiation with dual numbers
 //! - variational equations for the augmented state
+//!
+//! It also shows the solver `filter` hook, which can transform the accepted
+//! step size before it is used internally. That is useful when you want to:
+//! - strip derivatives from a dual-number step size so they do not contaminate
+//!   the solver state
+//! - clamp, quantize, or otherwise normalize step sizes for reproducibility
+//!   or custom time-stepping rules
 
 use differential_equations::prelude::*;
 use differential_equations::{ode::ODE, traits::Real};
@@ -97,6 +104,8 @@ fn main() {
     let sol = problem.solve(&mut solver).unwrap();
 
     // Recompute the same solution with a filtered step size.
+    // Here the filter keeps only the real part of the dual step size so the
+    // step length does not carry derivative information.
     solver = solver.filter(|h| DualSVec64::<6>::from(h.re()));
     let sol_flt = problem.solve(&mut solver).unwrap();
 
