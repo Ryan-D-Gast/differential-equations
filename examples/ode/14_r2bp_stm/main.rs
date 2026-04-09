@@ -1,19 +1,25 @@
-use differential_equations::{
-    ode::{ODE, ODEProblem},
-    prelude::ExplicitRungeKutta,
-    traits::Real,
-};
-use nalgebra::{Dim, Matrix3, Matrix6, SVector, Vector6, stack};
+//! Example 14: Reduced Two-Body Problem with State Transition Matrix
+//!
+//! This example integrates the Kepler two-body problem and propagates the
+//! 6x6 state transition matrix (STM) alongside the state. It demonstrates two
+//! equivalent ways to obtain sensitivity information:
+//!
+//! - automatic differentiation with dual numbers
+//! - variational equations for the augmented state
+
+use differential_equations::prelude::*;
+use differential_equations::{ode::ODE, traits::Real};
+use nalgebra::{stack, Dim, Matrix3, Matrix6, SVector, Vector6};
 use num_dual::{Derivative, DualSVec64, DualStruct};
 use std::{f64::consts::PI, iter::zip};
 
-/// Ordinary differential equation for the Keplerian dynamics
-struct KeplerODE<T: Real> {
-    /// gravitational parameter
+/// Keplerian two-body dynamics.
+struct TwoBodyODE<T: Real> {
+    /// Gravitational parameter.
     mu: T,
 }
 
-impl<T> ODE<T, Vector6<T>> for KeplerODE<T>
+impl<T> ODE<T, Vector6<T>> for TwoBodyODE<T>
 where
     T: Real,
 {
@@ -25,22 +31,22 @@ where
     }
 }
 
-/// Variational equations for the Keplerian dynamics
-struct VariationalKeplerODE {
-    /// gravitational parameter
+/// Variational form of the two-body problem.
+struct VariationalTwoBodyODE {
+    /// Gravitational parameter.
     mu: f64,
 }
 
-impl ODE<f64, SVector<f64, 42>> for VariationalKeplerODE {
+impl ODE<f64, SVector<f64, 42>> for VariationalTwoBodyODE {
     fn diff(&self, _: f64, y: &SVector<f64, 42>, dydt: &mut SVector<f64, 42>) {
         let r = y.fixed_rows::<3>(0);
         let c = self.mu / r.norm().powi(3);
 
-        // time derivatives of the six-dimensional state
+        // State derivatives.
         dydt.fixed_rows_mut::<3>(0).copy_from(&y.fixed_rows::<3>(3));
         dydt.fixed_rows_mut::<3>(3).copy_from(&(r * (-c)));
 
-        // time derivatives of the 6x6 state transition matrix
+        // STM derivatives.
         let mut a = Matrix6::<f64>::zeros();
         for i in 0..3 {
             a[(i, i + 3)] = 1.0;
@@ -62,22 +68,21 @@ fn get_derivative<const N: usize>(dual: &DualSVec64<N>) -> [f64; N] {
 }
 
 fn main() {
-    // initial state: periapis of an elliptical orbit with periapsis radius equal to 1.0 and eccentricity equal to 0.5
+    // Initial state: periapsis of an elliptical orbit with eccentricity 0.5.
     let y0 = Vector6::<f64>::new(1.0, 0.0, 0.0, 0.0, 1.5_f64.sqrt(), 0.0);
-    let stm0 = Matrix6::<f64>::identity(); // initial state transition matrix
-    let tau = 2.0 * PI * 8.0_f64.sqrt(); // orbit period
+    let stm0 = Matrix6::<f64>::identity();
+    let tau = 2.0 * PI * 8.0_f64.sqrt(); // Orbit period.
 
-    // initial state seeded to compute the partials of the flow of the solution w.r.t. the initial conditions
+    // Seed the dual state to recover sensitivities at the final solution.
     let y0_dual = Vector6::<DualSVec64<6>>::from_fn(|i, _| {
         DualSVec64::new(y0[i], Derivative::new(Some(stm0.row(i).transpose())))
     });
 
-    // initial state augmented with the state transition matrix at the initial time
+    // Augment the state with the initial STM.
     let y0_aug = stack![y0; SVector::<f64, 36>::from_iterator(stm0.iter().copied())];
 
-    // compute the flow of the solution to the Kepler equation and the partials
-    // w.r.t. the initial conditions using automatic differentiation
-    let ode = KeplerODE {
+    // Solve the system with dual numbers.
+    let ode = TwoBodyODE {
         mu: DualSVec64::<6>::from_re(1.0),
     };
     let problem = ODEProblem::new(
@@ -91,7 +96,7 @@ fn main() {
         .rtol(DualSVec64::<6>::from(1e-14));
     let sol = problem.solve(&mut solver).unwrap();
 
-    // recompute the same solution but filtering the step size such that its derivatives are identically zero
+    // Recompute the same solution with a filtered step size.
     solver = solver.filter(|h| DualSVec64::<6>::from(h.re()));
     let sol_flt = problem.solve(&mut solver).unwrap();
 
@@ -103,7 +108,7 @@ fn main() {
         .sum::<f64>();
     assert_eq!(check, 0.0);
 
-    // extract the state and state transition matrix at the penultimate step
+    // Extract the state and STM at the penultimate step.
     let t1 = sol.t.last_chunk::<2>().unwrap()[0];
     let y1_dual = sol.y.last_chunk::<2>().unwrap()[0];
     let y1_eps: Vec<[f64; 6]> = y1_dual.iter().map(|d| get_derivative::<6>(d)).collect();
@@ -122,29 +127,21 @@ fn main() {
     }
     let stm1_flt = Matrix6::<f64>::from_fn(|r, c| y1_eps_flt[r][c]);
 
-    // compute the flow of the solution to the Kepler equation and the
-    // partials w.r.t. the initial conditions via variational equations
-    let var_ode = VariationalKeplerODE { mu: 1.0 };
+    // Solve the same problem with variational equations.
+    let var_ode = VariationalTwoBodyODE { mu: 1.0 };
     let var_problem = ODEProblem::new(&var_ode, 0.0, t1.re(), y0_aug);
     let mut var_solver = ExplicitRungeKutta::dop853().atol(1e-14).rtol(1e-14);
     let var_sol = var_problem.solve(&mut var_solver).unwrap();
 
-    // extract the state and analytical state transition matrix
+    // Extract the analytical STM from the augmented solution.
     let y1_aug = var_sol.last().unwrap().1;
     let y1_var = y1_aug.fixed_rows::<6>(0);
     let stm1_var = Matrix6::<f64>::from_iterator(y1_aug.fixed_rows::<36>(6).iter().copied());
 
-    println!("State at {}: {}", t1, y1);
-    println!("State with filtered step at {}: {}", t1_flt, y1_flt);
-    println!("State from augmented solution at {}: {}", t1.re(), y1_var);
-    println!("State transition matrix at {}: {}", t1, stm1);
-    println!(
-        "State transition matrix with filtered step at {}: {}",
-        t1_flt, stm1_flt
-    );
-    println!(
-        "Analytical state transition matrix at {}: {}",
-        t1.re(),
-        stm1_var
-    );
+    println!("Two-body state at {}: {}", t1, y1);
+    println!("Filtered-step state at {}: {}", t1_flt, y1_flt);
+    println!("Augmented-state solution at {}: {}", t1.re(), y1_var);
+    println!("STM at {}: {}", t1, stm1);
+    println!("Filtered-step STM at {}: {}", t1_flt, stm1_flt);
+    println!("Variational STM at {}: {}", t1.re(), stm1_var);
 }
