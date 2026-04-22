@@ -138,3 +138,36 @@ where
         Complex::new(T::zero(), T::zero())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "Index out of bounds")]
+    fn test_state_f64_get_out_of_bounds() {
+        let state: f64 = 1.0;
+        let _ = state.get(1);
+    }
+
+    #[test]
+    #[should_panic(expected = "Index out of bounds")]
+    fn test_state_f64_set_out_of_bounds() {
+        let mut state: f64 = 1.0;
+        state.set(1, 2.0);
+    }
+
+    #[test]
+    #[should_panic(expected = "Index out of bounds")]
+    fn test_state_complex_get_out_of_bounds() {
+        let state = Complex::new(1.0, 2.0);
+        let _ = state.get(2);
+    }
+
+    #[test]
+    #[should_panic(expected = "Index out of bounds")]
+    fn test_state_complex_set_out_of_bounds() {
+        let mut state = Complex::new(1.0, 2.0);
+        state.set(2, 3.0);
+    }
+}
