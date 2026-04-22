@@ -25,7 +25,6 @@ use crate::{
 /// Note that the event function is optional and can be left out when implementing
 /// in which case it will be set to return Continue by default.
 ///
-#[allow(unused_variables)]
 pub trait DAE<T = f64, V = f64>
 where
     T: Real,
@@ -80,7 +79,7 @@ where
     /// # Returns
     /// * `ControlFlag` - Command to continue or stop solver.
     ///
-    fn event(&self, t: T, y: &V) -> ControlFlag<T, V> {
+    fn event(&self, _t: T, _y: &V) -> ControlFlag<T, V> {
         ControlFlag::Continue
     }
 
