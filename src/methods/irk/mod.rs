@@ -4,7 +4,6 @@ mod adaptive;
 mod fixed;
 mod radau;
 
-use std::marker::PhantomData;
 
 use crate::{
     linalg::Matrix,
@@ -91,10 +90,10 @@ pub struct ImplicitRungeKutta<
     dense_stages: usize,
 
     // Family classification
-    family: PhantomData<F>,
+    family: std::marker::PhantomData<F>,
 
     // Equation type
-    equation: PhantomData<E>,
+    equation: std::marker::PhantomData<E>,
 }
 
 impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Default
@@ -138,8 +137,8 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             order: O,
             stages: S,
             dense_stages: I,
-            family: PhantomData,
-            equation: PhantomData,
+            family: std::marker::PhantomData,
+            equation: std::marker::PhantomData,
             stage_jacobians: core::array::from_fn(|_| Matrix::zeros(0, 0)),
             newton_matrix: Matrix::zeros(0, 0),
             rhs_newton: Vec::new(),

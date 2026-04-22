@@ -5,7 +5,6 @@ mod initialize;
 mod interpolate;
 mod ordinary;
 
-use std::marker::PhantomData;
 
 use crate::{
     linalg::Matrix,
@@ -239,7 +238,7 @@ pub struct Radau5<E, T: Real, Y: State<T>> {
     err_acc: T,
 
     /// Equation type
-    equation: PhantomData<E>,
+    equation: std::marker::PhantomData<E>,
 }
 
 impl<E, T: Real, Y: State<T>> Default for Radau5<E, T, Y> {
@@ -400,7 +399,7 @@ impl<E, T: Real, Y: State<T>> Default for Radau5<E, T, Y> {
             err_acc: T::from_f64(1e-2).unwrap(),
 
             // Equation type
-            equation: PhantomData,
+            equation: std::marker::PhantomData,
         }
     }
 }

@@ -3,7 +3,6 @@
 mod adaptive;
 mod fixed;
 
-use std::marker::PhantomData;
 
 use crate::{
     linalg::Matrix,
@@ -95,10 +94,10 @@ pub struct DiagonallyImplicitRungeKutta<
     stages: usize,
 
     // Family classification
-    family: PhantomData<F>,
+    family: std::marker::PhantomData<F>,
 
     // Equation type
-    equation: PhantomData<E>,
+    equation: std::marker::PhantomData<E>,
 }
 
 impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Default
@@ -146,8 +145,8 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             status: Status::Uninitialized,
             order: O,
             stages: S,
-            family: PhantomData,
-            equation: PhantomData,
+            family: std::marker::PhantomData,
+            equation: std::marker::PhantomData,
         }
     }
 }

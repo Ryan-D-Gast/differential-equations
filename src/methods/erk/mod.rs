@@ -4,7 +4,7 @@ mod adaptive;
 mod dormandprince;
 mod fixed;
 
-use std::{collections::VecDeque, marker::PhantomData};
+use std::collections::VecDeque;
 
 use crate::{
     methods::Delay,
@@ -98,10 +98,10 @@ pub struct ExplicitRungeKutta<
     fsal: bool, // First Same As Last (FSAL) property
 
     // Family classification
-    family: PhantomData<F>,
+    family: std::marker::PhantomData<F>,
 
     // Equation type
-    equation: PhantomData<E>,
+    equation: std::marker::PhantomData<E>,
 
     // DDE (Delay) support
     history: VecDeque<(T, Y, Y)>, // (t, y, dydt)
@@ -149,8 +149,8 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             stages: S,
             dense_stages: I,
             fsal: false,
-            family: PhantomData,
-            equation: PhantomData,
+            family: std::marker::PhantomData,
+            equation: std::marker::PhantomData,
             history: VecDeque::new(),
             max_delay: None,
         }

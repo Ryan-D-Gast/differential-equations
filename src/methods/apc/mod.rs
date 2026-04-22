@@ -3,7 +3,6 @@
 mod apcf4;
 mod apcv4;
 
-use std::marker::PhantomData;
 
 use crate::{
     status::Status,
@@ -55,10 +54,10 @@ pub struct AdamsPredictorCorrector<E, F, T: Real, Y: State<T>, const S: usize> {
     pub stages: usize,
 
     // Family classification
-    family: PhantomData<F>,
+    family: std::marker::PhantomData<F>,
 
     // Equation type
-    equation: PhantomData<E>,
+    equation: std::marker::PhantomData<E>,
 }
 
 impl<E, F, T: Real, Y: State<T>, const S: usize> Default
@@ -87,8 +86,8 @@ impl<E, F, T: Real, Y: State<T>, const S: usize> Default
             max_steps: 10_000,
             filter: |h| h,
             stages: S,
-            family: PhantomData,
-            equation: PhantomData,
+            family: std::marker::PhantomData,
+            equation: std::marker::PhantomData,
         }
     }
 }
