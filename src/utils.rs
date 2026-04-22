@@ -155,3 +155,38 @@ pub fn validate_step_size_parameters<T: Real, Y: State<T>>(
     // Return Ok if all bounds are valid return the step size
     Ok(h0)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_constrain_step_size() {
+        let h_min = 0.1;
+        let h_max = 1.0;
+
+        // Positive h
+        assert_eq!(constrain_step_size(0.5, h_min, h_max), 0.5);
+        assert_eq!(constrain_step_size(0.05, h_min, h_max), 0.1);
+        assert_eq!(constrain_step_size(1.5, h_min, h_max), 1.0);
+
+        // Negative h
+        assert_eq!(constrain_step_size(-0.5, h_min, h_max), -0.5);
+        assert_eq!(constrain_step_size(-0.05, h_min, h_max), -0.1);
+        assert_eq!(constrain_step_size(-1.5, h_min, h_max), -1.0);
+
+        // Bounds
+        assert_eq!(constrain_step_size(0.1, h_min, h_max), 0.1);
+        assert_eq!(constrain_step_size(1.0, h_min, h_max), 1.0);
+        assert_eq!(constrain_step_size(-0.1, h_min, h_max), -0.1);
+        assert_eq!(constrain_step_size(-1.0, h_min, h_max), -1.0);
+
+        // Edge case: h_min == h_max
+        assert_eq!(constrain_step_size(0.5, 0.5, 0.5), 0.5);
+        assert_eq!(constrain_step_size(0.1, 0.5, 0.5), 0.5);
+        assert_eq!(constrain_step_size(1.0, 0.5, 0.5), 0.5);
+        assert_eq!(constrain_step_size(-0.5, 0.5, 0.5), -0.5);
+        assert_eq!(constrain_step_size(-0.1, 0.5, 0.5), -0.5);
+        assert_eq!(constrain_step_size(-1.0, 0.5, 0.5), -0.5);
+    }
+}
