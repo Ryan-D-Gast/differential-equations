@@ -69,9 +69,7 @@ impl<T: Real> Matrix<T> {
             // Check for singularity
             if pivot_val <= eps {
                 // Note the t, y are not known here and should be updated by caller before returning to user
-                return Err(Error::LinearAlgebra {
-                    msg: "Singular matrix encountered".into(),
-                });
+                return Err(crate::linalg::LinalgError::Singular { step: k + 1 }.into());
             }
 
             if pivot_row != k {
@@ -124,7 +122,7 @@ impl<T: Real> Matrix<T> {
     }
 
     /// In-place solve: overwrites `b` with `x`.
-    pub fn lin_solve_mut(&self, b: &mut [T]) {
+    pub fn lin_solve_mut(&self, b: &mut [T]) -> Result<(), crate::linalg::LinalgError> {
         let n = self.n;
         assert_eq!(
             b.len(),
@@ -174,7 +172,7 @@ impl<T: Real> Matrix<T> {
                 }
             }
             if pivot_val == T::zero() {
-                panic!("singular matrix in solve");
+                return Err(crate::linalg::LinalgError::Singular { step: k + 1 });
             }
             if pivot_row != k {
                 for j in 0..n {
@@ -209,6 +207,7 @@ impl<T: Real> Matrix<T> {
             }
             b[i] = sum / a[i * n + i];
         }
+        Ok(())
     }
 }
 
