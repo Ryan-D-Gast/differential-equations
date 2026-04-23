@@ -219,8 +219,10 @@ where
     pub fn to_csv(&self, filename: &str) -> Result<(), Box<dyn std::error::Error>> {
         // Create file and path if it does not exist
         let path = std::path::Path::new(filename);
-        if !path.exists() {
-            std::fs::create_dir_all(path.parent().unwrap())?;
+        if let Some(parent) = path.parent() {
+            if !parent.exists() {
+                std::fs::create_dir_all(parent)?;
+            }
         }
         let mut file = std::fs::File::create(filename)?;
 
