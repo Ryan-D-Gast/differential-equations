@@ -324,3 +324,40 @@ impl<T: Real> CrossingSolout<T> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_crossing_solout_init() {
+        let component_idx = 1;
+        let threshold = 2.5;
+        let detector = CrossingSolout::<f64>::new(component_idx, threshold);
+
+        assert_eq!(detector.component_idx, component_idx);
+        assert_eq!(detector.threshold, threshold);
+        assert!(detector.last_offset_value.is_none());
+        assert_eq!(detector.direction, CrossingDirection::Both);
+    }
+
+    #[test]
+    fn test_crossing_solout_directions() {
+        let detector = CrossingSolout::<f64>::new(0, 0.0);
+
+        let detector = detector.with_direction(CrossingDirection::Positive);
+        assert_eq!(detector.direction, CrossingDirection::Positive);
+
+        let detector = detector.with_direction(CrossingDirection::Negative);
+        assert_eq!(detector.direction, CrossingDirection::Negative);
+
+        let detector = detector.with_direction(CrossingDirection::Both);
+        assert_eq!(detector.direction, CrossingDirection::Both);
+
+        let detector = detector.positive_only();
+        assert_eq!(detector.direction, CrossingDirection::Positive);
+
+        let detector = detector.negative_only();
+        assert_eq!(detector.direction, CrossingDirection::Negative);
+    }
+}
