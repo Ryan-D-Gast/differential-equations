@@ -143,9 +143,8 @@ impl<T: Real> Matrix<T> {
         } else if let MatrixStorage::Full = self.storage {
             for i in 0..self.n {
                 for j in 0..self.m {
-                    if i == j && self.data[i * self.m + j] != T::one() {
-                        return false;
-                    } else if i != j && self.data[i * self.m + j] != T::zero() {
+                    let expected = if i == j { T::one() } else { T::zero() };
+                    if self.data[i * self.m + j] != expected {
                         return false;
                     }
                 }
@@ -158,9 +157,8 @@ impl<T: Real> Matrix<T> {
         {
             for i in 0..self.n {
                 for j in 0..self.m {
-                    if i == j && self.data[i * self.m + j] != T::one() {
-                        return false;
-                    } else if i != j && self.data[i * self.m + j] != zero {
+                    let expected = if i == j { T::one() } else { zero };
+                    if self.data[i * self.m + j] != expected {
                         return false;
                     }
                 }

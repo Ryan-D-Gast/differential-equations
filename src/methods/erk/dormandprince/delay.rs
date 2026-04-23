@@ -1,5 +1,4 @@
 //! Dormand–Prince explicit Runge–Kutta methods for Delay Differential Equations (DDEs)
-
 use std::collections::VecDeque;
 
 use crate::{
@@ -30,7 +29,7 @@ impl<
         let mut evals = Evals::new();
 
         // DDE requires at least one lag
-        if L <= 0 {
+        if L == 0 {
             return Err(Error::NoLags);
         }
 
@@ -288,7 +287,7 @@ impl<
             evals.function += 1;
             // Stiffness detection (every 100 steps)
             let n_stiff_threshold = 100;
-            if self.steps % n_stiff_threshold == 0 {
+            if self.steps.is_multiple_of(n_stiff_threshold) {
                 let mut stdnum = T::zero();
                 let mut stden = T::zero();
                 let sqr = {

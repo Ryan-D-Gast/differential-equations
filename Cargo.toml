@@ -33,6 +33,11 @@ default = []
 polars = ["dep:polars"]
 serde = ["dep:serde"]
 
+[lints.clippy]
+module_inception = "allow"
+needless_range_loop = "allow"
+too_many_arguments = "allow"
+
 [dependencies]
 nalgebra = "^0.34.2" # Linear algebra library for matrix operations
 num-complex = "^0.4.6" # Complex number support

@@ -12,7 +12,6 @@
 //! - [`DAE`]: Define your differential algebraic equation system by implementing this trait
 //! - [`DAEProblem`]: Set up an initial value problem with your system, time span, and initial conditions
 //!
-
 // Definitions & Constructors for users to ergonomically solve a DAEProblem via the solve_dae function.
 mod problem;
 pub use problem::DAEProblem;

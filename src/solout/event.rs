@@ -199,9 +199,9 @@ impl<'a, T: Real, Y: State<T>, E: Event<T, Y>> EventSolout<'a, T, Y, E> {
             a = b;
             fa = fb;
             if d.abs() > tol {
-                b = b + d;
+                b += d;
             } else {
-                b = b + if m > T::zero() { tol } else { -tol };
+                b += if m > T::zero() { tol } else { -tol };
             }
             // Evaluate at new b via interpolation
             let yb = interpolator.interpolate(b).ok()?;
@@ -266,25 +266,25 @@ where
             }
 
             // Only proceed if fa*fb <= 0
-            if fa * fb <= zero {
-                if let Some(t_event) = self.brent_dekker(a, b, fa, fb, interpolator) {
-                    let y_event = interpolator.interpolate(t_event).unwrap();
-                    // Avoid duplicate near-equal times
-                    let push_point = match solution.t.last() {
-                        Some(&last_t) => (t_event - last_t).abs() > self.abs_tol,
-                        None => true,
-                    };
-                    if push_point {
-                        solution.push(t_event, y_event);
-                    }
-                    self.event_count += 1;
+            if fa * fb <= zero
+                && let Some(t_event) = self.brent_dekker(a, b, fa, fb, interpolator)
+            {
+                let y_event = interpolator.interpolate(t_event).unwrap();
+                // Avoid duplicate near-equal times
+                let push_point = match solution.t.last() {
+                    Some(&last_t) => (t_event - last_t).abs() > self.abs_tol,
+                    None => true,
+                };
+                if push_point {
+                    solution.push(t_event, y_event);
+                }
+                self.event_count += 1;
 
-                    if let Some(limit) = self.config.terminate {
-                        if self.event_count >= limit {
-                            self.last_g = Some(g_curr);
-                            return ControlFlag::Terminate;
-                        }
-                    }
+                if let Some(limit) = self.config.terminate
+                    && self.event_count >= limit
+                {
+                    self.last_g = Some(g_curr);
+                    return ControlFlag::Terminate;
                 }
             }
         }
@@ -367,23 +367,23 @@ where
                 std::mem::swap(&mut a, &mut b);
                 std::mem::swap(&mut fa, &mut fb);
             }
-            if fa * fb <= zero {
-                if let Some(t_event) = self.brent_dekker(a, b, fa, fb, interpolator) {
-                    let y_event = interpolator.interpolate(t_event).unwrap();
-                    let push_point = match solution.t.last() {
-                        Some(&last_t) => (t_event - last_t).abs() > self.abs_tol,
-                        None => true,
-                    };
-                    if push_point {
-                        solution.push(t_event, y_event);
-                    }
-                    self.event_count += 1;
-                    if let Some(limit) = self.config.terminate {
-                        if self.event_count >= limit {
-                            self.last_g = Some(g_curr);
-                            return ControlFlag::Terminate;
-                        }
-                    }
+            if fa * fb <= zero
+                && let Some(t_event) = self.brent_dekker(a, b, fa, fb, interpolator)
+            {
+                let y_event = interpolator.interpolate(t_event).unwrap();
+                let push_point = match solution.t.last() {
+                    Some(&last_t) => (t_event - last_t).abs() > self.abs_tol,
+                    None => true,
+                };
+                if push_point {
+                    solution.push(t_event, y_event);
+                }
+                self.event_count += 1;
+                if let Some(limit) = self.config.terminate
+                    && self.event_count >= limit
+                {
+                    self.last_g = Some(g_curr);
+                    return ControlFlag::Terminate;
                 }
             }
         }

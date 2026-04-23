@@ -1,5 +1,4 @@
 //! Initial step size picker
-
 use crate::{
     dae::DAE,
     dde::DDE,

@@ -2,7 +2,6 @@
 //!
 //! Provides traits and types for defining and solving DDE initial value problems.
 //! See [`DDE`] and [`DDEProblem`] for usage.
-
 mod dde;
 mod numerical_method;
 mod problem;

@@ -1,5 +1,4 @@
 //! Fixed-step explicit Runge–Kutta methods for Delay Differential Equations (DDEs)
-
 use std::collections::VecDeque;
 
 use crate::{
@@ -31,7 +30,7 @@ impl<
         let mut evals = Evals::new();
 
         // DDE requires at least one lag
-        if L <= 0 {
+        if L == 0 {
             return Err(Error::NoLags);
         }
         self.t0 = t0;
@@ -332,10 +331,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 y_delayed[i] = phi(t_delayed);
             // If t_delayed is after t_prev then use interpolation function
             } else if (t_delayed - self.t_prev) * self.h.signum() > T::default_epsilon() {
-                if self.bi.is_some() {
+                if let Some(bi_coeffs) = self.bi.as_ref() {
                     let s = (t_delayed - self.t_prev) / self.h_prev;
-
-                    let bi_coeffs = self.bi.as_ref().unwrap();
 
                     let mut cont = [T::zero(); I];
                     for i in 0..I {
@@ -426,10 +423,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
         }
 
         // If method has dense output coefficients, use them
-        if self.bi.is_some() {
+        if let Some(bi) = self.bi.as_ref() {
             let s = (t_interp - self.t_prev) / self.h_prev;
-
-            let bi = self.bi.as_ref().unwrap();
 
             let mut cont = [T::zero(); I];
             for i in 0..self.dense_stages {

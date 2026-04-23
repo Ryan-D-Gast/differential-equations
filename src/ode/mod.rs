@@ -2,7 +2,6 @@
 //!
 //! Provides traits and types for defining and solving ODE initial value problems.
 //! See [`ODE`] and [`ODEProblem`] for usage.
-
 mod numerical_method;
 mod ode;
 mod problem;

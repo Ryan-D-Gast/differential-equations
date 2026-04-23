@@ -1,5 +1,4 @@
 //! Dormand-Prince Runge-Kutta methods for ODEs
-
 use crate::{
     error::Error,
     interpolate::Interpolation,
@@ -166,7 +165,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
             // stiffness detection
             let n_stiff_threshold = 100;
-            if self.steps % n_stiff_threshold == 0 {
+            if self.steps.is_multiple_of(n_stiff_threshold) {
                 let mut stdnum = T::zero();
                 let mut stden = T::zero();
                 let sqr = yseg - self.k[S - 1];

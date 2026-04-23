@@ -1,5 +1,4 @@
 //! Adaptive IRK for ODEs
-
 use crate::{
     error::Error,
     interpolate::{Interpolation, cubic_hermite_interpolate},

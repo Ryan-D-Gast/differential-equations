@@ -177,9 +177,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             // Solve (I - h*A⊗J) Δz = -F(z) using in-place LU on our matrix
             let mut rhs = self.rhs_newton.clone();
             self.newton_matrix.lin_solve_mut(&mut rhs[..])?;
-            for i in 0..self.delta_k_vec.len() {
-                self.delta_k_vec[i] = rhs[i];
-            }
+            self.delta_k_vec.copy_from_slice(&rhs);
             self.lu_decompositions += 1;
 
             // Update z_i and increment norm

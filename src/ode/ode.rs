@@ -21,8 +21,6 @@ use crate::{
 /// * `jacobian` - Jacobian matrix J = df/dy for the system of equations.
 ///
 /// Note that the event and jacobian functions are optional and can be left out when implementing.
-///
-
 pub trait ODE<T = f64, Y = f64>
 where
     T: Real,

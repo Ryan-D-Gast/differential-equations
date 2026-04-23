@@ -173,10 +173,10 @@ where
 
         // Create file and path if it does not exist
         let path = std::path::Path::new(filename);
-        if let Some(parent) = path.parent() {
-            if !parent.exists() {
-                std::fs::create_dir_all(parent)?;
-            }
+        if let Some(parent) = path.parent()
+            && !parent.exists()
+        {
+            std::fs::create_dir_all(parent)?;
         }
         let file = std::fs::File::create(filename)?;
         let mut writer = BufWriter::new(file);

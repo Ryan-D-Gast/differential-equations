@@ -1,5 +1,4 @@
 //! Adaptive Runge-Kutta methods for Delay Differential Equations (DDEs)
-
 use std::collections::VecDeque;
 
 use crate::{
@@ -30,7 +29,7 @@ impl<
         let mut evals = Evals::new();
 
         // DDE requires at least one lag
-        if L <= 0 {
+        if L == 0 {
             return Err(Error::NoLags);
         }
 
@@ -403,9 +402,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 y_delayed[idx] = phi(t_delayed);
             // Within last accepted step (dense if available, else Hermite)
             } else if (t_delayed - self.t_prev) * self.h.signum() > T::default_epsilon() {
-                if self.bi.is_some() {
+                if let Some(dense_coeffs) = self.bi.as_ref() {
                     let theta = (t_delayed - self.t_prev) / self.h_prev;
-                    let dense_coeffs = self.bi.as_ref().unwrap();
 
                     let mut coeffs = [T::zero(); I];
                     for s_idx in 0..I {
@@ -492,12 +490,9 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
         }
 
         // If method has dense output coefficients, use them
-        if self.bi.is_some() {
+        if let Some(dense_coeffs) = self.bi.as_ref() {
             // Calculate the normalized distance within the step [0, 1]
             let theta = (t_interp - self.t_prev) / self.h_prev;
-
-            // Get the interpolation coefficients
-            let dense_coeffs = self.bi.as_ref().unwrap();
 
             let mut coeffs = [T::zero(); I];
             // Compute the interpolation coefficients using Horner's method
