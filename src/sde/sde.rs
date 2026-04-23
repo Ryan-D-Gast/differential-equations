@@ -20,7 +20,7 @@ use crate::traits::{Real, State};
 ///
 /// Note that the event function is optional and can be left out when implementing.
 ///
-#[allow(unused_variables)]
+
 pub trait SDE<T = f64, Y = f64>
 where
     T: Real,

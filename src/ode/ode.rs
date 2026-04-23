@@ -22,7 +22,7 @@ use crate::{
 ///
 /// Note that the event and jacobian functions are optional and can be left out when implementing.
 ///
-#[allow(unused_variables)]
+
 pub trait ODE<T = f64, Y = f64>
 where
     T: Real,
