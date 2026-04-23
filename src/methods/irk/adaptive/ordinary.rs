@@ -200,7 +200,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             for i in 0..self.delta_k_vec.len() {
                 self.delta_k_vec[i] = self.rhs_newton[i];
             }
-            self.newton_matrix.lin_solve_mut(&mut self.delta_k_vec[..])?;
+            self.newton_matrix
+                .lin_solve_mut(&mut self.delta_k_vec[..])?;
             self.lu_decompositions += 1;
 
             // Update z_i and increment norm

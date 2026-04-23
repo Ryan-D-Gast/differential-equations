@@ -78,16 +78,16 @@ mod tests {
 
     #[test]
     fn test_linear_interpolate_f64() {
-        let t0 = 0.0;
-        let t1 = 1.0;
-        let y0 = 0.0;
-        let y1 = 2.0;
+        let t0 = 0.0_f64;
+        let t1 = 1.0_f64;
+        let y0 = 0.0_f64;
+        let y1 = 2.0_f64;
 
         assert!((linear_interpolate(t0, t1, &y0, &y1, t0) - y0).abs() < 1e-10);
         assert!((linear_interpolate(t0, t1, &y0, &y1, t1) - y1).abs() < 1e-10);
-        assert!((linear_interpolate(t0, t1, &y0, &y1, 0.5) - 1.0).abs() < 1e-10);
-        assert!((linear_interpolate(t0, t1, &y0, &y1, 2.0) - 4.0).abs() < 1e-10);
-        assert!((linear_interpolate(t0, t1, &y0, &y1, -1.0) - (-2.0)).abs() < 1e-10);
+        assert!((linear_interpolate(t0, t1, &y0, &y1, 0.5_f64) - 1.0_f64).abs() < 1e-10);
+        assert!((linear_interpolate(t0, t1, &y0, &y1, 2.0_f64) - 4.0_f64).abs() < 1e-10);
+        assert!((linear_interpolate(t0, t1, &y0, &y1, -1.0_f64) - (-2.0_f64)).abs() < 1e-10);
     }
 
     #[test]
@@ -163,20 +163,26 @@ mod tests {
 
     #[test]
     fn test_cubic_hermite_interpolate_f64() {
-        let t0 = 0.0;
-        let t1 = 1.0;
-        let y0 = 0.0;
-        let y1 = 1.0;
-        let k0 = 0.0;
-        let k1 = 0.0;
+        let t0 = 0.0_f64;
+        let t1 = 1.0_f64;
+        let y0 = 0.0_f64;
+        let y1 = 1.0_f64;
+        let k0 = 0.0_f64;
+        let k1 = 0.0_f64;
 
         assert!((cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t0) - y0).abs() < 1e-10);
         assert!((cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t1) - y1).abs() < 1e-10);
-        assert!((cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, 0.5) - 0.5).abs() < 1e-10);
+        assert!(
+            (cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, 0.5_f64) - 0.5_f64).abs()
+                < 1e-10
+        );
 
-        let k0 = 1.0;
-        let k1 = 1.0;
-        assert!((cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, 0.5) - 0.5).abs() < 1e-10);
+        let k0 = 1.0_f64;
+        let k1 = 1.0_f64;
+        assert!(
+            (cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, 0.5_f64) - 0.5_f64).abs()
+                < 1e-10
+        );
     }
 
     #[test]

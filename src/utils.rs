@@ -269,7 +269,11 @@ mod tests {
             validate_step_size_parameters(0.5, 0.01, 1.0, 0.0, 0.2);
         assert!(matches!(result3, Err(Error::BadInput { .. })));
         if let Err(Error::BadInput { msg }) = result3 {
-            assert!(msg.contains("less than or equal to the absolute value of the integration interval"));
+            assert!(
+                msg.contains(
+                    "less than or equal to the absolute value of the integration interval"
+                )
+            );
         }
     }
 
