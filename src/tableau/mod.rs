@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 //! Butcher Tableau
 
 // Explicit Runge-Kutta methods
