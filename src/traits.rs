@@ -69,19 +69,11 @@ impl<T: Real> State<T> for T {
     }
 
     fn get(&self, i: usize) -> T {
-        if i == 0 {
-            *self
-        } else {
-            panic!("Index out of bounds")
-        }
+        [*self][i]
     }
 
     fn set(&mut self, i: usize, value: T) {
-        if i == 0 {
-            *self = value;
-        } else {
-            panic!("Index out of bounds")
-        }
+        std::slice::from_mut(self)[i] = value;
     }
 
     fn zeros() -> Self {
@@ -119,22 +111,15 @@ where
     }
 
     fn get(&self, i: usize) -> T {
-        if i == 0 {
-            self.re
-        } else if i == 1 {
-            self.im
-        } else {
-            panic!("Index out of bounds")
-        }
+        [self.re, self.im][i]
     }
 
     fn set(&mut self, i: usize, value: T) {
+        assert!(i < 2, "Index out of bounds");
         if i == 0 {
             self.re = value;
-        } else if i == 1 {
-            self.im = value;
         } else {
-            panic!("Index out of bounds")
+            self.im = value;
         }
     }
 
