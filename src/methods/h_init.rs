@@ -72,8 +72,10 @@ impl InitialStepSize<Ordinary> {
         let mut dnf = T::zero();
         let mut dny = T::zero();
 
+        let n_dim = y0.len();
+
         // Loop through all elements to compute weighted norms
-        for n in 0..y0.len() {
+        for n in 0..n_dim {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
             dnf += (f0.get(n) / sk).powi(2);
             dny += (y0.get(n) / sk).powi(2);
@@ -99,7 +101,7 @@ impl InitialStepSize<Ordinary> {
         // Estimate the second derivative
         let mut der2 = T::zero();
 
-        for n in 0..y0.len() {
+        for n in 0..n_dim {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
             der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
         }
