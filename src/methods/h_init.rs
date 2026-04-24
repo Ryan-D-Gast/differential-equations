@@ -75,8 +75,8 @@ impl InitialStepSize<Ordinary> {
         // Loop through all elements to compute weighted norms
         for n in 0..y0.len() {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
-            dnf += (f0.get(n) / sk).powi(2);
-            dny += (y0.get(n) / sk).powi(2);
+            dnf += { let val = f0.get(n) / sk; val * val };
+            dny += { let val = y0.get(n) / sk; val * val };
         }
 
         // Initial step size guess
@@ -101,7 +101,7 @@ impl InitialStepSize<Ordinary> {
 
         for n in 0..y0.len() {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
-            der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
+            der2 += { let val = (f1.get(n) - f0.get(n)) / sk; val * val };
         }
         der2 = der2.sqrt() / h.abs();
 
@@ -186,8 +186,8 @@ impl InitialStepSize<Delay> {
             if sk <= T::zero() {
                 return h_min.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init;
             }
-            dnf += (f0.get(n) / sk).powi(2);
-            dny += (y0.get(n) / sk).powi(2);
+            dnf += { let val = f0.get(n) / sk; val * val };
+            dny += { let val = y0.get(n) / sk; val * val };
         }
         if n_dim > 0 {
             dnf = (dnf / T::from_usize(n_dim).unwrap()).sqrt();
@@ -273,7 +273,7 @@ impl InitialStepSize<Delay> {
                 der2 = T::infinity();
                 break;
             }
-            der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
+            der2 += { let val = (f1.get(n) - f0.get(n)) / sk; val * val };
         }
         if n_dim > 0 {
             der2 = (der2 / T::from_usize(n_dim).unwrap()).sqrt() / h.abs();
@@ -367,9 +367,9 @@ impl InitialStepSize<Algebraic> {
         let mut dny = T::zero();
         for n in 0..dim {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
-            dny += (y0.get(n) / sk).powi(2);
+            dny += { let val = y0.get(n) / sk; val * val };
             if is_diff[n] {
-                dnf += (f0.get(n) / sk).powi(2);
+                dnf += { let val = f0.get(n) / sk; val * val };
             }
         }
 
@@ -404,7 +404,7 @@ impl InitialStepSize<Algebraic> {
                 continue;
             }
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
-            der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
+            der2 += { let val = (f1.get(n) - f0.get(n)) / sk; val * val };
         }
         der2 = der2.sqrt() / h.abs().max(T::default_epsilon());
 

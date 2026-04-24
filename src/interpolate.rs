@@ -50,10 +50,12 @@ pub fn cubic_hermite_interpolate<T: Real, Y: State<T>>(
     let three = T::from_f64(3.0).unwrap();
     let h = t1 - t0;
     let s = (t - t0) / h;
-    let h00 = two * s.powi(3) - three * s.powi(2) + T::one();
-    let h10 = s.powi(3) - two * s.powi(2) + s;
-    let h01 = -two * s.powi(3) + three * s.powi(2);
-    let h11 = s.powi(3) - s.powi(2);
+    let s2 = s * s;
+    let s3 = s2 * s;
+    let h00 = two * s3 - three * s2 + T::one();
+    let h10 = s3 - two * s2 + s;
+    let h01 = -two * s3 + three * s2;
+    let h11 = s3 - s2;
     *y0 * h00 + *k0 * h10 * h + *y1 * h01 + *k1 * h11 * h
 }
 
