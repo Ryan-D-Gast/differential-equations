@@ -72,9 +72,12 @@ impl InitialStepSize<Ordinary> {
         let mut dnf = T::zero();
         let mut dny = T::zero();
 
+        let mut sk_vec = Vec::with_capacity(y0.len());
+
         // Loop through all elements to compute weighted norms
         for n in 0..y0.len() {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            sk_vec.push(sk);
             dnf += (f0.get(n) / sk).powi(2);
             dny += (y0.get(n) / sk).powi(2);
         }
@@ -100,7 +103,7 @@ impl InitialStepSize<Ordinary> {
         let mut der2 = T::zero();
 
         for n in 0..y0.len() {
-            let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            let sk = sk_vec[n];
             der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
         }
         der2 = der2.sqrt() / h.abs();
@@ -181,8 +184,10 @@ impl InitialStepSize<Delay> {
 
         let mut dnf = T::zero();
         let mut dny = T::zero();
+        let mut sk_vec = Vec::with_capacity(n_dim);
         for n in 0..n_dim {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            sk_vec.push(sk);
             if sk <= T::zero() {
                 return h_min.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init;
             }
@@ -268,7 +273,7 @@ impl InitialStepSize<Delay> {
 
         let mut der2 = T::zero();
         for n in 0..n_dim {
-            let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            let sk = sk_vec[n];
             if sk <= T::zero() {
                 der2 = T::infinity();
                 break;
@@ -365,8 +370,10 @@ impl InitialStepSize<Algebraic> {
         // Weighted norms (derivative norm only on differential rows)
         let mut dnf = T::zero();
         let mut dny = T::zero();
+        let mut sk_vec = Vec::with_capacity(dim);
         for n in 0..dim {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            sk_vec.push(sk);
             dny += (y0.get(n) / sk).powi(2);
             if is_diff[n] {
                 dnf += (f0.get(n) / sk).powi(2);
@@ -403,7 +410,7 @@ impl InitialStepSize<Algebraic> {
             if !is_diff[n] {
                 continue;
             }
-            let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            let sk = sk_vec[n];
             der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
         }
         der2 = der2.sqrt() / h.abs().max(T::default_epsilon());
