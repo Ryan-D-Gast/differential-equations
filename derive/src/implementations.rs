@@ -163,6 +163,18 @@ pub fn generate_state_impl(
                 #(#field_set_branches)*
                 unreachable!();
             }
+
+            #[inline]
+            #[allow(unused_variables)]
+            fn as_slice(&self) -> Option<&[T]> {
+                None
+            }
+
+            #[inline]
+            #[allow(unused_variables)]
+            fn as_mut_slice(&mut self) -> Option<&mut [T]> {
+                None
+            }
             
             fn zeros() -> Self {
                 #zeros_constructor
