@@ -8,7 +8,8 @@ where
     Y: State<T>,
 {
     let mut sum = T::zero();
-    for i in 0..a.len() {
+    let len = a.len();
+    for i in 0..len {
         sum += a.get(i) * b.get(i);
     }
     sum
@@ -20,8 +21,10 @@ where
     Y: State<T>,
 {
     let mut sum = T::zero();
-    for i in 0..a.len() {
-        sum += a.get(i) * a.get(i);
+    let len = a.len();
+    for i in 0..len {
+        let val = a.get(i);
+        sum += val * val;
     }
     sum.sqrt()
 }
@@ -32,7 +35,8 @@ where
     Y: State<T>,
 {
     let mut result = *a;
-    for i in 0..a.len() {
+    let len = a.len();
+    for i in 0..len {
         result.set(i, a.get(i) * b.get(i));
     }
     result
@@ -41,7 +45,8 @@ where
 pub fn component_square<T: Real, Y: State<T>>(v: &Y) -> Y {
     let mut result = Y::zeros();
 
-    for i in 0..v.len() {
+    let len = v.len();
+    for i in 0..len {
         let val = v.get(i);
         result.set(i, val * val);
     }

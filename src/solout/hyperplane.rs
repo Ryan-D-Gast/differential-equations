@@ -126,7 +126,10 @@ where
         let norm = |y: Y1| {
             let mut norm = T::zero();
             for i in 0..y.len() {
-                norm += { let val = y.get(i); val * val };
+                norm += {
+                    let val = y.get(i);
+                    val * val
+                };
             }
             norm.sqrt()
         };
