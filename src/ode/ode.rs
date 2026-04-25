@@ -21,6 +21,25 @@ use crate::{
 /// * `jacobian` - Jacobian matrix J = df/dy for the system of equations.
 ///
 /// Note that the event and jacobian functions are optional and can be left out when implementing.
+pub trait ParametrizedODE<T = f64, Y = f64>: ODE<T, Y>
+where
+    T: Real,
+    Y: State<T>,
+{
+    /// The number of parameters this system has
+    fn num_params(&self) -> usize;
+
+    /// The Parameter Jacobian: J_p = df/dp
+    /// `jp` will be pre-sized to `y.len() x num_params()`
+    fn jacobian_p(&self, _t: T, _y: &Y, _jp: &mut Matrix<T>) {
+        // Since there is no generic method to perturb parameters without requiring a generic parameter type,
+        // users must implement this analytically or use dual numbers for exact sensitivities.
+        // A finite difference fallback can only be provided if the user explicitly exposes a parameter setter,
+        // which goes against the trait's design of not forcing a generic parameter type.
+        unimplemented!("ParametrizedODE::jacobian_p must be implemented analytically by the user.");
+    }
+}
+
 pub trait ODE<T = f64, Y = f64>
 where
     T: Real,
