@@ -325,6 +325,6 @@ where
 
         // Assemble final derivatives
         dydt.lambda = -j_y_t_lambda - grad_y;
-        dydt.mu = -j_p_t_lambda + grad_p;
+        dydt.mu = -j_p_t_lambda - grad_p;
     }
 }

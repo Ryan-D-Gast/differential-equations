@@ -144,6 +144,11 @@ path = "examples/dde/01_mackey_glass/main.rs"
 name = "dde_02_breast_cancer_model"
 path = "examples/dde/02_breast_cancer_model/main.rs"
 
+# Adjoint Sensitivity Analysis examples
+[[example]]
+name = "adjoint_01_simple_parameter"
+path = "examples/adjoint/01_simple_parameter/main.rs"
+
 # Benchmarks
 [[bench]]
 name = "ode_solver_benchmarks"
