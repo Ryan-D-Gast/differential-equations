@@ -1,5 +1,4 @@
 //! Fixed Runge-Kutta methods for ODEs
-
 use crate::{
     error::Error,
     interpolate::{Interpolation, cubic_hermite_interpolate},
@@ -172,12 +171,9 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
         }
 
         // If method has dense output coefficients, use them
-        if self.bi.is_some() {
+        if let Some(bi) = self.bi.as_ref() {
             // Calculate the normalized distance within the step [0, 1]
             let s = (t_interp - self.t_prev) / self.h_prev;
-
-            // Get the interpolation coefficients
-            let bi = self.bi.as_ref().unwrap();
 
             let mut cont = [T::zero(); I];
             // Compute the interpolation coefficients using Horner's method

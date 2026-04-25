@@ -1,5 +1,4 @@
 //! Initial step size picker
-
 use crate::{
     dae::DAE,
     dde::DDE,
@@ -73,9 +72,13 @@ impl InitialStepSize<Ordinary> {
         let mut dnf = T::zero();
         let mut dny = T::zero();
 
+        let n_dim = y0.len();
+        let mut sk_vec = Vec::with_capacity(n_dim);
+
         // Loop through all elements to compute weighted norms
-        for n in 0..y0.len() {
+        for n in 0..n_dim {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            sk_vec.push(sk);
             dnf += (f0.get(n) / sk).powi(2);
             dny += (y0.get(n) / sk).powi(2);
         }
@@ -100,8 +103,8 @@ impl InitialStepSize<Ordinary> {
         // Estimate the second derivative
         let mut der2 = T::zero();
 
-        for n in 0..y0.len() {
-            let sk = atol[n] + rtol[n] * y0.get(n).abs();
+        for n in 0..n_dim {
+            let sk = sk_vec[n];
             der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
         }
         der2 = der2.sqrt() / h.abs();
@@ -182,8 +185,10 @@ impl InitialStepSize<Delay> {
 
         let mut dnf = T::zero();
         let mut dny = T::zero();
+        let mut sk_vec = Vec::with_capacity(n_dim);
         for n in 0..n_dim {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            sk_vec.push(sk);
             if sk <= T::zero() {
                 return h_min.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init;
             }
@@ -269,7 +274,7 @@ impl InitialStepSize<Delay> {
 
         let mut der2 = T::zero();
         for n in 0..n_dim {
-            let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            let sk = sk_vec[n];
             if sk <= T::zero() {
                 der2 = T::infinity();
                 break;
@@ -291,10 +296,14 @@ impl InitialStepSize<Delay> {
             (T::from_f64(0.01).unwrap() / der12).powf(T::one() / order_t)
         };
 
-        h = h.abs().min(h1);
-        h = h.min(h_max.abs());
-        if h_min.abs() > T::zero() {
-            h = h.max(h_min.abs());
+        let abs_h = h.abs();
+        let abs_h_max = h_max.abs();
+        let abs_h_min = h_min.abs();
+
+        h = abs_h.min(h1);
+        h = h.min(abs_h_max);
+        if abs_h_min > T::zero() {
+            h = h.max(abs_h_min);
         }
         h = h.min((tf - t0).abs());
         h * posneg_init
@@ -366,8 +375,10 @@ impl InitialStepSize<Algebraic> {
         // Weighted norms (derivative norm only on differential rows)
         let mut dnf = T::zero();
         let mut dny = T::zero();
+        let mut sk_vec = Vec::with_capacity(dim);
         for n in 0..dim {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            sk_vec.push(sk);
             dny += (y0.get(n) / sk).powi(2);
             if is_diff[n] {
                 dnf += (f0.get(n) / sk).powi(2);
@@ -388,8 +399,10 @@ impl InitialStepSize<Algebraic> {
             };
 
         // Bound and sign
-        h = h.min(h_max.abs());
-        h = h.max(h_min.abs());
+        let abs_h_max = h_max.abs();
+        let abs_h_min = h_min.abs();
+        h = h.min(abs_h_max);
+        h = h.max(abs_h_min);
         h *= posneg;
 
         // One explicit Euler predictor (uses f0 directly; avoids M^{-1})
@@ -404,7 +417,7 @@ impl InitialStepSize<Algebraic> {
             if !is_diff[n] {
                 continue;
             }
-            let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            let sk = sk_vec[n];
             der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
         }
         der2 = der2.sqrt() / h.abs().max(T::default_epsilon());
@@ -424,9 +437,9 @@ impl InitialStepSize<Algebraic> {
         // Final bounds (cap by interval length as well)
         let mut h_final = (h.abs() * T::from_f64(100.0).unwrap())
             .min(h1)
-            .min(h_max.abs());
-        if h_min.abs() > T::zero() {
-            h_final = h_final.max(h_min.abs());
+            .min(abs_h_max);
+        if abs_h_min > T::zero() {
+            h_final = h_final.max(abs_h_min);
         }
         h_final = h_final.min((tf - t0).abs());
         h_final * posneg

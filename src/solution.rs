@@ -67,8 +67,23 @@ where
     /// Creates a new Solution object.
     pub fn new() -> Self {
         Solution {
-            t: Vec::with_capacity(100),
-            y: Vec::with_capacity(100),
+            t: Vec::new(),
+            y: Vec::new(),
+            status: Status::Uninitialized,
+            evals: Evals::new(),
+            steps: Steps::new(),
+            timer: Timer::Off,
+        }
+    }
+
+    /// Creates a new Solution object with pre-allocated capacity for points.
+    ///
+    /// # Arguments
+    /// * `capacity` - Initial capacity for the vectors holding time and state points.
+    pub fn new_with_capacity(capacity: usize) -> Self {
+        Solution {
+            t: Vec::with_capacity(capacity),
+            y: Vec::with_capacity(capacity),
             status: Status::Uninitialized,
             evals: Evals::new(),
             steps: Steps::new(),
@@ -173,10 +188,10 @@ where
 
         // Create file and path if it does not exist
         let path = std::path::Path::new(filename);
-        if let Some(parent) = path.parent() {
-            if !parent.exists() {
-                std::fs::create_dir_all(parent)?;
-            }
+        if let Some(parent) = path.parent()
+            && !parent.exists()
+        {
+            std::fs::create_dir_all(parent)?;
         }
         let file = std::fs::File::create(filename)?;
         let mut writer = BufWriter::new(file);
@@ -219,8 +234,10 @@ where
     pub fn to_csv(&self, filename: &str) -> Result<(), Box<dyn std::error::Error>> {
         // Create file and path if it does not exist
         let path = std::path::Path::new(filename);
-        if !path.exists() {
-            std::fs::create_dir_all(path.parent().unwrap())?;
+        if let Some(parent) = path.parent() {
+            if !parent.exists() {
+                std::fs::create_dir_all(parent)?;
+            }
         }
         let mut file = std::fs::File::create(filename)?;
 

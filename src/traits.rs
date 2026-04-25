@@ -52,6 +52,10 @@ pub trait State<T: Real>:
 {
     fn len(&self) -> usize;
 
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     fn get(&self, i: usize) -> T;
 
     fn set(&mut self, i: usize, value: T);
@@ -65,19 +69,13 @@ impl<T: Real> State<T> for T {
     }
 
     fn get(&self, i: usize) -> T {
-        if i == 0 {
-            *self
-        } else {
-            panic!("Index out of bounds")
-        }
+        assert!(i == 0, "Index out of bounds");
+        *self
     }
 
     fn set(&mut self, i: usize, value: T) {
-        if i == 0 {
-            *self = value;
-        } else {
-            panic!("Index out of bounds")
-        }
+        assert!(i == 0, "Index out of bounds");
+        *self = value;
     }
 
     fn zeros() -> Self {
@@ -115,26 +113,54 @@ where
     }
 
     fn get(&self, i: usize) -> T {
-        if i == 0 {
-            self.re
-        } else if i == 1 {
-            self.im
-        } else {
-            panic!("Index out of bounds")
-        }
+        assert!(i < 2, "Index out of bounds");
+        if i == 0 { self.re } else { self.im }
     }
 
     fn set(&mut self, i: usize, value: T) {
+        assert!(i < 2, "Index out of bounds");
         if i == 0 {
             self.re = value;
-        } else if i == 1 {
-            self.im = value;
         } else {
-            panic!("Index out of bounds")
+            self.im = value;
         }
     }
 
     fn zeros() -> Self {
         Complex::new(T::zero(), T::zero())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use num_complex::Complex;
+
+    #[test]
+    #[should_panic(expected = "Index out of bounds")]
+    fn test_state_f64_get_out_of_bounds() {
+        let state: f64 = 1.0;
+        let _ = state.get(1);
+    }
+
+    #[test]
+    #[should_panic(expected = "Index out of bounds")]
+    fn test_state_f64_set_out_of_bounds() {
+        let mut state: f64 = 1.0;
+        state.set(1, 2.0);
+    }
+
+    #[test]
+    #[should_panic(expected = "Index out of bounds")]
+    fn test_state_complex_get_out_of_bounds() {
+        let state = Complex::new(1.0, 2.0);
+        let _ = state.get(2);
+    }
+
+    #[test]
+    #[should_panic(expected = "Index out of bounds")]
+    fn test_state_complex_set_out_of_bounds() {
+        let mut state = Complex::new(1.0, 2.0);
+        state.set(2, 3.0);
     }
 }

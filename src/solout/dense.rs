@@ -118,7 +118,7 @@ impl DenseSolout {
     ///
     /// # Arguments
     /// * `n` - Number of points per interval, including endpoints. For example, n=5 will
-    ///         add 4 interpolated points between each solver step, plus the solver step itself.
+    ///   add 4 interpolated points between each solver step, plus the solver step itself.
     ///
     /// # Returns
     /// * A new `DenseSolout` instance

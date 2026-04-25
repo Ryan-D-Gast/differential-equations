@@ -4,7 +4,6 @@
 //! given a condition or event.
 
 use crate::{
-    control::ControlFlag,
     linalg::Matrix,
     traits::{Real, State},
 };
@@ -24,8 +23,6 @@ use crate::{
 ///
 /// Note that the event function is optional and can be left out when implementing
 /// in which case it will be set to return Continue by default.
-///
-#[allow(unused_variables)]
 pub trait DAE<T = f64, V = f64>
 where
     T: Real,
@@ -66,23 +63,6 @@ where
     /// * `m` - Mass matrix M. This matrix should be pre-sized by the caller to `dim x dim` where `dim = y.len()`.
     ///
     fn mass(&self, m: &mut Matrix<T>);
-
-    /// Event function to detect significant conditions during integration.
-    ///
-    /// Called after each step to detect events like threshold crossings,
-    /// singularities, or other mathematically/physically significant conditions.
-    /// Can be used to terminate integration when conditions occur.
-    ///
-    /// # Arguments
-    /// * `t`    - Current independent variable point.
-    /// * `y`    - Current dependent variable point.
-    ///
-    /// # Returns
-    /// * `ControlFlag` - Command to continue or stop solver.
-    ///
-    fn event(&self, t: T, y: &V) -> ControlFlag<T, V> {
-        ControlFlag::Continue
-    }
 
     /// Jacobian matrix j = ∂f/∂y
     ///

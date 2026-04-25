@@ -1,5 +1,4 @@
 //! Dormand-Prince Runge-Kutta methods for ODEs
-
 use crate::{
     error::Error,
     interpolate::Interpolation,
@@ -133,7 +132,10 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             for j in 0..self.stages {
                 erri += er[j] * self.k[j].get(i);
             }
-            err += (erri / sk).powi(2);
+            err += {
+                let val = erri / sk;
+                val * val
+            };
 
             // Optional secondary error term
             if let Some(bh) = &self.bh {
@@ -141,7 +143,10 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 for j in 0..self.stages {
                     erri -= bh[j] * self.k[j].get(i);
                 }
-                err2 += (erri / sk).powi(2);
+                err2 += {
+                    let val = erri / sk;
+                    val * val
+                };
             }
         }
         let mut deno = err + T::from_f64(0.01).unwrap() * err2;
@@ -166,16 +171,22 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
             // stiffness detection
             let n_stiff_threshold = 100;
-            if self.steps % n_stiff_threshold == 0 {
+            if self.steps.is_multiple_of(n_stiff_threshold) {
                 let mut stdnum = T::zero();
                 let mut stden = T::zero();
                 let sqr = yseg - self.k[S - 1];
                 for i in 0..sqr.len() {
-                    stdnum += sqr.get(i).powi(2);
+                    stdnum += {
+                        let val = sqr.get(i);
+                        val * val
+                    };
                 }
                 let sqr = self.dydt - ysti;
                 for i in 0..sqr.len() {
-                    stden += sqr.get(i).powi(2);
+                    stden += {
+                        let val = sqr.get(i);
+                        val * val
+                    };
                 }
 
                 if stden > T::zero() {

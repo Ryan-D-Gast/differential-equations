@@ -153,13 +153,15 @@ pub fn generate_state_impl(
             }
             
             fn get(&self, i: usize) -> T {
+                assert!(i < self.len(), "Index out of bounds");
                 #(#field_get_branches)*
-                panic!("Index out of bounds")
+                unreachable!()
             }
             
             fn set(&mut self, i: usize, value: T) {
+                assert!(i < self.len(), "Index out of bounds");
                 #(#field_set_branches)*
-                panic!("Index out of bounds");
+                unreachable!();
             }
             
             fn zeros() -> Self {

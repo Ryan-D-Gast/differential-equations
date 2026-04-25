@@ -13,7 +13,6 @@
 //! - [`crate::ivp::Ivp::dae`]: Set up an initial value problem with your system,
 //!   time span, and initial conditions
 //!
-
 mod dae;
 mod numerical_method;
 mod solve;

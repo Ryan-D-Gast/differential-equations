@@ -53,7 +53,7 @@ fn test_clone_and_copy() {
     }
 
     let original = CloneTest { x: 1.0, arr: [2.0, 3.0] };
-    let cloned = original.clone();
+    let cloned = original;
     let copied = original;
 
     assert_eq!(original, cloned);

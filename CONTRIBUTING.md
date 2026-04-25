@@ -2,20 +2,13 @@
 
 Thank you for your interest in contributing to the Differential Equations library! This project aims to build a comprehensive, high-performance suite of differential equation solvers for the Rust ecosystem. Your contributions are vital to help make this vision a reality.
 
-## Todo List
+## Finding Work
 
-If you're looking for ways to contribute, here are some areas where we could use help. In addition if you have ideas to create a pull request to add more.
+If you're looking for something to contribute, check the open GitHub issues first. The issue
+tracker is the source of truth for planned work and is kept more current than a static checklist
+in this document.
 
-### Add Differential Equation Types
-- [ ] Stochastic Delay Differential Equations (SDDEs)
-- Add more if you have ideas!
-
-### New Numerical Methods
-- [ ] Backward Differentiation Formula (BDF)
-
-### Numerical Method Equation support
-- Add support for DDEs for the following solver types
-   - [ ] Implicit Runge-Kutta
+If you want to propose something new, feel free to open an issue or submit a pull request.
 
 ## Coding Guidelines
 

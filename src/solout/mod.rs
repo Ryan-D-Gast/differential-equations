@@ -8,7 +8,6 @@
 //! * `CrossingSolout` for capturing points when crossing a specified value
 //! * `HyperplaneCrossingSolout` for capturing points when crossing a hyperplane
 //!
-
 use crate::{
     control::ControlFlag,
     interpolate::Interpolation,

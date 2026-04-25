@@ -17,3 +17,6 @@ TODO.md
 
 # Ignore python cache incase its created somewhere
 __pycache__/
+
+# Ignore local AI agent tooling artifacts
+.codex

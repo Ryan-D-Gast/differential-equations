@@ -1,5 +1,4 @@
 //! Dormand–Prince explicit Runge–Kutta methods for Delay Differential Equations (DDEs)
-
 use std::collections::VecDeque;
 
 use crate::{
@@ -30,7 +29,7 @@ impl<
         let mut evals = Evals::new();
 
         // DDE requires at least one lag
-        if L <= 0 {
+        if L == 0 {
             return Err(Error::NoLags);
         }
 
@@ -202,7 +201,10 @@ impl<
                 for j in 0..self.stages {
                     erri += er[j] * self.k[j].get(i);
                 }
-                err_val += (erri / sk).powi(2);
+                err_val += {
+                    let val = erri / sk;
+                    val * val
+                };
 
                 // Optional secondary error term
                 if let Some(bh) = &self.bh {
@@ -210,7 +212,10 @@ impl<
                     for j in 0..self.stages {
                         erri -= bh[j] * self.k[j].get(i);
                     }
-                    err2 += (erri / sk).powi(2);
+                    err2 += {
+                        let val = erri / sk;
+                        val * val
+                    };
                 }
             }
             let mut deno = err_val + T::from_f64(0.01).unwrap() * err2;
@@ -230,7 +235,10 @@ impl<
                             * y_next_est_prev.get(i_dim).abs().max(y_new.get(i_dim).abs());
                     if scale > T::zero() {
                         let diff_val = y_new.get(i_dim) - y_next_est_prev.get(i_dim);
-                        dde_iteration_error += (diff_val / scale).powi(2);
+                        dde_iteration_error += {
+                            let val = diff_val / scale;
+                            val * val
+                        };
                     }
                 }
                 if n_dim > 0 {
@@ -288,7 +296,7 @@ impl<
             evals.function += 1;
             // Stiffness detection (every 100 steps)
             let n_stiff_threshold = 100;
-            if self.steps % n_stiff_threshold == 0 {
+            if self.steps.is_multiple_of(n_stiff_threshold) {
                 let mut stdnum = T::zero();
                 let mut stden = T::zero();
                 let sqr = {
@@ -299,11 +307,17 @@ impl<
                     yseg - self.k[S - 1]
                 };
                 for i in 0..sqr.len() {
-                    stdnum += sqr.get(i).powi(2);
+                    stdnum += {
+                        let val = sqr.get(i);
+                        val * val
+                    };
                 }
                 let sqr = self.dydt - y_last_stage;
                 for i in 0..sqr.len() {
-                    stden += sqr.get(i).powi(2);
+                    stden += {
+                        let val = sqr.get(i);
+                        val * val
+                    };
                 }
 
                 if stden > T::zero() {
