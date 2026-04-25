@@ -73,12 +73,14 @@ impl InitialStepSize<Ordinary> {
         let mut dny = T::zero();
 
         let n_dim = y0.len();
+        let mut sk_vec = Vec::with_capacity(n_dim);
 
         // Loop through all elements to compute weighted norms
         for n in 0..n_dim {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
-            dnf += { let val = f0.get(n) / sk; val * val };
-            dny += { let val = y0.get(n) / sk; val * val };
+            sk_vec.push(sk);
+            dnf += (f0.get(n) / sk).powi(2);
+            dny += (y0.get(n) / sk).powi(2);
         }
 
         // Initial step size guess
@@ -102,8 +104,8 @@ impl InitialStepSize<Ordinary> {
         let mut der2 = T::zero();
 
         for n in 0..n_dim {
-            let sk = atol[n] + rtol[n] * y0.get(n).abs();
-            der2 += { let val = (f1.get(n) - f0.get(n)) / sk; val * val };
+            let sk = sk_vec[n];
+            der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
         }
         der2 = der2.sqrt() / h.abs();
 
@@ -183,13 +185,15 @@ impl InitialStepSize<Delay> {
 
         let mut dnf = T::zero();
         let mut dny = T::zero();
+        let mut sk_vec = Vec::with_capacity(n_dim);
         for n in 0..n_dim {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            sk_vec.push(sk);
             if sk <= T::zero() {
                 return h_min.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init;
             }
-            dnf += { let val = f0.get(n) / sk; val * val };
-            dny += { let val = y0.get(n) / sk; val * val };
+            dnf += (f0.get(n) / sk).powi(2);
+            dny += (y0.get(n) / sk).powi(2);
         }
         if n_dim > 0 {
             dnf = (dnf / T::from_usize(n_dim).unwrap()).sqrt();
@@ -270,12 +274,12 @@ impl InitialStepSize<Delay> {
 
         let mut der2 = T::zero();
         for n in 0..n_dim {
-            let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            let sk = sk_vec[n];
             if sk <= T::zero() {
                 der2 = T::infinity();
                 break;
             }
-            der2 += { let val = (f1.get(n) - f0.get(n)) / sk; val * val };
+            der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
         }
         if n_dim > 0 {
             der2 = (der2 / T::from_usize(n_dim).unwrap()).sqrt() / h.abs();
@@ -371,11 +375,13 @@ impl InitialStepSize<Algebraic> {
         // Weighted norms (derivative norm only on differential rows)
         let mut dnf = T::zero();
         let mut dny = T::zero();
+        let mut sk_vec = Vec::with_capacity(dim);
         for n in 0..dim {
             let sk = atol[n] + rtol[n] * y0.get(n).abs();
-            dny += { let val = y0.get(n) / sk; val * val };
+            sk_vec.push(sk);
+            dny += (y0.get(n) / sk).powi(2);
             if is_diff[n] {
-                dnf += { let val = f0.get(n) / sk; val * val };
+                dnf += (f0.get(n) / sk).powi(2);
             }
         }
 
@@ -411,8 +417,8 @@ impl InitialStepSize<Algebraic> {
             if !is_diff[n] {
                 continue;
             }
-            let sk = atol[n] + rtol[n] * y0.get(n).abs();
-            der2 += { let val = (f1.get(n) - f0.get(n)) / sk; val * val };
+            let sk = sk_vec[n];
+            der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
         }
         der2 = der2.sqrt() / h.abs().max(T::default_epsilon());
 
