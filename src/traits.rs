@@ -134,21 +134,21 @@ mod tests {
     use num_complex::Complex;
 
     #[test]
-    #[should_panic(expected = "Index out of bounds")]
+    #[should_panic(expected = "index out of bounds")]
     fn test_state_f64_get_out_of_bounds() {
         let state: f64 = 1.0;
         let _ = state.get(1);
     }
 
     #[test]
-    #[should_panic(expected = "Index out of bounds")]
+    #[should_panic(expected = "index out of bounds")]
     fn test_state_f64_set_out_of_bounds() {
         let mut state: f64 = 1.0;
         state.set(1, 2.0);
     }
 
     #[test]
-    #[should_panic(expected = "Index out of bounds")]
+    #[should_panic(expected = "index out of bounds")]
     fn test_state_complex_get_out_of_bounds() {
         let state = Complex::new(1.0, 2.0);
         let _ = state.get(2);

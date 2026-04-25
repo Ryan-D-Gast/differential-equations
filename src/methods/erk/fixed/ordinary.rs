@@ -178,16 +178,12 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
             let mut cont = [T::zero(); I];
             // Compute the interpolation coefficients using Horner's method
             for i in 0..self.dense_stages {
-                // Start with the highest-order term
-                cont[i] = bi[i][self.order - 1];
-
-                // Apply Horner's method
+                let coeffs = &bi[i];
+                let mut c = coeffs[self.order - 1];
                 for j in (0..self.order - 1).rev() {
-                    cont[i] = cont[i] * s + bi[i][j];
+                    c = c * s + coeffs[j];
                 }
-
-                // Multiply by s
-                cont[i] *= s;
+                cont[i] = c * s;
             }
 
             // Compute the interpolated value

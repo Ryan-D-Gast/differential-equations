@@ -176,7 +176,10 @@ impl<
                             .max(y_next.get(i_dim).abs());
                     if scale > T::zero() {
                         let diff_val = y_next.get(i_dim) - y_prev_candidate_iter.get(i_dim);
-                        dde_iteration_error += { let val = diff_val / scale; val * val };
+                        dde_iteration_error += {
+                            let val = diff_val / scale;
+                            val * val
+                        };
                     }
                 }
                 if n_dim > 0 {
@@ -428,11 +431,12 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
 
             let mut cont = [T::zero(); I];
             for i in 0..self.dense_stages {
-                cont[i] = bi[i][self.order - 1];
+                let coeffs = &bi[i];
+                let mut c = coeffs[self.order - 1];
                 for j in (0..self.order - 1).rev() {
-                    cont[i] = cont[i] * s + bi[i][j];
+                    c = c * s + coeffs[j];
                 }
-                cont[i] *= s;
+                cont[i] = c * s;
             }
 
             let mut y_interp = self.y_prev;

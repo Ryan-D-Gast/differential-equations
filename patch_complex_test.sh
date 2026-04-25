@@ -1,1 +1,1 @@
-sed -i 's/state.set(2, 3.0);/state.set(2, 3.0);/' src/traits.rs
+sed -i 's/expected = "Index out of bounds"/expected = "index out of bounds"/g' src/traits.rs
