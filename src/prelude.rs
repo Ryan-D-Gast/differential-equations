@@ -6,7 +6,7 @@
 //! ## What is re-exported?
 //!
 //! - All major solver types for ODE, DDE, and SDE problems
-//! - Problem and trait types for each equation class
+//! - The IVP builder and equation traits for each equation class
 //! - Output control, event, and solution types
 //! - Common utility types (e.g., error, status, interpolation)
 //! - Key nalgebra types for vector/matrix work
@@ -43,7 +43,10 @@ pub use crate::methods::{
     AdamsPredictorCorrector, DiagonallyImplicitRungeKutta, ExplicitRungeKutta, ImplicitRungeKutta,
 };
 
-// Problem Types & Traits
+// Initial Value Problems
+pub use crate::ivp::Ivp;
+
+// Equation Traits
 pub use crate::dae::DAE;
 pub use crate::dde::DDE;
 pub use crate::ode::ODE;
@@ -60,5 +63,4 @@ pub use crate::stats::Evals;
 pub use crate::status::Status;
 
 // Linear Algebra
-pub use crate::ivp::Ivp;
 pub use crate::linalg::Matrix;

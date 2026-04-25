@@ -14,18 +14,10 @@
 //!   time span, and initial conditions
 //!
 
-// Definitions for solving DAEs through the low-level solve_dae function.
-
-// Solve DAE function
-mod solve;
-pub use solve::solve_dae;
-
-// DAE Trait for Differential Algebraic Equations
 mod dae;
-pub use dae::{
-    DAE, // DAE Trait for Differential Algebraic Equations
-};
-
-// AlgebraicNumericalMethod Traits for DAE NumericalMethods.
 mod numerical_method;
+mod solve;
+
+pub use dae::DAE;
 pub use numerical_method::AlgebraicNumericalMethod;
+pub use solve::solve_dae;
