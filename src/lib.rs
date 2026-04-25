@@ -105,3 +105,4 @@ pub mod utils;
 pub mod derive {
     pub use differential_equations_derive::State;
 }
+pub mod adjoint;
