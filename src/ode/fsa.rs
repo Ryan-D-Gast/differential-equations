@@ -34,8 +34,10 @@ where
     F: ParametrizedODE<T, YBase>,
 {
     /// Create a new FSA problem wrapper for the given parametrized ODE.
-    /// `state_dim` must match the length of the base state YBase.
-    pub fn new(equation: &'a F, state_dim: usize) -> Self {
+    /// `y0_base` is used to prototype the state caches, which prevents errors
+    /// with dynamically sized types needing valid allocation lengths.
+    pub fn new(equation: &'a F, y0_base: YBase) -> Self {
+        let state_dim = y0_base.len();
         let num_params = equation.num_params();
         Self {
             equation,
@@ -43,8 +45,8 @@ where
             num_params,
             jy_cache: RefCell::new(Matrix::zeros(state_dim, state_dim)),
             jp_cache: RefCell::new(Matrix::zeros(state_dim, num_params)),
-            f_base_cache: RefCell::new(YBase::zeros()),
-            y_base_cache: RefCell::new(YBase::zeros()),
+            f_base_cache: RefCell::new(y0_base),
+            y_base_cache: RefCell::new(y0_base),
             _marker: PhantomData,
         }
     }
@@ -151,7 +153,8 @@ mod tests {
     #[test]
     fn test_forward_sensitivity_problem() {
         let system = ExponentialParametrized { k: 2.0 };
-        let fsa_problem = ForwardSensitivityProblem::new(&system, 1);
+        let y0_base = vector![1.0];
+        let fsa_problem = ForwardSensitivityProblem::new(&system, y0_base);
 
         let t0 = 0.0;
         let tf = 1.0;
