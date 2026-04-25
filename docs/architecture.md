@@ -4,13 +4,13 @@ This library's core design philosophy is **trait-driven design**. Components are
 
 The library's components are organized into four main categories:
 
-- **Solver Controller**: This central component orchestrates the solving process. It utilizes a chosen numerical method to step through the problem, tracks statistics, manages events, and invokes the user-provided `solout` (solution output) function between steps. For Ordinary Differential Equations (ODEs), the `solve_ode` function serves this role. To manage the complexity of generics, it's often abstracted via structs like `ODEProblem`, which simplifies solving ODEs by implicitly assigning generic types.
+- **Solver Controller**: This central component orchestrates the solving process. It utilizes a chosen numerical method to step through the problem, tracks statistics, manages events, and invokes the user-provided `solout` (solution output) function between steps. For Ordinary Differential Equations (ODEs), the `solve_ode` function serves this role. To manage the complexity of generics, it's often abstracted via structs like `ODE IVP builder`, which simplifies solving ODEs by implicitly assigning generic types.
 
 - **Numerical Methods**: These components define the initialization and step functions for a given solver. Each numerical method is encapsulated in a struct that holds its state, enabling the solver controller to manage various differential solvers. Importantly, all numerical methods also implement an interpolation trait. This separation allows `solout` functions to access solver state for interpolation purposes in a controlled manner.
 
 - **Differential Equation Definition**: This component represents the differential equation to be solved, defined by a user-implemented trait. Using a struct to define the differential equation allows for easy duplication of constants with different initial conditions. Users can choose the floating-point precision (`f32` or `f64`) and state representation (e.g., `f32`, `f64`, `nalgebra::SVector`, or custom structs with generic `T` fields via the derive `State` macro). This flexibility allows users to tailor the library to their specific needs. The respective differential equation implementor traits (e.g., `ODE`, `DDE`) also support optional event and jacobian functions. Implementing these can define termination events or enhance the performance of implicit solvers.
 
-- **Solution Output (`solout`)**: The `Solout` trait defines how solution points are handled and can be implemented by the user. More commonly, pre-built implementations are available and integrated into solver abstractions like `ODEProblem` and `DDEProblem`. Common implementations include:
+- **Solution Output (`solout`)**: The `Solout` trait defines how solution points are handled and can be implemented by the user. More commonly, pre-built implementations are available and integrated into solver abstractions like `ODE IVP builder` and `DDE IVP builder`. Common implementations include:
     * `even`: Output at evenly spaced time points.
     * `dense`: Output at every solver step.
     * `crossing`: Output when a specific event function crosses zero.

@@ -14,8 +14,8 @@
 //! It has applications in physics, finance (for modeling interest rates), and
 //! various other fields.
 
-use differential_equations::prelude::*;
 use differential_equations::ivp::Ivp;
+use differential_equations::prelude::*;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
 
@@ -68,15 +68,14 @@ fn main() {
 
     // Create the Ornstein-Uhlenbeck SDE problem
     let mut sde = OrnsteinUhlenbeck::new(theta, mu, sigma, seed);
-    let mut problem = Ivp::sde(&mut sde, t0, tf, y0);
 
     // --- Solve the SDE ---
     let dt = 0.01;
-    let mut solver = ExplicitRungeKutta::rk4(dt);
     let points_of_interest = [2.0, 5.0, 8.0];
-    let solution = problem
+    let solution = Ivp::sde(&mut sde, t0, tf, y0)
         .t_eval(points_of_interest)
-        .method(solver).solve()
+        .method(ExplicitRungeKutta::rk4(dt))
+        .solve()
         .unwrap();
 
     // --- Print the results ---

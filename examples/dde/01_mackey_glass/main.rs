@@ -14,8 +14,8 @@
 //!
 //! This equation was originally proposed as a model for the production of blood cells.
 
-use differential_equations::prelude::*;
 use differential_equations::ivp::Ivp;
+use differential_equations::prelude::*;
 use quill::prelude::*;
 
 struct MackeyGlass {
@@ -38,9 +38,6 @@ impl DDE<1> for MackeyGlass {
 }
 
 fn main() {
-    // --- Solver Configuration ---
-    let mut solver = ExplicitRungeKutta::rkv878e().max_delay(20.0); // Discard history older than 20.0 seconds to save memory
-
     // --- Problem Definition ---
     let dde = MackeyGlass {
         beta: 0.2,
@@ -58,12 +55,13 @@ fn main() {
     // Often a constant history is used matching the initial condition
     let phi = |_t: f64| -> f64 { y0 };
 
-    // Define the DDE problem
-    let problem = Ivp::dde(&dde, t0, tf, y0, phi);
-
     // --- Solve the Problem ---
     println!("Solving Mackey-Glass equation from t={} to t={}...", t0, tf);
-    match problem.even(2.0).method(solver).solve() {
+    match Ivp::dde(&dde, t0, tf, y0, phi)
+        .even(2.0)
+        .method(ExplicitRungeKutta::rkv878e().max_delay(20.0))
+        .solve()
+    {
         Ok(solution) => {
             // Print the solution
             println!("Solution:");

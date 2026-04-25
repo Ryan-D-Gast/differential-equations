@@ -17,8 +17,8 @@
 //! - Setting custom tolerances for high accuracy
 //! - Accessing solution statistics like step counts and evaluations
 
-use differential_equations::prelude::*;
 use differential_equations::ivp::Ivp;
+use differential_equations::prelude::*;
 use quill::prelude::*;
 
 // Differential equations are defined using structs that implement the ODE trait
@@ -34,22 +34,17 @@ impl ODE for ExponentialGrowth {
 }
 
 fn main() {
-    // Numerical methods have default settings, which can be customized via chaining methods
-    // Here we use the DOP853 method, which is a high-order Runge-Kutta method
-    let mut method = ExplicitRungeKutta::dop853()
-        // Set the relative and absolute tolerances
-        .rtol(1e-12)
-        .atol(1e-12);
-
     // Define the ODE problem with initial conditions, this is known as a "initial value problem"
     let y0 = 1.0;
     let t0 = 0.0;
     let tf = 10.0;
     let ode = ExponentialGrowth { k: 1.0 };
-    let exponential_growth_problem = Ivp::ode(&ode, t0, tf, y0);
 
-    // ODE Problems are solved by chaining the solve method with the numerical method
-    let solution = match exponential_growth_problem.method(method).solve() {
+    let solution = match Ivp::ode(&ode, t0, tf, y0)
+        // DOP853 is a high-order Runge-Kutta method with configurable tolerances.
+        .method(ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12))
+        .solve()
+    {
         Ok(solution) => {
             // The solution struct contains the output (t,y) points, statistics, and other metadata
             solution

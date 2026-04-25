@@ -21,8 +21,8 @@
 //! - Comparing numerical solution with analytical matrix exponential
 //! - Understanding matrix evolution in continuous time
 
-use differential_equations::prelude::*;
 use differential_equations::ivp::Ivp;
+use differential_equations::prelude::*;
 use nalgebra::SMatrix;
 
 struct MatrixEvolutionODE {
@@ -44,9 +44,6 @@ impl ODE<f64, SMatrix<f64, 2, 2>> for MatrixEvolutionODE {
 }
 
 fn main() {
-    // Create a method with reasonable precision
-    let method = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-10);
-
     // --- Problem Configuration ---
 
     // System matrix A - represents a rotation with decay
@@ -81,11 +78,11 @@ fn main() {
     let tf = 3.0; // Simulate for 3 seconds
 
     // --- Solve the ODE ---
-    let matrix_problem = Ivp::ode(&matrix_ode, t0, tf, y0);
-    let result = matrix_problem
+    let result = Ivp::ode(&matrix_ode, t0, tf, y0)
         // Dense output means for every step, 5 evenly spaced points will be outputted
         .dense(5)
-        .method(method).solve();
+        .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-10))
+        .solve();
     match result {
         Ok(solution) => {
             println!("Matrix evolution solution Y(t):");

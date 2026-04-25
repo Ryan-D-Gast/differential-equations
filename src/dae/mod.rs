@@ -1,7 +1,7 @@
 //! # Differential Algebraic Equations (DAE) Module
 //!
 //! This module provides comprehensive functionality for solving Differential Algebraic Equations (DAEs),
-//! with special focus on Initial Value Problems (DAEProblems).
+//! with special focus on Initial Value Problems.
 //!
 //! ## Example
 //!
@@ -10,10 +10,11 @@
 //! ## Core Components
 //!
 //! - [`DAE`]: Define your differential algebraic equation system by implementing this trait
-//! - [`DAEProblem`]: Set up an initial value problem with your system, time span, and initial conditions
+//! - [`crate::ivp::Ivp::dae`]: Set up an initial value problem with your system,
+//!   time span, and initial conditions
 //!
 
-// Definitions & Constructors for users to ergonomically solve a DAEProblem via the solve_dae function.
+// Definitions for solving DAEs through the low-level solve_dae function.
 
 // Solve DAE function
 mod solve;

@@ -14,8 +14,8 @@
 //! J = [[0, 1],
 //!      [(-2*y0*y1 - 1)/mu,  (1 - y0^2)/mu]]
 
-use differential_equations::prelude::*;
 use differential_equations::ivp::Ivp;
+use differential_equations::prelude::*;
 use nalgebra::Vector2;
 
 struct VanderPol {
@@ -49,15 +49,18 @@ fn main() {
     let tf = 2.0;
     let mu = 1.0e-6; // small parameter -> stiff
     let model = VanderPol::new(mu);
-    let problem = Ivp::ode(&model, t0, tf, y0);
 
     // --- Solve the ODE ---
-    let mut method = ImplicitRungeKutta::radau5()
-        .rtol(1.0e-4)
-        .atol(1.0e-4)
-        .h0(1.0e-6);
-
-    match problem.even(0.2).method(method).solve() {
+    match Ivp::ode(&model, t0, tf, y0)
+        .even(0.2)
+        .method(
+            ImplicitRungeKutta::radau5()
+                .rtol(1.0e-4)
+                .atol(1.0e-4)
+                .h0(1.0e-6),
+        )
+        .solve()
+    {
         Ok(solution) => {
             println!("Solution successfully obtained.");
             println!("Status: {:?}", solution.status);

@@ -11,8 +11,8 @@
 //! moves randomly due to collisions with molecules. It has many applications
 //! in science, finance, and mathematics.
 
-use differential_equations::prelude::*;
 use differential_equations::ivp::Ivp;
+use differential_equations::prelude::*;
 use quill::prelude::*;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
@@ -62,9 +62,10 @@ fn main() {
 
     // --- Solve the SDE ---
     let dt = 0.01;
-    let mut solver = ExplicitRungeKutta::euler(dt);
-    let mut problem = Ivp::sde(&mut sde, t0, tf, y0);
-    let solution = problem.method(solver).solve().unwrap();
+    let solution = Ivp::sde(&mut sde, t0, tf, y0)
+        .method(ExplicitRungeKutta::euler(dt))
+        .solve()
+        .unwrap();
 
     println!("Simulating Brownian motion with σ = {}", sigma);
     println!("Time interval: [{}, {}], Step size: {}", t0, tf, dt);

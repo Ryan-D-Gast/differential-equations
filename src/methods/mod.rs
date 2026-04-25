@@ -47,7 +47,9 @@ pub trait ToleranceConfig<T: Real> {
     fn atol<V: Into<Tolerance<T>>>(self, atol: V) -> Self;
 }
 
-impl<E, F, T: Real, Y: crate::traits::State<T>, const O: usize, const S: usize, const I: usize> ToleranceConfig<T> for crate::methods::ExplicitRungeKutta<E, F, T, Y, O, S, I> {
+impl<E, F, T: Real, Y: crate::traits::State<T>, const O: usize, const S: usize, const I: usize>
+    ToleranceConfig<T> for crate::methods::ExplicitRungeKutta<E, F, T, Y, O, S, I>
+{
     fn rtol<V: Into<Tolerance<T>>>(self, rtol: V) -> Self {
         self.rtol(rtol)
     }
@@ -56,7 +58,9 @@ impl<E, F, T: Real, Y: crate::traits::State<T>, const O: usize, const S: usize, 
     }
 }
 
-impl<E, F, T: Real, Y: crate::traits::State<T>, const O: usize, const S: usize, const I: usize> ToleranceConfig<T> for crate::methods::ImplicitRungeKutta<E, F, T, Y, O, S, I> {
+impl<E, F, T: Real, Y: crate::traits::State<T>, const O: usize, const S: usize, const I: usize>
+    ToleranceConfig<T> for crate::methods::ImplicitRungeKutta<E, F, T, Y, O, S, I>
+{
     fn rtol<V: Into<Tolerance<T>>>(self, rtol: V) -> Self {
         self.rtol(rtol)
     }
@@ -65,7 +69,9 @@ impl<E, F, T: Real, Y: crate::traits::State<T>, const O: usize, const S: usize, 
     }
 }
 
-impl<E, F, T: Real, Y: crate::traits::State<T>, const O: usize, const S: usize, const I: usize> ToleranceConfig<T> for crate::methods::DiagonallyImplicitRungeKutta<E, F, T, Y, O, S, I> {
+impl<E, F, T: Real, Y: crate::traits::State<T>, const O: usize, const S: usize, const I: usize>
+    ToleranceConfig<T> for crate::methods::DiagonallyImplicitRungeKutta<E, F, T, Y, O, S, I>
+{
     fn rtol<V: Into<Tolerance<T>>>(self, rtol: V) -> Self {
         self.rtol(rtol)
     }

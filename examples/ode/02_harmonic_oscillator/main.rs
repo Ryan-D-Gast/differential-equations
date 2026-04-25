@@ -19,27 +19,29 @@
 //! - Using the nalgebra library for vector state representation
 //! - Compact solution approach with minimal code
 
-use differential_equations::prelude::*;
 use differential_equations::ivp::Ivp;
+use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 use quill::prelude::*;
 
 struct HarmonicOscillator {
-    k: f32,
+    k: f64,
 }
 
-impl ODE<f32, SVector<f32, 2>> for HarmonicOscillator {
-    fn diff(&self, _t: f32, y: &SVector<f32, 2>, dydt: &mut SVector<f32, 2>) {
+impl ODE<f64, SVector<f64, 2>> for HarmonicOscillator {
+    fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
         dydt[0] = y[1];
         dydt[1] = -self.k * y[0];
     }
 }
 
 fn main() {
-    // Note how unlike 01_exponential_growth/main.rs, no intermediate variables are used and the ODEProblem is setup and solved in one step.
+    // Note how unlike 01_exponential_growth/main.rs, no intermediate variables are used
+    // and the IVP is setup and solved in one step.
     let solution: Solution<f64, _> =
         match Ivp::ode(&HarmonicOscillator { k: 1.0 }, 0.0, 10.0, vector![1.0, 0.0])
-            .method(ExplicitRungeKutta::rk4(0.01_f64)).solve()
+            .method(ExplicitRungeKutta::rk4(0.01_f64))
+            .solve()
         {
             Ok(solution) => solution,
             Err(e) => panic!("Error: {:?}", e),
@@ -57,22 +59,12 @@ fn main() {
             Series::builder()
                 .name("Position (x)")
                 .color("Blue")
-                .data(
-                    solution
-                        .iter()
-                        .map(|(t, y)| (*t as f64, y[0] as f64))
-                        .collect::<Vec<_>>(),
-                )
+                .data(solution.iter().map(|(t, y)| (*t, y[0])).collect::<Vec<_>>())
                 .build(),
             Series::builder()
                 .name("Velocity (v)")
                 .color("Red")
-                .data(
-                    solution
-                        .iter()
-                        .map(|(t, y)| (*t as f64, y[1] as f64))
-                        .collect::<Vec<_>>(),
-                )
+                .data(solution.iter().map(|(t, y)| (*t, y[1])).collect::<Vec<_>>())
                 .build(),
         ])
         .build()

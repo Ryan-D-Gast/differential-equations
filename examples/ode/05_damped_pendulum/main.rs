@@ -21,8 +21,8 @@
 //! - Evaluation at specific time points (t_eval)
 //! - Status checking with simulation results
 
-use differential_equations::prelude::*;
 use differential_equations::ivp::Ivp;
+use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 
 struct DampedPendulumModel {
@@ -69,15 +69,14 @@ fn main() {
     let b = 0.2; // Damping coefficient (kg/s)
     let m = 1.0; // Mass of the pendulum bob (kg)
     let ode = DampedPendulumModel { g, l, b, m };
-    let pendulum_problem = Ivp::ode(&ode, t0, tf, y0);
 
     // --- Numerically Solve the ODE ---
-    let mut method = ExplicitRungeKutta::rkf45();
     let t_out = [0.0, 1.0, 3.0, 4.5, 6.9, 10.0];
-    match pendulum_problem
+    match Ivp::ode(&ode, t0, tf, y0)
         .t_eval(t_out)
         .event(&ode)
-        .method(method).solve()
+        .method(ExplicitRungeKutta::rkf45())
+        .solve()
     {
         Ok(solution) => {
             // Check if the solver stopped early due to the event condition

@@ -47,7 +47,7 @@ macro_rules! test_solver_error {
             let y0 = $y0;
 
             let problem = Ivp::ode(&system, t0, tf, y0);
-            let mut solver = $solver;
+            let solver = $solver;
 
             // Solve the system
             let results = problem.event(&system).method(solver).solve();

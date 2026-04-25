@@ -43,14 +43,17 @@ use super::*;
 /// let t0 = 0.0;
 /// let tf = 10.0;
 /// let y0 = vector![1.0, 0.0]; // Start with positive position, zero velocity
-/// let mut solver = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8);
+/// let solver = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8);
 ///
 /// // Detect zero-crossings of the position component (index 0)
-/// let mut crossing_detector = CrossingSolout::new(0, 0.0);
+/// let crossing_detector = CrossingSolout::new(0, 0.0);
 ///
 /// // Solve and get only the crossing points
-/// let problem = ODEProblem::new(&system, t0, tf, y0);
-/// let solution = problem.solout(&mut crossing_detector).solve(&mut solver).unwrap();
+/// let solution = Ivp::ode(&system, t0, tf, y0)
+///     .solout(crossing_detector)
+///     .method(solver)
+///     .solve()
+///     .unwrap();
 ///
 /// // solution now contains only the points where position crosses zero
 /// println!("Zero crossings occurred at times: {:?}", solution.t);

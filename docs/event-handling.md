@@ -74,13 +74,14 @@ All problem types (ODE, SDE, DDE, DAE) support the new event system through the 
 
 ```rust
 let event_detector = PopulationThreshold::new(9.0);
-let problem = ODEProblem::new(system, t0, tf, y0);
+let problem = Ivp::ode(&system, t0, tf, y0);
 
 // Add event detection to the problem
 let solution = problem
     .even(1.0)        // Output every 1.0 time units
     .event(&event_detector)  // Add event detection
-    .solve(&mut solver)
+    .method(solver)
+    .solve()
     .unwrap();
 
 // Check if solver terminated due to event
@@ -95,16 +96,16 @@ The same pattern works for all problem types:
 
 ```rust
 // SDE example
-let sde_problem = SDEProblem::new(system, t0, tf, y0);
-let solution = sde_problem.event(&event_detector).solve(&mut solver).unwrap();
+let sde_problem = Ivp::sde(&mut system, t0, tf, y0);
+let solution = sde_problem.event(&event_detector).method(solver).solve().unwrap();
 
 // DDE example
-let dde_problem = DDEProblem::new(system, t0, tf, y0, history_fn);
-let solution = dde_problem.event(&event_detector).solve(&mut solver).unwrap();
+let dde_problem = Ivp::dde(&system, t0, tf, y0, history_fn);
+let solution = dde_problem.event(&event_detector).method(solver).solve().unwrap();
 
 // DAE example
-let dae_problem = DAEProblem::new(system, t0, tf, y0);
-let solution = dae_problem.event(&event_detector).solve(&mut solver).unwrap();
+let dae_problem = Ivp::dae(&system, t0, tf, y0);
+let solution = dae_problem.event(&event_detector).method(solver).solve().unwrap();
 ```
 
 ## Event Detection Algorithm
@@ -182,7 +183,8 @@ The event system is designed to compose with other output methods:
 let solution = problem
     .dense(10)        // Dense output with 10 points per step
     .event(&detector) // Plus event detection
-    .solve(&mut solver)
+    .method(solver)
+    .solve()
     .unwrap();
 ```
 
@@ -243,12 +245,12 @@ use differential_equations::solout::{EventSolout, EventWrappedSolout};
 
 // Direct EventSolout usage
 let mut event_solout = EventSolout::new(&event_detector, t0, tf);
-let solution = problem.solout(&mut event_solout).solve(&mut solver).unwrap();
+let solution = problem.solout(event_solout).method(solver).solve().unwrap();
 
 // EventWrappedSolout for composition
 let base_solout = EvenSolout::new(1.0);
 let mut wrapped = EventWrappedSolout::new(base_solout, &event_detector, t0, tf);
-let solution = problem.solout(&mut wrapped).solve(&mut solver).unwrap();
+let solution = problem.solout(wrapped).method(solver).solve().unwrap();
 ```
 
 ## Examples
@@ -282,17 +284,18 @@ impl Event for LogisticGrowth {
 }
 
 fn main() {
-    let mut method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
+    let method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
     let y0 = 1.0;
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
-    let logistic_growth_problem = ODEProblem::new(&ode, t0, tf, y0);
+    let logistic_growth_problem = Ivp::ode(&ode, t0, tf, y0);
 
     match logistic_growth_problem
         .even(1.0)
         .event(&ode)
-        .solve(&mut method)
+        .method(method)
+        .solve()
     {
         Ok(solution) => {
             if let Status::Interrupted = solution.status {
@@ -347,12 +350,13 @@ fn main() {
     let event_detector = OscillatorEvent { amplitude_threshold: 0.8 };
     
     let y0 = vector![1.0, 0.0]; // Start at maximum displacement
-    let problem = ODEProblem::new(oscillator, 0.0, 20.0, y0);
+    let problem = Ivp::ode(&oscillator, 0.0, 20.0, y0);
     
     let solution = problem
         .dense(5)
         .event(&event_detector)
-        .solve(&mut ExplicitRungeKutta::dop853())
+        .method(ExplicitRungeKutta::dop853())
+        .solve()
         .unwrap();
     
     println!("Detected {} amplitude crossings", 

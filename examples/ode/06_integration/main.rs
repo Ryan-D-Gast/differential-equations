@@ -16,8 +16,8 @@
 //! - Different output options: dense, even, and t-eval
 //! - Error assessment in numerical integration
 
-use differential_equations::prelude::*;
 use differential_equations::ivp::Ivp;
+use differential_equations::prelude::*;
 
 #[derive(Clone)]
 struct IntegrationODE;
@@ -34,11 +34,12 @@ fn main() {
     let t0 = 0.0;
     let tf: f64 = 5.0;
     let y0 = 0.0;
-    let problem = Ivp::ode(&ode, t0, tf, y0);
 
     // --- Solve the ODE ---
-    let mut method = ExplicitRungeKutta::rkf45();
-    let solution = problem.clone().method(method).solve().unwrap();
+    let solution = Ivp::ode(&ode, t0, tf, y0)
+        .method(ExplicitRungeKutta::rkf45())
+        .solve()
+        .unwrap();
 
     // Print the results.
     println!("Numerical Integration Example:");
@@ -62,9 +63,11 @@ fn main() {
     // Example with dense output
     println!("-----------------------------");
     println!("Dense Output Example:");
-    let ivp_dense = problem.clone().dense(2); // 5 interpolation points between each step
-    let mut solver_dense = ExplicitRungeKutta::rkf45();
-    let solution_dense = ivp_dense.method(solver_dense).solve().unwrap();
+    let solution_dense = Ivp::ode(&ode, t0, tf, y0)
+        .dense(2) // 5 interpolation points between each step
+        .method(ExplicitRungeKutta::rkf45())
+        .solve()
+        .unwrap();
 
     println!("t\t\ty");
     for (t, y) in solution_dense.iter() {
@@ -74,9 +77,11 @@ fn main() {
     // Example with even t-out
     println!("-----------------------------");
     println!("Even t-out Example:");
-    let ivp_even = problem.clone().even(1.0); // t-out at interval dt: 1.0
-    let mut solver_even = ExplicitRungeKutta::rkf45();
-    let solution_even = ivp_even.method(solver_even).solve().unwrap();
+    let solution_even = Ivp::ode(&ode, t0, tf, y0)
+        .even(1.0) // t-out at interval dt: 1.0
+        .method(ExplicitRungeKutta::rkf45())
+        .solve()
+        .unwrap();
 
     println!("t\t\ty");
     for (t, y) in solution_even.iter() {
@@ -87,9 +92,11 @@ fn main() {
     println!("-----------------------------");
     println!("t-out Points Example:");
     let t_out = vec![0.0, 2.0, 5.0];
-    let ivp_t_out = problem.t_eval(t_out);
-    let mut solver_t_out = ExplicitRungeKutta::rkf45();
-    let solution_t_out = ivp_t_out.method(solver_t_out).solve().unwrap();
+    let solution_t_out = Ivp::ode(&ode, t0, tf, y0)
+        .t_eval(t_out)
+        .method(ExplicitRungeKutta::rkf45())
+        .solve()
+        .unwrap();
 
     println!("t\t\ty");
     for (t, y) in solution_t_out.iter() {

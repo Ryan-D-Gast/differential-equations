@@ -22,8 +22,8 @@
 //! - Setting up even-interval output points
 //! - Working with solution status information
 
-use differential_equations::prelude::*;
 use differential_equations::ivp::Ivp;
+use differential_equations::prelude::*;
 use quill::prelude::*;
 
 /// SIR (Susceptible, Infected, Recovered) Model
@@ -75,9 +75,6 @@ impl SIRState<f64> {
 }
 
 fn main() {
-    // v4 refers to an adaptive step size 4th order Adams-Bashforth-Moulton method.
-    let method = AdamsPredictorCorrector::v4().tol(1e-6);
-
     // Define the SIR model parameters and initial conditions
     let y0 = SIRState {
         susceptible: 990.0,
@@ -94,10 +91,15 @@ fn main() {
         gamma,
         population,
     };
-    let sir_problem = Ivp::ode(&ode, t0, tf, y0);
 
     // Solve the SIR model problem with even output points every 1.0 time unit
-    match sir_problem.even(1.0).event(&ode).method(method).solve() {
+    match Ivp::ode(&ode, t0, tf, y0)
+        .even(1.0)
+        .event(&ode)
+        // v4 is an adaptive step size 4th order Adams-Bashforth-Moulton method.
+        .method(AdamsPredictorCorrector::v4().tol(1e-6))
+        .solve()
+    {
         Ok(solution) => {
             // Check for event termination
             if let Status::Interrupted = solution.status {

@@ -5,12 +5,8 @@ use super::systems::{
     ExponentialGrowth, HarmonicOscillator, HiresProblem, LinearEquation, LogisticEquation,
     RobertsonProblem,
 };
-use differential_equations::{
-    methods::{
-        AdamsPredictorCorrector, DiagonallyImplicitRungeKutta, ExplicitRungeKutta,
-        ImplicitRungeKutta,
-    },
-
+use differential_equations::methods::{
+    AdamsPredictorCorrector, DiagonallyImplicitRungeKutta, ExplicitRungeKutta, ImplicitRungeKutta,
 };
 use nalgebra::vector;
 
@@ -33,11 +29,11 @@ macro_rules! test_ode {
             let tf = $tf;
             let y0 = $y0;
 
-            // Create Initial Value Problem (ODEProblem) for the system
+            // Create Initial Value Problem for the system
             let problem = Ivp::ode(&system, t0, tf, y0);
 
             // Initialize the solver
-            let mut solver = $solver;
+            let solver = $solver;
 
             // Solve the system
             let results = problem.method(solver).solve().unwrap();

@@ -2,7 +2,7 @@ use differential_equations::ivp::Ivp;
 // Suite of test cases for checking the interpolation of DDE solvers.
 
 use super::systems::ExponentialGrowth;
-use differential_equations::{dde::DDE, methods::ExplicitRungeKutta};
+use differential_equations::methods::ExplicitRungeKutta;
 use nalgebra::vector;
 
 macro_rules! test_dde_interpolation {
@@ -26,7 +26,7 @@ macro_rules! test_dde_interpolation {
             // Define the system
             let system = ExponentialGrowth { k };
 
-            // Create Initial Value Problem (DDEProblem) for the system
+            // Create Initial Value Problem for the system
             // For L=0, the history function's exact form for t < t0 is less critical
             // as long as it provides a value at t0 if needed by an internal mechanism.
             // The primary check is for t > t0 via interpolation.

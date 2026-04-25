@@ -170,7 +170,7 @@ impl ODE<f64, Vector2<f64>> for DampedOscillator {
 fn main() {
     // Create the system and solver
     let system = DampedOscillator { damping: 0.1 };
-    let mut solver = DOPRI5::new().rtol(1e-6).atol(1e-8);
+    let solver = DOPRI5::new().rtol(1e-6).atol(1e-8);
     
     // Initial conditions: position = 1.0, velocity = 0.0
     let y0 = vector![1.0, 0.0];
@@ -178,8 +178,8 @@ fn main() {
     let tf = 20.0;
     
     // Solve
-    let problem = ODEProblem::new(system, t0, tf, y0);
-    match problem.even(0.1).solve(&mut solver) {
+    let problem = Ivp::ode(&system, t0, tf, y0);
+    match problem.even(0.1).method(solver).solve() {
         Ok(solution) => {
             // Print summary statistics
             println!("Solution contains {} points", solution.t.len());

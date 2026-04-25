@@ -3,7 +3,7 @@ use differential_equations::ivp::Ivp;
 // Expected results should be verified against a trusted solver.
 
 use super::systems::MackeyGlass;
-use differential_equations::{dde::DDE, methods::ExplicitRungeKutta};
+use differential_equations::methods::ExplicitRungeKutta;
 use nalgebra::vector;
 use std::fs;
 
@@ -28,7 +28,7 @@ macro_rules! test_dde {
             let y0 = $y0;
             let history_fn = $history;
 
-            // Create Initial Value Problem (DDEProblem) for the system
+            // Create Initial Value Problem for the system
             let problem = Ivp::dde(&system, t0, tf, y0, history_fn);
 
             // Initialize the solver

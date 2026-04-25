@@ -1,4 +1,4 @@
-//! Solve ODEProblem function
+//! Low-level ODE solve function.
 
 use crate::{
     control::ControlFlag,
@@ -11,15 +11,15 @@ use crate::{
     traits::{Real, State},
 };
 
-/// Solves an Initial Value Problem (ODEProblem) for a system of ordinary differential equations.
+/// Solves an Initial Value Problem for a system of ordinary differential equations.
 ///
 /// This is the core solution function that drives the numerical integration of ODEs.
 /// It handles initialization, time stepping, event detection, and solution output
 /// according to the provided output strategy.
 ///
-/// Note that it is recommend to use the `ODEProblem` struct to solve the ODEs,
-/// as it provides far more feature rich and convenient interface which
-/// wraps this function. See examples on github for more details.
+/// Prefer [`crate::ivp::Ivp::ode`] for the high-level builder API. This function
+/// remains available for callers that need direct control over solver and output
+/// handler references.
 ///
 /// # Overview
 ///

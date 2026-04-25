@@ -2,9 +2,8 @@ use differential_equations::ivp::Ivp;
 // Suite of test cases for checking the interpolation of the solvers.
 
 use super::systems;
-use differential_equations::{
-    methods::{AdamsPredictorCorrector, ExplicitRungeKutta, ImplicitRungeKutta},
-
+use differential_equations::methods::{
+    AdamsPredictorCorrector, ExplicitRungeKutta, ImplicitRungeKutta,
 };
 use nalgebra::vector;
 use systems::ExponentialGrowth;
@@ -25,11 +24,11 @@ macro_rules! test_interpolation {
             // Define the system
             let system = ExponentialGrowth { k: 1.0 };
 
-            // Create Initial Value Problem (ODEProblem) for the system
+            // Create Initial Value Problem for the system
             let problem = Ivp::ode(&system, t0, tf, y0);
 
             // Initialize the solver
-            let mut solver = $solver;
+            let solver = $solver;
 
             // Solve the system
             let results = problem

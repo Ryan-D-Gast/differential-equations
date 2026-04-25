@@ -1,7 +1,7 @@
 //! Stochastic Differential Equations (SDE) module.
 //!
 //! Provides traits and types for defining and solving SDE initial value problems.
-//! See [`SDE`] and [`SDEProblem`] for usage.
+//! Use [`crate::ivp::Ivp::sde`] for the high-level builder API.
 
 mod numerical_method;
 mod sde;

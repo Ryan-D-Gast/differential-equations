@@ -1,4 +1,3 @@
-use differential_equations::ivp::Ivp;
 // Defines systems for testing the ODE solvers
 
 use differential_equations::ode::ODE;

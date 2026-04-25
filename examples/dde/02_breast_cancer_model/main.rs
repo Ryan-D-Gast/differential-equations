@@ -16,8 +16,8 @@
 //! - u₃(t-τ) is the value of the third component at a delayed time t - τ.
 //! - p₀, q₀, v₀, d₀, p₁, q₁, v₁, d₁, d₂, β₀, β₁, τ are model parameters.
 
-use differential_equations::prelude::*;
 use differential_equations::ivp::Ivp;
+use differential_equations::prelude::*;
 use nalgebra::Vector3;
 use quill::prelude::*;
 
@@ -56,9 +56,6 @@ impl DDE<1, f64, Vector3<f64>> for BreastCancerModel {
 }
 
 fn main() {
-    // --- Solver Configuration ---
-    let mut solver = ExplicitRungeKutta::rkv766e().max_delay(1.0);
-
     // --- Problem Definition ---
     let tau = 1.0;
     let dde = BreastCancerModel {
@@ -79,14 +76,17 @@ fn main() {
     let tf = 10.0;
     let y0 = Vector3::new(1.0, 1.0, 1.0);
     let phi = |_t: f64| -> Vector3<f64> { y0 };
-    let problem = Ivp::dde(&dde, t0, tf, y0, phi);
 
     // --- Solve the Problem ---
     println!(
         "Solving Breast Cancer Model (tau={}) from t={} to t={}...",
         tau, t0, tf
     );
-    match problem.even(0.1).method(solver).solve() {
+    match Ivp::dde(&dde, t0, tf, y0, phi)
+        .even(0.1)
+        .method(ExplicitRungeKutta::rkv766e().max_delay(1.0))
+        .solve()
+    {
         Ok(solution) => {
             println!("Solver finished with status: {:?}", solution.status);
 

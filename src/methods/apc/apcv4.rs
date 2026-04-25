@@ -44,12 +44,12 @@ impl<T: Real, Y: State<T>> AdamsPredictorCorrector<Ordinary, Adaptive, T, Y, 4> 
     ///         dydt[1] = -self.k * y[0];
     ///     }
     /// }
-    /// let mut apcv4 = AdamsPredictorCorrector::v4();
+    /// let apcv4 = AdamsPredictorCorrector::v4();
     /// let t0 = 0.0;
     /// let tf = 10.0;
     /// let y0 = vector![1.0, 0.0];
     /// let system = HarmonicOscillator { k: 1.0 };
-    /// let results = ODEProblem::new(&system, t0, tf, y0).solve(&mut apcv4).unwrap();
+    /// let results = Ivp::ode(&system, t0, tf, y0).method(apcv4).solve().unwrap();
     /// let expected = vector![-0.83907153, 0.54402111];
     /// assert!((results.y.last().unwrap()[0] - expected[0]).abs() < 1e-6);
     /// assert!((results.y.last().unwrap()[1] - expected[1]).abs() < 1e-6);
@@ -359,7 +359,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
 
     fn h(&self) -> T {
         // OrdinaryNumericalMethod repeats step size 4 times for each step
-        // so the ODEProblem inquiring is looking for what the next
+        // so the IVP driver is looking for what the next
         // state will be thus the step size is multiplied by 4
         self.h * T::from_f64(4.0).unwrap()
     }
