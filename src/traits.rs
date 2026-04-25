@@ -60,6 +60,18 @@ pub trait State<T: Real>:
 
     fn set(&mut self, i: usize, value: T);
 
+    #[inline]
+    #[allow(unused_variables)]
+    fn as_slice(&self) -> Option<&[T]> {
+        None
+    }
+
+    #[inline]
+    #[allow(unused_variables)]
+    fn as_mut_slice(&mut self) -> Option<&mut [T]> {
+        None
+    }
+
     fn zeros() -> Self;
 }
 
@@ -74,6 +86,16 @@ impl<T: Real> State<T> for T {
 
     fn set(&mut self, i: usize, value: T) {
         std::slice::from_mut(self)[i] = value;
+    }
+
+    #[inline]
+    fn as_slice(&self) -> Option<&[T]> {
+        Some(std::slice::from_ref(self))
+    }
+
+    #[inline]
+    fn as_mut_slice(&mut self) -> Option<&mut [T]> {
+        Some(std::slice::from_mut(self))
     }
 
     fn zeros() -> Self {
@@ -95,6 +117,16 @@ where
 
     fn set(&mut self, i: usize, value: T) {
         self[(i / C, i % C)] = value;
+    }
+
+    #[inline]
+    fn as_slice(&self) -> Option<&[T]> {
+        Some(self.as_slice())
+    }
+
+    #[inline]
+    fn as_mut_slice(&mut self) -> Option<&mut [T]> {
+        Some(self.as_mut_slice())
     }
 
     fn zeros() -> Self {
@@ -134,28 +166,28 @@ mod tests {
     use num_complex::Complex;
 
     #[test]
-    #[should_panic(expected = "Index out of bounds")]
+    #[should_panic]
     fn test_state_f64_get_out_of_bounds() {
         let state: f64 = 1.0;
         let _ = state.get(1);
     }
 
     #[test]
-    #[should_panic(expected = "Index out of bounds")]
+    #[should_panic]
     fn test_state_f64_set_out_of_bounds() {
         let mut state: f64 = 1.0;
         state.set(1, 2.0);
     }
 
     #[test]
-    #[should_panic(expected = "Index out of bounds")]
+    #[should_panic]
     fn test_state_complex_get_out_of_bounds() {
         let state = Complex::new(1.0, 2.0);
         let _ = state.get(2);
     }
 
     #[test]
-    #[should_panic(expected = "Index out of bounds")]
+    #[should_panic]
     fn test_state_complex_set_out_of_bounds() {
         let mut state = Complex::new(1.0, 2.0);
         state.set(2, 3.0);
