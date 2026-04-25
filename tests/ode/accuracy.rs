@@ -1,4 +1,5 @@
-//! Suite of test cases for numerical methods vs results of SciPy using DOP853 & Tolerences = 1e-12
+use differential_equations::ivp::Ivp;
+// Suite of test cases for numerical methods vs results of SciPy using DOP853 & Tolerences = 1e-12
 
 use super::systems::{
     ExponentialGrowth, HarmonicOscillator, HiresProblem, LinearEquation, LogisticEquation,
@@ -9,7 +10,7 @@ use differential_equations::{
         AdamsPredictorCorrector, DiagonallyImplicitRungeKutta, ExplicitRungeKutta,
         ImplicitRungeKutta,
     },
-    ode::ODEProblem,
+
 };
 use nalgebra::vector;
 
@@ -33,13 +34,13 @@ macro_rules! test_ode {
             let y0 = $y0;
 
             // Create Initial Value Problem (ODEProblem) for the system
-            let problem = ODEProblem::new(&system, t0, tf, y0);
+            let problem = Ivp::ode(&system, t0, tf, y0);
 
             // Initialize the solver
             let mut solver = $solver;
 
             // Solve the system
-            let results = problem.solve(&mut solver).unwrap();
+            let results = problem.method(solver).solve().unwrap();
 
             // Save results to csv
             results.to_csv(&format!("target/tests/ode/results/{}_{}.csv", stringify!($solver_name), stringify!($system_name))).unwrap();
@@ -48,7 +49,7 @@ macro_rules! test_ode {
             let yf = results.y.last().unwrap();
             for i in 0..yf.len() {
                 assert!(
-                    (yf[i] - $expected_result[i]).abs() < $tolerance,
+                    (yf[i] - $expected_result[i] as f64).abs() < $tolerance as f64,
                     "{} {} failed: Expected: {:?}, Got: {:?}",
                     stringify!($solver_name),
                     stringify!($system_name),

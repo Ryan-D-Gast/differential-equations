@@ -15,12 +15,14 @@
 //!   or custom time-stepping rules
 
 use differential_equations::prelude::*;
+use differential_equations::ivp::Ivp;
 use differential_equations::{ode::ODE, traits::Real};
 use nalgebra::{Dim, Matrix3, Matrix6, SVector, Vector6, stack};
 use num_dual::{Derivative, DualSVec64, DualStruct};
 use std::{f64::consts::PI, iter::zip};
 
 /// Keplerian two-body dynamics.
+#[derive(Clone)]
 struct TwoBodyODE<T: Real> {
     /// Gravitational parameter.
     mu: T,
@@ -92,7 +94,7 @@ fn main() {
     let ode = TwoBodyODE {
         mu: DualSVec64::<6>::from_re(1.0),
     };
-    let problem = ODEProblem::new(
+    let problem = Ivp::ode(
         &ode,
         DualSVec64::<6>::from(0.0),
         DualSVec64::<6>::from(tau / 2.0),
@@ -101,13 +103,13 @@ fn main() {
     let mut solver = ExplicitRungeKutta::dop853()
         .atol(DualSVec64::<6>::from(1e-14))
         .rtol(DualSVec64::<6>::from(1e-14));
-    let sol = problem.solve(&mut solver).unwrap();
+    let sol = problem.clone().method(solver.clone()).solve().unwrap();
 
     // Recompute the same solution with a filtered step size.
     // Here the filter keeps only the real part of the dual step size so the
     // step length does not carry derivative information.
     solver = solver.filter(|h| DualSVec64::<6>::from(h.re()));
-    let sol_flt = problem.solve(&mut solver).unwrap();
+    let sol_flt = problem.clone().method(solver).solve().unwrap();
 
     let check = sol_flt
         .t
@@ -138,9 +140,9 @@ fn main() {
 
     // Solve the same problem with variational equations.
     let var_ode = VariationalTwoBodyODE { mu: 1.0 };
-    let var_problem = ODEProblem::new(&var_ode, 0.0, t1.re(), y0_aug);
+    let var_problem = Ivp::ode(&var_ode, 0.0, t1.re(), y0_aug);
     let mut var_solver = ExplicitRungeKutta::dop853().atol(1e-14).rtol(1e-14);
-    let var_sol = var_problem.solve(&mut var_solver).unwrap();
+    let var_sol = var_problem.method(var_solver).solve().unwrap();
 
     // Extract the analytical STM from the augmented solution.
     let y1_aug = var_sol.last().unwrap().1;

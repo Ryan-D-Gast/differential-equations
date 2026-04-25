@@ -81,6 +81,7 @@ pub mod tableau;
 // Differential Equations
 pub mod dae;
 pub mod dde;
+pub mod ivp;
 pub mod ode;
 pub mod sde;
 

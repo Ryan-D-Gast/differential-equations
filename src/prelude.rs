@@ -44,10 +44,10 @@ pub use crate::methods::{
 };
 
 // Problem Types & Traits
-pub use crate::dae::{DAE, DAEProblem};
-pub use crate::dde::{DDE, DDEProblem};
-pub use crate::ode::{ODE, ODEProblem};
-pub use crate::sde::{SDE, SDEProblem};
+pub use crate::dae::DAE;
+pub use crate::dde::DDE;
+pub use crate::ode::ODE;
+pub use crate::sde::SDE;
 
 // Output, Events, and Solution Types
 pub use crate::control::ControlFlag;
@@ -61,3 +61,4 @@ pub use crate::status::Status;
 
 // Linear Algebra
 pub use crate::linalg::Matrix;
+pub use crate::ivp::Ivp;

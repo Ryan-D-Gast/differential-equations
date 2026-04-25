@@ -12,6 +12,7 @@
 //! in science, finance, and mathematics.
 
 use differential_equations::prelude::*;
+use differential_equations::ivp::Ivp;
 use quill::prelude::*;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
@@ -62,8 +63,8 @@ fn main() {
     // --- Solve the SDE ---
     let dt = 0.01;
     let mut solver = ExplicitRungeKutta::euler(dt);
-    let mut problem = SDEProblem::new(&mut sde, t0, tf, y0);
-    let solution = problem.solve(&mut solver).unwrap();
+    let mut problem = Ivp::sde(&mut sde, t0, tf, y0);
+    let solution = problem.method(solver).solve().unwrap();
 
     println!("Simulating Brownian motion with σ = {}", sigma);
     println!("Time interval: [{}, {}], Step size: {}", t0, tf, dt);

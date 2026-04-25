@@ -62,6 +62,7 @@ use super::*;
 ///
 /// For evenly spaced output points, consider using `EvenSolout` instead.
 ///
+#[derive(Clone, Debug)]
 pub struct DefaultSolout {}
 
 impl<T, Y> Solout<T, Y> for DefaultSolout

@@ -18,6 +18,7 @@
 //! - Accessing solution statistics like step counts and evaluations
 
 use differential_equations::prelude::*;
+use differential_equations::ivp::Ivp;
 use quill::prelude::*;
 
 // Differential equations are defined using structs that implement the ODE trait
@@ -45,10 +46,10 @@ fn main() {
     let t0 = 0.0;
     let tf = 10.0;
     let ode = ExponentialGrowth { k: 1.0 };
-    let exponential_growth_problem = ODEProblem::new(&ode, t0, tf, y0);
+    let exponential_growth_problem = Ivp::ode(&ode, t0, tf, y0);
 
     // ODE Problems are solved by chaining the solve method with the numerical method
-    let solution = match exponential_growth_problem.solve(&mut method) {
+    let solution = match exponential_growth_problem.method(method).solve() {
         Ok(solution) => {
             // The solution struct contains the output (t,y) points, statistics, and other metadata
             solution

@@ -26,6 +26,7 @@
 //!       2x, 2y, 0, 0, 0 ]
 
 use differential_equations::prelude::*;
+use differential_equations::ivp::Ivp;
 use nalgebra::{SVector, vector};
 use quill::prelude::*;
 
@@ -137,8 +138,8 @@ fn main() {
     let y0 = vector![x0, y0, vx0, vy0, lambda0];
     let t0 = 0.0;
     let tf = 10.0;
-    let problem = DAEProblem::new(model, t0, tf, y0);
-    match problem.even(0.05).solve(&mut method) {
+    let problem = Ivp::dae(&model, t0, tf, y0);
+    match problem.even(0.05).method(method).solve() {
         Ok(solution) => {
             // Solution points
             println!("\nConstrained pendulum solution (x, y):");

@@ -1,8 +1,9 @@
-//! Suite of test cases for DDE NumericalMethods.
-//! Expected results should be verified against a trusted solver.
+use differential_equations::ivp::Ivp;
+// Suite of test cases for DDE NumericalMethods.
+// Expected results should be verified against a trusted solver.
 
 use super::systems::MackeyGlass;
-use differential_equations::{dde::DDEProblem, methods::ExplicitRungeKutta};
+use differential_equations::{dde::DDE, methods::ExplicitRungeKutta};
 use nalgebra::vector;
 use std::fs;
 
@@ -28,17 +29,17 @@ macro_rules! test_dde {
             let history_fn = $history;
 
             // Create Initial Value Problem (DDEProblem) for the system
-            let problem = DDEProblem::new(&system, t0, tf, y0, history_fn);
+            let problem = Ivp::dde(&system, t0, tf, y0, history_fn);
 
             // Initialize the solver
-            let mut solver = $solver;
+            let solver = $solver;
 
             // Create directory for results if it doesn't exist
             let results_dir = format!("target/tests/dde/results");
             fs::create_dir_all(&results_dir).expect("Failed to create DDE results directory");
 
             // Solve the system
-            let results = problem.solve(&mut solver).unwrap_or_else(|e| {
+            let results = problem.method(solver).solve().unwrap_or_else(|e| {
                 panic!("{} {} failed to solve: {:?}", stringify!($solver_name), stringify!($system_name), e);
             });
 

@@ -22,6 +22,7 @@
 //! - Energy conservation monitoring with high-accuracy solvers
 
 use differential_equations::prelude::*;
+use differential_equations::ivp::Ivp;
 use nalgebra::{SVector, vector};
 use std::f64::consts::PI;
 
@@ -41,7 +42,9 @@ impl ODE<f64, SVector<f64, 2>> for Pendulum {
 /// 1. Captures points when angle crosses zero (pendulum passes vertical)
 /// 2. Records energy at each point
 /// 3. Ensures minimum spacing between points
+#[derive(Clone)]
 /// 4. Applies a boost to angular velocity when crossing zero
+#[derive(Clone)]
 struct PendulumSolout {
     g: f64,                   // Gravitational constant
     l: f64,                   // Length of pendulum
@@ -157,7 +160,7 @@ fn main() {
     let y0 = vector![theta0, 0.0];
     let t0 = 0.0;
     let tf = 10.0;
-    let problem = ODEProblem::new(&pendulum, t0, tf, y0);
+    let problem = Ivp::ode(&pendulum, t0, tf, y0);
 
     // --- Solout and Solver Configuration ---
     let mut solout = PendulumSolout::new(g, l, 0.1).with_boost(0.05);
@@ -166,8 +169,8 @@ fn main() {
     // --- Solve the ODE with custom solout ---
     let result = problem
         // The custom solout is applied to the problem here
-        .solout(&mut solout)
-        .solve(&mut solver)
+        .solout(solout.clone())
+        .method(solver).solve()
         .unwrap();
 
     // Print the results

@@ -16,6 +16,7 @@
 //! - Accessing solution statistics like step counts and evaluations
 
 use differential_equations::prelude::*;
+use differential_equations::ivp::Ivp;
 use quill::prelude::*;
 
 struct LogisticGrowth {
@@ -47,14 +48,14 @@ fn main() {
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
-    let logistic_growth_problem = ODEProblem::new(&ode, t0, tf, y0);
+    let logistic_growth_problem = Ivp::ode(&ode, t0, tf, y0);
 
     // Between a problem and the calling of solve, output settings can be adjusted.
     // Here we set the output interval to 2.0 seconds via the even method.
     match logistic_growth_problem
         .even(2.0)
         .event(&ode)
-        .solve(&mut method)
+        .method(method).solve()
     {
         Ok(solution) => {
             // Check if the solver stopped due to the event command

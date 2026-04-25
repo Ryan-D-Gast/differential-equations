@@ -22,6 +22,7 @@
 //! - Understanding matrix evolution in continuous time
 
 use differential_equations::prelude::*;
+use differential_equations::ivp::Ivp;
 use nalgebra::SMatrix;
 
 struct MatrixEvolutionODE {
@@ -44,7 +45,7 @@ impl ODE<f64, SMatrix<f64, 2, 2>> for MatrixEvolutionODE {
 
 fn main() {
     // Create a method with reasonable precision
-    let mut method = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-10);
+    let method = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-10);
 
     // --- Problem Configuration ---
 
@@ -80,17 +81,17 @@ fn main() {
     let tf = 3.0; // Simulate for 3 seconds
 
     // --- Solve the ODE ---
-    let matrix_problem = ODEProblem::new(&matrix_ode, t0, tf, y0);
+    let matrix_problem = Ivp::ode(&matrix_ode, t0, tf, y0);
     let result = matrix_problem
         // Dense output means for every step, 5 evenly spaced points will be outputted
         .dense(5)
-        .solve(&mut method);
+        .method(method).solve();
     match result {
         Ok(solution) => {
             println!("Matrix evolution solution Y(t):");
             println!("(Each matrix represents the state at time t)\n");
 
-            for (i, (t, y)) in solution.iter().enumerate() {
+            for (i, (&t, y)) in solution.iter().enumerate() {
                 if i % 15 == 0 {
                     // Print every 15th point to keep output manageable
                     println!("t = {:.2}s", t);

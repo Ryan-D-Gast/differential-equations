@@ -14,8 +14,6 @@
 //!
 
 // Definitions & Constructors for users to ergonomically solve a DAEProblem via the solve_dae function.
-mod problem;
-pub use problem::DAEProblem;
 
 // Solve DAE function
 mod solve;

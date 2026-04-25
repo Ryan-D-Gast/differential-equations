@@ -23,6 +23,7 @@
 //! an excellent test case for implicit DAE solvers.
 
 use differential_equations::prelude::*;
+use differential_equations::ivp::Ivp;
 use nalgebra::{SVector, vector};
 use quill::prelude::*;
 
@@ -104,7 +105,7 @@ fn main() {
     let t0 = 0.0;
     let tf = 4.0 * 10f64.powf(6.0);
 
-    let robertson_problem = DAEProblem::new(model, t0, tf, y0);
+    let robertson_problem = Ivp::dae(&model, t0, tf, y0);
 
     // Output points: ~200 log-spaced points between 1e-6 and 1e6
     let n_pts = 200usize;
@@ -116,7 +117,7 @@ fn main() {
         .collect::<Vec<_>>();
 
     // Solve the DAE
-    match robertson_problem.t_eval(points).solve(&mut method) {
+    match robertson_problem.t_eval(points).method(method).solve() {
         Ok(solution) => {
             // Print the statistics
             println!("Function evaluations: {}", solution.evals.function);

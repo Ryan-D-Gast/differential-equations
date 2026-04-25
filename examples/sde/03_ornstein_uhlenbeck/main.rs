@@ -15,6 +15,7 @@
 //! various other fields.
 
 use differential_equations::prelude::*;
+use differential_equations::ivp::Ivp;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
 
@@ -67,7 +68,7 @@ fn main() {
 
     // Create the Ornstein-Uhlenbeck SDE problem
     let mut sde = OrnsteinUhlenbeck::new(theta, mu, sigma, seed);
-    let mut problem = SDEProblem::new(&mut sde, t0, tf, y0);
+    let mut problem = Ivp::sde(&mut sde, t0, tf, y0);
 
     // --- Solve the SDE ---
     let dt = 0.01;
@@ -75,7 +76,7 @@ fn main() {
     let points_of_interest = [2.0, 5.0, 8.0];
     let solution = problem
         .t_eval(points_of_interest)
-        .solve(&mut solver)
+        .method(solver).solve()
         .unwrap();
 
     // --- Print the results ---

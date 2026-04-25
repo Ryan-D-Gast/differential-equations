@@ -15,6 +15,7 @@
 //!      [ 3 - 2*y0*y1,    -y0^2]]
 
 use differential_equations::prelude::*;
+use differential_equations::ivp::Ivp;
 use nalgebra::Vector2;
 
 struct BrusselatorSystem;
@@ -45,11 +46,11 @@ fn main() {
     let t0 = 0.0;
     let tf = 20.0;
     let ode = BrusselatorSystem;
-    let problem = ODEProblem::new(&ode, t0, tf, y0);
+    let problem = Ivp::ode(&ode, t0, tf, y0);
 
     // --- Solve the ODE ---
     let mut method = ImplicitRungeKutta::gauss_legendre_6();
-    match problem.even(0.5).solve(&mut method) {
+    match problem.even(0.5).method(method).solve() {
         Ok(solution) => {
             // Print the solution
             println!("Solution successfully obtained.");

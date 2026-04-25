@@ -23,6 +23,7 @@
 
 use differential_equations::derive::State;
 use differential_equations::prelude::*;
+use differential_equations::ivp::Ivp;
 use nalgebra::{Vector3, vector};
 
 pub struct Cr3bp {
@@ -76,7 +77,7 @@ fn main() {
     };
     let t0 = 0.0;
     let tf = 3.0 * 1.509263667286943; // Period of the orbit (sv(t0) ~= sv(tf / 3.0))
-    let cr3bp_problem = ODEProblem::new(&ode, t0, tf, sv);
+    let cr3bp_problem = Ivp::ode(&ode, t0, tf, sv);
 
     // Defines a function to extract the state vector into a Vector3 for hyperplane crossing detection
     fn extractor(sv: &StateVector<f64>) -> Vector3<f64> {
@@ -92,7 +93,7 @@ fn main() {
             extractor,
             CrossingDirection::Both,
         )
-        .solve(&mut method)
+        .method(method).solve()
     {
         Ok(solution) => {
             // Print the solution

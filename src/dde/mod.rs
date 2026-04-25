@@ -5,10 +5,8 @@
 
 mod dde;
 mod numerical_method;
-mod problem;
 mod solve;
 
 pub use dde::DDE;
 pub use numerical_method::DelayNumericalMethod;
-pub use problem::DDEProblem;
 pub use solve::solve_dde;

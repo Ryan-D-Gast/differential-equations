@@ -1,0 +1,1 @@
+sed -i 's/let sol = problem.clone().method(solver).solve().unwrap();/let mut tmp_solver = solver;\n                      let sol = problem.clone().method(tmp_solver).solve().unwrap();/g' tests/ode/comparison.rs

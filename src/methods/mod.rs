@@ -37,3 +37,39 @@ pub struct DormandPrince;
 
 /// Radau IIA methods
 pub struct Radau;
+
+use crate::tolerance::Tolerance;
+use crate::traits::Real;
+
+/// Trait to allow configuring tolerances on numerical methods generically.
+pub trait ToleranceConfig<T: Real> {
+    fn rtol<V: Into<Tolerance<T>>>(self, rtol: V) -> Self;
+    fn atol<V: Into<Tolerance<T>>>(self, atol: V) -> Self;
+}
+
+impl<E, F, T: Real, Y: crate::traits::State<T>, const O: usize, const S: usize, const I: usize> ToleranceConfig<T> for crate::methods::ExplicitRungeKutta<E, F, T, Y, O, S, I> {
+    fn rtol<V: Into<Tolerance<T>>>(self, rtol: V) -> Self {
+        self.rtol(rtol)
+    }
+    fn atol<V: Into<Tolerance<T>>>(self, atol: V) -> Self {
+        self.atol(atol)
+    }
+}
+
+impl<E, F, T: Real, Y: crate::traits::State<T>, const O: usize, const S: usize, const I: usize> ToleranceConfig<T> for crate::methods::ImplicitRungeKutta<E, F, T, Y, O, S, I> {
+    fn rtol<V: Into<Tolerance<T>>>(self, rtol: V) -> Self {
+        self.rtol(rtol)
+    }
+    fn atol<V: Into<Tolerance<T>>>(self, atol: V) -> Self {
+        self.atol(atol)
+    }
+}
+
+impl<E, F, T: Real, Y: crate::traits::State<T>, const O: usize, const S: usize, const I: usize> ToleranceConfig<T> for crate::methods::DiagonallyImplicitRungeKutta<E, F, T, Y, O, S, I> {
+    fn rtol<V: Into<Tolerance<T>>>(self, rtol: V) -> Self {
+        self.rtol(rtol)
+    }
+    fn atol<V: Into<Tolerance<T>>>(self, atol: V) -> Self {
+        self.atol(atol)
+    }
+}

@@ -24,6 +24,7 @@
 //! - Verifying numerical accuracy against analytical predictions
 
 use differential_equations::prelude::*;
+use differential_equations::ivp::Ivp;
 use num_complex::Complex;
 
 struct ScalarSchrodingerEquation {
@@ -49,13 +50,13 @@ fn main() {
     let psi0 = Complex::new(1.0, 0.0); // Initial state with amplitude 1 and phase 0
     let t0 = 0.0;
     let tf = 10.0; // Simulate for 10 time units
-    let schrodinger_problem = ODEProblem::new(&ode, t0, tf, psi0);
+    let schrodinger_problem = Ivp::ode(&ode, t0, tf, psi0);
 
     // --- Solve the ODE ---
     let mut method = DiagonallyImplicitRungeKutta::kvaerno745()
         .rtol(1e-8)
         .atol(1e-8);
-    match schrodinger_problem.even(0.5).solve(&mut method) {
+    match schrodinger_problem.even(0.5).method(method).solve() {
         Ok(solution) => {
             println!("Solution:");
             println!("Time, Re(ψ), Im(ψ), |ψ|²");
