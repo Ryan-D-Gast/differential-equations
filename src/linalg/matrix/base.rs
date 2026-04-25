@@ -13,6 +13,8 @@ pub enum MatrixStorage<T: Real> {
     /// Compact diagonal storage with shape (ml+mu+1, ncols), row-major per diagonal.
     /// Off-band reads return `zero`.
     Banded { ml: usize, mu: usize, zero: T },
+    /// Sparse matrix representation using coordinate format
+    Sparse(Vec<(usize, usize, T)>),
 }
 
 /// Generic matrix for linear algebra (typically square in current use).
@@ -54,6 +56,16 @@ impl<T: Real> Matrix<T> {
             m,
             data,
             storage: MatrixStorage::Full,
+        }
+    }
+
+    /// Empty sparse matrix of size n x m.
+    pub fn sparse(n: usize, m: usize) -> Self {
+        Matrix {
+            n,
+            m,
+            data: vec![],
+            storage: MatrixStorage::Sparse(Vec::new()),
         }
     }
 
@@ -163,6 +175,21 @@ impl<T: Real> Matrix<T> {
                     }
                 }
             }
+        } else if let MatrixStorage::Sparse(ref coords) = self.storage {
+            for i in 0..self.n {
+                for j in 0..self.m {
+                    let mut val = T::zero();
+                    for &(r, c, v) in coords {
+                        if r == i && c == j {
+                            val += v;
+                        }
+                    }
+                    let expected = if i == j { T::one() } else { T::zero() };
+                    if val != expected {
+                        return false;
+                    }
+                }
+            }
         }
         true
     }
@@ -210,6 +237,15 @@ impl<T: Real> Matrix<T> {
                             let idx2 = row2 * self.m + j;
                             self.data[idx2] = T::zero();
                         }
+                    }
+                }
+            }
+            MatrixStorage::Sparse(coords) => {
+                for item in coords.iter_mut() {
+                    if item.0 == r1 {
+                        item.0 = r2;
+                    } else if item.0 == r2 {
+                        item.0 = r1;
                     }
                 }
             }

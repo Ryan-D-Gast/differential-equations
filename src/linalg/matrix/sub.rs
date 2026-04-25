@@ -115,19 +115,21 @@ impl<T: Real> Sub for Matrix<T> {
             (
                 Matrix {
                     n: n1,
+                    m: m1,
                     data: a,
                     storage: sa,
                     ..
                 },
                 Matrix {
                     n: n2,
+                    m: _m2,
                     data: b,
                     storage: sb,
                     ..
                 },
             ) => {
                 assert_eq!(n1, n2, "dimension mismatch in Matrix - Matrix");
-                let to_full = |n: usize, data: Vec<T>, storage: MatrixStorage<T>| -> Vec<T> {
+                let to_full = |n: usize, m_cols: usize, data: Vec<T>, storage: MatrixStorage<T>| -> Vec<T> {
                     match storage {
                         MatrixStorage::Full => data,
                         MatrixStorage::Identity => {
@@ -151,14 +153,21 @@ impl<T: Real> Sub for Matrix<T> {
                             }
                             d
                         }
+                        MatrixStorage::Sparse(coords) => {
+                            let mut d = vec![T::zero(); n * m_cols];
+                            for (r, c, v) in coords {
+                                d[r * m_cols + c] += v;
+                            }
+                            d
+                        }
                     }
                 };
-                let aa = to_full(n1, a, sa);
-                let bb = to_full(n2, b, sb);
+                let aa = to_full(n1, m1, a, sa);
+                let bb = to_full(n2, m1, b, sb);
                 let data = aa.into_iter().zip(bb).map(|(x, y)| x - y).collect();
                 Matrix {
                     n: n1,
-                    m: n1,
+                    m: m1,
                     data,
                     storage: MatrixStorage::Full,
                 }
@@ -173,7 +182,8 @@ impl<T: Real> Sub for Matrix<T> {
 impl<T: Real> SubAssign<Matrix<T>> for Matrix<T> {
     fn sub_assign(&mut self, rhs: Matrix<T>) {
         let n = self.n;
-        let lhs = core::mem::replace(self, Matrix::zeros(n, n));
+        let m = self.m;
+        let lhs = core::mem::replace(self, Matrix::zeros(n, m));
         *self = lhs - rhs;
     }
 }
@@ -182,7 +192,8 @@ impl<T: Real> SubAssign<Matrix<T>> for Matrix<T> {
 impl<T: Real> SubAssign<&Matrix<T>> for Matrix<T> {
     fn sub_assign(&mut self, rhs: &Matrix<T>) {
         let n = self.n;
-        let lhs = core::mem::replace(self, Matrix::zeros(n, n));
+        let m = self.m;
+        let lhs = core::mem::replace(self, Matrix::zeros(n, m));
         *self = lhs - rhs.clone();
     }
 }
@@ -231,6 +242,29 @@ impl<T: Real> Matrix<T> {
                     Matrix {
                         n,
                         m: n,
+                        data: dense,
+                        storage: MatrixStorage::Full,
+                    }
+                }
+            }
+            MatrixStorage::Sparse(coords) => {
+                let n = self.n;
+                let m = self.m;
+                if rhs == T::zero() {
+                    Matrix {
+                        n,
+                        m,
+                        data: vec![],
+                        storage: MatrixStorage::Sparse(coords.clone()),
+                    }
+                } else {
+                    let mut dense = vec![T::zero() - rhs; n * m];
+                    for &(r, c, v) in coords.iter() {
+                        dense[r * m + c] += v;
+                    }
+                    Matrix {
+                        n,
+                        m,
                         data: dense,
                         storage: MatrixStorage::Full,
                     }

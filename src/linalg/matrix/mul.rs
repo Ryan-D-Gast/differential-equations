@@ -8,7 +8,7 @@ use super::base::{Matrix, MatrixStorage};
 impl<T: Real> Matrix<T> {
     /// Return a new matrix where each stored entry is multiplied by `rhs`.
     pub fn component_mul(mut self, rhs: T) -> Self {
-        match &mut self.storage {
+        match self.storage {
             MatrixStorage::Identity => Matrix::diagonal(vec![rhs; self.n]),
             MatrixStorage::Full => {
                 for v in &mut self.data {
@@ -24,10 +24,22 @@ impl<T: Real> Matrix<T> {
                     m: n,
                     data,
                     storage: MatrixStorage::Banded {
-                        ml: *ml,
-                        mu: *mu,
+                        ml,
+                        mu,
                         zero: T::zero(),
                     },
+                }
+            }
+            MatrixStorage::Sparse(mut coords) => {
+                let n = self.n;
+                for item in coords.iter_mut() {
+                    item.2 *= rhs;
+                }
+                Matrix {
+                    n,
+                    m: n,
+                    data: vec![],
+                    storage: MatrixStorage::Sparse(coords),
                 }
             }
         }
@@ -57,6 +69,11 @@ impl<T: Real> Matrix<T> {
                     *v *= rhs;
                 }
             }
+            MatrixStorage::Sparse(coords) => {
+                for item in coords.iter_mut() {
+                    item.2 *= rhs;
+                }
+            }
         }
     }
 
@@ -65,12 +82,18 @@ impl<T: Real> Matrix<T> {
         assert_eq!(vec.len(), n, "dimension mismatch in Matrix::mul_state");
 
         let mut result = V::zeros();
-        for i in 0..n {
-            let mut sum = T::zero();
-            for j in 0..n {
-                sum += self[(i, j)] * vec.get(j);
+        if let MatrixStorage::Sparse(ref coords) = self.storage {
+            for &(r, c, v) in coords {
+                result.set(r, result.get(r) + v * vec.get(c));
             }
-            result.set(i, sum);
+        } else {
+            for i in 0..n {
+                let mut sum = T::zero();
+                for j in 0..n {
+                    sum += self[(i, j)] * vec.get(j);
+                }
+                result.set(i, sum);
+            }
         }
         result
     }

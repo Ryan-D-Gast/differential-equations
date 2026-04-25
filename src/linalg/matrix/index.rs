@@ -32,6 +32,11 @@ impl<T: Real> Index<(usize, usize)> for Matrix<T> {
                     &self.data[row * self.m + j]
                 }
             }
+            MatrixStorage::Sparse(_) => {
+                // Standard index expects a reference, which implies it needs to return
+                // a pointer to an actual `T` in memory. Implicit zeroes don't have an address.
+                panic!("Cannot return reference to implicitly stored Sparse matrix element")
+            }
         }
     }
 }
@@ -57,6 +62,15 @@ impl<T: Real> IndexMut<(usize, usize)> for Matrix<T> {
                         "attempted to write outside band of Banded matrix: i-j={} not in [-mu, ml] = [-{}, {}]",
                         k, mu, ml
                     )
+                }
+            }
+            MatrixStorage::Sparse(coords) => {
+                if let Some(idx) = coords.iter().position(|&(r, c, _)| r == i && c == j) {
+                    &mut coords[idx].2
+                } else {
+                    coords.push((i, j, T::zero()));
+                    let last = coords.len() - 1;
+                    &mut coords[last].2
                 }
             }
         }

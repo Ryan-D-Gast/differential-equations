@@ -44,6 +44,11 @@ impl<T: Real> Matrix<T> {
                     }
                 }
             }
+            MatrixStorage::Sparse(coords) => {
+                for &(r, c, v) in coords {
+                    a[r * n + c] += v;
+                }
+            }
         }
 
         // 2) Copy b into a dense vector x and perform solve
@@ -155,6 +160,11 @@ impl<T: Real> Matrix<T> {
                             a[i * self.m + j] += self.data[r * self.m + j];
                         }
                     }
+                }
+            }
+            MatrixStorage::Sparse(coords) => {
+                for &(r, c, v) in coords {
+                    a[r * n + c] += v;
                 }
             }
         }
