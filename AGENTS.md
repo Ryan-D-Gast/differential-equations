@@ -14,6 +14,8 @@ All code you write MUST be fully optimized. "Fully optimized" includes:
 
 ## Git & Version Control
 
+Never use emojis while using git and github.
+
 ### Conventional Commits
 
 All commit messages MUST follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification. Do NOT use emojis in commit messages, pull request titles, or descriptions.
