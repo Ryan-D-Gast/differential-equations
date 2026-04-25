@@ -292,10 +292,14 @@ impl InitialStepSize<Delay> {
             (T::from_f64(0.01).unwrap() / der12).powf(T::one() / order_t)
         };
 
-        h = h.abs().min(h1);
-        h = h.min(h_max.abs());
-        if h_min.abs() > T::zero() {
-            h = h.max(h_min.abs());
+        let abs_h = h.abs();
+        let abs_h_max = h_max.abs();
+        let abs_h_min = h_min.abs();
+
+        h = abs_h.min(h1);
+        h = h.min(abs_h_max);
+        if abs_h_min > T::zero() {
+            h = h.max(abs_h_min);
         }
         h = h.min((tf - t0).abs());
         h * posneg_init
@@ -389,8 +393,10 @@ impl InitialStepSize<Algebraic> {
             };
 
         // Bound and sign
-        h = h.min(h_max.abs());
-        h = h.max(h_min.abs());
+        let abs_h_max = h_max.abs();
+        let abs_h_min = h_min.abs();
+        h = h.min(abs_h_max);
+        h = h.max(abs_h_min);
         h *= posneg;
 
         // One explicit Euler predictor (uses f0 directly; avoids M^{-1})
@@ -425,9 +431,9 @@ impl InitialStepSize<Algebraic> {
         // Final bounds (cap by interval length as well)
         let mut h_final = (h.abs() * T::from_f64(100.0).unwrap())
             .min(h1)
-            .min(h_max.abs());
-        if h_min.abs() > T::zero() {
-            h_final = h_final.max(h_min.abs());
+            .min(abs_h_max);
+        if abs_h_min > T::zero() {
+            h_final = h_final.max(abs_h_min);
         }
         h_final = h_final.min((tf - t0).abs());
         h_final * posneg
