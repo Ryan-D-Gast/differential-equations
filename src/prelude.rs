@@ -49,7 +49,7 @@ pub use crate::ivp::Ivp;
 // Equation Traits
 pub use crate::dae::DAE;
 pub use crate::dde::DDE;
-pub use crate::ode::{ForwardSensitivityProblem, ParametrizedODE, ODE};
+pub use crate::ode::{ForwardSensitivityProblem, ODE};
 pub use crate::sde::SDE;
 
 // Output, Events, and Solution Types

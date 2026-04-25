@@ -21,25 +21,6 @@ use crate::{
 /// * `jacobian` - Jacobian matrix J = df/dy for the system of equations.
 ///
 /// Note that the event and jacobian functions are optional and can be left out when implementing.
-pub trait ParametrizedODE<T = f64, Y = f64>: ODE<T, Y>
-where
-    T: Real,
-    Y: State<T>,
-{
-    /// The number of parameters this system has
-    fn num_params(&self) -> usize;
-
-    /// The Parameter Jacobian: J_p = df/dp
-    /// `jp` will be pre-sized to `y.len() x num_params()`
-    fn jacobian_p(&self, _t: T, _y: &Y, _jp: &mut Matrix<T>) {
-        // Since there is no generic method to perturb parameters without requiring a generic parameter type,
-        // users must implement this analytically or use dual numbers for exact sensitivities.
-        // A finite difference fallback can only be provided if the user explicitly exposes a parameter setter,
-        // which goes against the trait's design of not forcing a generic parameter type.
-        unimplemented!("ParametrizedODE::jacobian_p must be implemented analytically by the user.");
-    }
-}
-
 pub trait ODE<T = f64, Y = f64>
 where
     T: Real,
@@ -65,6 +46,21 @@ where
     /// * `dydt` - Derivative point.
     ///
     fn diff(&self, t: T, y: &Y, dydt: &mut Y);
+
+    /// The Parameter Jacobian: J_p = df/dp
+    ///
+    /// Defines the gradient of the solver states with respect to system parameters.
+    ///
+    /// # Arguments
+    /// * `t` - Independent variable grid point.
+    /// * `y` - Dependent variable vector.
+    /// * `jp` - parameter jacobian matrix. This matrix will be pre-sized by the caller to `y.len() x PRM` where `PRM` is the number of parameters.
+    #[allow(unused_variables)]
+    fn jacobian_p(&self, t: T, y: &Y, jp: &mut Matrix<T>) {
+        // Defaults to doing nothing (leaving the zero-initialized matrix untouched).
+        // Since there is no generic method to perturb parameters without requiring a generic parameter type,
+        // users must implement this analytically or use dual numbers for exact sensitivities.
+    }
 
     /// jacobian matrix J = df/dy
     ///

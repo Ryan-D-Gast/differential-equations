@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 
 use crate::{
     linalg::Matrix,
-    ode::{ParametrizedODE, ODE},
+    ode::ODE,
     traits::{Real, State},
 };
 
@@ -11,15 +11,14 @@ use crate::{
 ///
 /// It solves the base equations dy/dt = f(t, y, p)
 /// along with sensitivity equations dS/dt = J_y * S + J_p.
-pub struct ForwardSensitivityProblem<'a, F, T, YBase>
+pub struct ForwardSensitivityProblem<'a, F, T, YBase, const PRM: usize>
 where
     T: Real,
     YBase: State<T>,
-    F: ParametrizedODE<T, YBase>,
+    F: ODE<T, YBase>,
 {
     equation: &'a F,
     state_dim: usize,
-    num_params: usize,
     jy_cache: RefCell<Matrix<T>>,
     jp_cache: RefCell<Matrix<T>>,
     f_base_cache: RefCell<YBase>,
@@ -27,41 +26,39 @@ where
     _marker: PhantomData<T>,
 }
 
-impl<'a, F, T, YBase> ForwardSensitivityProblem<'a, F, T, YBase>
+impl<'a, F, T, YBase, const PRM: usize> ForwardSensitivityProblem<'a, F, T, YBase, PRM>
 where
     T: Real,
     YBase: State<T>,
-    F: ParametrizedODE<T, YBase>,
+    F: ODE<T, YBase>,
 {
     /// Create a new FSA problem wrapper for the given parametrized ODE.
     /// `y0_base` is used to prototype the state caches, which prevents errors
     /// with dynamically sized types needing valid allocation lengths.
     pub fn new(equation: &'a F, y0_base: YBase) -> Self {
         let state_dim = y0_base.len();
-        let num_params = equation.num_params();
         Self {
             equation,
             state_dim,
-            num_params,
             jy_cache: RefCell::new(Matrix::zeros(state_dim, state_dim)),
-            jp_cache: RefCell::new(Matrix::zeros(state_dim, num_params)),
-            f_base_cache: RefCell::new(y0_base),
-            y_base_cache: RefCell::new(y0_base),
+            jp_cache: RefCell::new(Matrix::zeros(state_dim, PRM)),
+            f_base_cache: RefCell::new(y0_base.clone()),
+            y_base_cache: RefCell::new(y0_base.clone()),
             _marker: PhantomData,
         }
     }
 }
 
-impl<'a, F, T, YBase, YAug> ODE<T, YAug> for ForwardSensitivityProblem<'a, F, T, YBase>
+impl<'a, F, T, YBase, YAug, const PRM: usize> ODE<T, YAug> for ForwardSensitivityProblem<'a, F, T, YBase, PRM>
 where
     T: Real,
     YBase: State<T>,
     YAug: State<T>,
-    F: ParametrizedODE<T, YBase>,
+    F: ODE<T, YBase>,
 {
     fn diff(&self, t: T, y_aug: &YAug, dy_aug_dt: &mut YAug) {
         let dim = self.state_dim;
-        let p = self.num_params;
+        let p = PRM;
 
         debug_assert_eq!(y_aug.len(), dim + dim * p, "Augmented state has incorrect dimension");
 
@@ -137,12 +134,6 @@ mod tests {
         fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
             dydt[0] = self.k * y[0];
         }
-    }
-
-    impl ParametrizedODE<f64, SVector<f64, 1>> for ExponentialParametrized {
-        fn num_params(&self) -> usize {
-            1
-        }
 
         fn jacobian_p(&self, _t: f64, y: &SVector<f64, 1>, jp: &mut Matrix<f64>) {
             // dy/dk = y
@@ -154,7 +145,7 @@ mod tests {
     fn test_forward_sensitivity_problem() {
         let system = ExponentialParametrized { k: 2.0 };
         let y0_base = vector![1.0];
-        let fsa_problem = ForwardSensitivityProblem::new(&system, y0_base);
+        let fsa_problem = ForwardSensitivityProblem::<_, _, _, 1>::new(&system, y0_base);
 
         let t0 = 0.0;
         let tf = 1.0;

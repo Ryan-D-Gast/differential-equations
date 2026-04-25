@@ -11,12 +11,6 @@ impl ODE<f64, SVector<f64, 1>> for ExponentialGrowth {
     fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
         dydt[0] = self.k * y[0];
     }
-}
-
-impl ParametrizedODE<f64, SVector<f64, 1>> for ExponentialGrowth {
-    fn num_params(&self) -> usize {
-        1
-    }
 
     fn jacobian_p(&self, _t: f64, y: &SVector<f64, 1>, jp: &mut Matrix<f64>) {
         // dy/dk = y
@@ -38,7 +32,8 @@ fn main() {
     let y0_aug = vector![1.0, 0.0];
 
     let y0_base = vector![1.0];
-    let fsa_problem = ForwardSensitivityProblem::new(&system, y0_base);
+    // Since there is 1 parameter (k), we specify PRM = 1
+    let fsa_problem = ForwardSensitivityProblem::<_, _, _, 1>::new(&system, y0_base);
 
     let method = ExplicitRungeKutta::dop853()
         .rtol(1e-10)

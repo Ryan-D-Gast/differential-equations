@@ -10,5 +10,5 @@ mod solve;
 
 pub use fsa::ForwardSensitivityProblem;
 pub use numerical_method::OrdinaryNumericalMethod;
-pub use ode::{ParametrizedODE, ODE};
+pub use ode::ODE;
 pub use solve::solve_ode;
