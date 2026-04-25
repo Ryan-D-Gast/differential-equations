@@ -67,8 +67,23 @@ where
     /// Creates a new Solution object.
     pub fn new() -> Self {
         Solution {
-            t: Vec::with_capacity(100),
-            y: Vec::with_capacity(100),
+            t: Vec::new(),
+            y: Vec::new(),
+            status: Status::Uninitialized,
+            evals: Evals::new(),
+            steps: Steps::new(),
+            timer: Timer::Off,
+        }
+    }
+
+    /// Creates a new Solution object with pre-allocated capacity for points.
+    ///
+    /// # Arguments
+    /// * `capacity` - Initial capacity for the vectors holding time and state points.
+    pub fn new_with_capacity(capacity: usize) -> Self {
+        Solution {
+            t: Vec::with_capacity(capacity),
+            y: Vec::with_capacity(capacity),
             status: Status::Uninitialized,
             evals: Evals::new(),
             steps: Steps::new(),

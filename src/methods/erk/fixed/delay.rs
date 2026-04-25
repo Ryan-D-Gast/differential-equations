@@ -176,7 +176,7 @@ impl<
                             .max(y_next.get(i_dim).abs());
                     if scale > T::zero() {
                         let diff_val = y_next.get(i_dim) - y_prev_candidate_iter.get(i_dim);
-                        dde_iteration_error += (diff_val / scale).powi(2);
+                        dde_iteration_error += { let val = diff_val / scale; val * val };
                     }
                 }
                 if n_dim > 0 {
