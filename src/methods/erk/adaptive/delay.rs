@@ -206,7 +206,7 @@ impl<
                         + self.rtol[d] * y_next_est_prev.get(d).abs().max(y_high.get(d).abs());
                     if scale > T::zero() {
                         let diff_val = y_high.get(d) - y_next_est_prev.get(d);
-                        iter_err += (diff_val / scale).powi(2);
+                        iter_err += { let val = diff_val / scale; val * val };
                     }
                 }
                 if n_dim > 0 {
