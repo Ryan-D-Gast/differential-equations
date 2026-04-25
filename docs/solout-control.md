@@ -58,12 +58,12 @@ use differential_equations::prelude::*;
 use differential_equations::solout::DefaultSolout;
 
 // Explicitly using DefaultSolout
-let mut default_output = DefaultSolout::new();
-let problem = ODEProblem::new(system, t0, tf, y0);
-let solution = problem.solout(&mut default_output).solve(&mut solver).unwrap();
+let default_output = DefaultSolout::new();
+let problem = Ivp::ode(&system, t0, tf, y0);
+let solution = problem.solout(default_output).method(solver).solve().unwrap();
 
 // Equivalent to the default behavior
-let solution = problem.solve(&mut solver).unwrap();
+let solution = Ivp::ode(&system, t0, tf, y0).method(solver).solve().unwrap();
 ```
 
 ### EvenSolout
@@ -72,7 +72,7 @@ let solution = problem.solve(&mut solver).unwrap();
 
 ```rust
 let dt = 0.1;  // Fixed time interval
-let solution = problem.even(dt).solve(&mut solver).unwrap();
+let solution = problem.even(dt).method(solver).solve().unwrap();
 ```
 
 Under the hood, this creates an `EvenSolout` instance that:
@@ -86,7 +86,7 @@ Under the hood, this creates an `EvenSolout` instance that:
 
 ```rust
 // Generate 9 additional points between each solver step (10 total per interval)
-let solution = problem.dense(10).solve(&mut solver).unwrap();
+let solution = problem.dense(10).method(solver).solve().unwrap();
 ```
 
 This is particularly useful for producing smooth plots or animations of the solution.
@@ -98,7 +98,7 @@ This is particularly useful for producing smooth plots or animations of the solu
 ```rust
 // Evaluate at specific time points
 let evaluation_points = vec![0.0, 0.5, 1.0, 2.0, 3.14, 5.0, 7.5, 10.0];
-let solution = problem.t_eval(evaluation_points).solve(&mut solver).unwrap();
+let solution = problem.t_eval(evaluation_points).method(solver).solve().unwrap();
 ```
 
 This is useful when you need to compare the solution with data at specific time points or when you need solution values at irregular intervals.
@@ -118,12 +118,13 @@ let mut positive_crossings = CrossingSolout::new(0, 0.0)
     .with_direction(CrossingDirection::Positive);
 
 // Use it with a problem
-let solution = problem.solout(&mut crossing_detector).solve(&mut solver).unwrap();
+let solution = problem.solout(crossing_detector).method(solver).solve().unwrap();
 
 // Or use the convenience method
 let solution = problem
     .crossing(0, 0.0, CrossingDirection::Both)
-    .solve(&mut solver).unwrap();
+    .method(solver)
+    .solve().unwrap();
 ```
 
 ### HyperplaneCrossingSolout
@@ -146,7 +147,8 @@ fn extract_position(state: &Vector6<f64>) -> Vector3<f64> {
 // Solve and get only the plane crossing points
 let solution = problem
     .hyperplane_crossing(plane_point, plane_normal, extract_position, CrossingDirection::Both)
-    .solve(&mut solver)
+    .method(solver)
+    .solve()
     .unwrap();
 ```
 
@@ -270,17 +272,18 @@ fn main() {
     }
     
     // Create solver and problem
-    let mut solver = DOPRI5::new().rtol(1e-8).atol(1e-8);
+    let solver = DOPRI5::new().rtol(1e-8).atol(1e-8);
     let y0 = vector![1.0, 0.0];  // Initial position and velocity
     let t0 = 0.0;
     let tf = 10.0;
-    let problem = ODEProblem::new(HarmonicOscillator, t0, tf, y0);
+    let system = HarmonicOscillator;
+    let problem = Ivp::ode(&system, t0, tf, y0);
     
     // Create custom Solout
-    let mut energy_tracker = EnergyTrackingSolout::new(0.1);
+    let energy_tracker = EnergyTrackingSolout::new(0.1);
     
     // Solve with custom Solout
-    let solution = problem.solout(&mut energy_tracker).solve(&mut solver).unwrap();
+    let solution = problem.solout(energy_tracker).method(solver).solve().unwrap();
     
     // Access the energies directly
     let energy_values = energy_tracker.get_energies();

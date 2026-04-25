@@ -1,9 +1,10 @@
-//! Suite of test cases for numerical method error handling
+use differential_equations::ivp::Ivp;
+// Suite of test cases for numerical method error handling
 
 use differential_equations::{
     error::Error,
     methods::{AdamsPredictorCorrector, ExplicitRungeKutta, ImplicitRungeKutta},
-    ode::{ODE, ODEProblem},
+    ode::ODE,
     solout::{Event, EventConfig},
 };
 use nalgebra::{SVector, vector};
@@ -45,11 +46,11 @@ macro_rules! test_solver_error {
             let tf = $tf;
             let y0 = $y0;
 
-            let problem = ODEProblem::new(&system, t0, tf, y0);
-            let mut solver = $solver;
+            let problem = Ivp::ode(&system, t0, tf, y0);
+            let solver = $solver;
 
             // Solve the system
-            let results = problem.event(&system).solve(&mut solver);
+            let results = problem.event(&system).method(solver).solve();
 
             // Assert the result matches expected error
             match results {

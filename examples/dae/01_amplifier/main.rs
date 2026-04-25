@@ -24,6 +24,7 @@
 //! - Working with singular mass matrices (index-1 DAE)
 //! - Using implicit Runge-Kutta methods for stiff DAE problems
 
+use differential_equations::ivp::Ivp;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 
@@ -164,12 +165,6 @@ impl DAE<f64, SVector<f64, 8>> for AmplifierModel {
 }
 
 fn main() {
-    // DAE solver with high accuracy for stiff problems
-    let mut method = ImplicitRungeKutta::radau5()
-        .rtol(1.0e-5)
-        .atol(1.0e-11)
-        .h0(1.0e-6);
-
     // Circuit model
     let model = AmplifierModel::new();
 
@@ -189,10 +184,17 @@ fn main() {
     let t0 = 0.0;
     let tf = 0.05; // 50 milliseconds
 
-    let amplifier_problem = DAEProblem::new(model, t0, tf, y0);
-
     // Solve the DAE with output at regular intervals
-    match amplifier_problem.even(0.0025).solve(&mut method) {
+    match Ivp::dae(&model, t0, tf, y0)
+        .even(0.0025)
+        .method(
+            ImplicitRungeKutta::radau5()
+                .rtol(1.0e-5)
+                .atol(1.0e-11)
+                .h0(1.0e-6),
+        )
+        .solve()
+    {
         Ok(solution) => {
             // Print the solution
             println!("Amplifier DAE Solution:");

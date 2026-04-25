@@ -17,6 +17,7 @@
 //! This example showcases:
 //! - Zero-crossing detection with the crossing() method
 
+use differential_equations::ivp::Ivp;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 
@@ -43,14 +44,13 @@ fn main() {
     let y0 = vector![1.0, 0.0];
     let t0 = 0.0;
     let tf = 20.0;
-    let damped_oscillator_problem = ODEProblem::new(&ode, t0, tf, y0);
 
     // --- Solve the ODE ---
-    let mut method = ExplicitRungeKutta::dopri5().rtol(1e-8).atol(1e-8);
-    match damped_oscillator_problem
+    match Ivp::ode(&ode, t0, tf, y0)
         // Detect zero-crossing of the component of index 0 (x=position) at the value 0.0 from both positive and negative directions
         .crossing(0, 0.0, CrossingDirection::Both)
-        .solve(&mut method)
+        .method(ExplicitRungeKutta::dopri5().rtol(1e-8).atol(1e-8))
+        .solve()
     {
         Ok(solution) => {
             println!("Solution:");

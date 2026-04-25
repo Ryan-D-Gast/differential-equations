@@ -25,6 +25,7 @@
 //!       0, -lambda,0, 0, -y
 //!       2x, 2y, 0, 0, 0 ]
 
+use differential_equations::ivp::Ivp;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 use quill::prelude::*;
@@ -112,13 +113,6 @@ impl DAE<f64, SVector<f64, 5>> for Pendulum {
 }
 
 fn main() {
-    // Choose solver (stiff implicit solver suitable for higher-index DAE)
-    let mut method = ImplicitRungeKutta::radau5()
-        .rtol(1e-8)
-        .atol([1e-10, 1e-10, 1e-10, 1e-10, 1e-12])
-        // Required for index-2 (or index-3) dae problems otherwise step size will converge to zero.
-        .index2_equations([4]);
-
     let g = 9.81;
     let l = 1.0;
     let model = Pendulum::new(g, l);
@@ -137,8 +131,17 @@ fn main() {
     let y0 = vector![x0, y0, vx0, vy0, lambda0];
     let t0 = 0.0;
     let tf = 10.0;
-    let problem = DAEProblem::new(model, t0, tf, y0);
-    match problem.even(0.05).solve(&mut method) {
+    match Ivp::dae(&model, t0, tf, y0)
+        .even(0.05)
+        .method(
+            ImplicitRungeKutta::radau5()
+                .rtol(1e-8)
+                .atol([1e-10, 1e-10, 1e-10, 1e-10, 1e-12])
+                // Required for index-2 (or index-3) DAE problems otherwise step size will converge to zero.
+                .index2_equations([4]),
+        )
+        .solve()
+    {
         Ok(solution) => {
             // Solution points
             println!("\nConstrained pendulum solution (x, y):");

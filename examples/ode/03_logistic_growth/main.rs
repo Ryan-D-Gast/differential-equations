@@ -15,6 +15,7 @@
 //! - Handling events during the solution process
 //! - Accessing solution statistics like step counts and evaluations
 
+use differential_equations::ivp::Ivp;
 use differential_equations::prelude::*;
 use quill::prelude::*;
 
@@ -42,19 +43,16 @@ impl Event for LogisticGrowth {
 }
 
 fn main() {
-    let mut method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
     let y0 = 1.0;
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
-    let logistic_growth_problem = ODEProblem::new(&ode, t0, tf, y0);
 
-    // Between a problem and the calling of solve, output settings can be adjusted.
-    // Here we set the output interval to 2.0 seconds via the even method.
-    match logistic_growth_problem
+    match Ivp::ode(&ode, t0, tf, y0)
         .even(2.0)
         .event(&ode)
-        .solve(&mut method)
+        .method(ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12))
+        .solve()
     {
         Ok(solution) => {
             // Check if the solver stopped due to the event command

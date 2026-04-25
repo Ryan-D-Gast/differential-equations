@@ -1,7 +1,8 @@
-//! Compares the performance of solvers by the statistics, i.e. number of steps, function evaluations, etc.
+use differential_equations::ivp::Ivp;
+// Compares the performance of solvers by the statistics, i.e. number of steps, function evaluations, etc.
 
 use super::systems;
-use differential_equations::{methods::ExplicitRungeKutta, ode::ODEProblem};
+use differential_equations::methods::ExplicitRungeKutta;
 use nalgebra::SVector;
 use quill::prelude::*;
 use std::fs;
@@ -30,11 +31,11 @@ macro_rules! generate_error_vs_steps_lorenz {
             let rho = 28.0;
             let beta = 8.0 / 3.0;
             let system = LorenzSystem { sigma, rho, beta };
-            let problem = ODEProblem::new(&system, t0, tf, y0);
+            let problem = Ivp::ode(&system, t0, tf, y0);
 
             // Get reference solution with very high accuracy
-            let mut reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
-            let reference_sol = problem.solve(&mut reference_solver).unwrap();
+            let reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
+            let reference_sol = problem.clone().method(reference_solver).solve().unwrap();
             let reference_yf = reference_sol.y.last().unwrap().clone();
 
             // Test each solver with different tolerance values
@@ -42,8 +43,7 @@ macro_rules! generate_error_vs_steps_lorenz {
 
             $(
                 for &tol in &tolerance_values {
-                    let mut solver = $solver_generator(tol);
-                    let sol = problem.solve(&mut solver).unwrap();
+                    let sol = problem.clone().method($solver_generator(tol)).solve().unwrap();
                     let yf = sol.y.last().unwrap().clone();
                     let error = (yf - &reference_yf).norm();
 
@@ -75,11 +75,11 @@ macro_rules! generate_error_vs_steps_vanderpol {
             let y0 = SVector::<f64, 2>::new(2.0, 0.0);
             let mu = 5.0; // Higher values make the problem more stiff
             let system = VanDerPolOscillator { mu };
-            let problem = ODEProblem::new(&system, t0, tf, y0);
+            let problem = Ivp::ode(&system, t0, tf, y0);
 
             // Get reference solution with very high accuracy
-            let mut reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
-            let reference_sol = problem.solve(&mut reference_solver).unwrap();
+            let reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
+            let reference_sol = problem.clone().method(reference_solver).solve().unwrap();
             let reference_yf = reference_sol.y.last().unwrap().clone();
 
             // Test each solver with different tolerance values
@@ -87,8 +87,7 @@ macro_rules! generate_error_vs_steps_vanderpol {
 
             $(
                 for &tol in &tolerance_values {
-                    let mut solver = $solver_generator(tol);
-                    let sol = problem.solve(&mut solver).unwrap();
+                    let sol = problem.clone().method($solver_generator(tol)).solve().unwrap();
                     let yf = sol.y.last().unwrap().clone();
                     let error = (yf - &reference_yf).norm();
 
@@ -121,11 +120,11 @@ macro_rules! generate_error_vs_steps_brusselator {
             let a = 1.0;
             let b = 3.0;
             let system = BrusselatorSystem { a, b };
-            let problem = ODEProblem::new(&system, t0, tf, y0);
+            let problem = Ivp::ode(&system, t0, tf, y0);
 
             // Get reference solution with very high accuracy
-            let mut reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
-            let reference_sol = problem.solve(&mut reference_solver).unwrap();
+            let reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
+            let reference_sol = problem.clone().method(reference_solver).solve().unwrap();
             let reference_yf = reference_sol.y.last().unwrap().clone();
 
             // Test each solver with different tolerance values
@@ -133,8 +132,7 @@ macro_rules! generate_error_vs_steps_brusselator {
 
             $(
                 for &tol in &tolerance_values {
-                    let mut solver = $solver_generator(tol);
-                    let sol = problem.solve(&mut solver).unwrap();
+                    let sol = problem.clone().method($solver_generator(tol)).solve().unwrap();
                     let yf = sol.y.last().unwrap().clone();
                     let error = (yf - &reference_yf).norm();
 
@@ -175,11 +173,11 @@ macro_rules! generate_error_vs_steps_cr3bp {
             );
             let mu = 0.012150585609624; // Earth-Moon system
             let system = Cr3bp { mu };
-            let problem = ODEProblem::new(&system, t0, tf, y0);
+            let problem = Ivp::ode(&system, t0, tf, y0);
 
             // Get reference solution with very high accuracy
-            let mut reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
-            let reference_sol = problem.solve(&mut reference_solver).unwrap();
+            let reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
+            let reference_sol = problem.clone().method(reference_solver).solve().unwrap();
             let reference_yf = reference_sol.y.last().unwrap().clone();
 
             // Test each solver with different tolerance values
@@ -187,8 +185,7 @@ macro_rules! generate_error_vs_steps_cr3bp {
 
             $(
                 for &tol in &tolerance_values {
-                    let mut solver = $solver_generator(tol);
-                    let sol = problem.solve(&mut solver).unwrap();
+                    let sol = problem.clone().method($solver_generator(tol)).solve().unwrap();
                     let yf = sol.y.last().unwrap().clone();
                     let error = (yf - &reference_yf).norm();
 

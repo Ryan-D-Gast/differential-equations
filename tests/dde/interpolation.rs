@@ -1,7 +1,8 @@
-//! Suite of test cases for checking the interpolation of DDE solvers.
+use differential_equations::ivp::Ivp;
+// Suite of test cases for checking the interpolation of DDE solvers.
 
 use super::systems::ExponentialGrowth;
-use differential_equations::{dde::DDEProblem, methods::ExplicitRungeKutta};
+use differential_equations::methods::ExplicitRungeKutta;
 use nalgebra::vector;
 
 macro_rules! test_dde_interpolation {
@@ -25,14 +26,14 @@ macro_rules! test_dde_interpolation {
             // Define the system
             let system = ExponentialGrowth { k };
 
-            // Create Initial Value Problem (DDEProblem) for the system
+            // Create Initial Value Problem for the system
             // For L=0, the history function's exact form for t < t0 is less critical
             // as long as it provides a value at t0 if needed by an internal mechanism.
             // The primary check is for t > t0 via interpolation.
-            let problem = DDEProblem::new(&system, t0, tf, y0, phi);
+            let problem = Ivp::dde(&system, t0, tf, y0, phi);
 
             // Initialize the solver
-            let mut solver = $solver;
+            let solver = $solver;
 
             // Points for interpolation
             let t_eval_points = vec![0.5, 1.0, 1.69];
@@ -40,7 +41,7 @@ macro_rules! test_dde_interpolation {
             // Solve the system, requesting solutions at t_eval_points
             let results = problem
                 .t_eval(t_eval_points.clone())
-                .solve(&mut solver)
+                .method(solver).solve()
                 .unwrap_or_else(|e| {
                     panic!("{} failed to solve: {:?}", stringify!($solver_name), e);
                 });

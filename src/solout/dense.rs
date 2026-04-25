@@ -37,17 +37,24 @@ use super::*;
 /// let t0 = 0.0;
 /// let tf = 10.0;
 /// let y0 = vector![1.0, 0.0];
-/// let mut solver = ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8);
+/// let solver = ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8);
 ///
 /// // Generate 9 additional points between each solver step (10 total per interval)
-/// let mut dense_output = DenseSolout::new(10);
+/// let dense_output = DenseSolout::new(10);
 ///
 /// // Solve with dense output
-/// let problem = ODEProblem::new(&system, t0, tf, y0);
-/// let solution = problem.solout(&mut dense_output).solve(&mut solver).unwrap();
+/// let solution = Ivp::ode(&system, t0, tf, y0)
+///     .solout(dense_output)
+///     .method(solver)
+///     .solve()
+///     .unwrap();
 ///
 /// // Note: This is equivalent to using the convenience method:
-/// let solution = problem.dense(10).solve(&mut solver).unwrap();
+/// let solution = Ivp::ode(&system, t0, tf, y0)
+///     .dense(10)
+///     .method(ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8))
+///     .solve()
+///     .unwrap();
 /// ```
 ///
 /// # Output Characteristics

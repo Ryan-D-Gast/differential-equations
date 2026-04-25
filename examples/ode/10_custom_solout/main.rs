@@ -21,6 +21,7 @@
 //! - Event detection during solution output
 //! - Energy conservation monitoring with high-accuracy solvers
 
+use differential_equations::ivp::Ivp;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 use std::f64::consts::PI;
@@ -42,6 +43,7 @@ impl ODE<f64, SVector<f64, 2>> for Pendulum {
 /// 2. Records energy at each point
 /// 3. Ensures minimum spacing between points
 /// 4. Applies a boost to angular velocity when crossing zero
+#[derive(Clone)]
 struct PendulumSolout {
     g: f64,                   // Gravitational constant
     l: f64,                   // Length of pendulum
@@ -157,31 +159,28 @@ fn main() {
     let y0 = vector![theta0, 0.0];
     let t0 = 0.0;
     let tf = 10.0;
-    let problem = ODEProblem::new(&pendulum, t0, tf, y0);
-
-    // --- Solout and Solver Configuration ---
-    let mut solout = PendulumSolout::new(g, l, 0.1).with_boost(0.05);
-    let mut solver = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8);
+    let energy = PendulumSolout::new(g, l, 0.1);
 
     // --- Solve the ODE with custom solout ---
-    let result = problem
+    let result = Ivp::ode(&pendulum, t0, tf, y0)
         // The custom solout is applied to the problem here
-        .solout(&mut solout)
-        .solve(&mut solver)
+        .solout(PendulumSolout::new(g, l, 0.1).with_boost(0.05))
+        .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8))
+        .solve()
         .unwrap();
 
     // Print the results
     println!("Pendulum simulation results:");
     println!("Number of output points: {}", result.t.len());
-    println!("Number of oscillations: {}", solout.oscillation_count / 2); // Divide by 2 because we count both crossings
     println!("\n Time   | Angle (rad) | Angular Vel | Energy");
     println!("------------------------------------------------");
-    for (i, (t, y)) in result.iter().enumerate() {
-        let energy = solout.energy_values[i];
-
+    for (t, y) in result.iter() {
         println!(
             "{:6.3}  | {:11.6} | {:11.6} | {:11.6}",
-            t, y[0], y[1], energy
+            t,
+            y[0],
+            y[1],
+            energy.calculate_energy(y)
         );
     }
 }

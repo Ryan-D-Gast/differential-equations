@@ -13,9 +13,13 @@ macro_rules! bench_adaptive_step {
                 &(),
                 |b, _| {
                     b.iter(|| {
-                        let mut solver = $solver_fn.rtol($rtol).atol($atol);
-                        let problem = ODEProblem::new($system, $t0, $t1, $y0.clone());
-                        black_box(problem.solve(&mut solver).unwrap());
+                        let solver = $solver_fn.rtol($rtol).atol($atol);
+                        black_box(
+                            Ivp::ode($system, $t0, $t1, $y0.clone())
+                                .method(solver)
+                                .solve()
+                                .unwrap(),
+                        );
                     });
                 },
             );
@@ -35,9 +39,13 @@ macro_rules! bench_dormand_prince {
                 &(),
                 |b, _| {
                     b.iter(|| {
-                        let mut solver = $solver_fn.h0($h0).rtol($rtol).atol($atol);
-                        let problem = ODEProblem::new($system, $t0, $t1, $y0.clone());
-                        black_box(problem.solve(&mut solver).unwrap());
+                        let solver = $solver_fn.h0($h0).rtol($rtol).atol($atol);
+                        black_box(
+                            Ivp::ode($system, $t0, $t1, $y0.clone())
+                                .method(solver)
+                                .solve()
+                                .unwrap(),
+                        );
                     });
                 },
             );

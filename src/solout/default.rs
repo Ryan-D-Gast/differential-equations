@@ -41,17 +41,23 @@ use super::*;
 /// let t0 = 0.0;
 /// let tf = 2.0;
 /// let y0 = vector![1.0];
-/// let mut solver = ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8);
+/// let solver = ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8);
 ///
 /// // Use the default output handler explicitly
-/// let mut default_output = DefaultSolout::new();
+/// let default_output = DefaultSolout::new();
 ///
 /// // Solve with default output
-/// let problem = ODEProblem::new(&system, t0, tf, y0);
-/// let solution = problem.solout(&mut default_output).solve(&mut solver).unwrap();
+/// let solution = Ivp::ode(&system, t0, tf, y0)
+///     .solout(default_output)
+///     .method(solver)
+///     .solve()
+///     .unwrap();
 ///
 /// // Note: This is equivalent to the default behavior
-/// let solution2 = problem.solve(&mut solver).unwrap();
+/// let solution2 = Ivp::ode(&system, t0, tf, y0)
+///     .method(ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8))
+///     .solve()
+///     .unwrap();
 /// ```
 ///
 /// # Output Characteristics
@@ -62,6 +68,7 @@ use super::*;
 ///
 /// For evenly spaced output points, consider using `EvenSolout` instead.
 ///
+#[derive(Clone, Debug)]
 pub struct DefaultSolout {}
 
 impl<T, Y> Solout<T, Y> for DefaultSolout

@@ -39,12 +39,12 @@ impl<T: Real, Y: State<T>> AdamsPredictorCorrector<Ordinary, Fixed, T, Y, 4> {
     ///         dydt[1] = -self.k * y[0];
     ///     }
     /// }
-    /// let mut apcf4 = AdamsPredictorCorrector::f4(0.01);
+    /// let apcf4 = AdamsPredictorCorrector::f4(0.01);
     /// let t0 = 0.0;
     /// let tf = 10.0;
     /// let y0 = vector![1.0, 0.0];
     /// let system = HarmonicOscillator { k: 1.0 };
-    /// let results = ODEProblem::new(&system, t0, tf, y0).solve(&mut apcf4).unwrap();
+    /// let results = Ivp::ode(&system, t0, tf, y0).method(apcf4).solve().unwrap();
     /// let expected = vector![-0.83907153, 0.54402111];
     /// assert!((results.y.last().unwrap()[0] - expected[0]).abs() < 1e-2);
     /// assert!((results.y.last().unwrap()[1] - expected[1]).abs() < 1e-2);

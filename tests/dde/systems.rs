@@ -1,4 +1,4 @@
-//! Defines systems to test the DDE solvers
+// Defines systems to test the DDE solvers
 
 use differential_equations::dde::DDE;
 use nalgebra::SVector;

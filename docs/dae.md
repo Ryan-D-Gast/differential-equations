@@ -1,10 +1,10 @@
 # Differential-Algebraic Equations (DAE)
 
-The `dae` module provides tools for solving differential-algebraic equations (DAEs), focusing on initial value problems (DAEProblems) and supporting index-1, index-2, and index-3 systems.
+The `dae` module provides tools for solving differential-algebraic equations (DAEs), focusing on initial value problems (DAE IVPs) and supporting index-1, index-2, and index-3 systems.
 
 ## Table of Contents
 - [Defining a DAE](#defining-a-dae)
-- [Solving an Initial Value Problem (DAEProblem)](#solving-an-initial-value-problem)
+- [Solving an Initial Value Problem (DAE IVP builder)](#solving-an-initial-value-problem)
 - [Examples](#examples)
 
 ## Defining a DAE
@@ -144,7 +144,7 @@ impl DAE<f64, SVector<f64, 8>> for AmplifierModel {
 
 ## Solving an Initial Value Problem
 
-The `DAEProblem` trait is used to solve the system using the solver. The trait includes methods to set the initial conditions, solve the system, and get the solution. The `solve` method returns a `Result<Solution, Status>` where `Solution` contains the solution and statistics.
+The `DAE IVP builder` trait is used to solve the system using the solver. The trait includes methods to set the initial conditions, solve the system, and get the solution. The `solve` method returns a `Result<Solution, Status>` where `Solution` contains the solution and statistics.
 
 ```rust
 fn main() { 
@@ -175,8 +175,8 @@ fn main() {
     let t0 = 0.0;
     let tf = 0.05;
 
-    let problem = DAEProblem::new(model, t0, tf, y0);
-    match problem.even(0.0025).solve(&mut method) {
+    let problem = Ivp::dae(&model, t0, tf, y0);
+    match problem.even(0.0025).method(method).solve() {
         Ok(solution) => {
             println!("Solution:");
             for (t, y) in solution.iter() {

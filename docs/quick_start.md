@@ -51,13 +51,15 @@ impl ODE<f64, SVector<f64, 1>> for LogisticGrowth {
 }
 ```
 
-## Solving an Initial Value Problem with `ODEProblem`
+## Solving an Initial Value Problem with `Ivp`
 
-Once you have implemented the `ODE` trait for your system, you can use the `ODEProblem` struct to set up and solve the initial value problem. The `ODEProblem` acts as a solver controller, orchestrating the solution process.
+Once you have implemented the `ODE` trait for your system, use `Ivp::ode` to set up
+and solve the initial value problem. The `Ivp` builder acts as a solver controller,
+orchestrating the solution process.
 
 ### Setting up the Problem
 
-You create an `ODEProblem` by providing:
+You create an ODE IVP by providing:
 *   An instance of your `ODE` implementation (e.g., `LogisticGrowth`).
 *   The initial time `t0`.
 *   The final time `tf`.
@@ -69,7 +71,7 @@ You'll also need to select a numerical method (solver). The library offers vario
 
 ### Solving and Handling Output
 
-The `solve` method on `ODEProblem` executes the numerical integration. You can configure how the solution is outputted, for instance, by requesting points at even intervals using the `even()` method.
+The `solve` method on the `Ivp` builder executes the numerical integration. You can configure how the solution is outputted, for instance, by requesting points at even intervals using the `even()` method.
 
 The `solve` method returns a `Result<Solution, Status>`. The `Solution` struct contains the time points, state vectors, and solver statistics. The `Status` indicates how the solver finished (e.g., `Ok`, `Interrupted`).
 
@@ -83,7 +85,7 @@ use nalgebra::{SVector, vector};
 
 fn main() {
     // Choose a numerical method and set tolerances
-    let mut method = ExplicitRungeKutta::dop853()
+    let method = ExplicitRungeKutta::dop853()
         .rtol(1e-7) // Set relative tolerance
         .atol(1e-7);// Set absolute tolerance
 
@@ -95,13 +97,11 @@ fn main() {
     // Create an instance of the ODE
     let ode_system = LogisticGrowth { k: 1.0, m: 10.0 };
 
-    // Create the ODEProblem
-    let problem = ODEProblem::new(ode_system, t0, tf, y0);
-
     // Solve the problem, requesting output every 1.0 time unit
-    match problem
+    match Ivp::ode(&ode_system, t0, tf, y0)
         .even(1.0) // Set Solout to output every 1.0 time unit
-        .solve(&mut method) // Solve the ODE
+        .method(method)
+        .solve() // Solve the ODE
     {
         Ok(solution) => {
             // Check if the solver was interrupted by the event function
@@ -148,7 +148,7 @@ Solver Statistics:
 
 ## Understanding Generics: `T` and `Y`
 
-The `ODE` trait and related components like `ODEProblem` are defined with generics `<T, Y,...>`:
+The `ODE` trait and related components like `Ivp::ode` are defined with generics `<T, Y,...>`:
 
 *   `T`: Represents the floating-point type used for calculations (e.g., `f64` or `f32`). This type applies to time and the components of the state vector.
 *   `Y`: Represents the type of the state vector. This can be:

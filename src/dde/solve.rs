@@ -18,10 +18,9 @@ use crate::{
 /// It manages the solver steps, handles history lookups, processes events defined
 /// in the [`DDE`] trait, and collects the solution according to the [`Solout`] strategy.
 ///
-/// **Note:** Users typically interact with the higher-level [`DDEProblem`] struct,
-/// which provides a more convenient interface and wraps this function. Use this
-/// function directly only if you need finer control over the solving process
-/// beyond what `DDEProblem` offers.
+/// **Note:** Prefer [`crate::ivp::Ivp::dde`] for the high-level builder API. Use
+/// this function directly only if you need finer control over solver and output
+/// handler references.
 ///
 /// # Overview
 ///

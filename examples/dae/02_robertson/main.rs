@@ -22,6 +22,7 @@
 //! The system is highly stiff with widely separated time scales, making it
 //! an excellent test case for implicit DAE solvers.
 
+use differential_equations::ivp::Ivp;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 use quill::prelude::*;
@@ -81,11 +82,6 @@ impl DAE<f64, SVector<f64, 3>> for RobertsonModel {
 }
 
 fn main() {
-    // DAE solver for stiff chemical kinetics
-    let mut method = ImplicitRungeKutta::radau5()
-        .rtol(1e-5)
-        .atol([1e-6, 1e-10, 1e6]);
-
     // Robertson reaction rate constants
     let k1 = 0.04; // A → B
     let k2 = 3.0e7; // B + B → C + B (fast reaction)
@@ -104,8 +100,6 @@ fn main() {
     let t0 = 0.0;
     let tf = 4.0 * 10f64.powf(6.0);
 
-    let robertson_problem = DAEProblem::new(model, t0, tf, y0);
-
     // Output points: ~200 log-spaced points between 1e-6 and 1e6
     let n_pts = 200usize;
     let exp_min = -6.0f64;
@@ -116,7 +110,15 @@ fn main() {
         .collect::<Vec<_>>();
 
     // Solve the DAE
-    match robertson_problem.t_eval(points).solve(&mut method) {
+    match Ivp::dae(&model, t0, tf, y0)
+        .t_eval(points)
+        .method(
+            ImplicitRungeKutta::radau5()
+                .rtol(1e-5)
+                .atol([1e-6, 1e-10, 1e6]),
+        )
+        .solve()
+    {
         Ok(solution) => {
             // Print the statistics
             println!("Function evaluations: {}", solution.evals.function);

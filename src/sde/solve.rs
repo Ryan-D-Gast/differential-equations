@@ -17,9 +17,9 @@ use crate::{
 /// It handles initialization, time stepping, event detection, and solution output
 /// according to the provided output strategy.
 ///
-/// Note that it is recommended to use the `SDEProblem` struct to solve SDEs,
-/// as it provides a more feature-rich and convenient interface which
-/// wraps this function. See examples on github for more details.
+/// Prefer [`crate::ivp::Ivp::sde`] for the high-level builder API. This function
+/// remains available for callers that need direct control over solver and output
+/// handler references.
 ///
 /// # Overview
 ///

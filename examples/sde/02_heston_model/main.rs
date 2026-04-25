@@ -92,12 +92,13 @@ fn main() {
 
     // Create the Heston model SDE problem
     let mut sde = HestonModel::new(mu, kappa, theta, sigma, rho, seed);
-    let mut problem = SDEProblem::new(&mut sde, t0, tf, y0);
 
     // --- Solve the SDE ---
     let dt = 0.01;
-    let mut solver = ExplicitRungeKutta::three_eighths(dt);
-    let solution = problem.solve(&mut solver).unwrap();
+    let solution = Ivp::sde(&mut sde, t0, tf, y0)
+        .method(ExplicitRungeKutta::three_eighths(dt))
+        .solve()
+        .unwrap();
 
     // --- Print the results ---
     let final_price = solution.y.last().unwrap().price;

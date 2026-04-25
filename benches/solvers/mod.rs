@@ -1,8 +1,8 @@
 use crate::systems::{chaotic::*, linear::*, oscillators::*};
 use criterion::{BenchmarkId, Criterion, criterion_group};
 use differential_equations::{
+    ivp::Ivp,
     methods::{AdamsPredictorCorrector, ExplicitRungeKutta},
-    ode::*,
 };
 use nalgebra::vector;
 use std::hint::black_box;

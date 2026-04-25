@@ -66,7 +66,7 @@ pub type ExtractorFn<Y, P> = fn(&Y) -> P;
 ///     1.021881345465263, 0.0, -0.182000000000000, // Position
 ///     0.0, -0.102950816739606, 0.0 // Velocity
 /// ];
-/// let mut solver = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
+/// let solver = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
 ///
 /// // Function to extract position from state vector
 /// fn extract_position(state: &Vector6<f64>) -> Vector3<f64> {
@@ -78,8 +78,11 @@ pub type ExtractorFn<Y, P> = fn(&Y) -> P;
 /// let plane_normal = vector![0.0, 1.0, 1.0]; // Normal vector (z-axis)
 ///
 /// // Solve and get only the plane crossing points
-/// let problem = ODEProblem::new(&system, t0, tf, y0);
-/// let solution = problem.hyperplane_crossing(plane_point, plane_normal, extract_position, CrossingDirection::Both).solve(&mut solver).unwrap();
+/// let solution = Ivp::ode(&system, t0, tf, y0)
+///     .hyperplane_crossing(plane_point, plane_normal, extract_position, CrossingDirection::Both)
+///     .method(solver)
+///     .solve()
+///     .unwrap();
 ///
 /// // solution now contains only the points where the trajectory crosses the z=0 plane
 /// ```
@@ -126,7 +129,10 @@ where
         let norm = |y: Y1| {
             let mut norm = T::zero();
             for i in 0..y.len() {
-                norm += { let val = y.get(i); val * val };
+                norm += {
+                    let val = y.get(i);
+                    val * val
+                };
             }
             norm.sqrt()
         };

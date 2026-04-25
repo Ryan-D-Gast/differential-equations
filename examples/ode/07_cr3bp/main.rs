@@ -22,6 +22,7 @@
 //! - State extraction for specialized calculations
 
 use differential_equations::derive::State;
+use differential_equations::ivp::Ivp;
 use differential_equations::prelude::*;
 use nalgebra::{Vector3, vector};
 
@@ -76,15 +77,13 @@ fn main() {
     };
     let t0 = 0.0;
     let tf = 3.0 * 1.509263667286943; // Period of the orbit (sv(t0) ~= sv(tf / 3.0))
-    let cr3bp_problem = ODEProblem::new(&ode, t0, tf, sv);
 
     // Defines a function to extract the state vector into a Vector3 for hyperplane crossing detection
     fn extractor(sv: &StateVector<f64>) -> Vector3<f64> {
         vector![sv.x, sv.y, sv.z]
     }
 
-    let mut method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
-    match cr3bp_problem
+    match Ivp::ode(&ode, t0, tf, sv)
         // Detect crossing of the hyperplane centered at x = 1.0, y = 0.0, z = 0.0  facing the direction of the norm of the vector [0.5, 0.5, 0.0]
         .hyperplane_crossing(
             vector![1.0, 0.0, 0.0],
@@ -92,7 +91,8 @@ fn main() {
             extractor,
             CrossingDirection::Both,
         )
-        .solve(&mut method)
+        .method(ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12))
+        .solve()
     {
         Ok(solution) => {
             // Print the solution

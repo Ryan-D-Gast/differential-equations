@@ -88,7 +88,7 @@ impl Event<f64, SVector<f64, 1>> for GBM {
 
 ## Solving an SDE Problem
 
-The `SDEProblem` struct is used to set up and solve an SDE. The `solve` method returns a `Result<SDESolution, Error>` where `SDESolution` contains the solution vectors and solver statistics.
+The `SDE IVP builder` struct is used to set up and solve an SDE. The `solve` method returns a `Result<SDESolution, Error>` where `SDESolution` contains the solution vectors and solver statistics.
 
 ```rust
 fn main() {
@@ -101,16 +101,15 @@ fn main() {
     let seed = 42;   // For reproducibility
     
     // Create SDE system
-    let sde = GBM::new(mu, sigma, seed);
+    let mut sde = GBM::new(mu, sigma, seed);
     
     // Create solver with fixed step size
-    let mut solver = ExplicitRungeKutta::rk4(0.01);
+    let solver = ExplicitRungeKutta::rk4(0.01);
     
     // Create and solve the problem
-    let problem = SDEProblem::new(&sde, t0, tf, y0);
-    let solution = problem
-        .event(&sde)  // Add event detection
-        .solve(&mut solver)
+    let solution = Ivp::sde(&mut sde, t0, tf, y0)
+        .method(solver)
+        .solve()
         .unwrap();
     
     // Check if solver terminated due to event

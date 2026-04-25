@@ -1,12 +1,12 @@
 # Delay Differential Equations (DDE)
 
-The `dde` module provides tools for solving delay differential equations (DDEs), which are differential equations where the derivative of the unknown function at a certain time depends on the solution at previous times. This module focuses on initial value problems for DDEs (`DDEProblem`).
+The `dde` module provides tools for solving delay differential equations (DDEs), which are differential equations where the derivative of the unknown function at a certain time depends on the solution at previous times. This module focuses on initial value problems for DDEs (`DDE IVP builder`).
 
 ## Table of Contents
 
 - [Defining a DDE](#defining-a-dde)
 - [The History Function](#the-history-function)
-- [Solving an Initial Value Problem (DDEProblem)](#solving-an-initial-value-problem)
+- [Solving an Initial Value Problem (DDE IVP builder)](#solving-an-initial-value-problem)
 - [Examples](#examples)
 - [Notation](#notation)
 
@@ -85,7 +85,7 @@ Generics `<const L: usize, T, Y>` are used: `L` is the number of discrete lags, 
 
 A crucial component for solving DDEs is the **history function**. This function, `phi(t)`, provides the solution `y(t)` for all times `t <= t0`, where `t0` is the initial time of the simulation. The solver uses this function to look up values of `y` at past times when evaluating delayed terms, especially at the beginning of the integration interval.
 
-The history function is provided when creating a `DDEProblem` and should have the signature `Fn(T) -> V`.
+The history function is provided when creating a `DDE IVP builder` and should have the signature `Fn(T) -> V`.
 
 ```rust
 // Example history function: y(t) = initial_state for t <= 0
@@ -97,13 +97,13 @@ let history_fn = |_t: f64| -> Vector3<f64> {
 ```
 The history function takes the time `t` (where `t <= t0`) and returns the historical value of `y(t)` as type `Y`.
 
-## Solving an Initial Value Problem (DDEProblem)
+## Solving an Initial Value Problem (DDE IVP builder)
 
-The `DDEProblem` struct is used to set up and solve the DDE. It requires the DDE system, the time interval `[t0, tf]`, the initial state `y0` (which is `y(t0)`), and the history function `phi`.
+The `DDE IVP builder` struct is used to set up and solve the DDE. It requires the DDE system, the time interval `[t0, tf]`, the initial state `y0` (which is `y(t0)`), and the history function `phi`.
 
 ```rust
 fn main() {
-    let mut method = ExplicitRungeKutta::dopri5().rtol(1e-6).atol(1e-8); // Using the DDE45 (DOPRI5) solver
+    let method = ExplicitRungeKutta::dopri5().rtol(1e-6).atol(1e-8); // Using the DDE45 (DOPRI5) solver
 
     let t0 = 0.0;
     let tf = 10.0;
@@ -121,12 +121,13 @@ fn main() {
         y0 // Return initial state for all t <= t0
     };
 
-    let problem = DDEProblem::new(&system, t0, tf, y0, history_fn);
+    let problem = Ivp::dde(&system, t0, tf, y0, history_fn);
 
     match problem
         .even(0.5) // Example: Save solution every 0.5 time units
         .event(&system) // Add event detection
-        .solve(&mut method)
+        .method(method)
+        .solve()
     {
         Ok(solution) => {
             // Check if solver terminated due to event

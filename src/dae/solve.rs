@@ -1,4 +1,4 @@
-//! Solve DAEProblem function
+//! Low-level DAE solve function.
 
 use crate::{
     control::ControlFlag,
@@ -11,15 +11,15 @@ use crate::{
     traits::{Real, State},
 };
 
-/// Solves an Initial Value Problem (DAEProblem) for a system of differential algebraic equations.
+/// Solves an Initial Value Problem for a system of differential algebraic equations.
 ///
 /// This is the core solution function that drives the numerical integration of DAEs.
 /// It handles initialization, time stepping, event detection, and solution output
 /// according to the provided output strategy.
 ///
-/// Note that it is recommend to use the `DAEProblem` struct to solve the DAEs,
-/// as it provides far more feature rich and convenient interface which
-/// wraps this function. See examples on github for more details.
+/// Prefer [`crate::ivp::Ivp::dae`] for the high-level builder API. This function
+/// remains available for callers that need direct control over solver and output
+/// handler references.
 ///
 /// # Overview
 ///

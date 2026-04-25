@@ -41,17 +41,24 @@ use super::*;
 /// let t0 = 0.0;
 /// let tf = 10.0;
 /// let y0 = vector![1.0, 0.0];
-/// let mut solver = ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8);
+/// let solver = ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8);
 ///
 /// // Generate output points with a fixed interval of 0.1
-/// let mut even_output = EvenSolout::new(0.1, t0, tf);
+/// let even_output = EvenSolout::new(0.1, t0, tf);
 ///
 /// // Solve with evenly spaced output
-/// let problem = ODEProblem::new(&system, t0, tf, y0);
-/// let solution = problem.solout(&mut even_output).solve(&mut solver).unwrap();
+/// let solution = Ivp::ode(&system, t0, tf, y0)
+///     .solout(even_output)
+///     .method(solver)
+///     .solve()
+///     .unwrap();
 ///
 /// // Note: This is equivalent to using the convenience method:
-/// let solution = problem.even(0.1).solve(&mut solver).unwrap();
+/// let solution = Ivp::ode(&system, t0, tf, y0)
+///     .even(0.1)
+///     .method(ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8))
+///     .solve()
+///     .unwrap();
 /// ```
 ///
 /// # Output Characteristics

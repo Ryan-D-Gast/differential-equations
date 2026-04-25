@@ -1,11 +1,11 @@
 # Ordinary Differential Equations (ODE)
 
-The `ode` module provides tools for solving ordinary differential equations (ODEs), specifically focusing on initial value problems (ODEProblems).
+The `ode` module provides tools for solving ordinary differential equations (ODEs), specifically focusing on initial value problems (ODE IVPs).
 
 ## Table of Contents
 
 - [Defining a ODE](#defining-an-ode)
-- [Solving an Initial Value Problem (ODEProblem)](#solving-an-initial-value-problem)
+- [Solving an Initial Value Problem (ODE IVP builder)](#solving-an-initial-value-problem)
 - [Examples](#examples)
 - [Benchmarks](#benchmarks)
 - [Notation](#notation)
@@ -24,7 +24,7 @@ For event detection with precise zero-crossing detection, implement the separate
 * `event` - Event function `g(t,y)` whose zero crossings are detected using Brent-Dekker root finding
 
 ### Solout Trait
-* `solout` - function to choose which points to save in the solution. This is useful when you want to save only points that meet certain criteria. Common implementations are included in the `solout` module. The `ODEProblem` trait implements methods to use them easily without direct interaction as well e.g. `even`, `dense`, and `t_eval`.
+* `solout` - function to choose which points to save in the solution. This is useful when you want to save only points that meet certain criteria. Common implementations are included in the `solout` module. The `ODE IVP builder` trait implements methods to use them easily without direct interaction as well e.g. `even`, `dense`, and `t_eval`.
 
 ### Implementation
 ```rust
@@ -62,20 +62,21 @@ Note that for clarity, the `ODE` is defined with generics `<T, Y>` where `T` is 
 
 ## Solving an Initial Value Problem
 
-The `ODEProblem` trait is used to solve the system using the solver. The trait includes methods to set the initial conditions, solve the system, and get the solution. The `solve` method returns a `Result<Solution, Status>` where `Solution` is a struct containing the solution including fields with outputted t, y, and the solver status, and `Status` is returned with the error if it occurs. In addition, statistics including steps, evals, rejected steps, accepted steps, and the solve time are included as fields in the `Solution` struct.
+The `Ivp::ode` builder is used to solve the system using the solver. The builder includes methods to set the initial conditions, output strategy, event handling, and numerical method. The `solve` method returns a `Result<Solution, Error>` where `Solution` contains output times, states, status, statistics, and solve time.
 
 ```rust
 fn main() {
-    let mut method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
+    let method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
     let y0 = 1.0;
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
-    let logistic_growth_problem = ODEProblem::new(ode, t0, tf, y0);
+    let logistic_growth_problem = Ivp::ode(&ode, t0, tf, y0);
     match logistic_growth_problem
         .even(1.0)          // uses EvenSolout to save with dt of 1.0
         .event(&ode)        // Add event detection using the Event trait implementation
-        .solve(&mut method) // Solve the system and return the solution
+        .method(method)
+        .solve() // Solve the system and return the solution
     {
         Ok(solution) => {
             // Check if the solver stopped due to event detection
@@ -123,9 +124,9 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 
 | Example | Description & Demonstrated Features |
 |---|---|
-| [Exponential Growth](../../examples/ode/01_exponential_growth/main.rs) | Solves a simple exponential growth equation using the `dop853` method. Demonstrates basic usage of `ODEProblem` and `ODE` traits. Manually prints results from `Solution` struct fields. |
+| [Exponential Growth](../../examples/ode/01_exponential_growth/main.rs) | Solves a simple exponential growth equation using the `dop853` method. Demonstrates basic usage of `ODE IVP builder` and `ODE` traits. Manually prints results from `Solution` struct fields. |
 | [Harmonic Oscillator](../../examples/ode/02_harmonic_oscillator/main.rs) | Simulates a harmonic oscillator system using `rk4` method. Uses a condensed setup to demonstrate chaining to solve without intermediate variables. Uses `last` method on solution to conveniently get results and print. |
-| [Logistic Growth](../../examples/ode/03_logistic_growth/main.rs) | Models logistic growth with a carrying capacity. Demonstrates the use of the `event` function to stop the solver based on a condition. In addition shows the use of `even` output for `ODEProblem` setup and `iter` method on the solution for output. |
+| [Logistic Growth](../../examples/ode/03_logistic_growth/main.rs) | Models logistic growth with a carrying capacity. Demonstrates the use of the `event` function to stop the solver based on a condition. In addition shows the use of `even` output for `ODE IVP builder` setup and `iter` method on the solution for output. |
 | [SIR Model](../../examples/ode/04_sir_model/main.rs) | Simulates the SIR model for infectious diseases. Uses the `AdamsPredictorCorrector::v4()` method to solve the system. Uses struct as the `State` via `derive(State)` and a custom event termination enum. |
 | [Damped Pendulum](../../examples/ode/05_damped_pendulum/main.rs) | Simulates a simple pendulum using the `rkf45` solver. Shows the use of `problem.t_eval()` to define specific points to be saved e.g. `t_eval(vec![1.0, 3.0, 7.5, 10.0])` |
 | [Integration](../../examples/ode/06_integration/main.rs) | Demonstrates the differences between `even`, `dense`, `t_eval`, and the default solout methods for a simple differential equation with an easily found analytical solution. |
