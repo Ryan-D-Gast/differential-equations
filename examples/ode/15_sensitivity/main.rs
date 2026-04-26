@@ -97,7 +97,7 @@ impl AdjointCost<f64, Vector2<f64>, LotkaVolterra> for TerminalPreyCost {
     }
 }
 
-fn main() -> Result<(), differential_equations::error::Error<f64, Vector2<f64>>> {
+fn main() -> Result<(), Error<f64, Vector2<f64>>> {
     // Initial State: Prey, Predator
     let y0 = vector![10.0, 2.0];
     let t0 = 0.0;
