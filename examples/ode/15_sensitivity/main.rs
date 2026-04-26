@@ -78,16 +78,16 @@ impl VaryParameters<f64, Vector2<f64>, Vector4<f64>> for LotkaVolterra {
 /// Cost functional measuring the terminal prey population.
 struct TerminalPreyCost;
 
-impl AdjointCost<f64, Vector2<f64>, Vector4<f64>> for TerminalPreyCost {
-    fn terminal(&self, _tf: f64, yf: &Vector2<f64>, _params: &Vector4<f64>) -> f64 {
+impl AdjointCost<f64, Vector2<f64>, Vector4<f64>, LotkaVolterra> for TerminalPreyCost {
+    fn terminal(&self, _eq: &LotkaVolterra, _tf: f64, yf: &Vector2<f64>) -> f64 {
         yf[0]
     }
 
     fn terminal_gradient_y(
         &self,
+        _eq: &LotkaVolterra,
         _tf: f64,
         _yf: &Vector2<f64>,
-        _params: &Vector4<f64>,
         grad_y: &mut Vector2<f64>,
     ) {
         grad_y[0] = 1.0;

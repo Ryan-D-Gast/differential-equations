@@ -442,7 +442,7 @@ where
     Y: State<T>,
     P: State<T>,
     F: VaryParameters<T, Y, P>,
-    Cost: AdjointCost<T, Y, P>,
+    Cost: AdjointCost<T, Y, P, F>,
     Method: OrdinaryNumericalMethod<T, Y>
         + Interpolation<T, Y>
         + OrdinaryNumericalMethod<T, crate::ode::AdjointState<T, Y, P>>
@@ -477,7 +477,7 @@ where
     Y: State<T>,
     P: State<T>,
     F: VaryParameters<T, Y, P>,
-    Cost: AdjointCost<T, Y, P>,
+    Cost: AdjointCost<T, Y, P, F>,
     Method: OrdinaryNumericalMethod<T, Y> + Interpolation<T, Y>,
     BackwardMethod: OrdinaryNumericalMethod<T, crate::ode::AdjointState<T, Y, P>>
         + Interpolation<T, crate::ode::AdjointState<T, Y, P>>,

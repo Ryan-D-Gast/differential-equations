@@ -56,35 +56,51 @@ pub trait VaryParameters<T: Real, Y: State<T>, P: State<T>>: ODE<T, Y> + Sized {
 ///
 /// The total cost is interpreted as a terminal term plus the integral of
 /// [`Self::integrand`] over the integration interval.
-pub trait AdjointCost<T: Real, Y: State<T>, P: State<T>> {
+pub trait AdjointCost<T: Real, Y: State<T>, P: State<T>, Eq: VaryParameters<T, Y, P>> {
     /// Continuous integrand `g(t, y, p)`.
-    fn integrand(&self, _t: T, _y: &Y, _p: &P) -> T {
+    fn integrand(&self, _eq: &Eq, _t: T, _y: &Y) -> T {
         T::zero()
     }
 
     /// Terminal contribution `h(tf, y(tf), p)`.
-    fn terminal(&self, _tf: T, _yf: &Y, _p: &P) -> T {
+    fn terminal(&self, _eq: &Eq, _tf: T, _yf: &Y) -> T {
         T::zero()
     }
 
     /// Fill `grad_y` with `dg/dy`.
-    fn integrand_gradient_y(&self, t: T, y: &Y, p: &P, grad_y: &mut Y) {
-        finite_difference_y(|yi| self.integrand(t, yi, p), y, grad_y);
+    fn integrand_gradient_y(&self, eq: &Eq, t: T, y: &Y, grad_y: &mut Y) {
+        finite_difference_y(|yi| self.integrand(eq, t, yi), y, grad_y);
     }
 
     /// Fill `grad_p` with `dg/dp`.
-    fn integrand_gradient_p(&self, t: T, y: &Y, p: &P, grad_p: &mut P) {
-        finite_difference_p(|pi| self.integrand(t, y, pi), p, grad_p);
+    fn integrand_gradient_p(&self, eq: &Eq, t: T, y: &Y, grad_p: &mut P) {
+        let base_p = eq.parameters();
+        finite_difference_p(
+            |pi| {
+                let perturbed_eq = eq.with_parameters(pi);
+                self.integrand(&perturbed_eq, t, y)
+            },
+            &base_p,
+            grad_p,
+        );
     }
 
     /// Fill `grad_y` with `dh/dy` at the terminal time.
-    fn terminal_gradient_y(&self, tf: T, yf: &Y, p: &P, grad_y: &mut Y) {
-        finite_difference_y(|yi| self.terminal(tf, yi, p), yf, grad_y);
+    fn terminal_gradient_y(&self, eq: &Eq, tf: T, yf: &Y, grad_y: &mut Y) {
+        finite_difference_y(|yi| self.terminal(eq, tf, yi), yf, grad_y);
     }
 
     /// Fill `grad_p` with `dh/dp` at the terminal time.
-    fn terminal_gradient_p(&self, tf: T, yf: &Y, p: &P, grad_p: &mut P) {
-        finite_difference_p(|pi| self.terminal(tf, yf, pi), p, grad_p);
+    fn terminal_gradient_p(&self, eq: &Eq, tf: T, yf: &Y, grad_p: &mut P) {
+        let base_p = eq.parameters();
+        finite_difference_p(
+            |pi| {
+                let perturbed_eq = eq.with_parameters(pi);
+                self.terminal(&perturbed_eq, tf, yf)
+            },
+            &base_p,
+            grad_p,
+        );
     }
 }
 
@@ -302,7 +318,7 @@ where
     Y: State<T>,
     P: State<T>,
     F: VaryParameters<T, Y, P>,
-    C: AdjointCost<T, Y, P>,
+    C: AdjointCost<T, Y, P, F>,
 {
     equation: &'a F,
     cost: &'a C,
@@ -316,7 +332,7 @@ where
     Y: State<T>,
     P: State<T>,
     F: VaryParameters<T, Y, P>,
-    C: AdjointCost<T, Y, P>,
+    C: AdjointCost<T, Y, P, F>,
 {
     fn diff(&self, t: T, state: &AdjointState<T, Y, P>, dydt: &mut AdjointState<T, Y, P>) {
         let y = interpolate_solution(self.forward, self.equation, t);
@@ -331,10 +347,12 @@ where
         self.equation.jacobian_params(t, &y, &mut jp);
 
         let mut grad_y = y.zeros_like();
-        self.cost.integrand_gradient_y(t, &y, &params, &mut grad_y);
+        self.cost
+            .integrand_gradient_y(self.equation, t, &y, &mut grad_y);
 
         let mut grad_p = params.zeros_like();
-        self.cost.integrand_gradient_p(t, &y, &params, &mut grad_p);
+        self.cost
+            .integrand_gradient_p(self.equation, t, &y, &mut grad_p);
 
         for j in 0..dim_y {
             let mut sum = T::zero();
@@ -370,7 +388,7 @@ where
     Y: State<T>,
     P: State<T>,
     F: VaryParameters<T, Y, P>,
-    C: AdjointCost<T, Y, P>,
+    C: AdjointCost<T, Y, P, F>,
     ForwardMethod: OrdinaryNumericalMethod<T, Y> + Interpolation<T, Y>,
     BackwardMethod:
         OrdinaryNumericalMethod<T, AdjointState<T, Y, P>> + Interpolation<T, AdjointState<T, Y, P>>,
@@ -389,10 +407,10 @@ where
 
     let params = equation.parameters();
     let mut lambda_tf = yf.zeros_like();
-    cost.terminal_gradient_y(tf, yf, &params, &mut lambda_tf);
+    cost.terminal_gradient_y(equation, tf, yf, &mut lambda_tf);
 
     let mut mu_tf = params.zeros_like();
-    cost.terminal_gradient_p(tf, yf, &params, &mut mu_tf);
+    cost.terminal_gradient_p(equation, tf, yf, &mut mu_tf);
 
     let adjoint_y0 = AdjointState::new(lambda_tf, mu_tf);
     let adjoint_problem = AdjointProblem {
@@ -587,16 +605,16 @@ mod tests {
 
     struct TerminalState;
 
-    impl AdjointCost<f64, Vector1<f64>, Vector1<f64>> for TerminalState {
-        fn terminal(&self, _tf: f64, yf: &Vector1<f64>, _p: &Vector1<f64>) -> f64 {
+    impl AdjointCost<f64, Vector1<f64>, Vector1<f64>, Decay> for TerminalState {
+        fn terminal(&self, _eq: &Decay, _tf: f64, yf: &Vector1<f64>) -> f64 {
             yf[0]
         }
 
         fn terminal_gradient_y(
             &self,
+            _eq: &Decay,
             _tf: f64,
             _yf: &Vector1<f64>,
-            _p: &Vector1<f64>,
             grad_y: &mut Vector1<f64>,
         ) {
             grad_y[0] = 1.0;
