@@ -15,12 +15,14 @@ use crate::{
 /// ODE extension for systems that depend on an explicit parameter state.
 ///
 /// This trait allows solvers to compute sensitivities by varying the parameters.
-pub trait VaryParameters<T: Real, Y: State<T>, P: State<T>>: ODE<T, Y> + Sized {
-    /// Extract the current parameters as state `P`.
-    fn parameters(&self) -> P;
+pub trait VaryParameters<T: Real, Y: State<T>>: ODE<T, Y> + Sized {
+    type Params: State<T>;
+
+    /// Extract the current parameters as state `Params`.
+    fn parameters(&self) -> Self::Params;
 
     /// Return a new instance of the equation with updated parameters.
-    fn with_parameters(&self, p: &P) -> Self;
+    fn with_parameters(&self, p: &Self::Params) -> Self;
 
     /// Fill `jp` with the parameter Jacobian `df/dp`.
     ///
@@ -56,7 +58,7 @@ pub trait VaryParameters<T: Real, Y: State<T>, P: State<T>>: ODE<T, Y> + Sized {
 ///
 /// The total cost is interpreted as a terminal term plus the integral of
 /// [`Self::integrand`] over the integration interval.
-pub trait AdjointCost<T: Real, Y: State<T>, P: State<T>, Eq: VaryParameters<T, Y, P>> {
+pub trait AdjointCost<T: Real, Y: State<T>, Eq: VaryParameters<T, Y>> {
     /// Continuous integrand `g(t, y, p)`.
     fn integrand(&self, _eq: &Eq, _t: T, _y: &Y) -> T {
         T::zero()
@@ -73,7 +75,7 @@ pub trait AdjointCost<T: Real, Y: State<T>, P: State<T>, Eq: VaryParameters<T, Y
     }
 
     /// Fill `grad_p` with `dg/dp`.
-    fn integrand_gradient_p(&self, eq: &Eq, t: T, y: &Y, grad_p: &mut P) {
+    fn integrand_gradient_p(&self, eq: &Eq, t: T, y: &Y, grad_p: &mut Eq::Params) {
         let base_p = eq.parameters();
         finite_difference_p(
             |pi| {
@@ -91,7 +93,7 @@ pub trait AdjointCost<T: Real, Y: State<T>, P: State<T>, Eq: VaryParameters<T, Y
     }
 
     /// Fill `grad_p` with `dh/dp` at the terminal time.
-    fn terminal_gradient_p(&self, eq: &Eq, tf: T, yf: &Y, grad_p: &mut P) {
+    fn terminal_gradient_p(&self, eq: &Eq, tf: T, yf: &Y, grad_p: &mut Eq::Params) {
         let base_p = eq.parameters();
         finite_difference_p(
             |pi| {
@@ -108,12 +110,11 @@ pub trait AdjointCost<T: Real, Y: State<T>, P: State<T>, Eq: VaryParameters<T, Y
 ///
 /// The augmented state is stored as `[y, S_0, S_1, ...]`, where each `S_j`
 /// contains `dy/dp_j` and has length `y.len()`.
-pub struct ForwardSensitivityODE<'a, F, T, Y, P>
+pub struct ForwardSensitivityODE<'a, F, T, Y>
 where
     T: Real,
     Y: State<T>,
-    P: State<T>,
-    F: VaryParameters<T, Y, P>,
+    F: VaryParameters<T, Y>,
 {
     equation: &'a F,
     state_dim: usize,
@@ -122,15 +123,13 @@ where
     f_cache: RefCell<Y>,
     jy_cache: RefCell<Matrix<T>>,
     jp_cache: RefCell<Matrix<T>>,
-    _marker: core::marker::PhantomData<P>,
 }
 
-impl<'a, F, T, Y, P> ForwardSensitivityODE<'a, F, T, Y, P>
+impl<'a, F, T, Y> ForwardSensitivityODE<'a, F, T, Y>
 where
     T: Real,
     Y: State<T>,
-    P: State<T>,
-    F: VaryParameters<T, Y, P>,
+    F: VaryParameters<T, Y>,
 {
     /// Create a forward sensitivity wrapper.
     pub fn new(equation: &'a F, y_template: Y) -> Self {
@@ -145,7 +144,6 @@ where
             f_cache: RefCell::new(f_cache),
             jy_cache: RefCell::new(Matrix::zeros(state_dim, state_dim)),
             jp_cache: RefCell::new(Matrix::zeros(state_dim, param_dim)),
-            _marker: core::marker::PhantomData,
         }
     }
 
@@ -155,13 +153,12 @@ where
     }
 }
 
-impl<'a, F, T, Y, P, YAug> ODE<T, YAug> for ForwardSensitivityODE<'a, F, T, Y, P>
+impl<'a, F, T, Y, YAug> ODE<T, YAug> for ForwardSensitivityODE<'a, F, T, Y>
 where
     T: Real,
     Y: State<T>,
-    P: State<T>,
     YAug: State<T>,
-    F: VaryParameters<T, Y, P>,
+    F: VaryParameters<T, Y>,
 {
     fn diff(&self, t: T, y_aug: &YAug, dy_aug_dt: &mut YAug) {
         let dim_y = self.state_dim;
@@ -312,29 +309,31 @@ pub struct AdjointSolution<T: Real, Y: State<T>, P: State<T>> {
     pub grad_p: P,
 }
 
-struct AdjointProblem<'a, F, C, T, Y, P>
+struct AdjointProblem<'a, F, C, T, Y>
 where
     T: Real,
     Y: State<T>,
-    P: State<T>,
-    F: VaryParameters<T, Y, P>,
-    C: AdjointCost<T, Y, P, F>,
+    F: VaryParameters<T, Y>,
+    C: AdjointCost<T, Y, F>,
 {
     equation: &'a F,
     cost: &'a C,
     forward: &'a Solution<T, Y>,
-    _marker: core::marker::PhantomData<P>,
 }
 
-impl<'a, F, C, T, Y, P> ODE<T, AdjointState<T, Y, P>> for AdjointProblem<'a, F, C, T, Y, P>
+impl<'a, F, C, T, Y> ODE<T, AdjointState<T, Y, F::Params>> for AdjointProblem<'a, F, C, T, Y>
 where
     T: Real,
     Y: State<T>,
-    P: State<T>,
-    F: VaryParameters<T, Y, P>,
-    C: AdjointCost<T, Y, P, F>,
+    F: VaryParameters<T, Y>,
+    C: AdjointCost<T, Y, F>,
 {
-    fn diff(&self, t: T, state: &AdjointState<T, Y, P>, dydt: &mut AdjointState<T, Y, P>) {
+    fn diff(
+        &self,
+        t: T,
+        state: &AdjointState<T, Y, F::Params>,
+        dydt: &mut AdjointState<T, Y, F::Params>,
+    ) {
         let y = interpolate_solution(self.forward, self.equation, t);
         let params = self.equation.parameters();
         let dim_y = y.len();
@@ -374,7 +373,7 @@ where
 
 /// Solve an adjoint sensitivity problem using the same parameter API as FSA.
 #[allow(clippy::type_complexity)]
-pub fn solve_adjoint_sensitivity<T, Y, P, F, C, ForwardMethod, BackwardMethod>(
+pub fn solve_adjoint_sensitivity<T, Y, F, C, ForwardMethod, BackwardMethod>(
     forward_method: &mut ForwardMethod,
     backward_method: &mut BackwardMethod,
     equation: &F,
@@ -382,16 +381,15 @@ pub fn solve_adjoint_sensitivity<T, Y, P, F, C, ForwardMethod, BackwardMethod>(
     t0: T,
     tf: T,
     y0: &Y,
-) -> Result<AdjointSolution<T, Y, P>, Error<T, Y>>
+) -> Result<AdjointSolution<T, Y, F::Params>, Error<T, Y>>
 where
     T: Real,
     Y: State<T>,
-    P: State<T>,
-    F: VaryParameters<T, Y, P>,
-    C: AdjointCost<T, Y, P, F>,
+    F: VaryParameters<T, Y>,
+    C: AdjointCost<T, Y, F>,
     ForwardMethod: OrdinaryNumericalMethod<T, Y> + Interpolation<T, Y>,
-    BackwardMethod:
-        OrdinaryNumericalMethod<T, AdjointState<T, Y, P>> + Interpolation<T, AdjointState<T, Y, P>>,
+    BackwardMethod: OrdinaryNumericalMethod<T, AdjointState<T, Y, F::Params>>
+        + Interpolation<T, AdjointState<T, Y, F::Params>>,
 {
     let mut forward_solout = DenseSolout::new(8);
     let forward = solve_ode(forward_method, equation, t0, tf, y0, &mut forward_solout)?;
@@ -417,7 +415,6 @@ where
         equation,
         cost,
         forward: &forward,
-        _marker: core::marker::PhantomData,
     };
     let mut backward_solout = DefaultSolout::new();
     let adjoint = solve_ode(
@@ -571,7 +568,9 @@ mod tests {
         }
     }
 
-    impl VaryParameters<f64, Vector1<f64>, Vector1<f64>> for Decay {
+    impl VaryParameters<f64, Vector1<f64>> for Decay {
+        type Params = Vector1<f64>;
+
         fn parameters(&self) -> Vector1<f64> {
             vector![self.p]
         }
@@ -605,7 +604,7 @@ mod tests {
 
     struct TerminalState;
 
-    impl AdjointCost<f64, Vector1<f64>, Vector1<f64>, Decay> for TerminalState {
+    impl AdjointCost<f64, Vector1<f64>, Decay> for TerminalState {
         fn terminal(&self, _eq: &Decay, _tf: f64, yf: &Vector1<f64>) -> f64 {
             yf[0]
         }

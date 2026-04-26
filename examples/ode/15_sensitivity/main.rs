@@ -44,7 +44,9 @@ impl ODE<f64, Vector2<f64>> for LotkaVolterra {
     }
 }
 
-impl VaryParameters<f64, Vector2<f64>, Vector4<f64>> for LotkaVolterra {
+impl VaryParameters<f64, Vector2<f64>> for LotkaVolterra {
+    type Params = Vector4<f64>;
+
     fn parameters(&self) -> Vector4<f64> {
         vector![self.alpha, self.beta, self.delta, self.gamma]
     }
@@ -78,7 +80,7 @@ impl VaryParameters<f64, Vector2<f64>, Vector4<f64>> for LotkaVolterra {
 /// Cost functional measuring the terminal prey population.
 struct TerminalPreyCost;
 
-impl AdjointCost<f64, Vector2<f64>, Vector4<f64>, LotkaVolterra> for TerminalPreyCost {
+impl AdjointCost<f64, Vector2<f64>, LotkaVolterra> for TerminalPreyCost {
     fn terminal(&self, _eq: &LotkaVolterra, _tf: f64, yf: &Vector2<f64>) -> f64 {
         yf[0]
     }
