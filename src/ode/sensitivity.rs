@@ -14,60 +14,36 @@ use crate::{
 
 /// ODE extension for systems that depend on an explicit parameter state.
 ///
-/// This trait is shared by forward and adjoint sensitivity analysis so users do
-/// not need to implement two different parameter APIs.
-pub trait ODEParameters<T: Real, Y: State<T>, P: State<T>>: ODE<T, Y> {
-    /// Evaluate `dy/dt = f(t, y, params)`.
-    ///
-    /// The default ignores `params` and delegates to [`ODE::diff`].
-    fn diff_with_params(&self, t: T, y: &Y, params: &P, dydt: &mut Y) {
-        let _ = params;
-        self.diff(t, y, dydt);
-    }
+/// This trait allows solvers to compute sensitivities by varying the parameters.
+pub trait VaryParameters<T: Real, Y: State<T>, P: State<T>>: ODE<T, Y> + Sized {
+    /// Extract the current parameters as state `P`.
+    fn parameters(&self) -> P;
 
-    /// Fill `jy` with the state Jacobian `df/dy`.
-    ///
-    /// The default uses forward finite differences around [`Self::diff_with_params`].
-    fn jacobian_state(&self, t: T, y: &Y, params: &P, jy: &mut Matrix<T>) {
-        let dim_y = y.len();
-        let mut y_perturbed = y.clone();
-        let mut f_perturbed = y.zeros_like();
-        let mut f_origin = y.zeros_like();
-        self.diff_with_params(t, y, params, &mut f_origin);
-
-        let eps = T::default_epsilon().sqrt();
-        for j_col in 0..dim_y {
-            let y_original = y.get(j_col);
-            let perturbation = eps * y_original.abs().max(T::one());
-            y_perturbed.set(j_col, y_original + perturbation);
-            self.diff_with_params(t, &y_perturbed, params, &mut f_perturbed);
-            y_perturbed.set(j_col, y_original);
-
-            for i_row in 0..dim_y {
-                jy[(i_row, j_col)] = (f_perturbed.get(i_row) - f_origin.get(i_row)) / perturbation;
-            }
-        }
-    }
+    /// Return a new instance of the equation with updated parameters.
+    fn with_parameters(&self, p: &P) -> Self;
 
     /// Fill `jp` with the parameter Jacobian `df/dp`.
     ///
     /// The matrix is pre-sized to `y.len() x p.len()`. The default uses forward
-    /// finite differences; override this with an analytic Jacobian when possible.
-    fn jacobian_params(&self, t: T, y: &Y, params: &P, jp: &mut Matrix<T>) {
+    /// finite differences by calling `with_parameters`; override this with an
+    /// analytic Jacobian when possible for better performance.
+    fn jacobian_params(&self, t: T, y: &Y, jp: &mut Matrix<T>) {
         let dim_y = y.len();
-        let dim_p = params.len();
-        let mut params_perturbed = params.clone();
+        let base_p = self.parameters();
+        let dim_p = base_p.len();
+        let mut p_perturbed = base_p.clone();
         let mut f_perturbed = y.zeros_like();
         let mut f_origin = y.zeros_like();
-        self.diff_with_params(t, y, params, &mut f_origin);
+        self.diff(t, y, &mut f_origin);
 
         let eps = T::default_epsilon().sqrt();
         for j_col in 0..dim_p {
-            let param_original = params.get(j_col);
+            let param_original = base_p.get(j_col);
             let perturbation = eps * param_original.abs().max(T::one());
-            params_perturbed.set(j_col, param_original + perturbation);
-            self.diff_with_params(t, y, &params_perturbed, &mut f_perturbed);
-            params_perturbed.set(j_col, param_original);
+            p_perturbed.set(j_col, param_original + perturbation);
+            let perturbed_eq = self.with_parameters(&p_perturbed);
+            perturbed_eq.diff(t, y, &mut f_perturbed);
+            p_perturbed.set(j_col, param_original);
 
             for i_row in 0..dim_y {
                 jp[(i_row, j_col)] = (f_perturbed.get(i_row) - f_origin.get(i_row)) / perturbation;
@@ -121,16 +97,16 @@ where
     T: Real,
     Y: State<T>,
     P: State<T>,
-    F: ODEParameters<T, Y, P>,
+    F: VaryParameters<T, Y, P>,
 {
     equation: &'a F,
-    params: &'a P,
     state_dim: usize,
     param_dim: usize,
     y_cache: RefCell<Y>,
     f_cache: RefCell<Y>,
     jy_cache: RefCell<Matrix<T>>,
     jp_cache: RefCell<Matrix<T>>,
+    _marker: core::marker::PhantomData<P>,
 }
 
 impl<'a, F, T, Y, P> ForwardSensitivityODE<'a, F, T, Y, P>
@@ -138,22 +114,22 @@ where
     T: Real,
     Y: State<T>,
     P: State<T>,
-    F: ODEParameters<T, Y, P>,
+    F: VaryParameters<T, Y, P>,
 {
     /// Create a forward sensitivity wrapper.
-    pub fn new(equation: &'a F, params: &'a P, y_template: Y) -> Self {
+    pub fn new(equation: &'a F, y_template: Y) -> Self {
         let state_dim = y_template.len();
-        let param_dim = params.len();
+        let param_dim = equation.parameters().len();
         let f_cache = y_template.zeros_like();
         Self {
             equation,
-            params,
             state_dim,
             param_dim,
             y_cache: RefCell::new(y_template),
             f_cache: RefCell::new(f_cache),
             jy_cache: RefCell::new(Matrix::zeros(state_dim, state_dim)),
             jp_cache: RefCell::new(Matrix::zeros(state_dim, param_dim)),
+            _marker: core::marker::PhantomData,
         }
     }
 
@@ -169,7 +145,7 @@ where
     Y: State<T>,
     P: State<T>,
     YAug: State<T>,
-    F: ODEParameters<T, Y, P>,
+    F: VaryParameters<T, Y, P>,
 {
     fn diff(&self, t: T, y_aug: &YAug, dy_aug_dt: &mut YAug) {
         let dim_y = self.state_dim;
@@ -182,13 +158,13 @@ where
         }
 
         let mut f = self.f_cache.borrow_mut();
-        self.equation.diff_with_params(t, &y, self.params, &mut f);
+        self.equation.diff(t, &y, &mut f);
 
         let mut jy = self.jy_cache.borrow_mut();
-        self.equation.jacobian_state(t, &y, self.params, &mut jy);
+        self.equation.jacobian(t, &y, &mut jy);
 
         let mut jp = self.jp_cache.borrow_mut();
-        self.equation.jacobian_params(t, &y, self.params, &mut jp);
+        self.equation.jacobian_params(t, &y, &mut jp);
 
         for i in 0..dim_y {
             dy_aug_dt.set(i, f.get(i));
@@ -325,13 +301,13 @@ where
     T: Real,
     Y: State<T>,
     P: State<T>,
-    F: ODEParameters<T, Y, P>,
+    F: VaryParameters<T, Y, P>,
     C: AdjointCost<T, Y, P>,
 {
     equation: &'a F,
     cost: &'a C,
-    params: &'a P,
     forward: &'a Solution<T, Y>,
+    _marker: core::marker::PhantomData<P>,
 }
 
 impl<'a, F, C, T, Y, P> ODE<T, AdjointState<T, Y, P>> for AdjointProblem<'a, F, C, T, Y, P>
@@ -339,27 +315,26 @@ where
     T: Real,
     Y: State<T>,
     P: State<T>,
-    F: ODEParameters<T, Y, P>,
+    F: VaryParameters<T, Y, P>,
     C: AdjointCost<T, Y, P>,
 {
     fn diff(&self, t: T, state: &AdjointState<T, Y, P>, dydt: &mut AdjointState<T, Y, P>) {
-        let y = interpolate_solution(self.forward, self.equation, self.params, t);
+        let y = interpolate_solution(self.forward, self.equation, t);
+        let params = self.equation.parameters();
         let dim_y = y.len();
-        let dim_p = self.params.len();
+        let dim_p = params.len();
 
         let mut jy = Matrix::zeros(dim_y, dim_y);
-        self.equation.jacobian_state(t, &y, self.params, &mut jy);
+        self.equation.jacobian(t, &y, &mut jy);
 
         let mut jp = Matrix::zeros(dim_y, dim_p);
-        self.equation.jacobian_params(t, &y, self.params, &mut jp);
+        self.equation.jacobian_params(t, &y, &mut jp);
 
         let mut grad_y = y.zeros_like();
-        self.cost
-            .integrand_gradient_y(t, &y, self.params, &mut grad_y);
+        self.cost.integrand_gradient_y(t, &y, &params, &mut grad_y);
 
-        let mut grad_p = self.params.zeros_like();
-        self.cost
-            .integrand_gradient_p(t, &y, self.params, &mut grad_p);
+        let mut grad_p = params.zeros_like();
+        self.cost.integrand_gradient_p(t, &y, &params, &mut grad_p);
 
         for j in 0..dim_y {
             let mut sum = T::zero();
@@ -389,27 +364,19 @@ pub fn solve_adjoint_sensitivity<T, Y, P, F, C, ForwardMethod, BackwardMethod>(
     t0: T,
     tf: T,
     y0: &Y,
-    params: &P,
 ) -> Result<AdjointSolution<T, Y, P>, Error<T, Y>>
 where
     T: Real,
     Y: State<T>,
     P: State<T>,
-    F: ODEParameters<T, Y, P>,
+    F: VaryParameters<T, Y, P>,
     C: AdjointCost<T, Y, P>,
     ForwardMethod: OrdinaryNumericalMethod<T, Y> + Interpolation<T, Y>,
     BackwardMethod:
         OrdinaryNumericalMethod<T, AdjointState<T, Y, P>> + Interpolation<T, AdjointState<T, Y, P>>,
 {
     let mut forward_solout = DenseSolout::new(8);
-    let forward = solve_ode(
-        forward_method,
-        &ODEParametersAdapter { equation, params },
-        t0,
-        tf,
-        y0,
-        &mut forward_solout,
-    )?;
+    let forward = solve_ode(forward_method, equation, t0, tf, y0, &mut forward_solout)?;
 
     let yf = match forward.y.last() {
         Some(yf) => yf,
@@ -420,18 +387,19 @@ where
         }
     };
 
+    let params = equation.parameters();
     let mut lambda_tf = yf.zeros_like();
-    cost.terminal_gradient_y(tf, yf, params, &mut lambda_tf);
+    cost.terminal_gradient_y(tf, yf, &params, &mut lambda_tf);
 
     let mut mu_tf = params.zeros_like();
-    cost.terminal_gradient_p(tf, yf, params, &mut mu_tf);
+    cost.terminal_gradient_p(tf, yf, &params, &mut mu_tf);
 
     let adjoint_y0 = AdjointState::new(lambda_tf, mu_tf);
     let adjoint_problem = AdjointProblem {
         equation,
         cost,
-        params,
         forward: &forward,
+        _marker: core::marker::PhantomData,
     };
     let mut backward_solout = DefaultSolout::new();
     let adjoint = solve_ode(
@@ -459,27 +427,6 @@ where
         grad_y0: terminal.lambda,
         grad_p: terminal.mu,
     })
-}
-
-struct ODEParametersAdapter<'a, F, P> {
-    equation: &'a F,
-    params: &'a P,
-}
-
-impl<'a, F, T, Y, P> ODE<T, Y> for ODEParametersAdapter<'a, F, P>
-where
-    T: Real,
-    Y: State<T>,
-    P: State<T>,
-    F: ODEParameters<T, Y, P>,
-{
-    fn diff(&self, t: T, y: &Y, dydt: &mut Y) {
-        self.equation.diff_with_params(t, y, self.params, dydt);
-    }
-
-    fn jacobian(&self, t: T, y: &Y, j: &mut Matrix<T>) {
-        self.equation.jacobian_state(t, y, self.params, j);
-    }
 }
 
 fn finite_difference_y<T, Y>(mut scalar: impl FnMut(&Y) -> T, y: &Y, grad_y: &mut Y)
@@ -518,12 +465,11 @@ where
     }
 }
 
-fn interpolate_solution<T, Y, P, F>(solution: &Solution<T, Y>, equation: &F, params: &P, t: T) -> Y
+fn interpolate_solution<T, Y, F>(solution: &Solution<T, Y>, equation: &F, t: T) -> Y
 where
     T: Real,
     Y: State<T>,
-    P: State<T>,
-    F: ODEParameters<T, Y, P>,
+    F: ODE<T, Y>,
 {
     let first_t = solution.t[0];
     let last_idx = solution.t.len() - 1;
@@ -548,8 +494,8 @@ where
     let y1 = solution.y[upper].clone();
     let mut k0 = y0.zeros_like();
     let mut k1 = y1.zeros_like();
-    equation.diff_with_params(t0, &y0, params, &mut k0);
-    equation.diff_with_params(t1, &y1, params, &mut k1);
+    equation.diff(t0, &y0, &mut k0);
+    equation.diff(t1, &y1, &mut k1);
     crate::interpolate::cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t)
 }
 
@@ -593,52 +539,39 @@ mod tests {
     use crate::methods::ExplicitRungeKutta;
     use nalgebra::{Vector1, Vector2, vector};
 
-    struct Decay;
+    struct Decay {
+        p: f64,
+    }
 
     impl ODE<f64, Vector1<f64>> for Decay {
         fn diff(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
-            dydt[0] = -y[0];
+            dydt[0] = -self.p * y[0];
+        }
+
+        fn jacobian(&self, _t: f64, _y: &Vector1<f64>, jy: &mut Matrix<f64>) {
+            jy[(0, 0)] = -self.p;
         }
     }
 
-    impl ODEParameters<f64, Vector1<f64>, Vector1<f64>> for Decay {
-        fn diff_with_params(
-            &self,
-            _t: f64,
-            y: &Vector1<f64>,
-            p: &Vector1<f64>,
-            dydt: &mut Vector1<f64>,
-        ) {
-            dydt[0] = -p[0] * y[0];
+    impl VaryParameters<f64, Vector1<f64>, Vector1<f64>> for Decay {
+        fn parameters(&self) -> Vector1<f64> {
+            vector![self.p]
         }
 
-        fn jacobian_state(
-            &self,
-            _t: f64,
-            _y: &Vector1<f64>,
-            p: &Vector1<f64>,
-            jy: &mut Matrix<f64>,
-        ) {
-            jy[(0, 0)] = -p[0];
+        fn with_parameters(&self, p: &Vector1<f64>) -> Self {
+            Decay { p: p[0] }
         }
 
-        fn jacobian_params(
-            &self,
-            _t: f64,
-            y: &Vector1<f64>,
-            _p: &Vector1<f64>,
-            jp: &mut Matrix<f64>,
-        ) {
+        fn jacobian_params(&self, _t: f64, y: &Vector1<f64>, jp: &mut Matrix<f64>) {
             jp[(0, 0)] = -y[0];
         }
     }
 
     #[test]
     fn forward_sensitivity_matches_exponential_decay_gradient() {
-        let equation = Decay;
-        let params = vector![0.5];
+        let equation = Decay { p: 0.5 };
         let y0 = vector![1.0];
-        let fsa = ForwardSensitivityODE::new(&equation, &params, y0);
+        let fsa = ForwardSensitivityODE::new(&equation, y0);
         let y_aug0 = vector![1.0, 0.0];
         let mut method = ExplicitRungeKutta::dop853().rtol(1e-11).atol(1e-12);
         let mut solout = DefaultSolout::new();
@@ -672,24 +605,15 @@ mod tests {
 
     #[test]
     fn adjoint_sensitivity_matches_terminal_gradient() {
-        let equation = Decay;
+        let equation = Decay { p: 0.5 };
         let cost = TerminalState;
-        let params = vector![0.5];
         let y0 = vector![1.0];
         let mut forward = ExplicitRungeKutta::dop853().rtol(1e-11).atol(1e-12);
         let mut backward = ExplicitRungeKutta::dop853().rtol(1e-11).atol(1e-12);
 
-        let solution = solve_adjoint_sensitivity(
-            &mut forward,
-            &mut backward,
-            &equation,
-            &cost,
-            0.0,
-            2.0,
-            &y0,
-            &params,
-        )
-        .unwrap();
+        let solution =
+            solve_adjoint_sensitivity(&mut forward, &mut backward, &equation, &cost, 0.0, 2.0, &y0)
+                .unwrap();
 
         let expected_y0 = (-1.0_f64).exp();
         let expected_p = -2.0 * expected_y0;

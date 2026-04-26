@@ -17,64 +17,52 @@ use differential_equations::prelude::*;
 use nalgebra::{Vector2, Vector4, vector};
 use quill::prelude::*;
 
-struct LotkaVolterra;
+struct LotkaVolterra {
+    alpha: f64,
+    beta: f64,
+    delta: f64,
+    gamma: f64,
+}
 
 impl ODE<f64, Vector2<f64>> for LotkaVolterra {
-    fn diff(&self, _t: f64, _y: &Vector2<f64>, _dydt: &mut Vector2<f64>) {
-        unimplemented!("Use diff_with_params for this parameterized system");
+    fn diff(&self, _t: f64, y: &Vector2<f64>, dydt: &mut Vector2<f64>) {
+        let x = y[0];
+        let p = y[1];
+
+        dydt[0] = self.alpha * x - self.beta * x * p;
+        dydt[1] = self.delta * x * p - self.gamma * p;
+    }
+
+    fn jacobian(&self, _t: f64, y: &Vector2<f64>, jy: &mut Matrix<f64>) {
+        let x = y[0];
+        let p = y[1];
+
+        jy[(0, 0)] = self.alpha - self.beta * p;
+        jy[(0, 1)] = -self.beta * x;
+        jy[(1, 0)] = self.delta * p;
+        jy[(1, 1)] = self.delta * x - self.gamma;
     }
 }
 
-impl ODEParameters<f64, Vector2<f64>, Vector4<f64>> for LotkaVolterra {
-    fn diff_with_params(
-        &self,
-        _t: f64,
-        y: &Vector2<f64>,
-        params: &Vector4<f64>,
-        dydt: &mut Vector2<f64>,
-    ) {
-        let x = y[0];
-        let p = y[1];
-        let alpha = params[0];
-        let beta = params[1];
-        let delta = params[2];
-        let gamma = params[3];
-
-        dydt[0] = alpha * x - beta * x * p;
-        dydt[1] = delta * x * p - gamma * p;
+impl VaryParameters<f64, Vector2<f64>, Vector4<f64>> for LotkaVolterra {
+    fn parameters(&self) -> Vector4<f64> {
+        vector![self.alpha, self.beta, self.delta, self.gamma]
     }
 
-    fn jacobian_state(
-        &self,
-        _t: f64,
-        y: &Vector2<f64>,
-        params: &Vector4<f64>,
-        jy: &mut Matrix<f64>,
-    ) {
-        let x = y[0];
-        let p = y[1];
-        let alpha = params[0];
-        let beta = params[1];
-        let delta = params[2];
-        let gamma = params[3];
-
-        jy[(0, 0)] = alpha - beta * p;
-        jy[(0, 1)] = -beta * x;
-        jy[(1, 0)] = delta * p;
-        jy[(1, 1)] = delta * x - gamma;
+    fn with_parameters(&self, params: &Vector4<f64>) -> Self {
+        Self {
+            alpha: params[0],
+            beta: params[1],
+            delta: params[2],
+            gamma: params[3],
+        }
     }
 
-    fn jacobian_params(
-        &self,
-        _t: f64,
-        y: &Vector2<f64>,
-        _params: &Vector4<f64>,
-        jp: &mut Matrix<f64>,
-    ) {
+    fn jacobian_params(&self, _t: f64, y: &Vector2<f64>, jp: &mut Matrix<f64>) {
         let x = y[0];
         let p = y[1];
 
-        // p = [alpha, beta, delta, gamma]
+        // parameters = [alpha, beta, delta, gamma]
         jp[(0, 0)] = x;
         jp[(0, 1)] = -x * p;
         jp[(0, 2)] = 0.0;
@@ -108,20 +96,22 @@ impl AdjointCost<f64, Vector2<f64>, Vector4<f64>> for TerminalPreyCost {
 }
 
 fn main() -> Result<(), differential_equations::error::Error<f64, Vector2<f64>>> {
-    let equation = LotkaVolterra;
-
-    // Parameters: alpha, beta, delta, gamma
-    let params = vector![1.5, 1.0, 1.0, 3.0];
-
     // Initial State: Prey, Predator
     let y0 = vector![10.0, 2.0];
     let t0 = 0.0;
     let tf = 15.0;
 
+    let equation = LotkaVolterra {
+        alpha: 1.5,
+        beta: 1.0,
+        delta: 1.0,
+        gamma: 3.0,
+    };
+
     println!("Solving Forward Sensitivity Analysis...");
     let forward_solution = Ivp::ode(&equation, t0, tf, y0)
         .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-10))
-        .forward_sensitivity(&params)
+        .forward_sensitivity()
         .solve()
         .expect("forward sensitivity solve failed");
 
@@ -132,10 +122,9 @@ fn main() -> Result<(), differential_equations::error::Error<f64, Vector2<f64>>>
 
     let adjoint_solution = Ivp::ode(&equation, t0, tf, y0)
         .method(forward_method)
-        .adjoint_sensitivity(&params, &cost)
+        .adjoint_sensitivity(&cost)
         .backward_method(backward_method)
         .solve()?;
-
     // Print Adjoint Gradients
     println!("\nAdjoint Sensitivities (d(Prey_tf)/dp):");
     println!("d/d(alpha): {:.6}", adjoint_solution.grad_p[0]);

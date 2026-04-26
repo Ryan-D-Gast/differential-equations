@@ -50,7 +50,7 @@ pub use crate::ivp::{AdjointSensitivityIvp, ForwardSensitivityIvp, Ivp};
 pub use crate::dae::DAE;
 pub use crate::dde::DDE;
 pub use crate::ode::{
-    AdjointCost, AdjointSolution, AdjointState, ForwardSensitivityODE, ODE, ODEParameters,
+    AdjointCost, AdjointSolution, AdjointState, ForwardSensitivityODE, ODE, VaryParameters,
     solve_adjoint_sensitivity,
 };
 pub use crate::sde::SDE;
