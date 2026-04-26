@@ -1,93 +1,217 @@
+//! Example 15: Parameter Sensitivity Analysis
+//!
+//! This example models a Lotka-Volterra (Predator-Prey) system:
+//! dx/dt = alpha * x - beta * x * y
+//! dy/dt = delta * x * y - gamma * y
+//!
+//! We compute both the forward parameter sensitivities and the adjoint
+//! sensitivities with respect to a terminal cost function (final prey population).
+//!
+//! The forward sensitivity equations describe how the trajectory y(t)
+//! changes with respect to small changes in parameters p.
+//! The adjoint method efficiently computes the gradient of a cost functional
+//! with respect to all parameters by integrating backward in time.
+
+use differential_equations::ivp::Ivp;
 use differential_equations::prelude::*;
-use nalgebra::{Vector1, vector};
+use nalgebra::{Vector2, Vector4, vector};
+use quill::prelude::*;
 
-struct ExponentialDecay;
+struct LotkaVolterra;
 
-impl ODE<f64, Vector1<f64>> for ExponentialDecay {
-    fn diff(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
-        dydt[0] = -y[0];
+impl ODE<f64, Vector2<f64>> for LotkaVolterra {
+    fn diff(&self, _t: f64, _y: &Vector2<f64>, _dydt: &mut Vector2<f64>) {
+        unimplemented!("Use diff_with_params for this parameterized system");
     }
 }
 
-impl ODEParameters<f64, Vector1<f64>, Vector1<f64>> for ExponentialDecay {
+impl ODEParameters<f64, Vector2<f64>, Vector4<f64>> for LotkaVolterra {
     fn diff_with_params(
         &self,
         _t: f64,
-        y: &Vector1<f64>,
-        params: &Vector1<f64>,
-        dydt: &mut Vector1<f64>,
+        y: &Vector2<f64>,
+        params: &Vector4<f64>,
+        dydt: &mut Vector2<f64>,
     ) {
-        dydt[0] = -params[0] * y[0];
+        let x = y[0];
+        let p = y[1];
+        let alpha = params[0];
+        let beta = params[1];
+        let delta = params[2];
+        let gamma = params[3];
+
+        dydt[0] = alpha * x - beta * x * p;
+        dydt[1] = delta * x * p - gamma * p;
     }
 
     fn jacobian_state(
         &self,
         _t: f64,
-        _y: &Vector1<f64>,
-        params: &Vector1<f64>,
+        y: &Vector2<f64>,
+        params: &Vector4<f64>,
         jy: &mut Matrix<f64>,
     ) {
-        jy[(0, 0)] = -params[0];
+        let x = y[0];
+        let p = y[1];
+        let alpha = params[0];
+        let beta = params[1];
+        let delta = params[2];
+        let gamma = params[3];
+
+        jy[(0, 0)] = alpha - beta * p;
+        jy[(0, 1)] = -beta * x;
+        jy[(1, 0)] = delta * p;
+        jy[(1, 1)] = delta * x - gamma;
     }
 
     fn jacobian_params(
         &self,
         _t: f64,
-        y: &Vector1<f64>,
-        _params: &Vector1<f64>,
+        y: &Vector2<f64>,
+        _params: &Vector4<f64>,
         jp: &mut Matrix<f64>,
     ) {
-        jp[(0, 0)] = -y[0];
+        let x = y[0];
+        let p = y[1];
+
+        // p = [alpha, beta, delta, gamma]
+        jp[(0, 0)] = x;
+        jp[(0, 1)] = -x * p;
+        jp[(0, 2)] = 0.0;
+        jp[(0, 3)] = 0.0;
+
+        jp[(1, 0)] = 0.0;
+        jp[(1, 1)] = 0.0;
+        jp[(1, 2)] = x * p;
+        jp[(1, 3)] = -p;
     }
 }
 
-struct TerminalState;
+/// Cost functional measuring the terminal prey population.
+struct TerminalPreyCost;
 
-impl AdjointCost<f64, Vector1<f64>, Vector1<f64>> for TerminalState {
-    fn terminal(&self, _tf: f64, yf: &Vector1<f64>, _params: &Vector1<f64>) -> f64 {
+impl AdjointCost<f64, Vector2<f64>, Vector4<f64>> for TerminalPreyCost {
+    fn terminal(&self, _tf: f64, yf: &Vector2<f64>, _params: &Vector4<f64>) -> f64 {
         yf[0]
     }
 
     fn terminal_gradient_y(
         &self,
         _tf: f64,
-        _yf: &Vector1<f64>,
-        _params: &Vector1<f64>,
-        grad_y: &mut Vector1<f64>,
+        _yf: &Vector2<f64>,
+        _params: &Vector4<f64>,
+        grad_y: &mut Vector2<f64>,
     ) {
         grad_y[0] = 1.0;
+        grad_y[1] = 0.0;
     }
 }
 
-fn main() -> Result<(), Error<f64, Vector1<f64>>> {
-    let equation = ExponentialDecay;
-    let params = vector![0.5];
-    let y0 = vector![1.0];
-    let t0 = 0.0;
-    let tf = 2.0;
+fn main() -> Result<(), differential_equations::error::Error<f64, Vector2<f64>>> {
+    let equation = LotkaVolterra;
 
+    // Parameters: alpha, beta, delta, gamma
+    let params = vector![1.5, 1.0, 1.0, 3.0];
+
+    // Initial State: Prey, Predator
+    let y0 = vector![10.0, 2.0];
+    let t0 = 0.0;
+    let tf = 15.0;
+
+    println!("Solving Forward Sensitivity Analysis...");
     let forward_solution = Ivp::ode(&equation, t0, tf, y0)
-        .method(ExplicitRungeKutta::dop853().rtol(1e-10).atol(1e-12))
+        .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-10))
         .forward_sensitivity(&params)
         .solve()
-        .expect("forward sensitivity solve should complete");
-    let fsa_final = forward_solution.y.last().expect("solution has final state");
+        .expect("forward sensitivity solve failed");
 
-    let cost = TerminalState;
-    let forward = ExplicitRungeKutta::dop853().rtol(1e-10).atol(1e-12);
-    let backward = ExplicitRungeKutta::dop853().rtol(1e-10).atol(1e-12);
-    let adjoint = Ivp::ode(&equation, t0, tf, y0)
-        .method(forward)
+    println!("Solving Adjoint Sensitivity Analysis...");
+    let cost = TerminalPreyCost;
+    let forward_method = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-10);
+    let backward_method = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-10);
+
+    let adjoint_solution = Ivp::ode(&equation, t0, tf, y0)
+        .method(forward_method)
         .adjoint_sensitivity(&params, &cost)
-        .backward_method(backward)
+        .backward_method(backward_method)
         .solve()?;
 
-    println!("Forward sensitivity dy(tf)/dp: {:.8}", fsa_final[1]);
-    println!("Adjoint sensitivity dJ/dp:     {:.8}", adjoint.grad_p[0]);
+    // Print Adjoint Gradients
+    println!("\nAdjoint Sensitivities (d(Prey_tf)/dp):");
+    println!("d/d(alpha): {:.6}", adjoint_solution.grad_p[0]);
+    println!("d/d(beta):  {:.6}", adjoint_solution.grad_p[1]);
+    println!("d/d(delta): {:.6}", adjoint_solution.grad_p[2]);
+    println!("d/d(gamma): {:.6}", adjoint_solution.grad_p[3]);
+
+    // Check forward sensitivities terminal state to compare
+    let fsa_final = forward_solution.y.last().expect("solution has final state");
+    println!("\nForward Sensitivities (d(Prey_tf)/dp):");
     println!(
-        "Analytic sensitivity:          {:.8}",
-        -2.0 * (-1.0_f64).exp()
+        "d/d(alpha): {:.6} (diff: {:.2e})",
+        fsa_final[2],
+        (adjoint_solution.grad_p[0] - fsa_final[2]).abs()
     );
+    println!(
+        "d/d(beta):  {:.6} (diff: {:.2e})",
+        fsa_final[4],
+        (adjoint_solution.grad_p[1] - fsa_final[4]).abs()
+    );
+    println!(
+        "d/d(delta): {:.6} (diff: {:.2e})",
+        fsa_final[6],
+        (adjoint_solution.grad_p[2] - fsa_final[6]).abs()
+    );
+    println!(
+        "d/d(gamma): {:.6} (diff: {:.2e})",
+        fsa_final[8],
+        (adjoint_solution.grad_p[3] - fsa_final[8]).abs()
+    );
+
+    println!("\nPlotting results...");
+
+    // Plotting the State and Sensitivities
+    Plot::builder()
+        .title("Lotka-Volterra with Sensitivities")
+        .x_label("Time")
+        .y_label("Value")
+        .legend(Legend::TopRightInside)
+        .data([
+            Series::builder()
+                .name("Prey")
+                .color("Blue")
+                .data(
+                    forward_solution
+                        .iter()
+                        .map(|(t, y)| (*t, y[0]))
+                        .collect::<Vec<_>>(),
+                )
+                .build(),
+            Series::builder()
+                .name("Predator")
+                .color("Red")
+                .data(
+                    forward_solution
+                        .iter()
+                        .map(|(t, y)| (*t, y[1]))
+                        .collect::<Vec<_>>(),
+                )
+                .build(),
+            Series::builder()
+                .name("d(Prey)/d(alpha)")
+                .color("Green")
+                .data(
+                    forward_solution
+                        .iter()
+                        .map(|(t, y)| (*t, y[2])) // y[2] is d(Prey)/d(alpha)
+                        .collect::<Vec<_>>(),
+                )
+                .build(),
+        ])
+        .build()
+        .to_svg("examples/ode/15_sensitivity/sensitivity.svg")
+        .expect("Failed to save plot as SVG");
+
+    println!("Saved plot to examples/ode/15_sensitivity/sensitivity.svg");
 
     Ok(())
 }
