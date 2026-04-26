@@ -106,7 +106,7 @@ where
         }
 
         // Save actual calculated step as well
-        solution.push(t_curr, *y_curr);
+        solution.push(t_curr, y_curr.clone());
 
         // Continue the integration
         ControlFlag::Continue

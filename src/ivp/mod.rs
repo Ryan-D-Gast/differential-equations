@@ -11,8 +11,12 @@ use crate::{
     dde::{DDE, DelayNumericalMethod, solve_dde},
     error::Error,
     interpolate::Interpolation,
+    linalg::Matrix,
     methods::ToleranceConfig,
-    ode::{ODE, OrdinaryNumericalMethod, solve_ode},
+    ode::{
+        AdjointCost, AdjointSolution, ForwardSensitivityODE, ODE, ODEParameters,
+        OrdinaryNumericalMethod, solve_adjoint_sensitivity, solve_ode,
+    },
     sde::{SDE, StochasticNumericalMethod, solve_sde},
     solout::{
         CrossingDirection, CrossingSolout, DefaultSolout, DenseSolout, EvenSolout, Event,
@@ -22,6 +26,7 @@ use crate::{
     tolerance::Tolerance,
     traits::{Real, State},
 };
+use nalgebra::DVector;
 
 /// Unified builder for initial value problems (IVPs).
 ///
@@ -34,6 +39,34 @@ pub struct Ivp<EqType, T: Real, Y: State<T>, Method, SoloutType> {
     y0: Y,
     method: Method,
     solout: SoloutType,
+}
+
+/// Builder for forward sensitivity analysis of an ODE IVP.
+#[derive(Clone, Debug)]
+pub struct ForwardSensitivityIvp<'p, Previous, T: Real, P, SoloutType = DefaultSolout> {
+    previous: Previous,
+    params: &'p P,
+    initial_sensitivity: Option<Matrix<T>>,
+    solout: SoloutType,
+}
+
+/// Marker for using the forward method as the adjoint backward method.
+#[derive(Clone, Copy, Debug)]
+pub struct SameMethod;
+
+/// Marker for an explicitly configured adjoint backward method.
+#[derive(Clone, Debug)]
+pub struct UseBackwardMethod<Method> {
+    method: Method,
+}
+
+/// Builder for adjoint sensitivity analysis of an ODE IVP.
+#[derive(Clone, Debug)]
+pub struct AdjointSensitivityIvp<'p, 'c, Previous, P, Cost, BackwardMethod = SameMethod> {
+    previous: Previous,
+    params: &'p P,
+    cost: &'c Cost,
+    backward_method: BackwardMethod,
 }
 
 /// Marker for ordinary differential equations.
@@ -268,6 +301,207 @@ impl<EqType, T: Real, Y: State<T>, Method, SoloutType> Ivp<EqType, T, Y, Method,
     }
 }
 
+impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> Ivp<OdeEq<'a, F>, T, Y, Method, SoloutType> {
+    /// Activate forward sensitivity analysis for this ODE IVP.
+    ///
+    /// The builder constructs the augmented state `[y0, S0]` dynamically. By
+    /// default `S0` is zero, which is appropriate when the initial condition
+    /// does not depend on parameters. Use
+    /// [`ForwardSensitivityIvp::initial_sensitivity`] when `dy0/dp` is known.
+    pub fn forward_sensitivity<'p, P>(
+        self,
+        params: &'p P,
+    ) -> ForwardSensitivityIvp<'p, Self, T, P> {
+        ForwardSensitivityIvp {
+            previous: self,
+            params,
+            initial_sensitivity: None,
+            solout: DefaultSolout::new(),
+        }
+    }
+
+    /// Activate adjoint sensitivity analysis for this ODE IVP.
+    ///
+    /// By default, the forward method is cloned and reused for the backward
+    /// adjoint solve. Use [`AdjointSensitivityIvp::backward_method`] to provide
+    /// a distinct method.
+    pub fn adjoint_sensitivity<'p, 'c, P, Cost>(
+        self,
+        params: &'p P,
+        cost: &'c Cost,
+    ) -> AdjointSensitivityIvp<'p, 'c, Self, P, Cost> {
+        AdjointSensitivityIvp {
+            previous: self,
+            params,
+            cost,
+            backward_method: SameMethod,
+        }
+    }
+}
+
+impl<'p, Previous, T: Real, P, SoloutType> ForwardSensitivityIvp<'p, Previous, T, P, SoloutType> {
+    /// Set the initial sensitivity matrix `S0 = dy0/dp`.
+    ///
+    /// The matrix must have shape `y0.len() x params.len()`.
+    pub fn initial_sensitivity(mut self, sensitivity: Matrix<T>) -> Self {
+        self.initial_sensitivity = Some(sensitivity);
+        self
+    }
+
+    /// Set a custom output strategy for the augmented forward sensitivity solve.
+    pub fn solout<NextSolout>(
+        self,
+        solout: NextSolout,
+    ) -> ForwardSensitivityIvp<'p, Previous, T, P, NextSolout> {
+        ForwardSensitivityIvp {
+            previous: self.previous,
+            params: self.params,
+            initial_sensitivity: self.initial_sensitivity,
+            solout,
+        }
+    }
+}
+
+impl<'p, Previous, T: Real, P, SoloutType> ForwardSensitivityIvp<'p, Previous, T, P, SoloutType> {
+    /// Use dense output for the augmented forward sensitivity solve.
+    pub fn dense(self, n: usize) -> ForwardSensitivityIvp<'p, Previous, T, P, DenseSolout> {
+        self.solout(DenseSolout::new(n))
+    }
+}
+
+impl<'p, 'a, F, T, Y, P, Method, BaseSolout, SensSolout>
+    ForwardSensitivityIvp<'p, Ivp<OdeEq<'a, F>, T, Y, Method, BaseSolout>, T, P, SensSolout>
+where
+    T: Real,
+    Y: State<T>,
+    P: State<T>,
+    F: ODEParameters<T, Y, P>,
+    Method: OrdinaryNumericalMethod<T, DVector<T>> + Interpolation<T, DVector<T>>,
+    SensSolout: Solout<T, DVector<T>>,
+{
+    /// Solve the activated forward sensitivity IVP.
+    pub fn solve(mut self) -> Result<Solution<T, DVector<T>>, Error<T, DVector<T>>> {
+        let state_dim = self.previous.y0.len();
+        let param_dim = self.params.len();
+        let mut y_aug0 = DVector::zeros(state_dim + state_dim * param_dim);
+        for i in 0..state_dim {
+            y_aug0[i] = self.previous.y0.get(i);
+        }
+
+        if let Some(s0) = &self.initial_sensitivity {
+            if s0.dims() != (state_dim, param_dim) {
+                return Err(Error::BadInput {
+                    msg: format!(
+                        "Initial sensitivity must have shape {} x {}, got {} x {}.",
+                        state_dim,
+                        param_dim,
+                        s0.nrows(),
+                        s0.ncols()
+                    ),
+                });
+            }
+            for param_idx in 0..param_dim {
+                let offset = state_dim + param_idx * state_dim;
+                for state_idx in 0..state_dim {
+                    y_aug0[offset + state_idx] = s0[(state_idx, param_idx)];
+                }
+            }
+        }
+
+        let sensitivity_ode =
+            ForwardSensitivityODE::new(self.previous.equation.ode, self.params, self.previous.y0);
+        solve_ode(
+            &mut self.previous.method,
+            &sensitivity_ode,
+            self.previous.t0,
+            self.previous.tf,
+            &y_aug0,
+            &mut self.solout,
+        )
+    }
+}
+
+impl<'p, 'c, Previous, P, Cost, BackwardMethod>
+    AdjointSensitivityIvp<'p, 'c, Previous, P, Cost, BackwardMethod>
+{
+    /// Use a distinct numerical method for the backward adjoint solve.
+    pub fn backward_method<Method>(
+        self,
+        method: Method,
+    ) -> AdjointSensitivityIvp<'p, 'c, Previous, P, Cost, UseBackwardMethod<Method>> {
+        AdjointSensitivityIvp {
+            previous: self.previous,
+            params: self.params,
+            cost: self.cost,
+            backward_method: UseBackwardMethod { method },
+        }
+    }
+}
+
+impl<'p, 'c, 'a, F, T, Y, P, Method, SoloutType, Cost>
+    AdjointSensitivityIvp<'p, 'c, Ivp<OdeEq<'a, F>, T, Y, Method, SoloutType>, P, Cost, SameMethod>
+where
+    T: Real,
+    Y: State<T>,
+    P: State<T>,
+    F: ODEParameters<T, Y, P>,
+    Cost: AdjointCost<T, Y, P>,
+    Method: OrdinaryNumericalMethod<T, Y>
+        + Interpolation<T, Y>
+        + OrdinaryNumericalMethod<T, crate::ode::AdjointState<T, Y, P>>
+        + Interpolation<T, crate::ode::AdjointState<T, Y, P>>
+        + Clone,
+{
+    /// Solve the activated adjoint sensitivity IVP.
+    pub fn solve(mut self) -> Result<AdjointSolution<T, Y, P>, Error<T, Y>> {
+        let mut backward_method = self.previous.method.clone();
+        solve_adjoint_sensitivity(
+            &mut self.previous.method,
+            &mut backward_method,
+            self.previous.equation.ode,
+            self.cost,
+            self.previous.t0,
+            self.previous.tf,
+            &self.previous.y0,
+            self.params,
+        )
+    }
+}
+
+impl<'p, 'c, 'a, F, T, Y, P, Method, SoloutType, Cost, BackwardMethod>
+    AdjointSensitivityIvp<
+        'p,
+        'c,
+        Ivp<OdeEq<'a, F>, T, Y, Method, SoloutType>,
+        P,
+        Cost,
+        UseBackwardMethod<BackwardMethod>,
+    >
+where
+    T: Real,
+    Y: State<T>,
+    P: State<T>,
+    F: ODEParameters<T, Y, P>,
+    Cost: AdjointCost<T, Y, P>,
+    Method: OrdinaryNumericalMethod<T, Y> + Interpolation<T, Y>,
+    BackwardMethod: OrdinaryNumericalMethod<T, crate::ode::AdjointState<T, Y, P>>
+        + Interpolation<T, crate::ode::AdjointState<T, Y, P>>,
+{
+    /// Solve the activated adjoint sensitivity IVP.
+    pub fn solve(mut self) -> Result<AdjointSolution<T, Y, P>, Error<T, Y>> {
+        solve_adjoint_sensitivity(
+            &mut self.previous.method,
+            &mut self.backward_method.method,
+            self.previous.equation.ode,
+            self.cost,
+            self.previous.t0,
+            self.previous.tf,
+            &self.previous.y0,
+            self.params,
+        )
+    }
+}
+
 impl<EqType, T: Real, Y: State<T>, Method, SoloutType> Ivp<EqType, T, Y, Method, SoloutType>
 where
     Method: ToleranceConfig<T>,
@@ -321,7 +555,8 @@ where
     }
 }
 
-impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> Ivp<SdeEq<'a, F>, T, Y, Method, SoloutType>
+impl<'a, F, T: Real, Y: State<T> + Copy, Method, SoloutType>
+    Ivp<SdeEq<'a, F>, T, Y, Method, SoloutType>
 where
     F: SDE<T, Y>,
     Method: StochasticNumericalMethod<T, Y> + Interpolation<T, Y>,
@@ -340,7 +575,7 @@ where
     }
 }
 
-impl<'a, const L: usize, F, H, T: Real, Y: State<T>, Method, SoloutType>
+impl<'a, const L: usize, F, H, T: Real, Y: State<T> + Copy, Method, SoloutType>
     Ivp<DdeEq<'a, L, F, H>, T, Y, Method, SoloutType>
 where
     F: DDE<L, T, Y>,

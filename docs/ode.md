@@ -6,6 +6,7 @@ The `ode` module provides tools for solving ordinary differential equations (ODE
 
 - [Defining a ODE](#defining-an-ode)
 - [Solving an Initial Value Problem (ODE IVP builder)](#solving-an-initial-value-problem)
+- [Sensitivity Analysis](#sensitivity-analysis)
 - [Examples](#examples)
 - [Benchmarks](#benchmarks)
 - [Notation](#notation)
@@ -118,6 +119,56 @@ Rejected Steps: 2
 Accepted Steps: 20
 ```
 
+## Sensitivity Analysis
+
+Parameterized ODEs can implement `ODEParameters<T, Y, P>` in addition to `ODE<T, Y>`.
+The parameter state `P` is explicit for sensitivity workflows, so ordinary ODE systems do
+not need parameter-specific methods.
+
+`.forward_sensitivity(...)` activates a typed builder that solves the augmented
+state with the sensitivity matrix `S = dy/dp`:
+
+```text
+dy/dt = f(t, y, p)
+dS/dt = J_y S + J_p
+```
+
+The builder constructs the dynamic augmented state internally. By default the
+initial sensitivity matrix is zero, which is appropriate when `y0` does not
+depend on `p`:
+
+```rust
+let solution = Ivp::ode(&equation, t0, tf, y0)
+    .method(method)
+    .forward_sensitivity(&params)
+    .solve()?;
+```
+
+When the initial condition depends on parameters, set `S0 = dy0/dp` explicitly:
+
+```rust
+let solution = Ivp::ode(&equation, t0, tf, y0)
+    .method(method)
+    .forward_sensitivity(&params)
+    .initial_sensitivity(s0)
+    .solve()?;
+```
+
+Adjoint sensitivity analysis uses the same `ODEParameters` implementation plus an
+`AdjointCost` and can be activated directly from the ODE IVP builder:
+
+```rust
+let adjoint = Ivp::ode(&equation, t0, tf, y0)
+    .method(forward_method)
+    .adjoint_sensitivity(&params, &cost)
+    .backward_method(backward_method)
+    .solve()?;
+```
+
+The result contains the forward solution, adjoint trajectory, `grad_y0`, and `grad_p`.
+See [Sensitivity Analysis](../../examples/ode/15_sensitivity/main.rs) for a complete
+forward and adjoint example using the same parameter API.
+
 ## Examples
 
 For more examples, see the `examples` directory. The examples demonstrate different systems, methods, and output methods for different use cases.
@@ -137,6 +188,7 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 | [Schrodinger](../../examples/ode/11_schrodinger/main.rs) | Solves the time-dependent Schrödinger equation using the `dop853` method. Demonstrates the use of complex numbers in the ODE system. |
 | [Brusselator](../../examples/ode/12_brusselator/main.rs) | Demonstrates solving a stiff system using implicit Runge-Kutta methods (`gauss_legendre_6`) with analytical jacobian provided to accelerate Newton iterations. |
 | [Reduced Two-Body Problem with STM](../../examples/ode/14_r2bp_stm/main.rs) | Propagates a Kepler two-body orbit together with its state transition matrix. Demonstrates dual-number sensitivities, variational equations, and the solver `filter` hook for step-size post-processing. |
+| [Sensitivity Analysis](../../examples/ode/15_sensitivity/main.rs) | Computes forward and adjoint parameter sensitivities for a parameterized ODE using the shared `ODEParameters` API. |
 
 ## Benchmarks
 

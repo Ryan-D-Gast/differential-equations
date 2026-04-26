@@ -4,7 +4,7 @@ use crate::methods::irk::radau::Radau5;
 use crate::status::Status;
 use crate::traits::{Real, State};
 
-impl<E, T: Real, Y: State<T>> Radau5<E, T, Y> {
+impl<E, T: Real, Y: State<T> + Copy> Radau5<E, T, Y> {
     /// Initialize Radau5: combines `set_parameters` and common workspace setup.
     pub fn initialize(&mut self, t0: T, tf: T, y0: &Y) -> Result<(), Error<T, Y>> {
         // Dimension of system
@@ -180,7 +180,7 @@ impl<E, T: Real, Y: State<T>> Radau5<E, T, Y> {
         self.b = vec![T::zero(); 2 * n];
 
         // Dense output coefficients
-        self.cont = [Y::zeros(); 4];
+        self.cont = std::array::from_fn(|_| Y::zeros());
 
         // Flags
         self.first = true;

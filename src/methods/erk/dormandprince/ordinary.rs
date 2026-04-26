@@ -39,15 +39,20 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // Initialize State
         self.t = t0;
-        self.y = *y0;
+        self.y = y0.clone();
+        self.dydt = y0.zeros_like();
+        self.dydt_prev = y0.zeros_like();
+        self.y_prev = y0.zeros_like();
+        self.k = std::array::from_fn(|_| y0.zeros_like());
+        self.cont = std::array::from_fn(|_| y0.zeros_like());
         ode.diff(self.t, &self.y, &mut self.k[0]);
-        self.dydt = self.k[0];
+        self.dydt = self.k[0].clone();
         evals.function += 1;
 
         // Initialize previous state
         self.t_prev = self.t;
-        self.y_prev = self.y;
-        self.dydt_prev = self.dydt;
+        self.y_prev = self.y.clone();
+        self.dydt_prev = self.dydt.clone();
 
         // Initialize Status
         self.status = Status::Initialized;
@@ -65,11 +70,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         if self.h.abs() < self.h_prev.abs() * T::from_f64(1e-14).unwrap() {
             self.status = Status::Error(Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
 
@@ -77,24 +82,24 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
         self.steps += 1;
 
         // Compute stages
-        let mut y_stage = Y::zeros();
+        let mut y_stage = self.y.zeros_like();
         for i in 1..self.stages {
-            y_stage = Y::zeros();
+            y_stage = self.y.zeros_like();
 
             for j in 0..i {
-                y_stage += self.k[j] * self.a[i][j];
+                y_stage += self.k[j].clone() * self.a[i][j];
             }
-            y_stage = self.y + y_stage * self.h;
+            y_stage = self.y.clone() + y_stage * self.h;
 
             ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
         }
@@ -103,13 +108,13 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         let ysti = y_stage;
 
         // Calculate the line segment for the new y value
-        let mut yseg = Y::zeros();
+        let mut yseg = self.y.zeros_like();
         for i in 0..self.stages {
-            yseg += self.k[i] * self.b[i];
+            yseg += self.k[i].clone() * self.b[i];
         }
 
         // Calculate the new y value using the line segment
-        let y_new = self.y + yseg * self.h;
+        let y_new = self.y.clone() + yseg.clone() * self.h;
 
         // Evaluate derivative at new point for error estimation
         let t_new = self.t + self.h;
@@ -174,14 +179,14 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             if self.steps.is_multiple_of(n_stiff_threshold) {
                 let mut stdnum = T::zero();
                 let mut stden = T::zero();
-                let sqr = yseg - self.k[S - 1];
+                let sqr = yseg.clone() - self.k[S - 1].clone();
                 for i in 0..sqr.len() {
                     stdnum += {
                         let val = sqr.get(i);
                         val * val
                     };
                 }
-                let sqr = self.dydt - ysti;
+                let sqr = self.dydt.clone() - ysti.clone();
                 for i in 0..sqr.len() {
                     stden += {
                         let val = sqr.get(i);
@@ -198,11 +203,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                             // Early Exit Stiffness Detected
                             self.status = Status::Error(Error::Stiffness {
                                 t: self.t,
-                                y: self.y,
+                                y: self.y.clone(),
                             });
                             return Err(Error::Stiffness {
                                 t: self.t,
-                                y: self.y,
+                                y: self.y.clone(),
                             });
                         }
                     }
@@ -215,26 +220,26 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             }
 
             // Preparation for dense output / interpolation
-            self.cont[0] = self.y;
-            let ydiff = y_new - self.y;
-            self.cont[1] = ydiff;
-            let bspl = self.k[0] * self.h - ydiff;
-            self.cont[2] = bspl;
-            self.cont[3] = ydiff - self.dydt * self.h - bspl;
+            self.cont[0] = self.y.clone();
+            let ydiff = y_new.clone() - self.y.clone();
+            self.cont[1] = ydiff.clone();
+            let bspl = self.k[0].clone() * self.h - ydiff.clone();
+            self.cont[2] = bspl.clone();
+            self.cont[3] = ydiff - self.dydt.clone() * self.h - bspl;
 
             // If method has dense output stages, compute them
             if let Some(bi) = &self.bi {
                 // Compute extra stages for dense output
                 if I > S {
                     // First dense output coefficient, k{i=order+1}, is the derivative at the new point
-                    self.k[self.stages] = self.dydt;
+                    self.k[self.stages] = self.dydt.clone();
 
                     for i in S + 1..I {
-                        let mut y_stage = Y::zeros();
+                        let mut y_stage = self.y.zeros_like();
                         for j in 0..i {
-                            y_stage += self.k[j] * self.a[i][j];
+                            y_stage += self.k[j].clone() * self.a[i][j];
                         }
-                        y_stage = self.y + y_stage * self.h;
+                        y_stage = self.y.clone() + y_stage * self.h;
 
                         ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
                         evals.function += 1;
@@ -243,24 +248,24 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
                 // Compute dense output coefficients
                 for i in 4..self.order {
-                    self.cont[i] = Y::zeros();
+                    self.cont[i] = self.y.zeros_like();
                     for j in 0..self.dense_stages {
-                        self.cont[i] += self.k[j] * bi[i][j];
+                        self.cont[i] += self.k[j].clone() * bi[i][j];
                     }
-                    self.cont[i] = self.cont[i] * self.h;
+                    self.cont[i] = self.cont[i].clone() * self.h;
                 }
             }
 
             // For interpolation
             self.t_prev = self.t;
-            self.y_prev = self.y;
-            self.dydt_prev = self.k[0];
+            self.y_prev = self.y.clone();
+            self.dydt_prev = self.k[0].clone();
             self.h_prev = self.h;
 
             // Update the state with new values
             self.t = t_new;
             self.y = y_new;
-            self.k[0] = self.dydt;
+            self.k[0] = self.dydt.clone();
 
             // Check if previous step is rejected
             if let Status::RejectedStep = self.status {
@@ -331,7 +336,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
 
         // Functional implementation of: cont[0] + (cont[1] + (cont[2] + (cont[3] + conpar*s1)*s)*s1)*s
         let ilast = self.cont.len() - 1;
-        let poly = (1..ilast).rev().fold(self.cont[ilast], |acc, i| {
+        let poly = (1..ilast).rev().fold(self.cont[ilast].clone(), |acc, i| {
             let factor = if i >= 4 {
                 // For the higher-order part (conpar), alternate s and s1 based on index parity
                 if (ilast - i) % 2 == 1 { s1 } else { s }
@@ -339,11 +344,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
                 // For the main polynomial part, pattern is [s1, s, s1] for indices [3, 2, 1]
                 if i % 2 == 1 { s1 } else { s }
             };
-            acc * factor + self.cont[i]
+            acc * factor + self.cont[i].clone()
         });
 
         // Final multiplication by s for the outermost level
-        let y_interp = self.cont[0] + poly * s;
+        let y_interp = self.cont[0].clone() + poly * s;
 
         Ok(y_interp)
     }

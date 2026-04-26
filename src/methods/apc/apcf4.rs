@@ -13,7 +13,7 @@ use crate::{
 
 use super::AdamsPredictorCorrector;
 
-impl<T: Real, Y: State<T>> AdamsPredictorCorrector<Ordinary, Fixed, T, Y, 4> {
+impl<T: Real, Y: State<T> + Copy> AdamsPredictorCorrector<Ordinary, Fixed, T, Y, 4> {
     /// Adams-Predictor-Corrector 4th Order Fixed Step Size Method.
     ///
     /// The Adams-Predictor-Corrector method is an explicit method that
@@ -62,7 +62,7 @@ impl<T: Real, Y: State<T>> AdamsPredictorCorrector<Ordinary, Fixed, T, Y, 4> {
 }
 
 // Implement OrdinaryNumericalMethod Trait for APCF4
-impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
+impl<T: Real, Y: State<T> + Copy> OrdinaryNumericalMethod<T, Y>
     for AdamsPredictorCorrector<Ordinary, Fixed, T, Y, 4>
 {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
@@ -165,7 +165,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
 
         // Shift history: drop the oldest and add the new state at the end.
         self.t_prev.copy_within(1..4, 0);
-        self.y_prev.copy_within(1..4, 0);
+        self.y_prev.rotate_left(1);
         self.t_prev[3] = self.t;
         self.y_prev[3] = self.y;
         Ok(evals)
@@ -204,7 +204,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
     }
 }
 
-impl<T: Real, Y: State<T>> Interpolation<T, Y>
+impl<T: Real, Y: State<T> + Copy> Interpolation<T, Y>
     for AdamsPredictorCorrector<Ordinary, Fixed, T, Y, 4>
 {
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {

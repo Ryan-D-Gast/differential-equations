@@ -31,7 +31,7 @@ where
     T: Real,
     Y: State<T>,
 {
-    let mut result = *a;
+    let mut result = a.clone();
     for i in 0..a.len() {
         result.set(i, a.get(i) * b.get(i));
     }

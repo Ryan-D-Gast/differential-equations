@@ -63,8 +63,8 @@ impl InitialStepSize<Ordinary> {
         let posneg = (tf - t0).signum();
 
         // Storage for derivatives
-        let mut f0 = Y::zeros();
-        let mut f1 = Y::zeros(); // Compute initial derivative f(t0, y0)
+        let mut f0 = y0.zeros_like();
+        let mut f1 = y0.zeros_like(); // Compute initial derivative f(t0, y0)
         ode.diff(t0, y0, &mut f0);
         evals.function += 1;
 
@@ -96,7 +96,7 @@ impl InitialStepSize<Ordinary> {
         h *= posneg;
 
         // Perform an explicit Euler step
-        let y1 = *y0 + f0 * h; // Evaluate derivative at new point
+        let y1 = y0.clone() + f0.clone() * h; // Evaluate derivative at new point
         ode.diff(t0 + h, &y1, &mut f1);
         evals.function += 1;
 
@@ -177,7 +177,7 @@ impl InitialStepSize<Delay> {
     ) -> T
     where
         T: Real,
-        Y: State<T>,
+        Y: State<T> + Copy,
         F: DDE<L, T, Y>,
     {
         let posneg_init = (tf - t0).signum();
@@ -218,7 +218,7 @@ impl InitialStepSize<Delay> {
         let mut f1 = Y::zeros();
 
         let mut current_lags_init = [T::zero(); L];
-        let mut yd_init = [Y::zeros(); L];
+        let mut yd_init = std::array::from_fn(|_| Y::zeros());
 
         // Ensure initial step's delayed points are valid
         if L > 0 {
@@ -368,7 +368,7 @@ impl InitialStepSize<Algebraic> {
         }
 
         // f(t0, y0)
-        let mut f0 = Y::zeros();
+        let mut f0 = y0.zeros_like();
         dae.diff(t0, y0, &mut f0);
         evals.function += 1;
 
@@ -406,8 +406,8 @@ impl InitialStepSize<Algebraic> {
         h *= posneg;
 
         // One explicit Euler predictor (uses f0 directly; avoids M^{-1})
-        let y1 = *y0 + f0 * h;
-        let mut f1 = Y::zeros();
+        let y1 = y0.clone() + f0.clone() * h;
+        let mut f1 = y0.zeros_like();
         dae.diff(t0 + h, &y1, &mut f1);
         evals.function += 1;
 

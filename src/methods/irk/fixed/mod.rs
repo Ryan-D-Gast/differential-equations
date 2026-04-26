@@ -11,7 +11,7 @@ use crate::{
 // Fixed-step constructors
 macro_rules! impl_irk_fixed_step_constructor {
     ($method_name:ident, $order_val:expr, $s_val:expr, $m_val:expr, $doc:expr) => {
-        impl<E, T: Real, Y: State<T>>
+        impl<E, T: Real, Y: State<T> + Copy>
             ImplicitRungeKutta<E, Fixed, T, Y, $order_val, $s_val, $m_val>
         {
             #[doc = $doc]

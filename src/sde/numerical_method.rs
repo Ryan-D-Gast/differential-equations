@@ -14,7 +14,7 @@ use crate::{
 pub trait StochasticNumericalMethod<T, Y>
 where
     T: Real,
-    Y: State<T>,
+    Y: State<T> + Copy,
 {
     /// Initialize the solver before integration
     ///

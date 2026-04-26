@@ -22,7 +22,7 @@ pub struct ImplicitRungeKutta<
     E,
     F,
     T: Real,
-    Y: State<T>,
+    Y: State<T> + Copy,
     const O: usize,
     const S: usize,
     const I: usize,
@@ -97,7 +97,7 @@ pub struct ImplicitRungeKutta<
     equation: PhantomData<E>,
 }
 
-impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Default
+impl<E, F, T: Real, Y: State<T> + Copy, const O: usize, const S: usize, const I: usize> Default
     for ImplicitRungeKutta<E, F, T, Y, O, S, I>
 {
     fn default() -> Self {
@@ -111,8 +111,8 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             t_prev: T::zero(),
             y_prev: Y::zeros(),
             dydt_prev: Y::zeros(),
-            k: [Y::zeros(); I],
-            z: [Y::zeros(); S],
+            k: std::array::from_fn(|_| Y::zeros()),
+            z: std::array::from_fn(|_| Y::zeros()),
             c: [T::zero(); S],
             a: [[T::zero(); S]; S],
             b: [T::zero(); S],
@@ -149,7 +149,7 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     }
 }
 
-impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
+impl<E, F, T: Real, Y: State<T> + Copy, const O: usize, const S: usize, const I: usize>
     ImplicitRungeKutta<E, F, T, Y, O, S, I>
 {
     /// Set relative tolerance

@@ -142,7 +142,7 @@ pub fn solve_sde<T, Y, S, F, O>(
 ) -> Result<Solution<T, Y>, Error<T, Y>>
 where
     T: Real,
-    Y: State<T>,
+    Y: State<T> + Copy,
     F: SDE<T, Y>,
     S: StochasticNumericalMethod<T, Y> + Interpolation<T, Y>,
     O: Solout<T, Y>,

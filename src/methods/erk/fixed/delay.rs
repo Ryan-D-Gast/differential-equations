@@ -15,7 +15,7 @@ use crate::{
 impl<
     const L: usize,
     T: Real,
-    Y: State<T>,
+    Y: State<T> + Copy,
     H: Fn(T) -> Y,
     const O: usize,
     const S: usize,
@@ -44,7 +44,7 @@ impl<
 
         // Delay buffers
         let mut delays = [T::zero(); L];
-        let mut y_delayed = [Y::zeros(); L];
+        let mut y_delayed = std::array::from_fn(|_| Y::zeros());
 
         // Evaluate initial delays and history
         dde.lags(self.t, &self.y, &mut delays);
@@ -104,7 +104,7 @@ impl<
 
         // Step buffers
         let mut delays = [T::zero(); L];
-        let mut y_delayed = [Y::zeros(); L];
+        let mut y_delayed = std::array::from_fn(|_| Y::zeros());
 
         // Store current derivative as k[0] for RK computations
         // Seed k[0] with current derivative
@@ -313,7 +313,7 @@ impl<
     }
 }
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
+impl<T: Real, Y: State<T> + Copy, const O: usize, const S: usize, const I: usize>
     ExplicitRungeKutta<Delay, Fixed, T, Y, O, S, I>
 {
     pub fn lagvals<const L: usize, H>(
@@ -411,8 +411,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     }
 }
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Interpolation<T, Y>
-    for ExplicitRungeKutta<Delay, Fixed, T, Y, O, S, I>
+impl<T: Real, Y: State<T> + Copy, const O: usize, const S: usize, const I: usize>
+    Interpolation<T, Y> for ExplicitRungeKutta<Delay, Fixed, T, Y, O, S, I>
 {
     /// Interpolates the solution at time `t_interp` within the last accepted step.
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {

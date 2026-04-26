@@ -22,7 +22,7 @@ use crate::traits::{Real, State};
 pub trait SDE<T = f64, Y = f64>
 where
     T: Real,
-    Y: State<T>,
+    Y: State<T> + Copy,
 {
     /// Drift function a(t,Y) - deterministic part of the SDE
     ///

@@ -12,7 +12,7 @@ use crate::traits::{Real, State};
 pub trait DDE<const L: usize, T = f64, Y = f64>
 where
     T: Real,
-    Y: State<T>,
+    Y: State<T> + Copy,
 {
     /// Computes the time derivative `dy/dt` of the system state.
     ///

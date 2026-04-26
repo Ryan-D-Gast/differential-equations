@@ -72,7 +72,7 @@ pub fn solve_dde<const L: usize, T, Y, S, F, H, O>(
 ) -> Result<Solution<T, Y>, Error<T, Y>>
 where
     T: Real,
-    Y: State<T>,
+    Y: State<T> + Copy,
     F: DDE<L, T, Y>,
     H: Fn(T) -> Y + Clone,
     S: DelayNumericalMethod<L, T, Y, H> + Interpolation<T, Y>,

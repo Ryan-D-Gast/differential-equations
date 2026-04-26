@@ -1,6 +1,6 @@
 //! Defines Generics for the library. Includes generics for the floating point numbers.
 
-use nalgebra::{RealField, SMatrix};
+use nalgebra::{DVector, RealField, SMatrix};
 use num_complex::Complex;
 use std::{
     fmt::Debug,
@@ -35,13 +35,13 @@ impl<T: Copy + RealField> Real for T {
 /// Implements for the following types:
 /// * `f32` - 32-bit floating point
 /// * `f64` - 64-bit floating point
-/// * `SMatrix` - Matrix type from nalgebra
+/// * `SMatrix` - Fixed-size matrix type from nalgebra
+/// * `DVector` - Dynamically-sized vector type from nalgebra
 /// * `Complex` - Complex number type from num-complex
 /// * `Struct<T>` - Any struct with all fields of type T using #[derive(State)] from the `derive` module
 ///
 pub trait State<T: Real>:
     Clone
-    + Copy
     + Debug
     + Add<Output = Self>
     + Sub<Output = Self>
@@ -61,6 +61,10 @@ pub trait State<T: Real>:
     fn set(&mut self, i: usize, value: T);
 
     fn zeros() -> Self;
+
+    fn zeros_like(&self) -> Self {
+        Self::zeros()
+    }
 }
 
 impl<T: Real> State<T> for T {
@@ -101,6 +105,31 @@ where
 
     fn zeros() -> Self {
         SMatrix::<T, R, C>::zeros()
+    }
+}
+
+impl<T> State<T> for DVector<T>
+where
+    T: Real,
+{
+    fn len(&self) -> usize {
+        self.nrows()
+    }
+
+    fn get(&self, i: usize) -> T {
+        self[i]
+    }
+
+    fn set(&mut self, i: usize, value: T) {
+        self[i] = value;
+    }
+
+    fn zeros() -> Self {
+        DVector::zeros(0)
+    }
+
+    fn zeros_like(&self) -> Self {
+        DVector::zeros(self.len())
     }
 }
 

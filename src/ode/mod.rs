@@ -5,8 +5,13 @@
 
 mod numerical_method;
 mod ode;
+mod sensitivity;
 mod solve;
 
 pub use numerical_method::OrdinaryNumericalMethod;
 pub use ode::ODE;
+pub use sensitivity::{
+    AdjointCost, AdjointSolution, AdjointState, ForwardSensitivityODE, ODEParameters,
+    solve_adjoint_sensitivity,
+};
 pub use solve::solve_ode;

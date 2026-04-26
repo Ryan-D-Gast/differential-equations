@@ -52,8 +52,8 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     }
 }
 
-impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> ToleranceConfig<T>
-    for crate::methods::ImplicitRungeKutta<E, F, T, Y, O, S, I>
+impl<E, F, T: Real, Y: State<T> + Copy, const O: usize, const S: usize, const I: usize>
+    ToleranceConfig<T> for crate::methods::ImplicitRungeKutta<E, F, T, Y, O, S, I>
 {
     fn rtol<V: Into<Tolerance<T>>>(self, rtol: V) -> Self {
         self.rtol(rtol)
@@ -63,8 +63,8 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     }
 }
 
-impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> ToleranceConfig<T>
-    for crate::methods::DiagonallyImplicitRungeKutta<E, F, T, Y, O, S, I>
+impl<E, F, T: Real, Y: State<T> + Copy, const O: usize, const S: usize, const I: usize>
+    ToleranceConfig<T> for crate::methods::DiagonallyImplicitRungeKutta<E, F, T, Y, O, S, I>
 {
     fn rtol<V: Into<Tolerance<T>>>(self, rtol: V) -> Self {
         self.rtol(rtol)

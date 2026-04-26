@@ -10,7 +10,7 @@ use crate::{
     traits::{Real, State},
 };
 
-pub struct AdamsPredictorCorrector<E, F, T: Real, Y: State<T>, const S: usize> {
+pub struct AdamsPredictorCorrector<E, F, T: Real, Y: State<T> + Copy, const S: usize> {
     // Initial Step Size
     pub h0: T,
 
@@ -61,7 +61,7 @@ pub struct AdamsPredictorCorrector<E, F, T: Real, Y: State<T>, const S: usize> {
     equation: PhantomData<E>,
 }
 
-impl<E, F, T: Real, Y: State<T>, const S: usize> Default
+impl<E, F, T: Real, Y: State<T> + Copy, const S: usize> Default
     for AdamsPredictorCorrector<E, F, T, Y, S>
 {
     fn default() -> Self {
@@ -72,11 +72,11 @@ impl<E, F, T: Real, Y: State<T>, const S: usize> Default
             y: Y::zeros(),
             dydt: Y::zeros(),
             t_prev: [T::zero(); S],
-            y_prev: [Y::zeros(); S],
+            y_prev: std::array::from_fn(|_| Y::zeros()),
             t_old: T::zero(),
             y_old: Y::zeros(),
             dydt_old: Y::zeros(),
-            k: [Y::zeros(); S],
+            k: std::array::from_fn(|_| Y::zeros()),
             tf: T::zero(),
             evals: 0,
             steps: 0,
@@ -93,7 +93,7 @@ impl<E, F, T: Real, Y: State<T>, const S: usize> Default
     }
 }
 
-impl<E, F, T: Real, Y: State<T>, const S: usize> AdamsPredictorCorrector<E, F, T, Y, S> {
+impl<E, F, T: Real, Y: State<T> + Copy, const S: usize> AdamsPredictorCorrector<E, F, T, Y, S> {
     /// Set the tolerance for error control
     pub fn tol(mut self, rtol: T) -> Self {
         self.tol = rtol;

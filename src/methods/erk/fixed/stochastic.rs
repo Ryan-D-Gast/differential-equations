@@ -12,7 +12,7 @@ use crate::{
     utils::validate_step_size_parameters,
 };
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
+impl<T: Real, Y: State<T> + Copy, const O: usize, const S: usize, const I: usize>
     StochasticNumericalMethod<T, Y> for ExplicitRungeKutta<Stochastic, Fixed, T, Y, O, S, I>
 {
     fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
@@ -163,8 +163,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     }
 }
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Interpolation<T, Y>
-    for ExplicitRungeKutta<Stochastic, Fixed, T, Y, O, S, I>
+impl<T: Real, Y: State<T> + Copy, const O: usize, const S: usize, const I: usize>
+    Interpolation<T, Y> for ExplicitRungeKutta<Stochastic, Fixed, T, Y, O, S, I>
 {
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         // Check if t is within bounds

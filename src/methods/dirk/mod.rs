@@ -22,7 +22,7 @@ pub struct DiagonallyImplicitRungeKutta<
     E,
     F,
     T: Real,
-    Y: State<T>,
+    Y: State<T> + Copy,
     const O: usize,
     const S: usize,
     const I: usize,
@@ -101,7 +101,7 @@ pub struct DiagonallyImplicitRungeKutta<
     equation: PhantomData<E>,
 }
 
-impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Default
+impl<E, F, T: Real, Y: State<T> + Copy, const O: usize, const S: usize, const I: usize> Default
     for DiagonallyImplicitRungeKutta<E, F, T, Y, O, S, I>
 {
     fn default() -> Self {
@@ -116,7 +116,7 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             t_prev: T::zero(),
             y_prev: Y::zeros(),
             dydt_prev: Y::zeros(),
-            k: [Y::zeros(); I],
+            k: std::array::from_fn(|_| Y::zeros()),
             z: Y::zeros(),
             c: [T::zero(); S],
             a: [[T::zero(); S]; S],
@@ -153,7 +153,7 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 }
 
 // Builder methods
-impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
+impl<E, F, T: Real, Y: State<T> + Copy, const O: usize, const S: usize, const I: usize>
     DiagonallyImplicitRungeKutta<E, F, T, Y, O, S, I>
 {
     /// Set relative tolerance

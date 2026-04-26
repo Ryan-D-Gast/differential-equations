@@ -12,7 +12,7 @@ use crate::{
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
+impl<T: Real, Y: State<T> + Copy, const O: usize, const S: usize, const I: usize>
     OrdinaryNumericalMethod<T, Y>
     for DiagonallyImplicitRungeKutta<Ordinary, Adaptive, T, Y, O, S, I>
 {
@@ -322,8 +322,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     }
 }
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Interpolation<T, Y>
-    for DiagonallyImplicitRungeKutta<Ordinary, Adaptive, T, Y, O, S, I>
+impl<T: Real, Y: State<T> + Copy, const O: usize, const S: usize, const I: usize>
+    Interpolation<T, Y> for DiagonallyImplicitRungeKutta<Ordinary, Adaptive, T, Y, O, S, I>
 {
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         // Check if t is within bounds

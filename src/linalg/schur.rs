@@ -56,7 +56,7 @@ pub fn schur_complement<T: Real, V: State<T>>(
     }
 
     // Compute w = s - C A^{-1} r
-    let ar = solve_a(r);
+    let ar = solve_a(r.clone());
     let car = c.mul_state(&ar);
     let mut w = V::zeros();
     for i in 0..n {

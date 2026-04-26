@@ -82,7 +82,7 @@ where
     fn jacobian(&self, t: T, y: &V, j: &mut Matrix<T>) {
         // Default implementation using forward finite differences
         let dim = y.len();
-        let mut y_perturbed = *y;
+        let mut y_perturbed = y.clone();
         let mut f_perturbed = V::zeros();
         let mut f_origin = V::zeros();
 

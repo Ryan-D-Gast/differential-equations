@@ -14,7 +14,7 @@ use crate::{
 pub trait DelayNumericalMethod<const L: usize, T, Y, H>
 where
     T: Real,
-    Y: State<T>,
+    Y: State<T> + Copy,
     H: Fn(T) -> Y,
 {
     /// Initialize the solver before integration

@@ -11,7 +11,7 @@ use crate::{
 // Adaptive step constructors
 macro_rules! impl_dirk_adaptive_step_constructor {
     ($method_name:ident, $order_val:expr, $s_val:expr, $m_val:expr, $doc:expr) => {
-        impl<E, T: Real, Y: State<T>>
+        impl<E, T: Real, Y: State<T> + Copy>
             DiagonallyImplicitRungeKutta<E, Adaptive, T, Y, $order_val, $s_val, $m_val>
         {
             #[doc = $doc]

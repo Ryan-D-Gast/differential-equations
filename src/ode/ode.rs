@@ -65,9 +65,9 @@ where
     fn jacobian(&self, t: T, y: &Y, j: &mut Matrix<T>) {
         // Default implementation using forward finite differences
         let dim = y.len();
-        let mut y_perturbed = *y;
-        let mut f_perturbed = Y::zeros();
-        let mut f_origin = Y::zeros();
+        let mut y_perturbed = y.clone();
+        let mut f_perturbed = y.zeros_like();
+        let mut f_origin = y.zeros_like();
 
         // Compute the unperturbed derivative
         self.diff(t, y, &mut f_origin);

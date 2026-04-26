@@ -136,7 +136,7 @@ where
             }
             norm.sqrt()
         };
-        let norm = norm(normal);
+        let norm = norm(normal.clone());
         if norm > T::default_epsilon() {
             normal = normal * T::one() / norm;
         }
@@ -202,7 +202,7 @@ where
     ///
     fn signed_distance(&self, pos: &Y1) -> T {
         // Calculate displacement vector from plane point to position
-        let displacement = *pos - self.point;
+        let displacement = pos.clone() - self.point.clone();
 
         // Dot product with normal gives signed distance
         dot(&displacement, &self.normal)

@@ -44,12 +44,15 @@ pub use crate::methods::{
 };
 
 // Initial Value Problems
-pub use crate::ivp::Ivp;
+pub use crate::ivp::{AdjointSensitivityIvp, ForwardSensitivityIvp, Ivp};
 
 // Equation Traits
 pub use crate::dae::DAE;
 pub use crate::dde::DDE;
-pub use crate::ode::ODE;
+pub use crate::ode::{
+    AdjointCost, AdjointSolution, AdjointState, ForwardSensitivityODE, ODE, ODEParameters,
+    solve_adjoint_sensitivity,
+};
 pub use crate::sde::SDE;
 
 // Output, Events, and Solution Types
