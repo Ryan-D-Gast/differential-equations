@@ -177,31 +177,28 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_step_size_parameters_valid() {
+    fn test_validate_step_size_parameters() {
+        // test valid positive direction
         let result: Result<f64, Error<f64, f64>> =
             validate_step_size_parameters(0.1, 0.01, 1.0, 0.0, 10.0);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 0.1);
 
+        // test valid negative direction
         let result_negative: Result<f64, Error<f64, f64>> =
             validate_step_size_parameters(-0.1, 0.01, 1.0, 10.0, 0.0);
         assert!(result_negative.is_ok());
         assert_eq!(result_negative.unwrap(), -0.1);
-    }
 
-    #[test]
-    fn test_validate_step_size_parameters_tf_equals_t0() {
+        // test tf equals t0
         let result: Result<f64, Error<f64, f64>> =
             validate_step_size_parameters(0.1, 0.01, 1.0, 5.0, 5.0);
         assert!(matches!(result, Err(Error::BadInput { .. })));
         if let Err(Error::BadInput { msg }) = result {
             assert!(msg.contains("cannot be equal to t0"));
         }
-    }
 
-    #[test]
-    fn test_validate_step_size_parameters_wrong_sign() {
-        // tf - t0 is positive, but h0 is negative
+        // test wrong sign positive tf-t0
         let result: Result<f64, Error<f64, f64>> =
             validate_step_size_parameters(-0.1, 0.01, 1.0, 0.0, 10.0);
         assert!(matches!(result, Err(Error::BadInput { .. })));
@@ -209,15 +206,12 @@ mod tests {
             assert!(msg.contains("same sign as the integration direction"));
         }
 
-        // tf - t0 is negative, but h0 is positive
+        // test wrong sign negative tf-t0
         let result_negative: Result<f64, Error<f64, f64>> =
             validate_step_size_parameters(0.1, 0.01, 1.0, 10.0, 0.0);
         assert!(matches!(result_negative, Err(Error::BadInput { .. })));
-    }
 
-    #[test]
-    fn test_validate_step_size_parameters_negative_bounds() {
-        // h_min negative
+        // test h_min negative
         let result1: Result<f64, Error<f64, f64>> =
             validate_step_size_parameters(0.1, -0.01, 1.0, 0.0, 10.0);
         assert!(matches!(result1, Err(Error::BadInput { .. })));
@@ -226,7 +220,7 @@ mod tests {
             assert!(msg.contains("non-negative"));
         }
 
-        // h_max negative
+        // test h_max negative
         let result2: Result<f64, Error<f64, f64>> =
             validate_step_size_parameters(0.1, 0.01, -1.0, 0.0, 10.0);
         assert!(matches!(result2, Err(Error::BadInput { .. })));
@@ -234,21 +228,16 @@ mod tests {
             assert!(msg.contains("Maximum step size"));
             assert!(msg.contains("non-negative"));
         }
-    }
 
-    #[test]
-    fn test_validate_step_size_parameters_min_greater_than_max() {
+        // test min greater than max
         let result: Result<f64, Error<f64, f64>> =
             validate_step_size_parameters(0.5, 1.0, 0.1, 0.0, 10.0);
         assert!(matches!(result, Err(Error::BadInput { .. })));
         if let Err(Error::BadInput { msg }) = result {
             assert!(msg.contains("less than or equal to maximum step size"));
         }
-    }
 
-    #[test]
-    fn test_validate_step_size_parameters_h0_out_of_bounds() {
-        // |h0| < h_min
+        // test |h0| < h_min
         let result1: Result<f64, Error<f64, f64>> =
             validate_step_size_parameters(0.001, 0.01, 1.0, 0.0, 10.0);
         assert!(matches!(result1, Err(Error::BadInput { .. })));
@@ -256,7 +245,7 @@ mod tests {
             assert!(msg.contains("greater than or equal to minimum step size"));
         }
 
-        // |h0| > h_max
+        // test |h0| > h_max
         let result2: Result<f64, Error<f64, f64>> =
             validate_step_size_parameters(2.0, 0.01, 1.0, 0.0, 10.0);
         assert!(matches!(result2, Err(Error::BadInput { .. })));
@@ -264,7 +253,7 @@ mod tests {
             assert!(msg.contains("less than or equal to maximum step size"));
         }
 
-        // |h0| > |tf - t0|
+        // test |h0| > |tf - t0|
         let result3: Result<f64, Error<f64, f64>> =
             validate_step_size_parameters(0.5, 0.01, 1.0, 0.0, 0.2);
         assert!(matches!(result3, Err(Error::BadInput { .. })));
@@ -275,10 +264,8 @@ mod tests {
                 )
             );
         }
-    }
 
-    #[test]
-    fn test_validate_step_size_parameters_h0_zero() {
+        // test h0 zero
         let result: Result<f64, Error<f64, f64>> =
             validate_step_size_parameters(0.0, 0.0, 1.0, 0.0, 10.0);
         assert!(matches!(result, Err(Error::BadInput { .. })));

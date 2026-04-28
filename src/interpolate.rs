@@ -79,7 +79,8 @@ mod tests {
     use nalgebra::SMatrix;
 
     #[test]
-    fn test_linear_interpolate_f64() {
+    fn test_linear_interpolate() {
+        // test f64
         let t0 = 0.0_f64;
         let t1 = 1.0_f64;
         let y0 = 0.0_f64;
@@ -90,10 +91,8 @@ mod tests {
         assert!((linear_interpolate(t0, t1, &y0, &y1, 0.5_f64) - 1.0_f64).abs() < 1e-10);
         assert!((linear_interpolate(t0, t1, &y0, &y1, 2.0_f64) - 4.0_f64).abs() < 1e-10);
         assert!((linear_interpolate(t0, t1, &y0, &y1, -1.0_f64) - (-2.0_f64)).abs() < 1e-10);
-    }
 
-    #[test]
-    fn test_linear_interpolate_smatrix() {
+        // test smatrix
         let t0 = 0.0;
         let t1 = 2.0;
         let y0 = SMatrix::<f64, 2, 1>::new(1.0, 2.0);
@@ -111,92 +110,91 @@ mod tests {
     }
 
     #[test]
-    fn test_cubic_hermite_interpolate_bounds() {
-        let t0 = 0.0;
-        let t1 = 1.0;
-        let y0 = 2.5;
-        let y1 = -1.5;
-        let k0 = 1.0;
-        let k1 = -0.5;
+    fn test_cubic_hermite_interpolate() {
+        {
+            let t0 = 0.0;
+            let t1 = 1.0;
+            let y0 = 2.5;
+            let y1 = -1.5;
+            let k0 = 1.0;
+            let k1 = -0.5;
 
-        // At t0, should evaluate exactly to y0
-        let res0 = cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t0);
-        assert_eq!(res0, y0);
+            // At t0, should evaluate exactly to y0
+            let res0 = cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t0);
+            assert_eq!(res0, y0);
 
-        // At t1, should evaluate exactly to y1
-        let res1 = cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t1);
-        assert_eq!(res1, y1);
-    }
+            // At t1, should evaluate exactly to y1
+            let res1 = cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t1);
+            assert_eq!(res1, y1);
+        }
 
-    #[test]
-    fn test_cubic_hermite_interpolate_analytical() {
-        // Test exact reproduction of a cubic polynomial f(t) = t^3.
-        // f(t) = t^3
-        // f'(t) = 3t^2
-        let t0 = 1.0;
-        let t1 = 2.0;
-        let y0 = 1.0; // 1^3
-        let y1 = 8.0; // 2^3
-        let k0 = 3.0; // 3 * 1^2
-        let k1 = 12.0; // 3 * 2^2
+        {
+            // Test exact reproduction of a cubic polynomial f(t) = t^3.
+            // f(t) = t^3
+            // f'(t) = 3t^2
+            let t0 = 1.0;
+            let t1 = 2.0;
+            let y0 = 1.0; // 1^3
+            let y1 = 8.0; // 2^3
+            let k0 = 3.0; // 3 * 1^2
+            let k1 = 12.0; // 3 * 2^2
 
-        let t_mid = 1.5;
-        let expected_mid = 3.375; // 1.5^3
+            let t_mid = 1.5;
+            let expected_mid = 3.375; // 1.5^3
 
-        let res_mid: f64 = cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t_mid);
-        assert!(
-            (res_mid - expected_mid).abs() < 1e-12,
-            "Expected {}, got {}",
-            expected_mid,
-            res_mid
-        );
+            let res_mid: f64 = cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t_mid);
+            assert!(
+                (res_mid - expected_mid).abs() < 1e-12,
+                "Expected {}, got {}",
+                expected_mid,
+                res_mid
+            );
 
-        let t_quarter = 1.25;
-        let expected_quarter = 1.953125; // 1.25^3
+            let t_quarter = 1.25;
+            let expected_quarter = 1.953125; // 1.25^3
 
-        let res_quarter: f64 = cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t_quarter);
-        assert!(
-            (res_quarter - expected_quarter).abs() < 1e-12,
-            "Expected {}, got {}",
-            expected_quarter,
-            res_quarter
-        );
-    }
+            let res_quarter: f64 = cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t_quarter);
+            assert!(
+                (res_quarter - expected_quarter).abs() < 1e-12,
+                "Expected {}, got {}",
+                expected_quarter,
+                res_quarter
+            );
+        }
 
-    #[test]
-    fn test_cubic_hermite_interpolate_f64() {
-        let t0 = 0.0_f64;
-        let t1 = 1.0_f64;
-        let y0 = 0.0_f64;
-        let y1 = 1.0_f64;
-        let k0 = 0.0_f64;
-        let k1 = 0.0_f64;
+        {
+            let t0 = 0.0_f64;
+            let t1 = 1.0_f64;
+            let y0 = 0.0_f64;
+            let y1 = 1.0_f64;
+            let k0 = 0.0_f64;
+            let k1 = 0.0_f64;
 
-        assert!((cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t0) - y0).abs() < 1e-10);
-        assert!((cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t1) - y1).abs() < 1e-10);
-        assert!(
-            (cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, 0.5_f64) - 0.5_f64).abs()
-                < 1e-10
-        );
+            assert!((cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t0) - y0).abs() < 1e-10);
+            assert!((cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, t1) - y1).abs() < 1e-10);
+            assert!(
+                (cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, 0.5_f64) - 0.5_f64).abs()
+                    < 1e-10
+            );
 
-        let k0 = 1.0_f64;
-        let k1 = 1.0_f64;
-        assert!(
-            (cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, 0.5_f64) - 0.5_f64).abs()
-                < 1e-10
-        );
-    }
+            let k0 = 1.0_f64;
+            let k1 = 1.0_f64;
+            assert!(
+                (cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, 0.5_f64) - 0.5_f64).abs()
+                    < 1e-10
+            );
+        }
 
-    #[test]
-    fn test_cubic_hermite_interpolate_smatrix() {
-        let t0 = 0.0;
-        let t1 = 1.0;
-        let y0 = SMatrix::<f64, 1, 1>::new(0.0);
-        let y1 = SMatrix::<f64, 1, 1>::new(1.0);
-        let k0 = SMatrix::<f64, 1, 1>::new(1.0);
-        let k1 = SMatrix::<f64, 1, 1>::new(1.0);
+        {
+            let t0 = 0.0;
+            let t1 = 1.0;
+            let y0 = SMatrix::<f64, 1, 1>::new(0.0);
+            let y1 = SMatrix::<f64, 1, 1>::new(1.0);
+            let k0 = SMatrix::<f64, 1, 1>::new(1.0);
+            let k1 = SMatrix::<f64, 1, 1>::new(1.0);
 
-        let res = cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, 0.5);
-        assert!((res[(0, 0)] - 0.5).abs() < 1e-10);
+            let res = cubic_hermite_interpolate(t0, t1, &y0, &y1, &k0, &k1, 0.5);
+            assert!((res[(0, 0)] - 0.5).abs() < 1e-10);
+        }
     }
 }

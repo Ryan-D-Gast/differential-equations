@@ -343,101 +343,99 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_dec_simple() {
-        // Test LU decomposition of a simple 2x2 matrix
-        let mut a = Matrix::from_vec(2, 2, vec![2.0_f64, 1.0, 4.0, 3.0]);
-        let mut ip = [0; 2];
+    fn test_dec() {
+        {
+            // Test LU decomposition of a simple 2x2 matrix
+            let mut a = Matrix::from_vec(2, 2, vec![2.0_f64, 1.0, 4.0, 3.0]);
+            let mut ip = [0; 2];
 
-        let result = lu_decomp(&mut a, &mut ip);
-        assert!(result.is_ok());
+            let result = lu_decomp(&mut a, &mut ip);
+            assert!(result.is_ok());
 
-        // The matrix should be factorized in-place
-        // We can verify that the diagonal elements are non-zero
-        assert!(a[(0, 0)].abs() > 1e-10);
-        assert!(a[(1, 1)].abs() > 1e-10);
+            // The matrix should be factorized in-place
+            // We can verify that the diagonal elements are non-zero
+            assert!(a[(0, 0)].abs() > 1e-10);
+            assert!(a[(1, 1)].abs() > 1e-10);
+        }
+
+        {
+            // Test with a singular matrix
+            let mut a = Matrix::from_vec(2, 2, vec![1.0_f64, 0.0, 0.0, 0.0]);
+            let mut ip = [0; 2];
+
+            let result = lu_decomp(&mut a, &mut ip);
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err(), LinalgError::Singular { step: 2 });
+        }
+
+        {
+            // Test with a 1x1 matrix
+            let mut a = Matrix::from_vec(1, 1, vec![5.0_f64]);
+            let mut ip = [0; 1];
+
+            let result = lu_decomp(&mut a, &mut ip);
+            assert!(result.is_ok());
+            assert_eq!(ip[0], 0);
+        }
+
+        {
+            // Test with a singular 1x1 matrix
+            let mut a = Matrix::from_vec(1, 1, vec![0.0_f64]);
+            let mut ip = [0; 1];
+
+            let result = lu_decomp(&mut a, &mut ip);
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err(), LinalgError::Singular { step: 1 });
+        }
     }
 
     #[test]
-    fn test_dec_singular() {
-        // Test with a singular matrix
-        let mut a = Matrix::from_vec(2, 2, vec![1.0_f64, 0.0, 0.0, 0.0]);
-        let mut ip = [0; 2];
+    fn test_decc() {
+        {
+            // Test complex LU decomposition of a simple 2x2 matrix
+            let mut ar = Matrix::from_vec(2, 2, vec![1.0_f64, 0.0, 0.0, 1.0]);
+            let mut ai = Matrix::from_vec(2, 2, vec![0.0, 1.0, 1.0, 0.0]);
+            let mut ip = [0; 2];
 
-        let result = lu_decomp(&mut a, &mut ip);
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), LinalgError::Singular { step: 2 });
-    }
+            let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
+            assert!(result.is_ok());
 
-    #[test]
-    fn test_dec_1x1() {
-        // Test with a 1x1 matrix
-        let mut a = Matrix::from_vec(1, 1, vec![5.0_f64]);
-        let mut ip = [0; 1];
+            // Verify that the diagonal elements have non-zero magnitude
+            let diag0_mag = ar[(0, 0)].abs() + ai[(0, 0)].abs();
+            let diag1_mag = ar[(1, 1)].abs() + ai[(1, 1)].abs();
+            assert!(diag0_mag > 1e-10);
+            assert!(diag1_mag > 1e-10);
+        }
 
-        let result = lu_decomp(&mut a, &mut ip);
-        assert!(result.is_ok());
-        assert_eq!(ip[0], 0);
-    }
+        {
+            // Test with a singular complex matrix
+            let mut ar = Matrix::from_vec(2, 2, vec![1.0_f64, 1.0, 1.0, 1.0]);
+            let mut ai = Matrix::from_vec(2, 2, vec![0.0_f64, 0.0, 0.0, 0.0]);
+            let mut ip = [0; 2];
 
-    #[test]
-    fn test_dec_1x1_singular() {
-        // Test with a singular 1x1 matrix
-        let mut a = Matrix::from_vec(1, 1, vec![0.0_f64]);
-        let mut ip = [0; 1];
+            let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
+            assert!(result.is_err());
+        }
 
-        let result = lu_decomp(&mut a, &mut ip);
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), LinalgError::Singular { step: 1 });
-    }
+        {
+            // Test with a 1x1 complex matrix
+            let mut ar = Matrix::from_vec(1, 1, vec![3.0_f64]);
+            let mut ai = Matrix::from_vec(1, 1, vec![4.0_f64]); // 3 + 4i
+            let mut ip = [0; 1];
 
-    #[test]
-    fn test_decc_simple() {
-        // Test complex LU decomposition of a simple 2x2 matrix
-        let mut ar = Matrix::from_vec(2, 2, vec![1.0_f64, 0.0, 0.0, 1.0]);
-        let mut ai = Matrix::from_vec(2, 2, vec![0.0, 1.0, 1.0, 0.0]);
-        let mut ip = [0; 2];
+            let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
+            assert!(result.is_ok());
+            assert_eq!(ip[0], 0);
+        }
 
-        let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
-        assert!(result.is_ok());
+        {
+            // Test with a singular 1x1 complex matrix
+            let mut ar = Matrix::from_vec(1, 1, vec![0.0_f64]);
+            let mut ai = Matrix::from_vec(1, 1, vec![0.0_f64]);
+            let mut ip = [0; 1];
 
-        // Verify that the diagonal elements have non-zero magnitude
-        let diag0_mag = ar[(0, 0)].abs() + ai[(0, 0)].abs();
-        let diag1_mag = ar[(1, 1)].abs() + ai[(1, 1)].abs();
-        assert!(diag0_mag > 1e-10);
-        assert!(diag1_mag > 1e-10);
-    }
-
-    #[test]
-    fn test_decc_singular() {
-        // Test with a singular complex matrix
-        let mut ar = Matrix::from_vec(2, 2, vec![1.0_f64, 1.0, 1.0, 1.0]);
-        let mut ai = Matrix::from_vec(2, 2, vec![0.0_f64, 0.0, 0.0, 0.0]);
-        let mut ip = [0; 2];
-
-        let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_decc_1x1() {
-        // Test with a 1x1 complex matrix
-        let mut ar = Matrix::from_vec(1, 1, vec![3.0_f64]);
-        let mut ai = Matrix::from_vec(1, 1, vec![4.0_f64]); // 3 + 4i
-        let mut ip = [0; 1];
-
-        let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
-        assert!(result.is_ok());
-        assert_eq!(ip[0], 0);
-    }
-
-    #[test]
-    fn test_decc_1x1_singular() {
-        // Test with a singular 1x1 complex matrix
-        let mut ar = Matrix::from_vec(1, 1, vec![0.0_f64]);
-        let mut ai = Matrix::from_vec(1, 1, vec![0.0_f64]);
-        let mut ip = [0; 1];
-
-        let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
-        assert!(result.is_err());
+            let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
+            assert!(result.is_err());
+        }
     }
 }
