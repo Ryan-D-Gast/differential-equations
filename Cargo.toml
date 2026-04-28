@@ -149,3 +149,7 @@ path = "examples/dde/02_breast_cancer_model/main.rs"
 name = "ode_solver_benchmarks"
 harness = false
 path = "benches/main.rs"
+
+[[example]]
+name = "ode_20_adjoint_sensitivities"
+path = "examples/ode/20_adjoint_sensitivities/main.rs"
