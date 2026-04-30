@@ -218,15 +218,18 @@ impl<T: Real> Matrix<T> {
                     }
                 }
             }
-            MatrixStorage::Sparse(coords) => {
+            MatrixStorage::Sparse { coords, zero } => {
                 let n = self.n;
                 let m = self.m;
                 if rhs == T::zero() {
                     Matrix {
                         n,
                         m,
-                        data: vec![T::zero()],
-                        storage: MatrixStorage::Sparse(coords.clone()),
+                        data: Vec::new(),
+                        storage: MatrixStorage::Sparse {
+                            coords: coords.clone(),
+                            zero: *zero,
+                        },
                     }
                 } else {
                     let mut dense = vec![rhs; n * m];

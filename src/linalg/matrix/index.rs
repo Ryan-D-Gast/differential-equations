@@ -32,11 +32,11 @@ impl<T: Real> Index<(usize, usize)> for Matrix<T> {
                     &self.data[row * self.m + j]
                 }
             }
-            MatrixStorage::Sparse(coords) => coords
+            MatrixStorage::Sparse { coords, zero } => coords
                 .iter()
                 .find(|&&(row, col, _)| row == i && col == j)
                 .map(|entry| &entry.2)
-                .unwrap_or(&self.data[0]),
+                .unwrap_or(zero),
         }
     }
 }
@@ -64,7 +64,7 @@ impl<T: Real> IndexMut<(usize, usize)> for Matrix<T> {
                     )
                 }
             }
-            MatrixStorage::Sparse(coords) => {
+            MatrixStorage::Sparse { coords, .. } => {
                 if let Some(idx) = coords.iter().position(|&(r, c, _)| r == i && c == j) {
                     &mut coords[idx].2
                 } else {

@@ -14,7 +14,10 @@ pub enum MatrixStorage<T: Real> {
     /// Off-band reads return `zero`.
     Banded { ml: usize, mu: usize, zero: T },
     /// Sparse matrix representation using coordinate format.
-    Sparse(Vec<(usize, usize, T)>),
+    Sparse {
+        coords: Vec<(usize, usize, T)>,
+        zero: T,
+    },
 }
 
 /// Generic matrix for linear algebra (typically square in current use).
@@ -64,8 +67,11 @@ impl<T: Real> Matrix<T> {
         Matrix {
             n,
             m,
-            data: vec![T::zero()],
-            storage: MatrixStorage::Sparse(Vec::new()),
+            data: Vec::new(),
+            storage: MatrixStorage::Sparse {
+                coords: Vec::new(),
+                zero: T::zero(),
+            },
         }
     }
 
@@ -80,8 +86,11 @@ impl<T: Real> Matrix<T> {
         Matrix {
             n,
             m,
-            data: vec![T::zero()],
-            storage: MatrixStorage::Sparse(triplets),
+            data: Vec::new(),
+            storage: MatrixStorage::Sparse {
+                coords: triplets,
+                zero: T::zero(),
+            },
         }
     }
 
@@ -185,7 +194,7 @@ impl<T: Real> Matrix<T> {
                     self.data[band_row * self.m + col]
                 }
             }
-            MatrixStorage::Sparse(coords) => coords
+            MatrixStorage::Sparse { coords, .. } => coords
                 .iter()
                 .filter(|&&(r, c, _)| r == row && c == col)
                 .fold(T::zero(), |acc, &(_, _, value)| acc + value),
@@ -219,7 +228,7 @@ impl<T: Real> Matrix<T> {
                 let band_row = (k + *mu as isize) as usize;
                 self.data[band_row * self.m + col] = value;
             }
-            MatrixStorage::Sparse(coords) => {
+            MatrixStorage::Sparse { coords, .. } => {
                 if let Some(idx) = coords.iter().position(|&(r, c, _)| r == row && c == col) {
                     coords[idx].2 = value;
                     for (dup_idx, entry) in coords.iter_mut().enumerate() {
@@ -265,7 +274,7 @@ impl<T: Real> Matrix<T> {
                 }
                 dense
             }
-            MatrixStorage::Sparse(coords) => {
+            MatrixStorage::Sparse { coords, .. } => {
                 let mut dense = vec![T::zero(); self.n * self.m];
                 for &(row, col, value) in coords {
                     dense[row * self.m + col] += value;
@@ -308,7 +317,7 @@ impl<T: Real> Matrix<T> {
                     }
                 }
             }
-        } else if let MatrixStorage::Sparse(ref coords) = self.storage {
+        } else if let MatrixStorage::Sparse { ref coords, .. } = self.storage {
             for i in 0..self.n {
                 for j in 0..self.m {
                     let mut val = T::zero();
@@ -373,7 +382,7 @@ impl<T: Real> Matrix<T> {
                     }
                 }
             }
-            MatrixStorage::Sparse(coords) => {
+            MatrixStorage::Sparse { coords, .. } => {
                 for item in coords.iter_mut() {
                     if item.0 == r1 {
                         item.0 = r2;
@@ -388,15 +397,17 @@ impl<T: Real> Matrix<T> {
     /// Fill the matrix with a constant value.
     pub fn fill(&mut self, value: T) {
         match &mut self.storage {
-            MatrixStorage::Identity | MatrixStorage::Banded { .. } | MatrixStorage::Sparse(_)
+            MatrixStorage::Identity
+            | MatrixStorage::Banded { .. }
+            | MatrixStorage::Sparse { .. }
                 if value != T::zero() =>
             {
                 self.data = vec![value; self.n * self.m];
                 self.storage = MatrixStorage::Full;
             }
-            MatrixStorage::Sparse(coords) => {
+            MatrixStorage::Sparse { coords, zero } => {
                 coords.clear();
-                self.data = vec![T::zero()];
+                *zero = T::zero();
             }
             _ => self.data.fill(value),
         }
@@ -450,6 +461,17 @@ mod tests {
         let mut m = Matrix::sparse_from_triplets(2, 2, vec![(0, 1, 2.0)]);
         m.fill(0.0);
         assert_eq!(m.get(0, 1), 0.0);
-        assert!(matches!(m.storage, MatrixStorage::Sparse(_)));
+        assert!(matches!(m.storage, MatrixStorage::Sparse { .. }));
+    }
+
+    #[test]
+    fn sparse_storage_carries_zero_reference() {
+        let m = Matrix::<f64>::sparse(2, 2);
+        match &m.storage {
+            MatrixStorage::Sparse { zero, .. } => {
+                assert_eq!(m[(1, 1)], *zero);
+            }
+            _ => panic!("expected sparse storage"),
+        }
     }
 }

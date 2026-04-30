@@ -30,7 +30,7 @@ impl<T: Real> Matrix<T> {
                     },
                 }
             }
-            MatrixStorage::Sparse(mut coords) => {
+            MatrixStorage::Sparse { mut coords, zero } => {
                 let n = self.n;
                 let m = self.m;
                 for item in coords.iter_mut() {
@@ -39,8 +39,8 @@ impl<T: Real> Matrix<T> {
                 Matrix {
                     n,
                     m,
-                    data: vec![T::zero()],
-                    storage: MatrixStorage::Sparse(coords),
+                    data: Vec::new(),
+                    storage: MatrixStorage::Sparse { coords, zero },
                 }
             }
         }
@@ -70,7 +70,7 @@ impl<T: Real> Matrix<T> {
                     *v *= rhs;
                 }
             }
-            MatrixStorage::Sparse(coords) => {
+            MatrixStorage::Sparse { coords, .. } => {
                 for item in coords.iter_mut() {
                     item.2 *= rhs;
                 }
@@ -83,7 +83,7 @@ impl<T: Real> Matrix<T> {
         assert_eq!(vec.len(), self.m, "dimension mismatch in Matrix::mul_state");
 
         let mut result = V::zeros();
-        if let MatrixStorage::Sparse(ref coords) = self.storage {
+        if let MatrixStorage::Sparse { ref coords, .. } = self.storage {
             for &(r, c, v) in coords {
                 result.set(r, result.get(r) + v * vec.get(c));
             }
