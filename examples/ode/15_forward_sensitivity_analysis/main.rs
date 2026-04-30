@@ -1,12 +1,12 @@
 //! Example 15: Forward Sensitivity Analysis (FSA) using Dual Numbers
 //!
-//! This example demonstrates how to compute exact sensitivities of an ODE solution
+//! This example demonstrates how to compute sensitivities of an ODE solution
 //! with respect to its parameters using the `num-dual` crate.
 //!
 //! Forward sensitivity analysis calculates the gradient of the solver states y
 //! with respect to system parameters p. By making our ODE implementation generic
 //! over the `Real` trait, we can solve the system using dual numbers, which compute
-//! both the state and its exact derivatives simultaneously without requiring an
+//! both the state and its derivatives simultaneously without requiring an
 //! explicitly augmented sensitivity matrix system.
 //!
 //! We use a simple decay model: dy/dt = -k * y
@@ -32,8 +32,8 @@ impl<T: Real> ODE<T, SVector<T, 1>> for Decay<T> {
 }
 
 fn main() {
-    // We want to evaluate the sensitivity with respect to `k`.
-    // We initialize `k` as a dual number: k = 1.0, and its derivative w.r.t itself is 1.0
+    // We want to evaluate the sensitivity with respect to `k`. The dual part of
+    // `k` is 1.0 because dk/dk = 1.
     let k = Dual64::new(1.0, 1.0);
     let decay = Decay { k };
 
@@ -45,12 +45,13 @@ fn main() {
     let t0 = Dual64::from(0.0);
     let tf = Dual64::from(2.0);
 
-    // Let's specify the explicit types for DOP853 so that it knows we are using Dual64
+    // Specify the DOP853 scalar and state types so the solver uses Dual64.
     let method = ExplicitRungeKutta::<_, _, Dual64, SVector<Dual64, 1>, 8, 12, 16>::dop853()
         .rtol(Dual64::from(1e-8))
         .atol(Dual64::from(1e-8));
 
-    // Solve the ODE. The solver handles Dual64 natively!
+    // Solve the ODE. The solver handles Dual64 through the same Real trait used
+    // by f64.
     let solution = Ivp::ode(&decay, t0, tf, y0).method(method).solve().unwrap();
 
     // Extract the final state
@@ -58,7 +59,7 @@ fn main() {
 
     // The real part is the actual solution value: y(tf)
     let y_final = y_final_dual.re;
-    // The dual part is the exact derivative with respect to k: dy/dk(tf)
+    // The dual part is the derivative with respect to k: dy/dk(tf)
     let sens_final = y_final_dual.eps;
 
     // Analytical solution for verification: y(t) = y0 * e^(-k*t)
