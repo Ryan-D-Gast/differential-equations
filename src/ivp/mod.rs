@@ -7,13 +7,13 @@
 //! required.
 
 use crate::{
-    dae::{AlgebraicNumericalMethod, DAE, solve_dae},
-    dde::{DDE, DelayNumericalMethod, solve_dde},
+    dae::{solve_dae, AlgebraicNumericalMethod, DAE},
+    dde::{solve_dde, DelayNumericalMethod, DDE},
     error::Error,
     interpolate::Interpolation,
     methods::ToleranceConfig,
-    ode::{ODE, OrdinaryNumericalMethod, solve_ode},
-    sde::{SDE, StochasticNumericalMethod, solve_sde},
+    ode::{solve_ode, OrdinaryNumericalMethod, ODE},
+    sde::{solve_sde, StochasticNumericalMethod, SDE},
     solout::{
         CrossingDirection, CrossingSolout, DefaultSolout, DenseSolout, EvenSolout, Event,
         EventWrappedSolout, HyperplaneCrossingSolout, Solout, TEvalSolout,
@@ -222,6 +222,27 @@ impl<EqType, T: Real, Y: State<T>, Method, SoloutType> Ivp<EqType, T, Y, Method,
     }
 
     /// Wrap current solout with event detection while preserving original output strategy.
+    /// Wrap current solout with a quadrature tracking solout.
+    pub fn quadrature<'a, E>(
+        self,
+        quadrature: &'a E,
+        q0: E::Q,
+        q_out: std::rc::Rc<std::cell::RefCell<Vec<E::Q>>>,
+    ) -> Ivp<EqType, T, Y, Method, crate::solout::QuadratureSolout<'a, T, Y, SoloutType, E>>
+    where
+        E: crate::solout::Quadrature<T, Y>,
+        SoloutType: crate::solout::Solout<T, Y>,
+    {
+        Ivp {
+            equation: self.equation,
+            t0: self.t0,
+            tf: self.tf,
+            y0: self.y0,
+            method: self.method,
+            solout: crate::solout::QuadratureSolout::new(self.solout, quadrature, q0, q_out),
+        }
+    }
+
     pub fn event<'a, E>(
         self,
         event: &'a E,

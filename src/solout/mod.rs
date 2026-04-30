@@ -22,6 +22,7 @@ mod even;
 mod event;
 mod hyperplane;
 mod solout;
+mod quadrature;
 mod t_eval;
 
 pub use crossing::CrossingSolout;
@@ -31,6 +32,7 @@ pub use even::EvenSolout;
 pub use event::{Event, EventConfig, EventSolout, EventWrappedSolout};
 pub use hyperplane::HyperplaneCrossingSolout;
 pub use solout::Solout;
+pub use quadrature::{Quadrature, QuadratureSolout};
 pub use t_eval::TEvalSolout;
 
 /// Defines the direction of threshold crossing to detect.
