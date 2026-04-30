@@ -90,9 +90,9 @@ impl<T: Real> Matrix<T> {
         } else {
             for i in 0..n {
                 let mut sum = T::zero();
-                for j in 0..n {
-                    sum += self[(i, j)] * vec.get(j);
-                }
+            for j in 0..self.m {
+                sum += self[(i, j)] * vec.get(j);
+            }
                 result.set(i, sum);
             }
         }
