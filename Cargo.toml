@@ -159,5 +159,5 @@ harness = false
 path = "benches/main.rs"
 
 [[example]]
-name = "ode_20_adjoint_sensitivities"
-path = "examples/ode/20_adjoint_sensitivities/main.rs"
+name = "ode_17_adjoint_sensitivities"
+path = "examples/ode/17_adjoint_sensitivities/main.rs"
