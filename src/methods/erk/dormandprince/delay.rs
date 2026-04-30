@@ -12,15 +12,7 @@ use crate::{
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
-impl<
-    const L: usize,
-    T: Real,
-    Y: State<T>,
-    H: Fn(T) -> Y,
-    const O: usize,
-    const S: usize,
-    const I: usize,
-> DelayNumericalMethod<L, T, Y, H> for ExplicitRungeKutta<Delay, DormandPrince, T, Y, O, S, I>
+impl<const L: usize, T: Real, Y: State<T>, H: Fn(T) -> Y, const O: usize, const S: usize, const I: usize, Quad: crate::ode::Quadrature<T, Y>> DelayNumericalMethod<L, T, Y, H> for ExplicitRungeKutta<Delay, DormandPrince, T, Y, O, S, I, Quad>
 {
     fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &Y, phi: &H) -> Result<Evals, Error<T, Y>>
     where
@@ -526,8 +518,8 @@ impl<
     }
 }
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
-    ExplicitRungeKutta<Delay, DormandPrince, T, Y, O, S, I>
+impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize, Quad: crate::ode::Quadrature<T, Y>>
+    ExplicitRungeKutta<Delay, DormandPrince, T, Y, O, S, I, Quad>
 {
     fn lagvals<const L: usize, H>(
         &mut self,
@@ -626,8 +618,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     }
 }
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Interpolation<T, Y>
-    for ExplicitRungeKutta<Delay, DormandPrince, T, Y, O, S, I>
+impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize, Quad: crate::ode::Quadrature<T, Y>> Interpolation<T, Y>
+    for ExplicitRungeKutta<Delay, DormandPrince, T, Y, O, S, I, Quad>
 {
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         // Check if interpolation is out of bounds

@@ -10,8 +10,8 @@ use crate::{
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
-    OrdinaryNumericalMethod<T, Y> for ExplicitRungeKutta<Ordinary, DormandPrince, T, Y, O, S, I>
+impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize, Quad: crate::ode::Quadrature<T, Y>>
+    OrdinaryNumericalMethod<T, Y> for ExplicitRungeKutta<Ordinary, DormandPrince, T, Y, O, S, I, Quad>
 {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
@@ -42,12 +42,17 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         self.y = *y0;
         ode.diff(self.t, &self.y, &mut self.k[0]);
         self.dydt = self.k[0];
+        self.q = Quad::Q::zeros();
+        self.quadrature.integrand(self.t, &self.y, &mut self.kq[0]);
+        self.dqdt = self.kq[0];
         evals.function += 1;
 
         // Initialize previous state
         self.t_prev = self.t;
         self.y_prev = self.y;
         self.dydt_prev = self.dydt;
+        self.q_prev = self.q;
+        self.dqdt_prev = self.dqdt;
 
         // Initialize Status
         self.status = Status::Initialized;
@@ -96,7 +101,9 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             }
             y_stage = self.y + y_stage * self.h;
 
-            ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
+            let t_stage = self.t + self.c[i] * self.h;
+            ode.diff(t_stage, &y_stage, &mut self.k[i]);
+            self.quadrature.integrand(t_stage, &y_stage, &mut self.kq[i]);
         }
 
         // The last stage will be used for stiffness detection
@@ -104,12 +111,15 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // Calculate the line segment for the new y value
         let mut yseg = Y::zeros();
+        let mut qseg = Quad::Q::zeros();
         for i in 0..self.stages {
             yseg += self.k[i] * self.b[i];
+            qseg += self.kq[i] * self.b[i];
         }
 
         // Calculate the new y value using the line segment
         let y_new = self.y + yseg * self.h;
+        let q_new = self.q + qseg * self.h;
 
         // Evaluate derivative at new point for error estimation
         let t_new = self.t + self.h;
@@ -167,6 +177,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         if err <= T::one() {
             // Calculate the new derivative at the new point
             ode.diff(t_new, &y_new, &mut self.dydt);
+            self.quadrature.integrand(t_new, &y_new, &mut self.dqdt);
             evals.function += 1;
 
             // stiffness detection
@@ -254,13 +265,17 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             // For interpolation
             self.t_prev = self.t;
             self.y_prev = self.y;
+            self.q_prev = self.q;
             self.dydt_prev = self.k[0];
+            self.dqdt_prev = self.kq[0];
             self.h_prev = self.h;
 
             // Update the state with new values
             self.t = t_new;
             self.y = y_new;
+            self.q = q_new;
             self.k[0] = self.dydt;
+            self.kq[0] = self.dqdt;
 
             // Check if previous step is rejected
             if let Status::RejectedStep = self.status {
@@ -312,8 +327,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     }
 }
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Interpolation<T, Y>
-    for ExplicitRungeKutta<Ordinary, DormandPrince, T, Y, O, S, I>
+impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize, Quad: crate::ode::Quadrature<T, Y>> Interpolation<T, Y>
+    for ExplicitRungeKutta<Ordinary, DormandPrince, T, Y, O, S, I, Quad>
 {
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         // Check if interpolation is out of bounds

@@ -10,8 +10,8 @@ use crate::{
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
-    OrdinaryNumericalMethod<T, Y> for ExplicitRungeKutta<Ordinary, Adaptive, T, Y, O, S, I>
+impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize, Quad: crate::ode::Quadrature<T, Y>>
+    OrdinaryNumericalMethod<T, Y> for ExplicitRungeKutta<Ordinary, Adaptive, T, Y, O, S, I, Quad>
 {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
@@ -42,12 +42,16 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         self.t = t0;
         self.y = *y0;
         ode.diff(self.t, &self.y, &mut self.dydt);
+        self.q = Quad::Q::zeros();
+        self.quadrature.integrand(self.t, &self.y, &mut self.dqdt);
         evals.function += 1;
 
         // Initialize previous state
         self.t_prev = self.t;
         self.y_prev = self.y;
         self.dydt_prev = self.dydt;
+        self.q_prev = self.q;
+        self.dqdt_prev = self.dqdt;
 
         // Initialize Status
         self.status = Status::Initialized;
@@ -88,6 +92,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // Save k[0] as the current derivative
         self.k[0] = self.dydt;
+        self.kq[0] = self.dqdt;
 
         // Compute stages
         for i in 1..self.stages {
@@ -97,7 +102,9 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 y_stage += self.k[j] * (self.a[i][j] * self.h);
             }
 
-            ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
+            let t_stage = self.t + self.c[i] * self.h;
+            ode.diff(t_stage, &y_stage, &mut self.k[i]);
+            self.quadrature.integrand(t_stage, &y_stage, &mut self.kq[i]);
         }
         evals.function += self.stages - 1; // We already have k[0]
 
@@ -118,6 +125,16 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // Compute error estimate
         let err = y_high - y_low;
 
+        let mut q_high = self.q;
+        for i in 0..self.stages {
+            q_high += self.kq[i] * (self.b[i] * self.h);
+        }
+        let mut q_low = self.q;
+        for i in 0..self.stages {
+            q_low += self.kq[i] * (bh[i] * self.h);
+        }
+        let err_q = q_high - q_low;
+
         // Calculate error norm
         let mut err_norm: T = T::zero();
 
@@ -125,6 +142,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         for n in 0..self.y.len() {
             let tol = self.atol[n] + self.rtol[n] * self.y.get(n).abs().max(y_high.get(n).abs());
             err_norm = err_norm.max((err.get(n) / tol).abs());
+        }
+
+        for n in 0..self.q.len() {
+            let tol = self.atol_q[n] + self.rtol_q[n] * self.q.get(n).abs().max(q_high.get(n).abs());
+            err_norm = err_norm.max((err_q.get(n) / tol).abs());
         }
 
         // Step size scale factor
@@ -140,7 +162,9 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             // Log previous state
             self.t_prev = self.t;
             self.y_prev = self.y;
+            self.q_prev = self.q;
             self.dydt_prev = self.k[0];
+            self.dqdt_prev = self.kq[0];
             self.h_prev = self.h;
 
             if let Status::RejectedStep = self.status {
@@ -172,14 +196,17 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             // Update state with the higher-order solution
             self.t += self.h;
             self.y = y_high;
+            self.q = q_high;
 
             // Compute the derivative for the next step
             if self.fsal {
                 // If FSAL (First Same As Last) is enabled, we can reuse the last derivative
                 self.dydt = self.k[S - 1];
+                self.dqdt = self.kq[S - 1];
             } else {
                 // Otherwise, compute the new derivative
                 ode.diff(self.t, &self.y, &mut self.dydt);
+                self.quadrature.integrand(self.t, &self.y, &mut self.dqdt);
                 evals.function += 1;
             }
         } else {
@@ -238,8 +265,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     }
 }
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Interpolation<T, Y>
-    for ExplicitRungeKutta<Ordinary, Adaptive, T, Y, O, S, I>
+impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize, Quad: crate::ode::Quadrature<T, Y>> Interpolation<T, Y>
+    for ExplicitRungeKutta<Ordinary, Adaptive, T, Y, O, S, I, Quad>
 {
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         // Check if t is within bounds

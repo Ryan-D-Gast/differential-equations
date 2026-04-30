@@ -10,8 +10,8 @@ use crate::{
     utils::validate_step_size_parameters,
 };
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
-    OrdinaryNumericalMethod<T, Y> for ExplicitRungeKutta<Ordinary, Fixed, T, Y, O, S, I>
+impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize, Quad: crate::ode::Quadrature<T, Y>>
+    OrdinaryNumericalMethod<T, Y> for ExplicitRungeKutta<Ordinary, Fixed, T, Y, O, S, I, Quad>
 {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
@@ -37,12 +37,16 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         self.t = t0;
         self.y = *y0;
         ode.diff(self.t, &self.y, &mut self.dydt);
+        self.q = Quad::Q::zeros();
+        self.quadrature.integrand(self.t, &self.y, &mut self.dqdt);
         evals.function += 1;
 
         // Initialize previous state
         self.t_prev = self.t;
         self.y_prev = self.y;
         self.dydt_prev = self.dydt;
+        self.q_prev = self.q;
+        self.dqdt_prev = self.dqdt;
 
         // Initialize Status
         self.status = Status::Initialized;
@@ -71,6 +75,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // Save k[0] as the current derivative
         self.k[0] = self.dydt;
+        self.kq[0] = self.dqdt;
 
         // Compute stages
         for i in 1..self.stages {
@@ -80,7 +85,9 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 y_stage += self.k[j] * (self.a[i][j] * self.h);
             }
 
-            ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
+            let t_stage = self.t + self.c[i] * self.h;
+            ode.diff(t_stage, &y_stage, &mut self.k[i]);
+            self.quadrature.integrand(t_stage, &y_stage, &mut self.kq[i]);
         }
         evals.function += self.stages - 1; // We already have k[0]
 
@@ -157,8 +164,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     }
 }
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Interpolation<T, Y>
-    for ExplicitRungeKutta<Ordinary, Fixed, T, Y, O, S, I>
+impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize, Quad: crate::ode::Quadrature<T, Y>> Interpolation<T, Y>
+    for ExplicitRungeKutta<Ordinary, Fixed, T, Y, O, S, I, Quad>
 {
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         // Check if t is within bounds

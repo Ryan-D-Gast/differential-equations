@@ -6,7 +6,9 @@
 mod numerical_method;
 mod ode;
 mod solve;
+mod quadrature;
 
 pub use numerical_method::OrdinaryNumericalMethod;
 pub use ode::ODE;
 pub use solve::solve_ode;
+pub use quadrature::{Quadrature, NoQuadrature, QuadratureMethod};

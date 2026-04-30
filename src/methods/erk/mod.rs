@@ -7,6 +7,7 @@ mod fixed;
 use std::{collections::VecDeque, marker::PhantomData};
 
 use crate::{
+    ode::{NoQuadrature, Quadrature},
     methods::Delay,
     status::Status,
     tolerance::Tolerance,
@@ -36,6 +37,7 @@ pub struct ExplicitRungeKutta<
     const O: usize,
     const S: usize,
     const I: usize,
+    Quad: Quadrature<T, Y> = NoQuadrature,
 > {
     // Domain of problem
     t0: T,
@@ -50,6 +52,14 @@ pub struct ExplicitRungeKutta<
     t: T,
     y: Y,
     dydt: Y,
+
+    // Quadrature
+    pub quadrature: Quad,
+    pub q: Quad::Q,
+    pub q_prev: Quad::Q,
+    pub dqdt: Quad::Q,
+    pub dqdt_prev: Quad::Q,
+    pub kq: [Quad::Q; I],
 
     // Previous State
     h_prev: T,
@@ -74,6 +84,8 @@ pub struct ExplicitRungeKutta<
     // Settings
     pub rtol: Tolerance<T>,
     pub atol: Tolerance<T>,
+    pub rtol_q: Tolerance<T>,
+    pub atol_q: Tolerance<T>,
     pub h_max: T,
     pub h_min: T,
     pub max_steps: usize,
@@ -109,10 +121,16 @@ pub struct ExplicitRungeKutta<
 }
 
 impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Default
-    for ExplicitRungeKutta<E, F, T, Y, O, S, I>
+    for ExplicitRungeKutta<E, F, T, Y, O, S, I, NoQuadrature>
 {
     fn default() -> Self {
         Self {
+            quadrature: NoQuadrature,
+            q: crate::traits::State::<T>::zeros(),
+            q_prev: crate::traits::State::<T>::zeros(),
+            dqdt: crate::traits::State::<T>::zeros(),
+            dqdt_prev: crate::traits::State::<T>::zeros(),
+            kq: [crate::traits::State::<T>::zeros(); I],
             t0: T::zero(),
             h0: T::zero(),
             h: T::zero(),
@@ -133,6 +151,8 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             cont: [Y::zeros(); O],
             rtol: Tolerance::Scalar(T::from_f64(1.0e-6).unwrap()),
             atol: Tolerance::Scalar(T::from_f64(1.0e-6).unwrap()),
+            rtol_q: Tolerance::Scalar(T::from_f64(1.0e-6).unwrap()),
+            atol_q: Tolerance::Scalar(T::from_f64(1.0e-6).unwrap()),
             h_max: T::infinity(),
             h_min: T::zero(),
             max_steps: 10_000,
@@ -157,9 +177,66 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     }
 }
 
-impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
-    ExplicitRungeKutta<E, F, T, Y, O, S, I>
+impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize, Quad: Quadrature<T, Y>>
+    ExplicitRungeKutta<E, F, T, Y, O, S, I, Quad>
 {
+    /// Set a custom quadrature to evaluate simultaneously with the ODE.
+    pub fn quadrature<NewQuad: Quadrature<T, Y>>(
+        self,
+        quadrature: NewQuad,
+    ) -> ExplicitRungeKutta<E, F, T, Y, O, S, I, NewQuad> {
+        ExplicitRungeKutta {
+            t0: self.t0,
+            h0: self.h0,
+            h: self.h,
+            t: self.t,
+            y: self.y,
+            dydt: self.dydt,
+            h_prev: self.h_prev,
+            t_prev: self.t_prev,
+            y_prev: self.y_prev,
+            dydt_prev: self.dydt_prev,
+            k: self.k,
+            c: self.c,
+            a: self.a,
+            b: self.b,
+            bh: self.bh,
+            er: self.er,
+            bi: self.bi,
+            cont: self.cont,
+            rtol: self.rtol,
+            atol: self.atol,
+            rtol_q: self.rtol_q,
+            atol_q: self.atol_q,
+            h_max: self.h_max,
+            h_min: self.h_min,
+            max_steps: self.max_steps,
+            max_rejects: self.max_rejects,
+            safety_factor: self.safety_factor,
+            min_scale: self.min_scale,
+            max_scale: self.max_scale,
+            filter: self.filter,
+            stiffness_counter: self.stiffness_counter,
+            non_stiffness_counter: self.non_stiffness_counter,
+            steps: self.steps,
+            status: self.status,
+            order: self.order,
+            stages: self.stages,
+            dense_stages: self.dense_stages,
+            fsal: self.fsal,
+            family: self.family,
+            equation: self.equation,
+            history: self.history,
+            max_delay: self.max_delay,
+            quadrature,
+            q: NewQuad::Q::zeros(),
+            q_prev: NewQuad::Q::zeros(),
+            dqdt: NewQuad::Q::zeros(),
+            dqdt_prev: NewQuad::Q::zeros(),
+            kq: [NewQuad::Q::zeros(); I],
+        }
+    }
+
     /// Set relative tolerance
     pub fn rtol<V: Into<Tolerance<T>>>(mut self, rtol: V) -> Self {
         self.rtol = rtol.into();
@@ -169,6 +246,18 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     /// Set absolute tolerance
     pub fn atol<V: Into<Tolerance<T>>>(mut self, atol: V) -> Self {
         self.atol = atol.into();
+        self
+    }
+
+    /// Set relative tolerance for quadrature state
+    pub fn rtol_q<V: Into<Tolerance<T>>>(mut self, rtol_q: V) -> Self {
+        self.rtol_q = rtol_q.into();
+        self
+    }
+
+    /// Set absolute tolerance for quadrature state
+    pub fn atol_q<V: Into<Tolerance<T>>>(mut self, atol_q: V) -> Self {
+        self.atol_q = atol_q.into();
         self
     }
 
@@ -242,12 +331,47 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     }
 }
 
-impl<F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
-    ExplicitRungeKutta<Delay, F, T, Y, O, S, I>
+impl<F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize, Quad: Quadrature<T, Y>>
+    ExplicitRungeKutta<Delay, F, T, Y, O, S, I, Quad>
 {
     /// Set the maximum delay for DDEs
     pub fn max_delay(mut self, max_delay: T) -> Self {
         self.max_delay = Some(max_delay);
         self
+    }
+}
+
+
+use crate::ode::QuadratureMethod;
+impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize, Quad: Quadrature<T, Y>>
+    QuadratureMethod<T, Y, Quad::Q> for ExplicitRungeKutta<E, F, T, Y, O, S, I, Quad>
+{
+    fn q(&self) -> &Quad::Q {
+        &self.q
+    }
+
+    fn interpolate_q(&mut self, t_interp: T) -> Result<Quad::Q, crate::error::Error<T, Y>> {
+        // Check if interpolation is out of bounds
+        if t_interp < self.t_prev || t_interp > self.t {
+            return Err(crate::error::Error::OutOfBounds {
+                t_interp,
+                t_prev: self.t_prev,
+                t_curr: self.t,
+            });
+        }
+
+        // By default for quadrature, we use a robust continuous extension: the cubic Hermite interpolant.
+        // It provides a guaranteed C1-continuous dense output using endpoint states and derivatives.
+        let q_interp = crate::interpolate::cubic_hermite_interpolate(
+            self.t_prev,
+            self.t,
+            &self.q_prev,
+            &self.q,
+            &self.dqdt_prev,
+            &self.dqdt,
+            t_interp,
+        );
+
+        Ok(q_interp)
     }
 }

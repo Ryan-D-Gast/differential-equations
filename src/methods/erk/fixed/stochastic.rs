@@ -12,8 +12,8 @@ use crate::{
     utils::validate_step_size_parameters,
 };
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
-    StochasticNumericalMethod<T, Y> for ExplicitRungeKutta<Stochastic, Fixed, T, Y, O, S, I>
+impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize, Quad: crate::ode::Quadrature<T, Y>>
+    StochasticNumericalMethod<T, Y> for ExplicitRungeKutta<Stochastic, Fixed, T, Y, O, S, I, Quad>
 {
     fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
@@ -81,10 +81,13 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // Store current state before update for interpolation
         self.t_prev = self.t;
         self.y_prev = self.y;
+        self.q_prev = self.q;
         self.dydt_prev = self.dydt;
+        self.dqdt_prev = self.dqdt;
 
         // Save k[0] as the current drift
         self.k[0] = self.dydt;
+        self.kq[0] = self.dqdt;
 
         // Compute Runge-Kutta stages for the drift term
         for i in 1..self.stages {
@@ -94,14 +97,18 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 y_stage += self.k[j] * (self.a[i][j] * self.h);
             }
 
-            sde.drift(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
+            let t_stage = self.t + self.c[i] * self.h;
+            sde.drift(t_stage, &y_stage, &mut self.k[i]);
+            self.quadrature.integrand(t_stage, &y_stage, &mut self.kq[i]);
         }
         evals.function += self.stages - 1; // We already have k[0]
 
         // Compute deterministic part using RK weights
         let mut drift_increment = Y::zeros();
+        let mut q_increment = Quad::Q::zeros();
         for i in 0..self.stages {
             drift_increment += self.k[i] * (self.b[i] * self.h);
+            q_increment += self.kq[i] * (self.b[i] * self.h);
         }
 
         // Compute diffusion term at current state
@@ -163,8 +170,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
     }
 }
 
-impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Interpolation<T, Y>
-    for ExplicitRungeKutta<Stochastic, Fixed, T, Y, O, S, I>
+impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize, Quad: crate::ode::Quadrature<T, Y>> Interpolation<T, Y>
+    for ExplicitRungeKutta<Stochastic, Fixed, T, Y, O, S, I, Quad>
 {
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         // Check if t is within bounds

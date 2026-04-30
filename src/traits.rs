@@ -131,6 +131,25 @@ where
     }
 }
 
+
+/// A zero-sized state type for use when a feature (like Quadrature) is disabled.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct EmptyState;
+
+impl<T: Real> State<T> for EmptyState {
+    fn len(&self) -> usize { 0 }
+    fn get(&self, _i: usize) -> T { panic!("Index out of bounds") }
+    fn set(&mut self, _i: usize, _value: T) { panic!("Index out of bounds") }
+    fn zeros() -> Self { EmptyState }
+}
+
+impl Add for EmptyState { type Output = EmptyState; fn add(self, _: EmptyState) -> EmptyState { EmptyState } }
+impl Sub for EmptyState { type Output = EmptyState; fn sub(self, _: EmptyState) -> EmptyState { EmptyState } }
+impl AddAssign for EmptyState { fn add_assign(&mut self, _: EmptyState) {} }
+impl<T: Real> Mul<T> for EmptyState { type Output = EmptyState; fn mul(self, _: T) -> EmptyState { EmptyState } }
+impl<T: Real> Div<T> for EmptyState { type Output = EmptyState; fn div(self, _: T) -> EmptyState { EmptyState } }
+impl Neg for EmptyState { type Output = EmptyState; fn neg(self) -> EmptyState { EmptyState } }
+
 #[cfg(test)]
 mod tests {
     use super::*;
