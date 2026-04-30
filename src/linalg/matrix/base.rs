@@ -507,6 +507,38 @@ impl<T: Real> LinearOp<T> for Matrix<T> {
     }
 }
 
+impl<T, R, C, S> LinearOp<T> for nalgebra::Matrix<T, R, C, S>
+where
+    T: Real + nalgebra::Scalar,
+    R: nalgebra::Dim,
+    C: nalgebra::Dim,
+    S: nalgebra::storage::RawStorageMut<T, R, C>,
+{
+    fn nrows(&self) -> usize {
+        self.nrows()
+    }
+
+    fn ncols(&self) -> usize {
+        self.ncols()
+    }
+
+    fn get(&self, row: usize, col: usize) -> T {
+        assert!(
+            row < self.nrows() && col < self.ncols(),
+            "Index out of bounds"
+        );
+        self[(row, col)]
+    }
+
+    fn set(&mut self, row: usize, col: usize, value: T) {
+        assert!(
+            row < self.nrows() && col < self.ncols(),
+            "Index out of bounds"
+        );
+        self[(row, col)] = value;
+    }
+}
+
 #[cfg(feature = "sparse")]
 impl<T> LinearOp<T> for nalgebra_sparse::coo::CooMatrix<T>
 where
@@ -631,6 +663,22 @@ mod tests {
             2,
             vec![(0, 0, 3.0), (0, 1, 2.0), (1, 0, 1.0), (1, 1, 4.0)],
         );
+        let x = LinearOp::lin_solve(&m, nalgebra::Vector2::new(5.0, 6.0)).unwrap();
+        assert!((x.x - 0.8).abs() < 1e-12);
+        assert!((x.y - 1.3).abs() < 1e-12);
+    }
+
+    #[test]
+    fn linear_op_trait_updates_nalgebra_smatrix() {
+        let mut m = nalgebra::SMatrix::<f64, 2, 2>::zeros();
+        set_diagonal_to_two(&mut m);
+        assert_eq!(LinearOp::get(&m, 0, 0), 2.0);
+        assert_eq!(LinearOp::get(&m, 1, 1), 2.0);
+    }
+
+    #[test]
+    fn linear_op_trait_solves_nalgebra_dmatrix() {
+        let m = nalgebra::DMatrix::<f64>::from_row_slice(2, 2, &[3.0, 2.0, 1.0, 4.0]);
         let x = LinearOp::lin_solve(&m, nalgebra::Vector2::new(5.0, 6.0)).unwrap();
         assert!((x.x - 0.8).abs() < 1e-12);
         assert!((x.y - 1.3).abs() < 1e-12);
