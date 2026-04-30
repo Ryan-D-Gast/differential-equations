@@ -5,119 +5,136 @@
 //! quadrature solver or callback is needed — the existing adaptive step-size control
 //! and per-component tolerances handle everything.
 //!
-//! We solve the exponential growth ODE:
-//!     dy/dt = y          =>  y(t) = e^t
+//! We model a damped mass-spring system:
 //!
-//! while simultaneously computing the integral:
-//!     Q(t) = integral of y(t) dt = e^t - 1
+//!     m * x'' + c * x' + k * x = 0
 //!
-//! by augmenting the state vector to [y, Q] and adding the quadrature equation:
-//!     dQ/dt = y
+//! rewritten as a first-order system:
+//!     dx/dt = v
+//!     dv/dt = -(k/m)*x - (c/m)*v
+//!
+//! While solving for position and velocity, we simultaneously compute the cumulative
+//! energy dissipated by the damper as a quadrature:
+//!
+//!     W(t) = integral of c * v(t)^2 dt
+//!
+//! This is physically the work done by viscous damping — the integrand c*v^2 is the
+//! instantaneous power dissipated. The total energy dissipated must equal the initial
+//! stored energy (0.5 * k * x0^2 when starting from rest), providing an analytical
+//! check on accuracy.
+//!
+//! The state vector is augmented to [x, v, W]:
+//!     dx/dt = v
+//!     dv/dt = -(k/m)*x - (c/m)*v
+//!     dW/dt = c * v^2
 //!
 //! This demonstrates:
-//! - Encoding a quadrature as an extra ODE component
+//! - Encoding a physically meaningful quadrature as an extra ODE component
 //! - Per-component tolerances via `Tolerance::Vector` to control whether the
 //!   quadrature influences step-size selection
-//! - Extracting quadrature results from the combined state vector
+//! - Verifying quadrature accuracy against a conservation-of-energy check
 
 use differential_equations::ivp::Ivp;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 use quill::prelude::*;
 
-struct ExponentialGrowthWithQuadrature;
+struct DampedOscillator {
+    k: f64,
+    m: f64,
+    c: f64,
+}
 
-impl ODE<f64, SVector<f64, 2>> for ExponentialGrowthWithQuadrature {
-    fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
-        dydt[0] = y[0];
-        dydt[1] = y[0];
+impl ODE<f64, SVector<f64, 3>> for DampedOscillator {
+    fn diff(&self, _t: f64, y: &SVector<f64, 3>, dydt: &mut SVector<f64, 3>) {
+        let x = y[0];
+        let v = y[1];
+        dydt[0] = v;
+        dydt[1] = -(self.k / self.m) * x - (self.c / self.m) * v;
+        dydt[2] = self.c * v * v;
     }
 }
 
 fn main() {
-    let ode = ExponentialGrowthWithQuadrature;
+    let k = 4.0;
+    let m = 1.0;
+    let c = 0.4;
+    let ode = DampedOscillator { k, m, c };
+
     let t0 = 0.0;
-    let tf = 5.0;
-    let y0: SVector<f64, 2> = vector![1.0, 0.0];
+    let tf = 20.0;
+    let y0: SVector<f64, 3> = vector![1.0, 0.0, 0.0];
+
+    let e0 = 0.5 * k * y0[0] * y0[0] + 0.5 * m * y0[1] * y0[1];
 
     let solution = Ivp::ode(&ode, t0, tf, y0)
-        .even(0.5)
+        .even(0.2)
         .method(
             ExplicitRungeKutta::dop853()
-                .rtol([1e-12, 1e-12])
-                .atol([1e-12, 1e-12]),
+                .rtol([1e-12, 1e-12, 1e-12])
+                .atol([1e-12, 1e-12, 1e-12]),
         )
         .solve()
         .expect("Solver failed");
 
-    let y_final = solution.y.last().unwrap();
+    let final_state = solution.y.last().unwrap();
+    let x_final = final_state[0];
+    let v_final = final_state[1];
+    let w_final = final_state[2];
+    let e_final = 0.5 * k * x_final * x_final + 0.5 * m * v_final * v_final;
 
-    let analytical_y = tf.exp();
-    let analytical_q = tf.exp() - 1.0;
-    let y_error = (y_final[0] - analytical_y).abs();
-    let q_error = (y_final[1] - analytical_q).abs();
-
-    println!("Quadrature via State Augmentation");
-    println!("==================================");
-    println!("t\t\ty(t)\t\tQ(t)\t\ty_analytical\tQ_analytical");
+    println!("Damped Oscillator with Energy Dissipation Quadrature");
+    println!("=====================================================");
+    println!("Parameters: k={}, m={}, c={}", k, m, c);
+    println!("Initial energy E0 = {:.10}", e0);
+    println!();
+    println!("t\t\tx(t)\t\tv(t)\t\tW(t)");
     for (t, y) in solution.iter() {
-        let analytical_y = t.exp();
-        let analytical_q = t.exp() - 1.0;
-        println!(
-            "{:.4}\t\t{:.8}\t{:.8}\t{:.8}\t{:.8}",
-            t, y[0], y[1], analytical_y, analytical_q
-        );
+        println!("{:.2}\t\t{:+.8}\t{:+.8}\t{:.8}", t, y[0], y[1], y[2]);
     }
-    println!("==================================");
-    println!("y error:  {:.2e}", y_error);
-    println!("Q error:  {:.2e}", q_error);
+    println!("=====================================================");
+    println!("Remaining mechanical energy: {:.10}", e_final);
+    println!("Energy dissipated (W):      {:.10}", w_final);
+    println!("Sum (should equal E0):      {:.10}", e_final + w_final);
+    println!("Energy conservation error:  {:.2e}", (e0 - e_final - w_final).abs());
 
-    let y_series: Vec<(f64, f64)> = solution.iter().map(|(t, y)| (*t, y[0])).collect();
-    let q_series: Vec<(f64, f64)> = solution.iter().map(|(t, y)| (*t, y[1])).collect();
-    let y_analytical: Vec<(f64, f64)> = (0..=50)
-        .map(|i| {
-            let t = i as f64 * tf / 50.0;
-            (t, t.exp())
-        })
-        .collect();
-    let q_analytical: Vec<(f64, f64)> = (0..=50)
-        .map(|i| {
-            let t = i as f64 * tf / 50.0;
-            (t, t.exp() - 1.0)
+    let x_series: Vec<(f64, f64)> = solution.iter().map(|(t, y)| (*t, y[0])).collect();
+    let w_series: Vec<(f64, f64)> = solution.iter().map(|(t, y)| (*t, y[2])).collect();
+    let e_series: Vec<(f64, f64)> = solution
+        .iter()
+        .map(|(t, y)| {
+            let ke = 0.5 * m * y[1] * y[1];
+            let pe = 0.5 * k * y[0] * y[0];
+            (*t, ke + pe)
         })
         .collect();
 
     Plot::builder()
-        .title("Quadrature via State Augmentation: y(t) = e^t, Q(t) = integral of e^t dt")
-        .x_label("t")
+        .title("Damped Oscillator: Position and Dissipated Energy")
+        .x_label("Time (t)")
         .y_label("Value")
-        .legend(Legend::TopLeftInside)
+        .legend(Legend::TopRightInside)
         .data([
             Series::builder()
-                .name("y(t) = e^t")
+                .name("Position x(t)")
                 .color("Blue")
-                .data(y_series)
+                .data(x_series)
                 .marker(Marker::Circle)
+                .marker_size(2.0)
                 .line(Line::Solid)
                 .build(),
             Series::builder()
-                .name("Q(t) = integral of e^t dt")
-                .color("Green")
-                .data(q_series)
+                .name("Energy dissipated W(t)")
+                .color("Red")
+                .data(w_series)
                 .marker(Marker::Square)
+                .marker_size(2.0)
                 .line(Line::Solid)
                 .build(),
             Series::builder()
-                .name("y analytical")
-                .color("LightBlue")
-                .data(y_analytical)
-                .marker(Marker::None)
-                .line(Line::Dashed)
-                .build(),
-            Series::builder()
-                .name("Q analytical")
-                .color("LightGreen")
-                .data(q_analytical)
+                .name("Mechanical energy E(t)")
+                .color("Green")
+                .data(e_series)
                 .marker(Marker::None)
                 .line(Line::Dashed)
                 .build(),
