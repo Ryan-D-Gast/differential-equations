@@ -5,8 +5,8 @@ The `ode` module provides tools for solving ordinary differential equations (ODE
 ## Table of Contents
 
 - [Defining a ODE](#defining-an-ode)
-- [Numerical Quadrature](#numerical-quadrature)
 - [Solving an Initial Value Problem (ODE IVP builder)](#solving-an-initial-value-problem)
+- [Numerical Quadrature](#numerical-quadrature)
 - [Examples](#examples)
 - [Benchmarks](#benchmarks)
 - [Notation](#notation)
@@ -60,42 +60,6 @@ impl Event for LogisticGrowth {
 ```
 
 Note that for clarity, the `ODE` is defined with generics `<T, Y>` where `T` is the float type (e.g. `f64` or `f32`) and `Y` is the state vector of the system of ordinary differential equations. By default the generics are `f64, f64` and thus can be omitted if the system is a single ODE with a `f64` type and a single state variable `f64`. Here a `SVector` is used despite `f64` being usable here for clarity. For example a system with multiple ODEs of size N then `SVector<f64, N>` can be used.
-
-## Numerical Quadrature
-
-To compute a numerical integral alongside an ODE, encode the quadrature as an additional equation in your system. If your ODE is `dy/dt = f(t, y)` and you want to compute `Q = integral of g(t, y) dt`, augment the state vector to `[y, Q]` and add the equation `dQ/dt = g(t, y)`:
-
-```rust
-use nalgebra::{SVector, vector};
-
-struct MyODE;
-
-impl ODE<f64, SVector<f64, 2>> for MyODE {
-    fn diff(&self, t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
-        dydt[0] = y[0];         // dy/dt = f(t, y)
-        dydt[1] = y[0];         // dQ/dt = g(t, y) = y
-    }
-}
-```
-
-The initial condition becomes `y0 = vector![y0, Q0]` where `Q0` is typically `0`.
-
-### Controlling Quadrature Influence on Step Size
-
-Per-component tolerances control whether the quadrature affects adaptive step-size selection. The error norm is computed per-component as `|err_i| / (atol_i + rtol_i * max(|y_i|, |y_new_i|))`, and the maximum across all components determines step acceptance.
-
-- **Tight tolerances on Q** (e.g. `1e-12`): the quadrature participates in error control and can force smaller steps to maintain quadrature accuracy.
-- **Loose tolerances on Q** (e.g. `1e30`): the quadrature error contribution is negligible, so step size is driven entirely by the primary state `y`. The quadrature is still computed at the solver's full accuracy — it just doesn't force additional step rejections.
-
-```rust
-.method(
-    ExplicitRungeKutta::dop853()
-        .rtol([1e-12, 1e-12])  // [y tolerance, Q tolerance]
-        .atol([1e-12, 1e-12])
-)
-```
-
-This approach requires no changes to the solver — the existing adaptive error estimation, dense output interpolation, and event detection all work on the combined state vector.
 
 ## Solving an Initial Value Problem
 
@@ -154,6 +118,42 @@ Steps: 22
 Rejected Steps: 2        
 Accepted Steps: 20
 ```
+
+## Numerical Quadrature
+
+To compute a numerical integral alongside an ODE, encode the quadrature as an additional equation in your system. If your ODE is `dy/dt = f(t, y)` and you want to compute `Q = integral of g(t, y) dt`, augment the state vector to `[y, Q]` and add the equation `dQ/dt = g(t, y)`:
+
+```rust
+use nalgebra::{SVector, vector};
+
+struct MyODE;
+
+impl ODE<f64, SVector<f64, 2>> for MyODE {
+    fn diff(&self, t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
+        dydt[0] = y[0];         // dy/dt = f(t, y)
+        dydt[1] = y[0];         // dQ/dt = g(t, y) = y
+    }
+}
+```
+
+The initial condition becomes `y0 = vector![y0, Q0]` where `Q0` is typically `0`.
+
+### Controlling Quadrature Influence on Step Size
+
+Per-component tolerances control whether the quadrature affects adaptive step-size selection. The error norm is computed per-component as `|err_i| / (atol_i + rtol_i * max(|y_i|, |y_new_i|))`, and the maximum across all components determines step acceptance.
+
+- **Tight tolerances on Q** (e.g. `1e-12`): the quadrature participates in error control and can force smaller steps to maintain quadrature accuracy.
+- **Loose tolerances on Q** (e.g. `1e30`): the quadrature error contribution is negligible, so step size is driven entirely by the primary state `y`. The quadrature is still computed at the solver's full accuracy — it just doesn't force additional step rejections.
+
+```rust
+.method(
+    ExplicitRungeKutta::dop853()
+        .rtol([1e-12, 1e-12])  // [y tolerance, Q tolerance]
+        .atol([1e-12, 1e-12])
+)
+```
+
+This approach requires no changes to the solver — the existing adaptive error estimation, dense output interpolation, and event detection all work on the combined state vector.
 
 ## Examples
 
