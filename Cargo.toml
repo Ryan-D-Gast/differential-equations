@@ -113,6 +113,10 @@ path = "examples/ode/14_r2bp_stm/main.rs"
 name = "ode_15_forward_sensitivity_analysis"
 path = "examples/ode/15_forward_sensitivity_analysis/main.rs"
 
+[[example]]
+name = "ode_16_quadrature"
+path = "examples/ode/16_quadrature/main.rs"
+
 # Differential-Algebraic Equation (DAE) examples
 [[example]]
 name = "dae_01_amplifier"
