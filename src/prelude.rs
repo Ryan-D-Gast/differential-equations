@@ -63,4 +63,4 @@ pub use crate::stats::Evals;
 pub use crate::status::Status;
 
 // Linear Algebra
-pub use crate::linalg::Matrix;
+pub use crate::linalg::{LinearOp, Matrix};

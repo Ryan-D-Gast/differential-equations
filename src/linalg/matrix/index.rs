@@ -32,11 +32,11 @@ impl<T: Real> Index<(usize, usize)> for Matrix<T> {
                     &self.data[row * self.m + j]
                 }
             }
-            MatrixStorage::Sparse(_) => {
-                // Standard index expects a reference, which implies it needs to return
-                // a pointer to an actual `T` in memory. Implicit zeroes don't have an address.
-                panic!("Cannot return reference to implicitly stored Sparse matrix element")
-            }
+            MatrixStorage::Sparse(coords) => coords
+                .iter()
+                .find(|&&(row, col, _)| row == i && col == j)
+                .map(|entry| &entry.2)
+                .unwrap_or(&self.data[0]),
         }
     }
 }
@@ -89,7 +89,7 @@ where
                 if j > 0 {
                     f.write_str(" ")?;
                 }
-                write!(f, "{}", self[(i, j)])?;
+                write!(f, "{}", self.get(i, j))?;
             }
             f.write_str("]")?;
             if i + 1 < nr {
@@ -150,5 +150,21 @@ mod tests {
         assert!(s.contains("[1 0 0]"));
         assert!(s.contains("[0 1 0]"));
         assert!(s.contains("[0 0 1]"));
+    }
+
+    #[test]
+    fn sparse_index_reads_stored_and_implicit_zero_entries() {
+        let mut m = Matrix::sparse(2, 2);
+        m[(0, 1)] = 3.0;
+        assert_eq!(m[(0, 1)], 3.0);
+        assert_eq!(m[(1, 0)], 0.0);
+    }
+
+    #[test]
+    fn display_prints_sparse_matrix_values() {
+        let m = Matrix::sparse_from_triplets(2, 2, vec![(0, 1, 2.0), (0, 1, 3.0), (1, 0, 4.0)]);
+        let s = format!("{}", m);
+        assert!(s.contains("[0 5]"));
+        assert!(s.contains("[4 0]"));
     }
 }

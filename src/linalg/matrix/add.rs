@@ -23,7 +23,9 @@ impl<T: Real> Add for Matrix<T> {
 
     fn add(self, rhs: Matrix<T>) -> Self::Output {
         assert_eq!(self.n, rhs.n, "dimension mismatch in Matrix + Matrix");
+        assert_eq!(self.m, rhs.m, "dimension mismatch in Matrix + Matrix");
         let n = self.n;
+        let m = self.m;
         match (self, rhs) {
             (
                 Matrix {
@@ -66,7 +68,7 @@ impl<T: Real> Add for Matrix<T> {
                 let data = a.into_iter().zip(b).map(|(x, y)| x + y).collect();
                 Matrix {
                     n,
-                    m: n,
+                    m,
                     data,
                     storage: MatrixStorage::Full,
                 }
@@ -140,41 +142,20 @@ impl<T: Real> Add for Matrix<T> {
                     ..
                 },
             ) => {
-                let to_full = |n: usize, m_cols: usize, data: Vec<T>, storage: MatrixStorage<T>| -> Vec<T> {
-                    match storage {
-                        MatrixStorage::Full => data,
-                        MatrixStorage::Identity => {
-                            let mut d = vec![T::zero(); n * n];
-                            for i in 0..n {
-                                d[i * n + i] = T::one();
-                            }
-                            d
-                        }
-                        MatrixStorage::Banded { ml, mu, .. } => {
-                            let mut d = vec![T::zero(); n * n];
-                            for j in 0..n {
-                                for r in 0..(ml + mu + 1) {
-                                    let k = r as isize - mu as isize;
-                                    let i_signed = j as isize + k;
-                                    if i_signed >= 0 && (i_signed as usize) < n {
-                                        let i = i_signed as usize;
-                                        d[i * n + j] += data[r * n + j];
-                                    }
-                                }
-                            }
-                            d
-                        }
-                        MatrixStorage::Sparse(coords) => {
-                            let mut d = vec![T::zero(); n * m_cols];
-                            for (r, c, v) in coords {
-                                d[r * m_cols + c] += v;
-                            }
-                            d
-                        }
-                    }
-                };
-                let aa = to_full(n1, m1, a, sa);
-                let bb = to_full(n1, m1, b, sb);
+                let aa = Matrix {
+                    n: n1,
+                    m: m1,
+                    data: a,
+                    storage: sa,
+                }
+                .to_dense_vec();
+                let bb = Matrix {
+                    n: n1,
+                    m: m1,
+                    data: b,
+                    storage: sb,
+                }
+                .to_dense_vec();
                 let data = aa.into_iter().zip(bb).map(|(x, y)| x + y).collect();
                 Matrix {
                     n: n1,
@@ -244,7 +225,7 @@ impl<T: Real> Matrix<T> {
                     Matrix {
                         n,
                         m,
-                        data: vec![],
+                        data: vec![T::zero()],
                         storage: MatrixStorage::Sparse(coords.clone()),
                     }
                 } else {
@@ -339,5 +320,23 @@ mod tests {
         assert_eq!(r[(0, 1)], 2.0);
         assert_eq!(r[(1, 2)], 2.0);
         assert_eq!(r[(0, 2)], 0.0);
+    }
+
+    #[test]
+    fn add_sparse_sparse_densifies_with_summed_values() {
+        let a = Matrix::sparse_from_triplets(2, 2, vec![(0, 0, 1.0), (0, 0, 2.0)]);
+        let b = Matrix::sparse_from_triplets(2, 2, vec![(0, 1, 3.0), (1, 1, 4.0)]);
+        let r = a + b;
+        assert_eq!(r[(0, 0)], 3.0);
+        assert_eq!(r[(0, 1)], 3.0);
+        assert_eq!(r[(1, 1)], 4.0);
+    }
+
+    #[test]
+    fn add_scalar_zero_keeps_sparse() {
+        let m = Matrix::sparse_from_triplets(2, 2, vec![(0, 1, 2.0)]);
+        let r = m.component_add(0.0);
+        assert_eq!(r.get(0, 1), 2.0);
+        assert_eq!(r.get(1, 0), 0.0);
     }
 }

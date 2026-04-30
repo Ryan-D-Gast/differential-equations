@@ -32,13 +32,14 @@ impl<T: Real> Matrix<T> {
             }
             MatrixStorage::Sparse(mut coords) => {
                 let n = self.n;
+                let m = self.m;
                 for item in coords.iter_mut() {
                     item.2 *= rhs;
                 }
                 Matrix {
                     n,
-                    m: n,
-                    data: vec![],
+                    m,
+                    data: vec![T::zero()],
                     storage: MatrixStorage::Sparse(coords),
                 }
             }
@@ -79,7 +80,7 @@ impl<T: Real> Matrix<T> {
 
     pub fn mul_state<V: State<T>>(&self, vec: &V) -> V {
         let n = self.n;
-        assert_eq!(vec.len(), n, "dimension mismatch in Matrix::mul_state");
+        assert_eq!(vec.len(), self.m, "dimension mismatch in Matrix::mul_state");
 
         let mut result = V::zeros();
         if let MatrixStorage::Sparse(ref coords) = self.storage {
@@ -102,6 +103,7 @@ impl<T: Real> Matrix<T> {
 #[cfg(test)]
 mod tests {
     use super::Matrix;
+    use nalgebra::Vector2;
 
     #[test]
     fn mul_matrix_full() {
@@ -134,5 +136,20 @@ mod tests {
         assert_eq!(a[(0, 1)], 0.0);
         assert_eq!(a[(1, 0)], 0.0);
         assert_eq!(a[(1, 1)], 5.0);
+    }
+
+    #[test]
+    fn mul_sparse_preserves_dimensions() {
+        let a = Matrix::sparse_from_triplets(2, 3, vec![(0, 2, 4.0)]).component_mul(2.0);
+        assert_eq!(a.dims(), (2, 3));
+        assert_eq!(a.get(0, 2), 8.0);
+    }
+
+    #[test]
+    fn mul_state_sparse_accumulates_duplicate_entries() {
+        let a = Matrix::sparse_from_triplets(2, 2, vec![(0, 0, 2.0), (0, 0, 3.0), (1, 1, 4.0)]);
+        let x = Vector2::new(2.0, 3.0);
+        let y = a.mul_state(&x);
+        assert_eq!(y, Vector2::new(10.0, 12.0));
     }
 }

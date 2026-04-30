@@ -1,6 +1,10 @@
 //! Core matrix type, storage enum, and constructors.
 
-use crate::traits::Real;
+use crate::{
+    error::Error,
+    linalg::LinalgError,
+    traits::{Real, State},
+};
 
 /// Matrix storage layout.
 #[derive(PartialEq, Clone, Debug)]
@@ -13,7 +17,7 @@ pub enum MatrixStorage<T: Real> {
     /// Compact diagonal storage with shape (ml+mu+1, ncols), row-major per diagonal.
     /// Off-band reads return `zero`.
     Banded { ml: usize, mu: usize, zero: T },
-    /// Sparse matrix representation using coordinate format
+    /// Sparse matrix representation using coordinate format.
     Sparse(Vec<(usize, usize, T)>),
 }
 
@@ -64,8 +68,24 @@ impl<T: Real> Matrix<T> {
         Matrix {
             n,
             m,
-            data: vec![],
+            data: vec![T::zero()],
             storage: MatrixStorage::Sparse(Vec::new()),
+        }
+    }
+
+    /// Sparse matrix from coordinate triplets.
+    ///
+    /// Duplicate entries are allowed and are summed by read and dense conversion
+    /// operations. This matches common COO sparse matrix semantics.
+    pub fn sparse_from_triplets(n: usize, m: usize, triplets: Vec<(usize, usize, T)>) -> Self {
+        for &(row, col, _) in &triplets {
+            assert!(row < n && col < m, "Sparse triplet index out of bounds");
+        }
+        Matrix {
+            n,
+            m,
+            data: vec![T::zero()],
+            storage: MatrixStorage::Sparse(triplets),
         }
     }
 
@@ -146,6 +166,123 @@ impl<T: Real> Matrix<T> {
     /// Dimensions (nrows, ncols).
     pub fn dims(&self) -> (usize, usize) {
         (self.n, self.m)
+    }
+
+    /// Return the value at `(row, col)`.
+    pub fn get(&self, row: usize, col: usize) -> T {
+        assert!(row < self.n && col < self.m, "Index out of bounds");
+        match &self.storage {
+            MatrixStorage::Identity => {
+                if row == col {
+                    T::one()
+                } else {
+                    T::zero()
+                }
+            }
+            MatrixStorage::Full => self.data[row * self.m + col],
+            MatrixStorage::Banded { ml, mu, zero } => {
+                let k = row as isize - col as isize;
+                if k < -(*mu as isize) || k > *ml as isize {
+                    *zero
+                } else {
+                    let band_row = (k + *mu as isize) as usize;
+                    self.data[band_row * self.m + col]
+                }
+            }
+            MatrixStorage::Sparse(coords) => coords
+                .iter()
+                .filter(|&&(r, c, _)| r == row && c == col)
+                .fold(T::zero(), |acc, &(_, _, value)| acc + value),
+        }
+    }
+
+    /// Set the value at `(row, col)`.
+    pub fn set(&mut self, row: usize, col: usize, value: T) {
+        assert!(row < self.n && col < self.m, "Index out of bounds");
+        match &mut self.storage {
+            MatrixStorage::Identity => {
+                let mut dense = vec![T::zero(); self.n * self.m];
+                for i in 0..self.n.min(self.m) {
+                    dense[i * self.m + i] = T::one();
+                }
+                dense[row * self.m + col] = value;
+                self.data = dense;
+                self.storage = MatrixStorage::Full;
+            }
+            MatrixStorage::Full => {
+                self.data[row * self.m + col] = value;
+            }
+            MatrixStorage::Banded { ml, mu, .. } => {
+                let k = row as isize - col as isize;
+                if k < -(*mu as isize) || k > *ml as isize {
+                    panic!(
+                        "attempted to write outside band of Banded matrix: i-j={} not in [-mu, ml] = [-{}, {}]",
+                        k, mu, ml
+                    );
+                }
+                let band_row = (k + *mu as isize) as usize;
+                self.data[band_row * self.m + col] = value;
+            }
+            MatrixStorage::Sparse(coords) => {
+                if let Some(idx) = coords.iter().position(|&(r, c, _)| r == row && c == col) {
+                    coords[idx].2 = value;
+                    for (dup_idx, entry) in coords.iter_mut().enumerate() {
+                        if dup_idx != idx && entry.0 == row && entry.1 == col {
+                            entry.2 = T::zero();
+                        }
+                    }
+                } else if value != T::zero() {
+                    coords.push((row, col, value));
+                }
+            }
+        }
+    }
+
+    /// Add `value` to `(row, col)`.
+    pub fn add_entry(&mut self, row: usize, col: usize, value: T) {
+        let updated = self.get(row, col) + value;
+        self.set(row, col, updated);
+    }
+
+    /// Convert the matrix to dense row-major storage.
+    pub fn to_dense_vec(&self) -> Vec<T> {
+        match &self.storage {
+            MatrixStorage::Full => self.data.clone(),
+            MatrixStorage::Identity => {
+                let mut dense = vec![T::zero(); self.n * self.m];
+                for i in 0..self.n.min(self.m) {
+                    dense[i * self.m + i] = T::one();
+                }
+                dense
+            }
+            MatrixStorage::Banded { ml, mu, .. } => {
+                let mut dense = vec![T::zero(); self.n * self.m];
+                for col in 0..self.m {
+                    for band_row in 0..(*ml + *mu + 1) {
+                        let offset = band_row as isize - *mu as isize;
+                        let row_signed = col as isize + offset;
+                        if row_signed >= 0 && (row_signed as usize) < self.n {
+                            let row = row_signed as usize;
+                            dense[row * self.m + col] += self.data[band_row * self.m + col];
+                        }
+                    }
+                }
+                dense
+            }
+            MatrixStorage::Sparse(coords) => {
+                let mut dense = vec![T::zero(); self.n * self.m];
+                for &(row, col, value) in coords {
+                    dense[row * self.m + col] += value;
+                }
+                dense
+            }
+        }
+    }
+
+    /// Convert the matrix to full storage in place.
+    pub fn make_full(&mut self) {
+        self.data = self.to_dense_vec();
+        self.storage = MatrixStorage::Full;
     }
 
     /// Checks if the matrix is an identity matrix.
@@ -254,13 +391,178 @@ impl<T: Real> Matrix<T> {
 
     /// Fill the matrix with a constant value.
     pub fn fill(&mut self, value: T) {
-        self.data.fill(value);
+        match &mut self.storage {
+            MatrixStorage::Identity | MatrixStorage::Banded { .. } | MatrixStorage::Sparse(_)
+                if value != T::zero() =>
+            {
+                self.data = vec![value; self.n * self.m];
+                self.storage = MatrixStorage::Full;
+            }
+            MatrixStorage::Sparse(coords) => {
+                coords.clear();
+                self.data = vec![T::zero()];
+            }
+            _ => self.data.fill(value),
+        }
+    }
+}
+
+/// Common linear algebra operations used by solver internals and external backends.
+pub trait LinearOp<T: Real> {
+    /// Number of rows.
+    fn nrows(&self) -> usize;
+
+    /// Number of columns.
+    fn ncols(&self) -> usize;
+
+    /// Return the value at `(row, col)`.
+    fn get(&self, row: usize, col: usize) -> T;
+
+    /// Set the value at `(row, col)`.
+    fn set(&mut self, row: usize, col: usize, value: T);
+
+    /// Add `value` to `(row, col)`.
+    fn add_entry(&mut self, row: usize, col: usize, value: T) {
+        let updated = self.get(row, col) + value;
+        self.set(row, col, updated);
+    }
+
+    /// Convert to dense row-major storage.
+    fn to_dense_vec(&self) -> Vec<T> {
+        let mut dense = vec![T::zero(); self.nrows() * self.ncols()];
+        for row in 0..self.nrows() {
+            for col in 0..self.ncols() {
+                dense[row * self.ncols() + col] = self.get(row, col);
+            }
+        }
+        dense
+    }
+
+    /// Matrix-vector product.
+    fn mul_state<V: State<T>>(&self, vec: &V) -> V {
+        assert_eq!(
+            vec.len(),
+            self.ncols(),
+            "dimension mismatch in LinearOp::mul_state"
+        );
+        let mut result = V::zeros();
+        for row in 0..self.nrows() {
+            let mut sum = T::zero();
+            for col in 0..self.ncols() {
+                sum += self.get(row, col) * vec.get(col);
+            }
+            result.set(row, sum);
+        }
+        result
+    }
+
+    /// Solve `A x = b` by densifying through the internal matrix solver.
+    fn lin_solve<Y>(&self, b: Y) -> Result<Y, Error<T, Y>>
+    where
+        Y: State<T>,
+    {
+        Matrix::from_vec(self.nrows(), self.ncols(), self.to_dense_vec()).lin_solve(b)
+    }
+
+    /// Solve `A x = b` in place by densifying through the internal matrix solver.
+    fn lin_solve_mut(&self, b: &mut [T]) -> Result<(), LinalgError> {
+        Matrix::from_vec(self.nrows(), self.ncols(), self.to_dense_vec()).lin_solve_mut(b)
+    }
+}
+
+impl<T: Real> LinearOp<T> for Matrix<T> {
+    fn nrows(&self) -> usize {
+        self.nrows()
+    }
+
+    fn ncols(&self) -> usize {
+        self.ncols()
+    }
+
+    fn get(&self, row: usize, col: usize) -> T {
+        Matrix::get(self, row, col)
+    }
+
+    fn set(&mut self, row: usize, col: usize, value: T) {
+        Matrix::set(self, row, col, value);
+    }
+
+    fn to_dense_vec(&self) -> Vec<T> {
+        Matrix::to_dense_vec(self)
+    }
+
+    fn mul_state<V: State<T>>(&self, vec: &V) -> V {
+        Matrix::mul_state(self, vec)
+    }
+
+    fn lin_solve<Y>(&self, b: Y) -> Result<Y, Error<T, Y>>
+    where
+        Y: State<T>,
+    {
+        Matrix::lin_solve(self, b)
+    }
+
+    fn lin_solve_mut(&self, b: &mut [T]) -> Result<(), LinalgError> {
+        Matrix::lin_solve_mut(self, b)
+    }
+}
+
+#[cfg(feature = "sparse")]
+impl<T> LinearOp<T> for nalgebra_sparse::coo::CooMatrix<T>
+where
+    T: Real + nalgebra::Scalar,
+{
+    fn nrows(&self) -> usize {
+        self.nrows()
+    }
+
+    fn ncols(&self) -> usize {
+        self.ncols()
+    }
+
+    fn get(&self, row: usize, col: usize) -> T {
+        assert!(
+            row < self.nrows() && col < self.ncols(),
+            "Index out of bounds"
+        );
+        self.triplet_iter()
+            .filter(|&(r, c, _)| r == row && c == col)
+            .fold(T::zero(), |acc, (_, _, value)| acc + *value)
+    }
+
+    fn set(&mut self, row: usize, col: usize, value: T) {
+        assert!(
+            row < self.nrows() && col < self.ncols(),
+            "Index out of bounds"
+        );
+        let mut found = false;
+        for (r, c, entry) in self.triplet_iter_mut() {
+            if r == row && c == col {
+                if found {
+                    *entry = T::zero();
+                } else {
+                    *entry = value;
+                    found = true;
+                }
+            }
+        }
+        if !found && value != T::zero() {
+            self.push(row, col, value);
+        }
+    }
+
+    fn to_dense_vec(&self) -> Vec<T> {
+        let mut dense = vec![T::zero(); self.nrows() * self.ncols()];
+        for (row, col, value) in self.triplet_iter() {
+            dense[row * self.ncols() + col] += *value;
+        }
+        dense
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Matrix;
+    use super::{LinearOp, Matrix, MatrixStorage};
 
     #[test]
     fn diagonal_constructor_sets_diagonal() {
@@ -280,5 +582,79 @@ mod tests {
         let u: Matrix<f64> = Matrix::upper_triangular(4);
         // Below main diagonal reads zero
         assert_eq!(u[(3, 0)], 0.0);
+    }
+
+    #[test]
+    fn sparse_triplets_sum_duplicate_reads() {
+        let m = Matrix::sparse_from_triplets(2, 3, vec![(0, 1, 2.0), (0, 1, 3.0), (1, 2, 4.0)]);
+        assert_eq!(m.get(0, 0), 0.0);
+        assert_eq!(m.get(0, 1), 5.0);
+        assert_eq!(m.get(1, 2), 4.0);
+        assert_eq!(m.to_dense_vec(), vec![0.0, 5.0, 0.0, 0.0, 0.0, 4.0]);
+    }
+
+    #[test]
+    fn sparse_set_replaces_duplicate_sum() {
+        let mut m = Matrix::sparse_from_triplets(2, 2, vec![(0, 1, 2.0), (0, 1, 3.0), (1, 1, 4.0)]);
+        m.set(0, 1, 7.0);
+        assert_eq!(m.get(0, 1), 7.0);
+        m.set(1, 0, 0.0);
+        assert_eq!(m.get(1, 0), 0.0);
+    }
+
+    #[test]
+    fn sparse_fill_zero_preserves_sparse_storage() {
+        let mut m = Matrix::sparse_from_triplets(2, 2, vec![(0, 1, 2.0)]);
+        m.fill(0.0);
+        assert_eq!(m.get(0, 1), 0.0);
+        assert!(matches!(m.storage, MatrixStorage::Sparse(_)));
+    }
+
+    fn set_diagonal_to_two<T: LinearOp<f64>>(op: &mut T) {
+        for i in 0..op.nrows().min(op.ncols()) {
+            op.set(i, i, 2.0);
+        }
+    }
+
+    #[test]
+    fn linear_op_trait_updates_matrix() {
+        let mut m = Matrix::sparse(2, 2);
+        set_diagonal_to_two(&mut m);
+        assert_eq!(m.get(0, 0), 2.0);
+        assert_eq!(m.get(1, 1), 2.0);
+    }
+
+    #[test]
+    fn linear_op_trait_solves_matrix() {
+        let m: Matrix<f64> = Matrix::sparse_from_triplets(
+            2,
+            2,
+            vec![(0, 0, 3.0), (0, 1, 2.0), (1, 0, 1.0), (1, 1, 4.0)],
+        );
+        let x = LinearOp::lin_solve(&m, nalgebra::Vector2::new(5.0, 6.0)).unwrap();
+        assert!((x.x - 0.8).abs() < 1e-12);
+        assert!((x.y - 1.3).abs() < 1e-12);
+    }
+
+    #[cfg(feature = "sparse")]
+    #[test]
+    fn linear_op_trait_updates_nalgebra_sparse_coo() {
+        let mut m = nalgebra_sparse::coo::CooMatrix::<f64>::new(2, 2);
+        set_diagonal_to_two(&mut m);
+        assert_eq!(LinearOp::get(&m, 0, 0), 2.0);
+        assert_eq!(LinearOp::get(&m, 1, 1), 2.0);
+    }
+
+    #[cfg(feature = "sparse")]
+    #[test]
+    fn linear_op_trait_solves_nalgebra_sparse_coo() {
+        let mut m = nalgebra_sparse::coo::CooMatrix::<f64>::new(2, 2);
+        m.push(0, 0, 3.0);
+        m.push(0, 1, 2.0);
+        m.push(1, 0, 1.0);
+        m.push(1, 1, 4.0);
+        let x = LinearOp::lin_solve(&m, nalgebra::Vector2::new(5.0, 6.0)).unwrap();
+        assert!((x.x - 0.8).abs() < 1e-12);
+        assert!((x.y - 1.3).abs() < 1e-12);
     }
 }
