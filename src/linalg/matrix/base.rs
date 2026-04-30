@@ -2,6 +2,24 @@
 
 use crate::traits::Real;
 
+fn coalesce_triplets<T: Real>(
+    n: usize,
+    m: usize,
+    triplets: Vec<(usize, usize, T)>,
+) -> Vec<(usize, usize, T)> {
+    let mut coords: Vec<(usize, usize, T)> = Vec::new();
+    for (row, col, val) in triplets {
+        assert!(row < n && col < m, "Sparse triplet index out of bounds");
+        if let Some(entry) = coords.iter_mut().find(|(r, c, _)| *r == row && *c == col) {
+            entry.2 += val;
+        } else {
+            coords.push((row, col, val));
+        }
+    }
+    coords.retain(|(_, _, v)| *v != T::zero());
+    coords
+}
+
 /// Matrix storage layout.
 #[derive(PartialEq, Clone, Debug)]
 pub enum MatrixStorage<T: Real> {
@@ -77,18 +95,18 @@ impl<T: Real> Matrix<T> {
 
     /// Sparse matrix from coordinate triplets.
     ///
-    /// Duplicate entries are allowed and are summed by read and dense conversion
-    /// operations. This matches common COO sparse matrix semantics.
+    /// Duplicate entries for the same (row, col) are coalesced (summed) at
+    /// construction time, and any entries that sum to zero are dropped.
+    /// This guarantees that no two stored coordinates share the same position,
+    /// so `Index` / `IndexMut` work consistently without a separate `get`/`set`.
     pub fn sparse_from_triplets(n: usize, m: usize, triplets: Vec<(usize, usize, T)>) -> Self {
-        for &(row, col, _) in &triplets {
-            assert!(row < n && col < m, "Sparse triplet index out of bounds");
-        }
+        let coords = coalesce_triplets(n, m, triplets);
         Matrix {
             n,
             m,
             data: Vec::new(),
             storage: MatrixStorage::Sparse {
-                coords: triplets,
+                coords,
                 zero: T::zero(),
             },
         }
@@ -173,82 +191,6 @@ impl<T: Real> Matrix<T> {
         (self.n, self.m)
     }
 
-    /// Return the value at `(row, col)`.
-    pub fn get(&self, row: usize, col: usize) -> T {
-        assert!(row < self.n && col < self.m, "Index out of bounds");
-        match &self.storage {
-            MatrixStorage::Identity => {
-                if row == col {
-                    T::one()
-                } else {
-                    T::zero()
-                }
-            }
-            MatrixStorage::Full => self.data[row * self.m + col],
-            MatrixStorage::Banded { ml, mu, zero } => {
-                let k = row as isize - col as isize;
-                if k < -(*mu as isize) || k > *ml as isize {
-                    *zero
-                } else {
-                    let band_row = (k + *mu as isize) as usize;
-                    self.data[band_row * self.m + col]
-                }
-            }
-            MatrixStorage::Sparse { coords, .. } => coords
-                .iter()
-                .filter(|&&(r, c, _)| r == row && c == col)
-                .fold(T::zero(), |acc, &(_, _, value)| acc + value),
-        }
-    }
-
-    /// Set the value at `(row, col)`.
-    pub fn set(&mut self, row: usize, col: usize, value: T) {
-        assert!(row < self.n && col < self.m, "Index out of bounds");
-        match &mut self.storage {
-            MatrixStorage::Identity => {
-                let mut dense = vec![T::zero(); self.n * self.m];
-                for i in 0..self.n.min(self.m) {
-                    dense[i * self.m + i] = T::one();
-                }
-                dense[row * self.m + col] = value;
-                self.data = dense;
-                self.storage = MatrixStorage::Full;
-            }
-            MatrixStorage::Full => {
-                self.data[row * self.m + col] = value;
-            }
-            MatrixStorage::Banded { ml, mu, .. } => {
-                let k = row as isize - col as isize;
-                if k < -(*mu as isize) || k > *ml as isize {
-                    panic!(
-                        "attempted to write outside band of Banded matrix: i-j={} not in [-mu, ml] = [-{}, {}]",
-                        k, mu, ml
-                    );
-                }
-                let band_row = (k + *mu as isize) as usize;
-                self.data[band_row * self.m + col] = value;
-            }
-            MatrixStorage::Sparse { coords, .. } => {
-                if let Some(idx) = coords.iter().position(|&(r, c, _)| r == row && c == col) {
-                    coords[idx].2 = value;
-                    for (dup_idx, entry) in coords.iter_mut().enumerate() {
-                        if dup_idx != idx && entry.0 == row && entry.1 == col {
-                            entry.2 = T::zero();
-                        }
-                    }
-                } else if value != T::zero() {
-                    coords.push((row, col, value));
-                }
-            }
-        }
-    }
-
-    /// Add `value` to `(row, col)`.
-    pub fn add_entry(&mut self, row: usize, col: usize, value: T) {
-        let updated = self.get(row, col) + value;
-        self.set(row, col, updated);
-    }
-
     /// Convert the matrix to dense row-major storage.
     pub fn to_dense_vec(&self) -> Vec<T> {
         match &self.storage {
@@ -318,18 +260,13 @@ impl<T: Real> Matrix<T> {
                 }
             }
         } else if let MatrixStorage::Sparse { ref coords, .. } = self.storage {
-            for i in 0..self.n {
-                for j in 0..self.m {
-                    let mut val = T::zero();
-                    for &(r, c, v) in coords {
-                        if r == i && c == j {
-                            val += v;
-                        }
-                    }
-                    let expected = if i == j { T::one() } else { T::zero() };
-                    if val != expected {
-                        return false;
-                    }
+            let diag_count = self.n.min(self.m);
+            if coords.len() != diag_count {
+                return false;
+            }
+            for &(r, c, v) in coords {
+                if r != c || v != T::one() {
+                    return false;
                 }
             }
         }
@@ -439,28 +376,28 @@ mod tests {
     }
 
     #[test]
-    fn sparse_triplets_sum_duplicate_reads() {
+    fn sparse_triplets_coalesce_duplicates() {
         let m = Matrix::sparse_from_triplets(2, 3, vec![(0, 1, 2.0), (0, 1, 3.0), (1, 2, 4.0)]);
-        assert_eq!(m.get(0, 0), 0.0);
-        assert_eq!(m.get(0, 1), 5.0);
-        assert_eq!(m.get(1, 2), 4.0);
+        assert_eq!(m[(0, 0)], 0.0);
+        assert_eq!(m[(0, 1)], 5.0);
+        assert_eq!(m[(1, 2)], 4.0);
         assert_eq!(m.to_dense_vec(), vec![0.0, 5.0, 0.0, 0.0, 0.0, 4.0]);
     }
 
     #[test]
-    fn sparse_set_replaces_duplicate_sum() {
+    fn sparse_index_mut_replaces_coalesced_entry() {
         let mut m = Matrix::sparse_from_triplets(2, 2, vec![(0, 1, 2.0), (0, 1, 3.0), (1, 1, 4.0)]);
-        m.set(0, 1, 7.0);
-        assert_eq!(m.get(0, 1), 7.0);
-        m.set(1, 0, 0.0);
-        assert_eq!(m.get(1, 0), 0.0);
+        m[(0, 1)] = 7.0;
+        assert_eq!(m[(0, 1)], 7.0);
+        m[(1, 0)] = 0.0;
+        assert_eq!(m[(1, 0)], 0.0);
     }
 
     #[test]
     fn sparse_fill_zero_preserves_sparse_storage() {
         let mut m = Matrix::sparse_from_triplets(2, 2, vec![(0, 1, 2.0)]);
         m.fill(0.0);
-        assert_eq!(m.get(0, 1), 0.0);
+        assert_eq!(m[(0, 1)], 0.0);
         assert!(matches!(m.storage, MatrixStorage::Sparse { .. }));
     }
 

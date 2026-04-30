@@ -142,7 +142,7 @@ mod tests {
     fn mul_sparse_preserves_dimensions() {
         let a = Matrix::sparse_from_triplets(2, 3, vec![(0, 2, 4.0)]).component_mul(2.0);
         assert_eq!(a.dims(), (2, 3));
-        assert_eq!(a.get(0, 2), 8.0);
+        assert_eq!(a[(0, 2)], 8.0);
     }
 
     #[test]

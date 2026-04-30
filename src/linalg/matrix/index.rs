@@ -89,7 +89,7 @@ where
                 if j > 0 {
                     f.write_str(" ")?;
                 }
-                write!(f, "{}", self.get(i, j))?;
+                write!(f, "{}", self[(i, j)])?;
             }
             f.write_str("]")?;
             if i + 1 < nr {

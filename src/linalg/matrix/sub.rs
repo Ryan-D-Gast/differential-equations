@@ -338,7 +338,7 @@ mod tests {
     fn sub_scalar_zero_keeps_sparse() {
         let m = Matrix::sparse_from_triplets(2, 2, vec![(0, 1, 2.0)]);
         let r = m.component_sub(0.0);
-        assert_eq!(r.get(0, 1), 2.0);
-        assert_eq!(r.get(1, 0), 0.0);
+        assert_eq!(r[(0, 1)], 2.0);
+        assert_eq!(r[(1, 0)], 0.0);
     }
 }
