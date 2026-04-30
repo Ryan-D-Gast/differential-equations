@@ -8,4 +8,4 @@ mod macros;
 mod mul;
 mod sub;
 
-pub use base::{LinearOp, Matrix, MatrixStorage};
+pub use base::{Matrix, MatrixStorage};
