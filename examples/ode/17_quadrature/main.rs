@@ -1,4 +1,4 @@
-//! Example 16: Numerical Quadrature via State Augmentation
+//! Example 17: Numerical Quadrature via State Augmentation
 //!
 //! This example demonstrates how to compute a numerical integral alongside an ODE
 //! by encoding the quadrature as an additional equation in the system. No special
@@ -30,8 +30,9 @@
 //!
 //! This demonstrates:
 //! - Encoding a physically meaningful quadrature as an extra ODE component
-//! - Per-component tolerances via `Tolerance::Vector` to control whether the
-//!   quadrature influences step-size selection
+//! - Per-component tolerances: tight (1e-12) on position and velocity so they
+//!   drive step-size selection, and loose (1e-6) on the quadrature so it does
+//!   not force additional step rejections while still riding along at full accuracy
 //! - Verifying quadrature accuracy against a conservation-of-energy check
 
 use differential_equations::ivp::Ivp;
@@ -71,8 +72,8 @@ fn main() {
         .even(0.2)
         .method(
             ExplicitRungeKutta::dop853()
-                .rtol([1e-12, 1e-12, 1e-12])
-                .atol([1e-12, 1e-12, 1e-12]),
+                .rtol([1e-12, 1e-12, 1e-6])
+                .atol([1e-12, 1e-12, 1e-6]),
         )
         .solve()
         .expect("Solver failed");
@@ -140,6 +141,6 @@ fn main() {
                 .build(),
         ])
         .build()
-        .to_svg("examples/ode/16_quadrature/quadrature.svg")
+        .to_svg("examples/ode/17_quadrature/quadrature.svg")
         .expect("Failed to save plot as SVG");
 }
