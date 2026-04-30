@@ -1,7 +1,7 @@
 //! Example 20: Adjoint Sensitivity Analysis
 //!
 //! This example demonstrates how to perform Adjoint Sensitivity Analysis (ASA)
-//! using the backwards-integration capability of the solvers.
+//! using the backward-integration capability of the solvers.
 //!
 //! ASA calculates the gradient of a cost function with respect to parameters
 //! by solving an adjoint ODE backward in time.
@@ -44,7 +44,7 @@ impl ODE<f64, SVector<f64, 2>> for ForwardOde {
 // d lambda / dt = -J_y^T lambda
 // with final condition: lambda(T) = dg/dy(T)^T
 //
-// And the sensitivities mu satisfy:
+// The parameter-gradient accumulator mu satisfies:
 // d mu / dt = -J_p^T lambda
 // with final condition: mu(T) = 0
 
@@ -97,15 +97,10 @@ impl AdjointOde {
             return *states.last().unwrap();
         }
 
-        for i in 0..times.len() - 1 {
-            if t >= times[i] && t <= times[i + 1] {
-                // Linear interpolation for simplicity
-                let s = (t - times[i]) / (times[i + 1] - times[i]);
-                return states[i] * (1.0 - s) + states[i + 1] * s;
-            }
-        }
-
-        states[0]
+        let upper = times.partition_point(|ti| *ti < t);
+        let lower = upper - 1;
+        let s = (t - times[lower]) / (times[upper] - times[lower]);
+        states[lower] * (1.0 - s) + states[upper] * s
     }
 }
 
@@ -145,40 +140,37 @@ fn main() {
 
     println!("Adjoint Sensitivity Analysis");
     println!("============================");
-    // Since we integrate backwards (dt < 0), the computed change from mu(T) to mu(0)
-    // is negative of the forward integral.
-    // mu(0) = mu(T) + \int_T^0 d mu / dt dt = 0 - \int_0^T d mu / dt dt = - \int_0^T (-J_p^T lambda) dt
-    //       = \int_0^T J_p^T lambda dt
-    // And gradient is \int_0^T J_p^T lambda dt
-    // Wait, the gradient is given by mu(0) directly in this case.
+    // The backward integration returns the accumulator at t0. With the sign
+    // convention above, mu(t0) is the gradient of the terminal cost with
+    // respect to the parameters.
     println!("Computed Gradient w.r.t parameters: {:?}", gradient);
 
-    // Let's double check with Finite Differences
+    // Double-check with central finite differences.
     let epsilon = 1e-6;
 
-    let p_eps0 = vector![p[0] + epsilon, p[1]];
-    let forward_sol_eps0 = Ivp::ode(&ForwardOde { p: p_eps0 }, t0, tf, y0)
-        .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8))
-        .solve()
-        .unwrap();
-
-    let p_eps1 = vector![p[0], p[1] + epsilon];
-    let forward_sol_eps1 = Ivp::ode(&ForwardOde { p: p_eps1 }, t0, tf, y0)
-        .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8))
-        .solve()
-        .unwrap();
-
-    // Compute Cost G for nominal and perturbed
     let cost = |sol: &Solution<f64, SVector<f64, 2>>| {
         let y_final = sol.y.last().unwrap();
         0.5 * (y_final[1] - 0.5).powi(2)
     };
 
-    let g_nom = cost(&adjoint_ode.forward_solution);
-    let g_eps0 = cost(&forward_sol_eps0);
-    let g_eps1 = cost(&forward_sol_eps1);
+    let solve_cost = |p_test: SVector<f64, 2>| {
+        let sol = Ivp::ode(&ForwardOde { p: p_test }, t0, tf, y0)
+            .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8))
+            .solve()
+            .unwrap();
+        cost(&sol)
+    };
 
-    let fd_gradient = vector![(g_eps0 - g_nom) / epsilon, (g_eps1 - g_nom) / epsilon];
+    let fd_gradient = vector![
+        (solve_cost(vector![p[0] + epsilon, p[1]]) - solve_cost(vector![p[0] - epsilon, p[1]]))
+            / (2.0 * epsilon),
+        (solve_cost(vector![p[0], p[1] + epsilon]) - solve_cost(vector![p[0], p[1] - epsilon]))
+            / (2.0 * epsilon),
+    ];
 
     println!("Finite Difference Gradient: {:?}", fd_gradient);
+    println!(
+        "Gradient error:              {:?}",
+        (gradient - fd_gradient).abs()
+    );
 }
