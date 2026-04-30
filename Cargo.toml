@@ -113,6 +113,14 @@ path = "examples/ode/14_r2bp_stm/main.rs"
 name = "ode_15_forward_sensitivity_analysis"
 path = "examples/ode/15_forward_sensitivity_analysis/main.rs"
 
+[[example]]
+name = "ode_16_adjoint_sensitivities"
+path = "examples/ode/16_adjoint_sensitivities/main.rs"
+
+[[example]]
+name = "ode_17_quadrature"
+path = "examples/ode/17_quadrature/main.rs"
+
 # Differential-Algebraic Equation (DAE) examples
 [[example]]
 name = "dae_01_amplifier"
@@ -153,7 +161,3 @@ path = "examples/dde/02_breast_cancer_model/main.rs"
 name = "ode_solver_benchmarks"
 harness = false
 path = "benches/main.rs"
-
-[[example]]
-name = "ode_20_adjoint_sensitivities"
-path = "examples/ode/20_adjoint_sensitivities/main.rs"

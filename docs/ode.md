@@ -6,6 +6,7 @@ The `ode` module provides tools for solving ordinary differential equations (ODE
 
 - [Defining a ODE](#defining-an-ode)
 - [Solving an Initial Value Problem (ODE IVP builder)](#solving-an-initial-value-problem)
+- [Numerical Quadrature](#numerical-quadrature)
 - [Examples](#examples)
 - [Benchmarks](#benchmarks)
 - [Notation](#notation)
@@ -118,6 +119,42 @@ Rejected Steps: 2
 Accepted Steps: 20
 ```
 
+## Numerical Quadrature
+
+To compute a numerical integral alongside an ODE, encode the quadrature as an additional equation in your system. If your ODE is `dy/dt = f(t, y)` and you want to compute `Q = integral of g(t, y) dt`, augment the state vector to `[y, Q]` and add the equation `dQ/dt = g(t, y)`:
+
+```rust
+use nalgebra::{SVector, vector};
+
+struct MyODE;
+
+impl ODE<f64, SVector<f64, 2>> for MyODE {
+    fn diff(&self, t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
+        dydt[0] = y[0];         // dy/dt = f(t, y)
+        dydt[1] = y[0];         // dQ/dt = g(t, y) = y
+    }
+}
+```
+
+The initial condition becomes `y0 = vector![y0, Q0]` where `Q0` is typically `0`.
+
+### Controlling Quadrature Influence on Step Size
+
+Per-component tolerances control whether the quadrature affects adaptive step-size selection. The error norm is computed per-component as `|err_i| / (atol_i + rtol_i * max(|y_i|, |y_new_i|))`, and the maximum across all components determines step acceptance.
+
+- **Tight tolerances on Q** (e.g. `1e-12`): the quadrature participates in error control and can force smaller steps to maintain quadrature accuracy.
+- **Loose tolerances on Q** (e.g. `1e30`): the quadrature error contribution is negligible, so step size is driven entirely by the primary state `y`. The quadrature is still computed at the solver's full accuracy — it just doesn't force additional step rejections.
+
+```rust
+.method(
+    ExplicitRungeKutta::dop853()
+        .rtol([1e-12, 1e-12])  // [y tolerance, Q tolerance]
+        .atol([1e-12, 1e-12])
+)
+```
+
+This approach requires no changes to the solver — the existing adaptive error estimation, dense output interpolation, and event detection all work on the combined state vector.
+
 ## Examples
 
 For more examples, see the `examples` directory. The examples demonstrate different systems, methods, and output methods for different use cases.
@@ -137,6 +174,8 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 | [Schrodinger](../../examples/ode/11_schrodinger/main.rs) | Solves the time-dependent Schrödinger equation using the `dop853` method. Demonstrates the use of complex numbers in the ODE system. |
 | [Brusselator](../../examples/ode/12_brusselator/main.rs) | Demonstrates solving a stiff system using implicit Runge-Kutta methods (`gauss_legendre_6`) with analytical jacobian provided to accelerate Newton iterations. |
 | [Reduced Two-Body Problem with STM](../../examples/ode/14_r2bp_stm/main.rs) | Propagates a Kepler two-body orbit together with its state transition matrix. Demonstrates dual-number sensitivities, variational equations, and the solver `filter` hook for step-size post-processing. |
+| [Adjoint Sensitivities](../../examples/ode/16_adjoint_sensitivities/main.rs) | Demonstrates Adjoint Sensitivity Analysis (ASA) using backward-integration to compute gradients of a cost function with respect to parameters. |
+| [Quadrature via State Augmentation](../../examples/ode/17_quadrature/main.rs) | Computes cumulative energy dissipated by a damped oscillator as a quadrature. Demonstrates per-component tolerances — tight on the ODE state, loose on the quadrature. |
 
 ## Benchmarks
 
