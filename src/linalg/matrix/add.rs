@@ -23,7 +23,9 @@ impl<T: Real> Add for Matrix<T> {
 
     fn add(self, rhs: Matrix<T>) -> Self::Output {
         assert_eq!(self.n, rhs.n, "dimension mismatch in Matrix + Matrix");
+        assert_eq!(self.m, rhs.m, "dimension mismatch in Matrix + Matrix");
         let n = self.n;
+        let m = self.m;
         match (self, rhs) {
             (
                 Matrix {
@@ -66,7 +68,7 @@ impl<T: Real> Add for Matrix<T> {
                 let data = a.into_iter().zip(b).map(|(x, y)| x + y).collect();
                 Matrix {
                     n,
-                    m: n,
+                    m,
                     data,
                     storage: MatrixStorage::Full,
                 }
@@ -126,48 +128,38 @@ impl<T: Real> Add for Matrix<T> {
             // Mixed: densify
             (
                 Matrix {
+                    n: n1,
+                    m: m1,
                     data: a,
                     storage: sa,
                     ..
                 },
                 Matrix {
+                    n: _n2,
+                    m: _m2,
                     data: b,
                     storage: sb,
                     ..
                 },
             ) => {
-                let to_full = |n: usize, data: Vec<T>, storage: MatrixStorage<T>| -> Vec<T> {
-                    match storage {
-                        MatrixStorage::Full => data,
-                        MatrixStorage::Identity => {
-                            let mut d = vec![T::zero(); n * n];
-                            for i in 0..n {
-                                d[i * n + i] = T::one();
-                            }
-                            d
-                        }
-                        MatrixStorage::Banded { ml, mu, .. } => {
-                            let mut d = vec![T::zero(); n * n];
-                            for j in 0..n {
-                                for r in 0..(ml + mu + 1) {
-                                    let k = r as isize - mu as isize;
-                                    let i_signed = j as isize + k;
-                                    if i_signed >= 0 && (i_signed as usize) < n {
-                                        let i = i_signed as usize;
-                                        d[i * n + j] += data[r * n + j];
-                                    }
-                                }
-                            }
-                            d
-                        }
-                    }
-                };
-                let aa = to_full(n, a, sa);
-                let bb = to_full(n, b, sb);
+                let aa = Matrix {
+                    n: n1,
+                    m: m1,
+                    data: a,
+                    storage: sa,
+                }
+                .to_dense_vec();
+                let bb = Matrix {
+                    n: n1,
+                    m: m1,
+                    data: b,
+                    storage: sb,
+                }
+                .to_dense_vec();
                 let data = aa.into_iter().zip(bb).map(|(x, y)| x + y).collect();
                 Matrix {
-                    n,
-                    m: n,
+                    n: n1,
+                    m: m1,
                     data,
                     storage: MatrixStorage::Full,
                 }
@@ -221,6 +213,32 @@ impl<T: Real> Matrix<T> {
                     Matrix {
                         n,
                         m: n,
+                        data: dense,
+                        storage: MatrixStorage::Full,
+                    }
+                }
+            }
+            MatrixStorage::Sparse { coords, zero } => {
+                let n = self.n;
+                let m = self.m;
+                if rhs == T::zero() {
+                    Matrix {
+                        n,
+                        m,
+                        data: Vec::new(),
+                        storage: MatrixStorage::Sparse {
+                            coords: coords.clone(),
+                            zero: *zero,
+                        },
+                    }
+                } else {
+                    let mut dense = vec![rhs; n * m];
+                    for &(r, c, v) in coords.iter() {
+                        dense[r * m + c] += v;
+                    }
+                    Matrix {
+                        n,
+                        m,
                         data: dense,
                         storage: MatrixStorage::Full,
                     }
@@ -305,5 +323,23 @@ mod tests {
         assert_eq!(r[(0, 1)], 2.0);
         assert_eq!(r[(1, 2)], 2.0);
         assert_eq!(r[(0, 2)], 0.0);
+    }
+
+    #[test]
+    fn add_sparse_sparse_densifies_with_summed_values() {
+        let a = Matrix::sparse_from_triplets(2, 2, vec![(0, 0, 1.0), (0, 0, 2.0)]);
+        let b = Matrix::sparse_from_triplets(2, 2, vec![(0, 1, 3.0), (1, 1, 4.0)]);
+        let r = a + b;
+        assert_eq!(r[(0, 0)], 3.0);
+        assert_eq!(r[(0, 1)], 3.0);
+        assert_eq!(r[(1, 1)], 4.0);
+    }
+
+    #[test]
+    fn add_scalar_zero_keeps_sparse() {
+        let m = Matrix::sparse_from_triplets(2, 2, vec![(0, 1, 2.0)]);
+        let r = m.component_add(0.0);
+        assert_eq!(r[(0, 1)], 2.0);
+        assert_eq!(r[(1, 0)], 0.0);
     }
 }

@@ -8,7 +8,7 @@ use super::base::{Matrix, MatrixStorage};
 impl<T: Real> Matrix<T> {
     /// Return a new matrix where each stored entry is multiplied by `rhs`.
     pub fn component_mul(mut self, rhs: T) -> Self {
-        match &mut self.storage {
+        match self.storage {
             MatrixStorage::Identity => Matrix::diagonal(vec![rhs; self.n]),
             MatrixStorage::Full => {
                 for v in &mut self.data {
@@ -24,10 +24,23 @@ impl<T: Real> Matrix<T> {
                     m: n,
                     data,
                     storage: MatrixStorage::Banded {
-                        ml: *ml,
-                        mu: *mu,
+                        ml,
+                        mu,
                         zero: T::zero(),
                     },
+                }
+            }
+            MatrixStorage::Sparse { mut coords, zero } => {
+                let n = self.n;
+                let m = self.m;
+                for item in coords.iter_mut() {
+                    item.2 *= rhs;
+                }
+                Matrix {
+                    n,
+                    m,
+                    data: Vec::new(),
+                    storage: MatrixStorage::Sparse { coords, zero },
                 }
             }
         }
@@ -57,20 +70,31 @@ impl<T: Real> Matrix<T> {
                     *v *= rhs;
                 }
             }
+            MatrixStorage::Sparse { coords, .. } => {
+                for item in coords.iter_mut() {
+                    item.2 *= rhs;
+                }
+            }
         }
     }
 
     pub fn mul_state<V: State<T>>(&self, vec: &V) -> V {
         let n = self.n;
-        assert_eq!(vec.len(), n, "dimension mismatch in Matrix::mul_state");
+        assert_eq!(vec.len(), self.m, "dimension mismatch in Matrix::mul_state");
 
         let mut result = V::zeros();
-        for i in 0..n {
-            let mut sum = T::zero();
-            for j in 0..n {
+        if let MatrixStorage::Sparse { ref coords, .. } = self.storage {
+            for &(r, c, v) in coords {
+                result.set(r, result.get(r) + v * vec.get(c));
+            }
+        } else {
+            for i in 0..n {
+                let mut sum = T::zero();
+            for j in 0..self.m {
                 sum += self[(i, j)] * vec.get(j);
             }
-            result.set(i, sum);
+                result.set(i, sum);
+            }
         }
         result
     }
@@ -79,6 +103,7 @@ impl<T: Real> Matrix<T> {
 #[cfg(test)]
 mod tests {
     use super::Matrix;
+    use nalgebra::Vector2;
 
     #[test]
     fn mul_matrix_full() {
@@ -111,5 +136,20 @@ mod tests {
         assert_eq!(a[(0, 1)], 0.0);
         assert_eq!(a[(1, 0)], 0.0);
         assert_eq!(a[(1, 1)], 5.0);
+    }
+
+    #[test]
+    fn mul_sparse_preserves_dimensions() {
+        let a = Matrix::sparse_from_triplets(2, 3, vec![(0, 2, 4.0)]).component_mul(2.0);
+        assert_eq!(a.dims(), (2, 3));
+        assert_eq!(a[(0, 2)], 8.0);
+    }
+
+    #[test]
+    fn mul_state_sparse_accumulates_duplicate_entries() {
+        let a = Matrix::sparse_from_triplets(2, 2, vec![(0, 0, 2.0), (0, 0, 3.0), (1, 1, 4.0)]);
+        let x = Vector2::new(2.0, 3.0);
+        let y = a.mul_state(&x);
+        assert_eq!(y, Vector2::new(10.0, 12.0));
     }
 }

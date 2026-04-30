@@ -2,6 +2,24 @@
 
 use crate::traits::Real;
 
+fn coalesce_triplets<T: Real>(
+    n: usize,
+    m: usize,
+    triplets: Vec<(usize, usize, T)>,
+) -> Vec<(usize, usize, T)> {
+    let mut coords: Vec<(usize, usize, T)> = Vec::new();
+    for (row, col, val) in triplets {
+        assert!(row < n && col < m, "Sparse triplet index out of bounds");
+        if let Some(entry) = coords.iter_mut().find(|(r, c, _)| *r == row && *c == col) {
+            entry.2 += val;
+        } else {
+            coords.push((row, col, val));
+        }
+    }
+    coords.retain(|(_, _, v)| *v != T::zero());
+    coords
+}
+
 /// Matrix storage layout.
 #[derive(PartialEq, Clone, Debug)]
 pub enum MatrixStorage<T: Real> {
@@ -13,6 +31,11 @@ pub enum MatrixStorage<T: Real> {
     /// Compact diagonal storage with shape (ml+mu+1, ncols), row-major per diagonal.
     /// Off-band reads return `zero`.
     Banded { ml: usize, mu: usize, zero: T },
+    /// Sparse matrix representation using coordinate format.
+    Sparse {
+        coords: Vec<(usize, usize, T)>,
+        zero: T,
+    },
 }
 
 /// Generic matrix for linear algebra (typically square in current use).
@@ -54,6 +77,38 @@ impl<T: Real> Matrix<T> {
             m,
             data,
             storage: MatrixStorage::Full,
+        }
+    }
+
+    /// Empty sparse matrix of size n x m.
+    pub fn sparse(n: usize, m: usize) -> Self {
+        Matrix {
+            n,
+            m,
+            data: Vec::new(),
+            storage: MatrixStorage::Sparse {
+                coords: Vec::new(),
+                zero: T::zero(),
+            },
+        }
+    }
+
+    /// Sparse matrix from coordinate triplets.
+    ///
+    /// Duplicate entries for the same (row, col) are coalesced (summed) at
+    /// construction time, and any entries that sum to zero are dropped.
+    /// This guarantees that no two stored coordinates share the same position,
+    /// so `Index` / `IndexMut` work consistently without a separate `get`/`set`.
+    pub fn sparse_from_triplets(n: usize, m: usize, triplets: Vec<(usize, usize, T)>) -> Self {
+        let coords = coalesce_triplets(n, m, triplets);
+        Matrix {
+            n,
+            m,
+            data: Vec::new(),
+            storage: MatrixStorage::Sparse {
+                coords,
+                zero: T::zero(),
+            },
         }
     }
 
@@ -136,6 +191,47 @@ impl<T: Real> Matrix<T> {
         (self.n, self.m)
     }
 
+    /// Convert the matrix to dense row-major storage.
+    pub fn to_dense_vec(&self) -> Vec<T> {
+        match &self.storage {
+            MatrixStorage::Full => self.data.clone(),
+            MatrixStorage::Identity => {
+                let mut dense = vec![T::zero(); self.n * self.m];
+                for i in 0..self.n.min(self.m) {
+                    dense[i * self.m + i] = T::one();
+                }
+                dense
+            }
+            MatrixStorage::Banded { ml, mu, .. } => {
+                let mut dense = vec![T::zero(); self.n * self.m];
+                for col in 0..self.m {
+                    for band_row in 0..(*ml + *mu + 1) {
+                        let offset = band_row as isize - *mu as isize;
+                        let row_signed = col as isize + offset;
+                        if row_signed >= 0 && (row_signed as usize) < self.n {
+                            let row = row_signed as usize;
+                            dense[row * self.m + col] += self.data[band_row * self.m + col];
+                        }
+                    }
+                }
+                dense
+            }
+            MatrixStorage::Sparse { coords, .. } => {
+                let mut dense = vec![T::zero(); self.n * self.m];
+                for &(row, col, value) in coords {
+                    dense[row * self.m + col] += value;
+                }
+                dense
+            }
+        }
+    }
+
+    /// Convert the matrix to full storage in place.
+    pub fn make_full(&mut self) {
+        self.data = self.to_dense_vec();
+        self.storage = MatrixStorage::Full;
+    }
+
     /// Checks if the matrix is an identity matrix.
     pub fn is_identity(&self) -> bool {
         if let MatrixStorage::Identity = self.storage {
@@ -161,6 +257,16 @@ impl<T: Real> Matrix<T> {
                     if self.data[i * self.m + j] != expected {
                         return false;
                     }
+                }
+            }
+        } else if let MatrixStorage::Sparse { ref coords, .. } = self.storage {
+            let diag_count = self.n.min(self.m);
+            if coords.len() != diag_count {
+                return false;
+            }
+            for &(r, c, v) in coords {
+                if r != c || v != T::one() {
+                    return false;
                 }
             }
         }
@@ -213,18 +319,41 @@ impl<T: Real> Matrix<T> {
                     }
                 }
             }
+            MatrixStorage::Sparse { coords, .. } => {
+                for item in coords.iter_mut() {
+                    if item.0 == r1 {
+                        item.0 = r2;
+                    } else if item.0 == r2 {
+                        item.0 = r1;
+                    }
+                }
+            }
         }
     }
 
     /// Fill the matrix with a constant value.
     pub fn fill(&mut self, value: T) {
-        self.data.fill(value);
+        match &mut self.storage {
+            MatrixStorage::Identity
+            | MatrixStorage::Banded { .. }
+            | MatrixStorage::Sparse { .. }
+                if value != T::zero() =>
+            {
+                self.data = vec![value; self.n * self.m];
+                self.storage = MatrixStorage::Full;
+            }
+            MatrixStorage::Sparse { coords, zero } => {
+                coords.clear();
+                *zero = T::zero();
+            }
+            _ => self.data.fill(value),
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Matrix;
+    use super::{Matrix, MatrixStorage};
 
     #[test]
     fn diagonal_constructor_sets_diagonal() {
@@ -244,5 +373,42 @@ mod tests {
         let u: Matrix<f64> = Matrix::upper_triangular(4);
         // Below main diagonal reads zero
         assert_eq!(u[(3, 0)], 0.0);
+    }
+
+    #[test]
+    fn sparse_triplets_coalesce_duplicates() {
+        let m = Matrix::sparse_from_triplets(2, 3, vec![(0, 1, 2.0), (0, 1, 3.0), (1, 2, 4.0)]);
+        assert_eq!(m[(0, 0)], 0.0);
+        assert_eq!(m[(0, 1)], 5.0);
+        assert_eq!(m[(1, 2)], 4.0);
+        assert_eq!(m.to_dense_vec(), vec![0.0, 5.0, 0.0, 0.0, 0.0, 4.0]);
+    }
+
+    #[test]
+    fn sparse_index_mut_replaces_coalesced_entry() {
+        let mut m = Matrix::sparse_from_triplets(2, 2, vec![(0, 1, 2.0), (0, 1, 3.0), (1, 1, 4.0)]);
+        m[(0, 1)] = 7.0;
+        assert_eq!(m[(0, 1)], 7.0);
+        m[(1, 0)] = 0.0;
+        assert_eq!(m[(1, 0)], 0.0);
+    }
+
+    #[test]
+    fn sparse_fill_zero_preserves_sparse_storage() {
+        let mut m = Matrix::sparse_from_triplets(2, 2, vec![(0, 1, 2.0)]);
+        m.fill(0.0);
+        assert_eq!(m[(0, 1)], 0.0);
+        assert!(matches!(m.storage, MatrixStorage::Sparse { .. }));
+    }
+
+    #[test]
+    fn sparse_storage_carries_zero_reference() {
+        let m = Matrix::<f64>::sparse(2, 2);
+        match &m.storage {
+            MatrixStorage::Sparse { zero, .. } => {
+                assert_eq!(m[(1, 1)], *zero);
+            }
+            _ => panic!("expected sparse storage"),
+        }
     }
 }

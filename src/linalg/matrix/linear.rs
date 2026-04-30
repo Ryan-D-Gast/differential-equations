@@ -5,7 +5,7 @@ use crate::{
     traits::{Real, State},
 };
 
-use super::base::{Matrix, MatrixStorage};
+use super::base::Matrix;
 
 impl<T: Real> Matrix<T> {
     /// Solve A x = b, Returns Err if the matrix is singular or dimensions are incompatible
@@ -14,6 +14,11 @@ impl<T: Real> Matrix<T> {
         Y: State<T>,
     {
         let n = self.n;
+        if self.m != n {
+            return Err(Error::BadInput {
+                msg: "Matrix solve requires a square matrix".into(),
+            });
+        }
         if b.len() != n {
             return Err(Error::BadInput {
                 msg: "Incompatible vector length".into(),
@@ -21,30 +26,7 @@ impl<T: Real> Matrix<T> {
         }
 
         // 1) Densify A into a Vec<T> of size n*n (row-major)
-        let mut a = vec![T::zero(); n * n];
-        match &self.storage {
-            MatrixStorage::Identity => {
-                for i in 0..n {
-                    a[i * n + i] = T::one();
-                }
-            }
-            MatrixStorage::Full => {
-                a.copy_from_slice(&self.data[0..n * n]);
-            }
-            MatrixStorage::Banded { ml, mu, .. } => {
-                let rows = *ml + *mu + 1;
-                for j in 0..self.m {
-                    for r in 0..rows {
-                        let k = r as isize - *mu as isize; // i - j
-                        let i_signed = j as isize + k;
-                        if i_signed >= 0 && (i_signed as usize) < self.n {
-                            let i = i_signed as usize;
-                            a[i * self.m + j] += self.data[r * self.m + j];
-                        }
-                    }
-                }
-            }
-        }
+        let mut a = self.to_dense_vec();
 
         // 2) Copy b into a dense vector x and perform solve
         let mut x = b;
@@ -125,6 +107,11 @@ impl<T: Real> Matrix<T> {
     pub fn lin_solve_mut(&self, b: &mut [T]) -> Result<(), crate::linalg::LinalgError> {
         let n = self.n;
         assert_eq!(
+            self.m, n,
+            "dimension mismatch in solve: A must be square, got {}x{}",
+            n, self.m
+        );
+        assert_eq!(
             b.len(),
             n,
             "dimension mismatch in solve: A is {}x{}, b has length {}",
@@ -134,30 +121,7 @@ impl<T: Real> Matrix<T> {
         );
 
         // Densify A into row-major Vec<T>
-        let mut a = vec![T::zero(); n * n];
-        match &self.storage {
-            MatrixStorage::Identity => {
-                for i in 0..n {
-                    a[i * n + i] = T::one();
-                }
-            }
-            MatrixStorage::Full => {
-                a.copy_from_slice(&self.data[0..n * n]);
-            }
-            MatrixStorage::Banded { ml, mu, .. } => {
-                let rows = *ml + *mu + 1;
-                for j in 0..self.m {
-                    for r in 0..rows {
-                        let k = r as isize - *mu as isize;
-                        let i_signed = j as isize + k;
-                        if i_signed >= 0 && (i_signed as usize) < self.n {
-                            let i = i_signed as usize;
-                            a[i * self.m + j] += self.data[r * self.m + j];
-                        }
-                    }
-                }
-            }
-        }
+        let mut a = self.to_dense_vec();
 
         // LU with partial pivoting, applying permutations to b
         for k in 0..n {
@@ -229,5 +193,31 @@ mod tests {
         // Solve manually: [[3,2],[1,4]] x = [5,6] => x = [ (20-12)/10, (15-5)/10 ] = [0.8, 1.3]
         assert!((x.x - 0.8).abs() < 1e-12);
         assert!((x.y - 1.3).abs() < 1e-12);
+    }
+
+    #[test]
+    fn solve_sparse_2x2() {
+        let a: Matrix<f64> = Matrix::sparse_from_triplets(
+            2,
+            2,
+            vec![(0, 0, 3.0), (0, 1, 2.0), (1, 0, 1.0), (1, 1, 4.0)],
+        );
+        let b = Vector2::new(5.0, 6.0);
+        let x = a.lin_solve(b).unwrap();
+        assert!((x.x - 0.8).abs() < 1e-12);
+        assert!((x.y - 1.3).abs() < 1e-12);
+    }
+
+    #[test]
+    fn solve_sparse_mut_2x2() {
+        let a: Matrix<f64> = Matrix::sparse_from_triplets(
+            2,
+            2,
+            vec![(0, 0, 3.0), (0, 1, 2.0), (1, 0, 1.0), (1, 1, 4.0)],
+        );
+        let mut b = [5.0_f64, 6.0];
+        a.lin_solve_mut(&mut b).unwrap();
+        assert!((b[0] - 0.8).abs() < 1e-12);
+        assert!((b[1] - 1.3).abs() < 1e-12);
     }
 }

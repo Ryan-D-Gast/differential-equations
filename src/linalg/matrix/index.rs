@@ -32,6 +32,11 @@ impl<T: Real> Index<(usize, usize)> for Matrix<T> {
                     &self.data[row * self.m + j]
                 }
             }
+            MatrixStorage::Sparse { coords, zero } => coords
+                .iter()
+                .find(|&&(row, col, _)| row == i && col == j)
+                .map(|entry| &entry.2)
+                .unwrap_or(zero),
         }
     }
 }
@@ -57,6 +62,15 @@ impl<T: Real> IndexMut<(usize, usize)> for Matrix<T> {
                         "attempted to write outside band of Banded matrix: i-j={} not in [-mu, ml] = [-{}, {}]",
                         k, mu, ml
                     )
+                }
+            }
+            MatrixStorage::Sparse { coords, .. } => {
+                if let Some(idx) = coords.iter().position(|&(r, c, _)| r == i && c == j) {
+                    &mut coords[idx].2
+                } else {
+                    coords.push((i, j, T::zero()));
+                    let last = coords.len() - 1;
+                    &mut coords[last].2
                 }
             }
         }
@@ -136,5 +150,21 @@ mod tests {
         assert!(s.contains("[1 0 0]"));
         assert!(s.contains("[0 1 0]"));
         assert!(s.contains("[0 0 1]"));
+    }
+
+    #[test]
+    fn sparse_index_reads_stored_and_implicit_zero_entries() {
+        let mut m = Matrix::sparse(2, 2);
+        m[(0, 1)] = 3.0;
+        assert_eq!(m[(0, 1)], 3.0);
+        assert_eq!(m[(1, 0)], 0.0);
+    }
+
+    #[test]
+    fn display_prints_sparse_matrix_values() {
+        let m = Matrix::sparse_from_triplets(2, 2, vec![(0, 1, 2.0), (0, 1, 3.0), (1, 0, 4.0)]);
+        let s = format!("{}", m);
+        assert!(s.contains("[0 5]"));
+        assert!(s.contains("[4 0]"));
     }
 }

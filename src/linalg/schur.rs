@@ -38,13 +38,13 @@ pub fn schur_complement<T: Real, V: State<T>>(
         let mut e = V::zeros();
         e.set(j, T::one());
         // u = B e_j
-        let u = b.mul_state(&e);
+        let u = b.mul_state::<V>(&e);
         // v = A^{-1} u
         let v = solve_a(u);
         // z = C v
-        let z = c.mul_state(&v);
+        let z = c.mul_state::<V>(&v);
         // column j of S is (D e_j - z)
-        let d_ej = d.mul_state(&{
+        let d_ej = d.mul_state::<V>(&{
             let mut e2 = V::zeros();
             e2.set(j, T::one());
             e2
@@ -57,7 +57,7 @@ pub fn schur_complement<T: Real, V: State<T>>(
 
     // Compute w = s - C A^{-1} r
     let ar = solve_a(r);
-    let car = c.mul_state(&ar);
+    let car = c.mul_state::<V>(&ar);
     let mut w = V::zeros();
     for i in 0..n {
         w.set(i, s.get(i) - car.get(i));
@@ -67,7 +67,7 @@ pub fn schur_complement<T: Real, V: State<T>>(
     let y = s_dense.lin_solve(w).unwrap();
 
     // Back-substitute for x: A x = r - B y
-    let by = b.mul_state(&y);
+    let by = b.mul_state::<V>(&y);
     let mut rhs_x = V::zeros();
     for i in 0..n {
         rhs_x.set(i, r.get(i) - by.get(i));
