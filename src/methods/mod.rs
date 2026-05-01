@@ -8,11 +8,13 @@ use crate::{
 mod h_init;
 
 mod apc;
+mod bdf;
 mod dirk;
 mod erk;
 mod irk;
 
 pub use apc::AdamsPredictorCorrector;
+pub use bdf::BDF;
 pub use dirk::DiagonallyImplicitRungeKutta;
 pub use erk::ExplicitRungeKutta;
 pub use irk::ImplicitRungeKutta;

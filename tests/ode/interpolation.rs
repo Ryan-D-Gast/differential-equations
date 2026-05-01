@@ -3,7 +3,7 @@ use differential_equations::ivp::Ivp;
 
 use super::systems;
 use differential_equations::methods::{
-    AdamsPredictorCorrector, ExplicitRungeKutta, ImplicitRungeKutta,
+    AdamsPredictorCorrector, BDF, ExplicitRungeKutta, ImplicitRungeKutta,
 };
 use nalgebra::vector;
 use systems::ExponentialGrowth;
@@ -71,7 +71,8 @@ fn interpolation() {
         solver_name: APCV4, solver: AdamsPredictorCorrector::v4().h0(0.01),
         solver_name: CrankNicolson, solver: ImplicitRungeKutta::crank_nicolson(0.01),
         solver_name: GaussLegendre6, solver: ImplicitRungeKutta::gauss_legendre_6(),
-        solver_name: Radau5, solver: ImplicitRungeKutta::radau5()
+        solver_name: Radau5, solver: ImplicitRungeKutta::radau5(),
+        solver_name: BDF, solver: BDF::adaptive()
     }
 
     test_interpolation! {
@@ -79,5 +80,26 @@ fn interpolation() {
         // Euler's method produces less accurate y values thus affecting the interpolation
         // cubic Hermite interpolation is used.
         solver_name: Euler, solver: ExplicitRungeKutta::euler(0.01)
+    }
+}
+
+#[test]
+fn bdf_interpolation_all_eval_points() {
+    let system = ExponentialGrowth { k: 1.0 };
+    let results = Ivp::ode(&system, 0.0, 2.0, vector![1.0])
+        .t_eval(vec![0.5, 1.0, 1.69])
+        .method(BDF::adaptive())
+        .solve()
+        .unwrap();
+
+    let expected_y = vector![f64::exp(0.5), f64::exp(1.0), f64::exp(1.69)];
+    for i in 0..expected_y.len() {
+        assert!(
+            (results.y[i][0] - expected_y[i]).abs() < 1e-3,
+            "BDF interpolation failed at t={}: Expected: {:?}, Got: {:?}",
+            results.t[i],
+            expected_y[i],
+            results.y[i][0]
+        );
     }
 }
