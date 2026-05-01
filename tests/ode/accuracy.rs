@@ -6,7 +6,8 @@ use super::systems::{
     RobertsonProblem,
 };
 use differential_equations::methods::{
-    AdamsPredictorCorrector, DiagonallyImplicitRungeKutta, ExplicitRungeKutta, ImplicitRungeKutta,
+    AdamsPredictorCorrector, BDF, DiagonallyImplicitRungeKutta, ExplicitRungeKutta,
+    ImplicitRungeKutta,
 };
 use nalgebra::vector;
 
@@ -160,7 +161,11 @@ fn accuracy() {
 
         solver_name: Radau5,
         solver: ImplicitRungeKutta::radau5(),
-        tolerance: 1e1
+        tolerance: 1e1,
+
+        solver_name: BDF,
+        solver: BDF::adaptive(),
+        tolerance: 1e-1
     }
 
     test_ode! {
@@ -265,6 +270,10 @@ fn accuracy() {
 
         solver_name: Radau5,
         solver: ImplicitRungeKutta::radau5(),
+        tolerance: 1e-3,
+
+        solver_name: BDF,
+        solver: BDF::adaptive(),
         tolerance: 1e-3
     }
 
@@ -370,7 +379,11 @@ fn accuracy() {
 
         solver_name: Radau5,
         solver: ImplicitRungeKutta::radau5(),
-        tolerance: 1e1
+        tolerance: 1e1,
+
+        solver_name: BDF,
+        solver: BDF::adaptive(),
+        tolerance: 1e-1
     }
 
     test_ode! {
@@ -475,6 +488,10 @@ fn accuracy() {
 
         solver_name: Radau5,
         solver: ImplicitRungeKutta::radau5(),
+        tolerance: 1e-3,
+
+        solver_name: BDF,
+        solver: BDF::adaptive(),
         tolerance: 1e-3
     }
 
@@ -590,6 +607,10 @@ fn accuracy() {
 
         solver_name: ESDIRK33,
         solver: DiagonallyImplicitRungeKutta::esdirk33(0.01),
+        tolerance: 1e-3,
+
+        solver_name: BDF,
+        solver: BDF::adaptive(),
         tolerance: 1e-3
     }
 
@@ -642,7 +663,11 @@ fn accuracy() {
 
         solver_name: DOPRI5,
         solver: ExplicitRungeKutta::dopri5().rtol(1e-8).atol(1e-10),
-        tolerance: 5e-1
+        tolerance: 5e-1,
+
+        solver_name: BDF,
+        solver: BDF::adaptive().rtol(1e-6).atol(1e-8),
+        tolerance: 1e-2
     }
 
     test_ode! {
@@ -673,6 +698,10 @@ fn accuracy() {
 
         solver_name: Kvaerno423,
         solver: DiagonallyImplicitRungeKutta::kvaerno423().rtol(1e-4).atol(1e-6),
+        tolerance: 1e-1,
+
+        solver_name: BDF,
+        solver: BDF::adaptive().rtol(1e-4).atol(1e-6),
         tolerance: 1e-1
     }
 }

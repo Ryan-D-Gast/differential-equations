@@ -40,7 +40,8 @@
 
 // Numerical Methods
 pub use crate::methods::{
-    AdamsPredictorCorrector, DiagonallyImplicitRungeKutta, ExplicitRungeKutta, ImplicitRungeKutta,
+    AdamsPredictorCorrector, BDF, DiagonallyImplicitRungeKutta, ExplicitRungeKutta,
+    ImplicitRungeKutta,
 };
 
 // Initial Value Problems
