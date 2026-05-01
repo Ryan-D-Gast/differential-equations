@@ -74,7 +74,7 @@ All problem types (ODE, SDE, DDE, DAE) support the new event system through the 
 
 ```rust
 let event_detector = PopulationThreshold::new(9.0);
-let problem = Ivp::ode(&system, t0, tf, y0);
+let problem = IVP::ode(&system, t0, tf, y0);
 
 // Add event detection to the problem
 let solution = problem
@@ -96,15 +96,15 @@ The same pattern works for all problem types:
 
 ```rust
 // SDE example
-let sde_problem = Ivp::sde(&mut system, t0, tf, y0);
+let sde_problem = IVP::sde(&mut system, t0, tf, y0);
 let solution = sde_problem.event(&event_detector).method(solver).solve().unwrap();
 
 // DDE example
-let dde_problem = Ivp::dde(&system, t0, tf, y0, history_fn);
+let dde_problem = IVP::dde(&system, t0, tf, y0, history_fn);
 let solution = dde_problem.event(&event_detector).method(solver).solve().unwrap();
 
 // DAE example
-let dae_problem = Ivp::dae(&system, t0, tf, y0);
+let dae_problem = IVP::dae(&system, t0, tf, y0);
 let solution = dae_problem.event(&event_detector).method(solver).solve().unwrap();
 ```
 
@@ -289,7 +289,7 @@ fn main() {
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
-    let logistic_growth_problem = Ivp::ode(&ode, t0, tf, y0);
+    let logistic_growth_problem = IVP::ode(&ode, t0, tf, y0);
 
     match logistic_growth_problem
         .even(1.0)
@@ -350,7 +350,7 @@ fn main() {
     let event_detector = OscillatorEvent { amplitude_threshold: 0.8 };
     
     let y0 = vector![1.0, 0.0]; // Start at maximum displacement
-    let problem = Ivp::ode(&oscillator, 0.0, 20.0, y0);
+    let problem = IVP::ode(&oscillator, 0.0, 20.0, y0);
     
     let solution = problem
         .dense(5)

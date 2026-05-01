@@ -14,7 +14,7 @@
 //! It has applications in physics, finance (for modeling interest rates), and
 //! various other fields.
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
@@ -72,7 +72,7 @@ fn main() {
     // --- Solve the SDE ---
     let dt = 0.01;
     let points_of_interest = [2.0, 5.0, 8.0];
-    let solution = Ivp::sde(&mut sde, t0, tf, y0)
+    let solution = IVP::sde(&mut sde, t0, tf, y0)
         .t_eval(points_of_interest)
         .method(ExplicitRungeKutta::rk4(dt))
         .solve()

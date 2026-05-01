@@ -22,7 +22,7 @@
 //! - State extraction for specialized calculations
 
 use differential_equations::derive::State;
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::{Vector3, vector};
 
@@ -83,7 +83,7 @@ fn main() {
         vector![sv.x, sv.y, sv.z]
     }
 
-    match Ivp::ode(&ode, t0, tf, sv)
+    match IVP::ode(&ode, t0, tf, sv)
         // Detect crossing of the hyperplane centered at x = 1.0, y = 0.0, z = 0.0  facing the direction of the norm of the vector [0.5, 0.5, 0.0]
         .hyperplane_crossing(
             vector![1.0, 0.0, 0.0],

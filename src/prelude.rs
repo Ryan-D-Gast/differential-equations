@@ -45,7 +45,7 @@ pub use crate::methods::{
 };
 
 // Initial Value Problems
-pub use crate::ivp::Ivp;
+pub use crate::ivp::IVP;
 
 // Equation Traits
 pub use crate::dae::DAE;

@@ -1,4 +1,4 @@
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 // Suite of test cases for checking the interpolation of the solvers.
 
 use super::systems;
@@ -25,7 +25,7 @@ macro_rules! test_interpolation {
             let system = ExponentialGrowth { k: 1.0 };
 
             // Create Initial Value Problem for the system
-            let problem = Ivp::ode(&system, t0, tf, y0);
+            let problem = IVP::ode(&system, t0, tf, y0);
 
             // Initialize the solver
             let solver = $solver;
@@ -86,7 +86,7 @@ fn interpolation() {
 #[test]
 fn bdf_interpolation_all_eval_points() {
     let system = ExponentialGrowth { k: 1.0 };
-    let results = Ivp::ode(&system, 0.0, 2.0, vector![1.0])
+    let results = IVP::ode(&system, 0.0, 2.0, vector![1.0])
         .t_eval(vec![0.5, 1.0, 1.69])
         .method(BDF::adaptive())
         .solve()

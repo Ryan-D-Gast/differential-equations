@@ -504,7 +504,7 @@ mod tests {
         let system = ExponentialDecay { k: 1.0 };
         let bdf: BDF<Ordinary, f64, SVector<f64, 1>> = BDF::adaptive().rtol(1e-7).atol(1e-9);
 
-        let results = Ivp::ode(&system, 0.0, 1.0, vector![1.0])
+        let results = IVP::ode(&system, 0.0, 1.0, vector![1.0])
             .method(bdf)
             .solve()
             .unwrap();
@@ -520,7 +520,7 @@ mod tests {
         let bdf: BDF<Ordinary, f64, SVector<f64, 1>> =
             BDF::adaptive().max_order(1).rtol(1e-7).atol(1e-9);
 
-        let results = Ivp::ode(&system, 0.0, 1.0, vector![1.0])
+        let results = IVP::ode(&system, 0.0, 1.0, vector![1.0])
             .method(bdf)
             .solve()
             .unwrap();

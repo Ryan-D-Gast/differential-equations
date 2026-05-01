@@ -112,7 +112,7 @@ let mut solver = ExplicitRungeKutta::dopri5()
 
 ## Using a Solver with a Problem
 
-Once configured, a solver can be used with `Ivp::ode`:
+Once configured, a solver can be used with `IVP::ode`:
 
 ```rust
 use differential_equations::prelude::*;
@@ -129,7 +129,7 @@ let system = MyODE;
 let solver = ExplicitRungeKutta::dopri5().rtol(1e-6).atol(1e-9);
 
 // Solve the problem
-let solution = Ivp::ode(&system, 0.0, 10.0, 1.0)
+let solution = IVP::ode(&system, 0.0, 10.0, 1.0)
     .method(solver)
     .solve()
     .unwrap();
@@ -208,7 +208,7 @@ fn main() {
 
     let oscillator = HarmonicOscillator;
     
-    match Ivp::ode(&oscillator, t0, tf, y0)
+    match IVP::ode(&oscillator, t0, tf, y0)
         .even(0.1)  // Output at even intervals of 0.1
         .method(solver)
         .solve()

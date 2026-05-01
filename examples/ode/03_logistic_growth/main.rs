@@ -15,7 +15,7 @@
 //! - Handling events during the solution process
 //! - Accessing solution statistics like step counts and evaluations
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use quill::prelude::*;
 
@@ -48,7 +48,7 @@ fn main() {
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
 
-    match Ivp::ode(&ode, t0, tf, y0)
+    match IVP::ode(&ode, t0, tf, y0)
         .even(2.0)
         .event(&ode)
         .method(ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12))

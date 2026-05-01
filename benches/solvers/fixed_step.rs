@@ -14,7 +14,7 @@ macro_rules! bench_fixed_step {
                     b.iter(|| {
                         let solver = $solver_fn;
                         black_box(
-                            Ivp::ode($system, $t0, $t1, $y0.clone())
+                            IVP::ode($system, $t0, $t1, $y0.clone())
                                 .method(solver)
                                 .solve()
                                 .unwrap(),

@@ -59,11 +59,11 @@ use differential_equations::solout::DefaultSolout;
 
 // Explicitly using DefaultSolout
 let default_output = DefaultSolout::new();
-let problem = Ivp::ode(&system, t0, tf, y0);
+let problem = IVP::ode(&system, t0, tf, y0);
 let solution = problem.solout(default_output).method(solver).solve().unwrap();
 
 // Equivalent to the default behavior
-let solution = Ivp::ode(&system, t0, tf, y0).method(solver).solve().unwrap();
+let solution = IVP::ode(&system, t0, tf, y0).method(solver).solve().unwrap();
 ```
 
 ### EvenSolout
@@ -277,7 +277,7 @@ fn main() {
     let t0 = 0.0;
     let tf = 10.0;
     let system = HarmonicOscillator;
-    let problem = Ivp::ode(&system, t0, tf, y0);
+    let problem = IVP::ode(&system, t0, tf, y0);
     
     // Create custom Solout
     let energy_tracker = EnergyTrackingSolout::new(0.1);

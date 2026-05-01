@@ -17,7 +17,7 @@
 //! This example showcases:
 //! - Zero-crossing detection with the crossing() method
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 
@@ -46,7 +46,7 @@ fn main() {
     let tf = 20.0;
 
     // --- Solve the ODE ---
-    match Ivp::ode(&ode, t0, tf, y0)
+    match IVP::ode(&ode, t0, tf, y0)
         // Detect zero-crossing of the component of index 0 (x=position) at the value 0.0 from both positive and negative directions
         .crossing(0, 0.0, CrossingDirection::Both)
         .method(ExplicitRungeKutta::dopri5().rtol(1e-8).atol(1e-8))

@@ -10,7 +10,7 @@
 //! ## Core Components
 //!
 //! - [`DAE`]: Define your differential algebraic equation system by implementing this trait
-//! - [`crate::ivp::Ivp::dae`]: Set up an initial value problem with your system,
+//! - [`crate::ivp::IVP::dae`]: Set up an initial value problem with your system,
 //!   time span, and initial conditions
 //!
 mod dae;

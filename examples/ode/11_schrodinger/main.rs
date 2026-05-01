@@ -23,7 +23,7 @@
 //! - Phase evolution in quantum systems
 //! - Verifying numerical accuracy against analytical predictions
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use num_complex::Complex;
 
@@ -52,7 +52,7 @@ fn main() {
     let tf = 10.0; // Simulate for 10 time units
 
     // --- Solve the ODE ---
-    match Ivp::ode(&ode, t0, tf, psi0)
+    match IVP::ode(&ode, t0, tf, psi0)
         .even(0.5)
         .method(
             DiagonallyImplicitRungeKutta::kvaerno745()

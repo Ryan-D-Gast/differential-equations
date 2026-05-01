@@ -19,7 +19,7 @@
 //! - Using the nalgebra library for vector state representation
 //! - Compact solution approach with minimal code
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 use quill::prelude::*;
@@ -39,7 +39,7 @@ fn main() {
     // Note how unlike 01_exponential_growth/main.rs, no intermediate variables are used
     // and the IVP is setup and solved in one step.
     let solution: Solution<f64, _> =
-        match Ivp::ode(&HarmonicOscillator { k: 1.0 }, 0.0, 10.0, vector![1.0, 0.0])
+        match IVP::ode(&HarmonicOscillator { k: 1.0 }, 0.0, 10.0, vector![1.0, 0.0])
             .method(ExplicitRungeKutta::rk4(0.01_f64))
             .solve()
         {

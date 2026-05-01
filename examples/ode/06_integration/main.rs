@@ -16,7 +16,7 @@
 //! - Different output options: dense, even, and t-eval
 //! - Error assessment in numerical integration
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 
 #[derive(Clone)]
@@ -36,7 +36,7 @@ fn main() {
     let y0 = 0.0;
 
     // --- Solve the ODE ---
-    let solution = Ivp::ode(&ode, t0, tf, y0)
+    let solution = IVP::ode(&ode, t0, tf, y0)
         .method(ExplicitRungeKutta::rkf45())
         .solve()
         .unwrap();
@@ -63,7 +63,7 @@ fn main() {
     // Example with dense output
     println!("-----------------------------");
     println!("Dense Output Example:");
-    let solution_dense = Ivp::ode(&ode, t0, tf, y0)
+    let solution_dense = IVP::ode(&ode, t0, tf, y0)
         .dense(2) // 5 interpolation points between each step
         .method(ExplicitRungeKutta::rkf45())
         .solve()
@@ -77,7 +77,7 @@ fn main() {
     // Example with even t-out
     println!("-----------------------------");
     println!("Even t-out Example:");
-    let solution_even = Ivp::ode(&ode, t0, tf, y0)
+    let solution_even = IVP::ode(&ode, t0, tf, y0)
         .even(1.0) // t-out at interval dt: 1.0
         .method(ExplicitRungeKutta::rkf45())
         .solve()
@@ -92,7 +92,7 @@ fn main() {
     println!("-----------------------------");
     println!("t-out Points Example:");
     let t_out = vec![0.0, 2.0, 5.0];
-    let solution_t_out = Ivp::ode(&ode, t0, tf, y0)
+    let solution_t_out = IVP::ode(&ode, t0, tf, y0)
         .t_eval(t_out)
         .method(ExplicitRungeKutta::rkf45())
         .solve()

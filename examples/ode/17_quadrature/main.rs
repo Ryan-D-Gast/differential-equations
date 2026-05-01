@@ -35,7 +35,7 @@
 //!   not force additional step rejections while still riding along at full accuracy
 //! - Verifying quadrature accuracy against a conservation-of-energy check
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 use quill::prelude::*;
@@ -68,7 +68,7 @@ fn main() {
 
     let e0 = 0.5 * k * y0[0] * y0[0] + 0.5 * m * y0[1] * y0[1];
 
-    let solution = Ivp::ode(&ode, t0, tf, y0)
+    let solution = IVP::ode(&ode, t0, tf, y0)
         .even(0.2)
         .method(
             ExplicitRungeKutta::dop853()
@@ -97,7 +97,10 @@ fn main() {
     println!("Remaining mechanical energy: {:.10}", e_final);
     println!("Energy dissipated (W):      {:.10}", w_final);
     println!("Sum (should equal E0):      {:.10}", e_final + w_final);
-    println!("Energy conservation error:  {:.2e}", (e0 - e_final - w_final).abs());
+    println!(
+        "Energy conservation error:  {:.2e}",
+        (e0 - e_final - w_final).abs()
+    );
 
     let x_series: Vec<(f64, f64)> = solution.iter().map(|(t, y)| (*t, y[0])).collect();
     let w_series: Vec<(f64, f64)> = solution.iter().map(|(t, y)| (*t, y[2])).collect();

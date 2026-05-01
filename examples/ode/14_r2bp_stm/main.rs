@@ -14,7 +14,7 @@
 //! - clamp, quantize, or otherwise normalize step sizes for reproducibility
 //!   or custom time-stepping rules
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use differential_equations::{ode::ODE, traits::Real};
 use nalgebra::{Dim, Matrix3, Matrix6, SVector, Vector6, stack};
@@ -94,7 +94,7 @@ fn main() {
     let ode = TwoBodyODE {
         mu: DualSVec64::<6>::from_re(1.0),
     };
-    let problem = Ivp::ode(
+    let problem = IVP::ode(
         &ode,
         DualSVec64::<6>::from(0.0),
         DualSVec64::<6>::from(tau / 2.0),
@@ -153,7 +153,7 @@ fn main() {
 
     // Solve the same problem with variational equations.
     let var_ode = VariationalTwoBodyODE { mu: 1.0 };
-    let var_sol = Ivp::ode(&var_ode, 0.0, t1.re(), y0_aug)
+    let var_sol = IVP::ode(&var_ode, 0.0, t1.re(), y0_aug)
         .method(ExplicitRungeKutta::dop853().atol(1e-14).rtol(1e-14))
         .solve()
         .unwrap();

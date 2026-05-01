@@ -22,7 +22,7 @@
 //! - Setting up even-interval output points
 //! - Working with solution status information
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use quill::prelude::*;
 
@@ -93,7 +93,7 @@ fn main() {
     };
 
     // Solve the SIR model problem with even output points every 1.0 time unit
-    match Ivp::ode(&ode, t0, tf, y0)
+    match IVP::ode(&ode, t0, tf, y0)
         .even(1.0)
         .event(&ode)
         // v4 is an adaptive step size 4th order Adams-Bashforth-Moulton method.

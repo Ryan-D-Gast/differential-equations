@@ -41,7 +41,7 @@
 //!     let tf = 1.0;
 //!     let y0 = vector![1.0];
 //!     let solver = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-6);
-//!     let solution = match Ivp::ode(&system, t0, tf, y0).method(solver).solve() {
+//!     let solution = match IVP::ode(&system, t0, tf, y0).method(solver).solve() {
 //!         Ok(sol) => sol,
 //!         Err(e) => panic!("Error: {:?}", e),
 //!     };

@@ -17,7 +17,7 @@
 //! - Setting custom tolerances for high accuracy
 //! - Accessing solution statistics like step counts and evaluations
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use quill::prelude::*;
 
@@ -40,7 +40,7 @@ fn main() {
     let tf = 10.0;
     let ode = ExponentialGrowth { k: 1.0 };
 
-    let solution = match Ivp::ode(&ode, t0, tf, y0)
+    let solution = match IVP::ode(&ode, t0, tf, y0)
         // DOP853 is a high-order Runge-Kutta method with configurable tolerances.
         .method(ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12))
         .solve()

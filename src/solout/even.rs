@@ -47,14 +47,14 @@ use super::*;
 /// let even_output = EvenSolout::new(0.1, t0, tf);
 ///
 /// // Solve with evenly spaced output
-/// let solution = Ivp::ode(&system, t0, tf, y0)
+/// let solution = IVP::ode(&system, t0, tf, y0)
 ///     .solout(even_output)
 ///     .method(solver)
 ///     .solve()
 ///     .unwrap();
 ///
 /// // Note: This is equivalent to using the convenience method:
-/// let solution = Ivp::ode(&system, t0, tf, y0)
+/// let solution = IVP::ode(&system, t0, tf, y0)
 ///     .even(0.1)
 ///     .method(ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8))
 ///     .solve()

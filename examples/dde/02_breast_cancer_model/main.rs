@@ -16,7 +16,7 @@
 //! - u₃(t-τ) is the value of the third component at a delayed time t - τ.
 //! - p₀, q₀, v₀, d₀, p₁, q₁, v₁, d₁, d₂, β₀, β₁, τ are model parameters.
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::Vector3;
 use quill::prelude::*;
@@ -82,7 +82,7 @@ fn main() {
         "Solving Breast Cancer Model (tau={}) from t={} to t={}...",
         tau, t0, tf
     );
-    match Ivp::dde(&dde, t0, tf, y0, phi)
+    match IVP::dde(&dde, t0, tf, y0, phi)
         .even(0.1)
         .method(ExplicitRungeKutta::rkv766e().max_delay(1.0))
         .solve()

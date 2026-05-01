@@ -14,7 +14,7 @@
 //!
 //! This equation was originally proposed as a model for the production of blood cells.
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use quill::prelude::*;
 
@@ -57,7 +57,7 @@ fn main() {
 
     // --- Solve the Problem ---
     println!("Solving Mackey-Glass equation from t={} to t={}...", t0, tf);
-    match Ivp::dde(&dde, t0, tf, y0, phi)
+    match IVP::dde(&dde, t0, tf, y0, phi)
         .even(2.0)
         .method(ExplicitRungeKutta::rkv878e().max_delay(20.0))
         .solve()

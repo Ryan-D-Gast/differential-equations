@@ -51,10 +51,10 @@ impl ODE<f64, SVector<f64, 1>> for LogisticGrowth {
 }
 ```
 
-## Solving an Initial Value Problem with `Ivp`
+## Solving an Initial Value Problem with `IVP`
 
-Once you have implemented the `ODE` trait for your system, use `Ivp::ode` to set up
-and solve the initial value problem. The `Ivp` builder acts as a solver controller,
+Once you have implemented the `ODE` trait for your system, use `IVP::ode` to set up
+and solve the initial value problem. The `IVP` builder acts as a solver controller,
 orchestrating the solution process.
 
 ### Setting up the Problem
@@ -71,7 +71,7 @@ You'll also need to select a numerical method (solver). The library offers vario
 
 ### Solving and Handling Output
 
-The `solve` method on the `Ivp` builder executes the numerical integration. You can configure how the solution is outputted, for instance, by requesting points at even intervals using the `even()` method.
+The `solve` method on the `IVP` builder executes the numerical integration. You can configure how the solution is outputted, for instance, by requesting points at even intervals using the `even()` method.
 
 The `solve` method returns a `Result<Solution, Status>`. The `Solution` struct contains the time points, state vectors, and solver statistics. The `Status` indicates how the solver finished (e.g., `Ok`, `Interrupted`).
 
@@ -98,7 +98,7 @@ fn main() {
     let ode_system = LogisticGrowth { k: 1.0, m: 10.0 };
 
     // Solve the problem, requesting output every 1.0 time unit
-    match Ivp::ode(&ode_system, t0, tf, y0)
+    match IVP::ode(&ode_system, t0, tf, y0)
         .even(1.0) // Set Solout to output every 1.0 time unit
         .method(method)
         .solve() // Solve the ODE
@@ -148,7 +148,7 @@ Solver Statistics:
 
 ## Understanding Generics: `T` and `Y`
 
-The `ODE` trait and related components like `Ivp::ode` are defined with generics `<T, Y,...>`:
+The `ODE` trait and related components like `IVP::ode` are defined with generics `<T, Y,...>`:
 
 *   `T`: Represents the floating-point type used for calculations (e.g., `f64` or `f32`). This type applies to time and the components of the state vector.
 *   `Y`: Represents the type of the state vector. This can be:

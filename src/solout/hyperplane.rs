@@ -78,7 +78,7 @@ pub type ExtractorFn<Y, P> = fn(&Y) -> P;
 /// let plane_normal = vector![0.0, 1.0, 1.0]; // Normal vector (z-axis)
 ///
 /// // Solve and get only the plane crossing points
-/// let solution = Ivp::ode(&system, t0, tf, y0)
+/// let solution = IVP::ode(&system, t0, tf, y0)
 ///     .hyperplane_crossing(plane_point, plane_normal, extract_position, CrossingDirection::Both)
 ///     .method(solver)
 ///     .solve()

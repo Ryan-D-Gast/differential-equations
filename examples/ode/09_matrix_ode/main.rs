@@ -21,7 +21,7 @@
 //! - Comparing numerical solution with analytical matrix exponential
 //! - Understanding matrix evolution in continuous time
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::SMatrix;
 
@@ -78,7 +78,7 @@ fn main() {
     let tf = 3.0; // Simulate for 3 seconds
 
     // --- Solve the ODE ---
-    let result = Ivp::ode(&matrix_ode, t0, tf, y0)
+    let result = IVP::ode(&matrix_ode, t0, tf, y0)
         // Dense output means for every step, 5 evenly spaced points will be outputted
         .dense(5)
         .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-10))

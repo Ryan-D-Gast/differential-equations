@@ -51,14 +51,14 @@ use super::*;
 /// let t_eval_output = TEvalSolout::new(evaluation_points, t0, tf);
 ///
 /// // Solve with specific evaluation points
-/// let solution = Ivp::ode(&system, t0, tf, y0)
+/// let solution = IVP::ode(&system, t0, tf, y0)
 ///     .solout(t_eval_output)
 ///     .method(solver)
 ///     .solve()
 ///     .unwrap();
 ///
 /// // Note: This is equivalent to using the convenience method:
-/// let solution = Ivp::ode(&system, t0, tf, y0)
+/// let solution = IVP::ode(&system, t0, tf, y0)
 ///     .t_eval(vec![0.0, 0.5, 1.0, 2.0, 3.14, 5.0, 7.5, 10.0])
 ///     .method(ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8))
 ///     .solve()

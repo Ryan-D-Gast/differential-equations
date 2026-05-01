@@ -1,4 +1,4 @@
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 // Compares the performance of solvers by the statistics, i.e. number of steps, function evaluations, etc.
 
 use super::systems;
@@ -31,7 +31,7 @@ macro_rules! generate_error_vs_steps_lorenz {
             let rho = 28.0;
             let beta = 8.0 / 3.0;
             let system = LorenzSystem { sigma, rho, beta };
-            let problem = Ivp::ode(&system, t0, tf, y0);
+            let problem = IVP::ode(&system, t0, tf, y0);
 
             // Get reference solution with very high accuracy
             let reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
@@ -75,7 +75,7 @@ macro_rules! generate_error_vs_steps_vanderpol {
             let y0 = SVector::<f64, 2>::new(2.0, 0.0);
             let mu = 5.0; // Higher values make the problem more stiff
             let system = VanDerPolOscillator { mu };
-            let problem = Ivp::ode(&system, t0, tf, y0);
+            let problem = IVP::ode(&system, t0, tf, y0);
 
             // Get reference solution with very high accuracy
             let reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
@@ -120,7 +120,7 @@ macro_rules! generate_error_vs_steps_brusselator {
             let a = 1.0;
             let b = 3.0;
             let system = BrusselatorSystem { a, b };
-            let problem = Ivp::ode(&system, t0, tf, y0);
+            let problem = IVP::ode(&system, t0, tf, y0);
 
             // Get reference solution with very high accuracy
             let reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);
@@ -173,7 +173,7 @@ macro_rules! generate_error_vs_steps_cr3bp {
             );
             let mu = 0.012150585609624; // Earth-Moon system
             let system = Cr3bp { mu };
-            let problem = Ivp::ode(&system, t0, tf, y0);
+            let problem = IVP::ode(&system, t0, tf, y0);
 
             // Get reference solution with very high accuracy
             let reference_solver = ExplicitRungeKutta::rkv988e().rtol(1e-14).atol(1e-14);

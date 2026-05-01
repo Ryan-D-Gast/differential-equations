@@ -11,7 +11,7 @@
 //! moves randomly due to collisions with molecules. It has many applications
 //! in science, finance, and mathematics.
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use quill::prelude::*;
 use rand::SeedableRng;
@@ -62,7 +62,7 @@ fn main() {
 
     // --- Solve the SDE ---
     let dt = 0.01;
-    let solution = Ivp::sde(&mut sde, t0, tf, y0)
+    let solution = IVP::sde(&mut sde, t0, tf, y0)
         .method(ExplicitRungeKutta::euler(dt))
         .solve()
         .unwrap();

@@ -49,7 +49,7 @@ use super::*;
 /// let crossing_detector = CrossingSolout::new(0, 0.0);
 ///
 /// // Solve and get only the crossing points
-/// let solution = Ivp::ode(&system, t0, tf, y0)
+/// let solution = IVP::ode(&system, t0, tf, y0)
 ///     .solout(crossing_detector)
 ///     .method(solver)
 ///     .solve()

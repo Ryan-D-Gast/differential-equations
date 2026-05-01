@@ -21,7 +21,7 @@
 //! - Evaluation at specific time points (t_eval)
 //! - Status checking with simulation results
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 
@@ -72,7 +72,7 @@ fn main() {
 
     // --- Numerically Solve the ODE ---
     let t_out = [0.0, 1.0, 3.0, 4.5, 6.9, 10.0];
-    match Ivp::ode(&ode, t0, tf, y0)
+    match IVP::ode(&ode, t0, tf, y0)
         .t_eval(t_out)
         .event(&ode)
         .method(ExplicitRungeKutta::rkf45())

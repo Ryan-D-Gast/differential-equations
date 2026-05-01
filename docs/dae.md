@@ -175,7 +175,7 @@ fn main() {
     let t0 = 0.0;
     let tf = 0.05;
 
-    let problem = Ivp::dae(&model, t0, tf, y0);
+    let problem = IVP::dae(&model, t0, tf, y0);
     match problem.even(0.0025).method(method).solve() {
         Ok(solution) => {
             println!("Solution:");

@@ -95,7 +95,7 @@ fn main() {
 
     // --- Solve the SDE ---
     let dt = 0.01;
-    let solution = Ivp::sde(&mut sde, t0, tf, y0)
+    let solution = IVP::sde(&mut sde, t0, tf, y0)
         .method(ExplicitRungeKutta::three_eighths(dt))
         .solve()
         .unwrap();

@@ -2,7 +2,7 @@
 //!
 //! The high-level API owns the numerical method and output handler. Solvers mutate
 //! their internal interpolation/history state during integration, so ownership makes
-//! each `Ivp::solve` call single-use and avoids accidental solver reuse after a run.
+//! each `IVP::solve` call single-use and avoids accidental solver reuse after a run.
 //! Call the low-level `solve_*` functions directly when reference-based control is
 //! required.
 
@@ -27,7 +27,7 @@ use crate::{
 ///
 /// Consolidates solver configurations, output configurations, and events.
 #[derive(Clone, Debug)]
-pub struct Ivp<EqType, T: Real, Y: State<T>, Method, SoloutType> {
+pub struct IVP<EqType, T: Real, Y: State<T>, Method, SoloutType> {
     equation: EqType,
     t0: T,
     tf: T,
@@ -86,7 +86,7 @@ impl<const L: usize, F, H: Clone> Clone for DdeEq<'_, L, F, H> {
     }
 }
 
-impl<'a, F, T: Real, Y: State<T>> Ivp<OdeEq<'a, F>, T, Y, (), DefaultSolout> {
+impl<'a, F, T: Real, Y: State<T>> IVP<OdeEq<'a, F>, T, Y, (), DefaultSolout> {
     /// Create a new initial value problem for an ordinary differential equation.
     pub fn ode(system: &'a F, t0: T, tf: T, y0: Y) -> Self {
         Self {
@@ -100,7 +100,7 @@ impl<'a, F, T: Real, Y: State<T>> Ivp<OdeEq<'a, F>, T, Y, (), DefaultSolout> {
     }
 }
 
-impl<'a, F, T: Real, Y: State<T>> Ivp<DaeEq<'a, F>, T, Y, (), DefaultSolout> {
+impl<'a, F, T: Real, Y: State<T>> IVP<DaeEq<'a, F>, T, Y, (), DefaultSolout> {
     /// Create a new initial value problem for a differential algebraic equation.
     pub fn dae(system: &'a F, t0: T, tf: T, y0: Y) -> Self {
         Self {
@@ -114,7 +114,7 @@ impl<'a, F, T: Real, Y: State<T>> Ivp<DaeEq<'a, F>, T, Y, (), DefaultSolout> {
     }
 }
 
-impl<'a, F, T: Real, Y: State<T>> Ivp<SdeEq<'a, F>, T, Y, (), DefaultSolout> {
+impl<'a, F, T: Real, Y: State<T>> IVP<SdeEq<'a, F>, T, Y, (), DefaultSolout> {
     /// Create a new initial value problem for a stochastic differential equation.
     pub fn sde(system: &'a mut F, t0: T, tf: T, y0: Y) -> Self {
         Self {
@@ -129,7 +129,7 @@ impl<'a, F, T: Real, Y: State<T>> Ivp<SdeEq<'a, F>, T, Y, (), DefaultSolout> {
 }
 
 impl<'a, F, H, T: Real, Y: State<T>, const L: usize>
-    Ivp<DdeEq<'a, L, F, H>, T, Y, (), DefaultSolout>
+    IVP<DdeEq<'a, L, F, H>, T, Y, (), DefaultSolout>
 {
     /// Create a new initial value problem for a delay differential equation.
     pub fn dde(system: &'a F, t0: T, tf: T, y0: Y, history_function: H) -> Self {
@@ -147,12 +147,12 @@ impl<'a, F, H, T: Real, Y: State<T>, const L: usize>
     }
 }
 
-impl<EqType, T: Real, Y: State<T>, Method, SoloutType> Ivp<EqType, T, Y, Method, SoloutType> {
+impl<EqType, T: Real, Y: State<T>, Method, SoloutType> IVP<EqType, T, Y, Method, SoloutType> {
     fn with_method<NextMethod>(
         self,
         method: NextMethod,
-    ) -> Ivp<EqType, T, Y, NextMethod, SoloutType> {
-        Ivp {
+    ) -> IVP<EqType, T, Y, NextMethod, SoloutType> {
+        IVP {
             equation: self.equation,
             t0: self.t0,
             tf: self.tf,
@@ -165,8 +165,8 @@ impl<EqType, T: Real, Y: State<T>, Method, SoloutType> Ivp<EqType, T, Y, Method,
     fn map_method<NextMethod>(
         self,
         map: impl FnOnce(Method) -> NextMethod,
-    ) -> Ivp<EqType, T, Y, NextMethod, SoloutType> {
-        Ivp {
+    ) -> IVP<EqType, T, Y, NextMethod, SoloutType> {
+        IVP {
             equation: self.equation,
             t0: self.t0,
             tf: self.tf,
@@ -176,8 +176,8 @@ impl<EqType, T: Real, Y: State<T>, Method, SoloutType> Ivp<EqType, T, Y, Method,
         }
     }
 
-    fn with_solout<NextSolout>(self, solout: NextSolout) -> Ivp<EqType, T, Y, Method, NextSolout> {
-        Ivp {
+    fn with_solout<NextSolout>(self, solout: NextSolout) -> IVP<EqType, T, Y, Method, NextSolout> {
+        IVP {
             equation: self.equation,
             t0: self.t0,
             tf: self.tf,
@@ -192,31 +192,31 @@ impl<EqType, T: Real, Y: State<T>, Method, SoloutType> Ivp<EqType, T, Y, Method,
     /// The builder owns the method because solving mutates method state. Construct
     /// a fresh method for each solve, or use the low-level `solve_*` functions when
     /// you need to manage a mutable solver reference directly.
-    pub fn method<SNew>(self, method: SNew) -> Ivp<EqType, T, Y, SNew, SoloutType> {
+    pub fn method<SNew>(self, method: SNew) -> IVP<EqType, T, Y, SNew, SoloutType> {
         self.with_method(method)
     }
 
     /// Set a custom solout function.
-    pub fn solout<ONew>(self, solout: ONew) -> Ivp<EqType, T, Y, Method, ONew> {
+    pub fn solout<ONew>(self, solout: ONew) -> IVP<EqType, T, Y, Method, ONew> {
         self.with_solout(solout)
     }
 
     /// Output evenly spaced points between the initial and final time.
     /// Note that this does not include the solution of the calculated steps.
-    pub fn even(self, dt: T) -> Ivp<EqType, T, Y, Method, EvenSolout<T>> {
+    pub fn even(self, dt: T) -> IVP<EqType, T, Y, Method, EvenSolout<T>> {
         let solout = EvenSolout::new(dt, self.t0, self.tf);
         self.with_solout(solout)
     }
 
     /// Use the Dense Output method to output n number of interpolation points between each step.
     /// Note this includes the solution of the calculated steps.
-    pub fn dense(self, n: usize) -> Ivp<EqType, T, Y, Method, DenseSolout> {
+    pub fn dense(self, n: usize) -> IVP<EqType, T, Y, Method, DenseSolout> {
         self.with_solout(DenseSolout::new(n))
     }
 
     /// Use the provided time points for evaluation instead of the default method.
     /// Note this does not include the solution of the calculated steps.
-    pub fn t_eval(self, points: impl AsRef<[T]>) -> Ivp<EqType, T, Y, Method, TEvalSolout<T>> {
+    pub fn t_eval(self, points: impl AsRef<[T]>) -> IVP<EqType, T, Y, Method, TEvalSolout<T>> {
         let solout = TEvalSolout::new(points, self.t0, self.tf);
         self.with_solout(solout)
     }
@@ -225,12 +225,12 @@ impl<EqType, T: Real, Y: State<T>, Method, SoloutType> Ivp<EqType, T, Y, Method,
     pub fn event<'a, E>(
         self,
         event: &'a E,
-    ) -> Ivp<EqType, T, Y, Method, EventWrappedSolout<'a, T, Y, SoloutType, E>>
+    ) -> IVP<EqType, T, Y, Method, EventWrappedSolout<'a, T, Y, SoloutType, E>>
     where
         E: Event<T, Y>,
         SoloutType: Solout<T, Y>,
     {
-        Ivp {
+        IVP {
             equation: self.equation,
             t0: self.t0,
             tf: self.tf,
@@ -247,7 +247,7 @@ impl<EqType, T: Real, Y: State<T>, Method, SoloutType> Ivp<EqType, T, Y, Method,
         component_idx: usize,
         threshold: T,
         direction: CrossingDirection,
-    ) -> Ivp<EqType, T, Y, Method, CrossingSolout<T>> {
+    ) -> IVP<EqType, T, Y, Method, CrossingSolout<T>> {
         let crossing_solout =
             CrossingSolout::new(component_idx, threshold).with_direction(direction);
         self.with_solout(crossing_solout)
@@ -261,14 +261,14 @@ impl<EqType, T: Real, Y: State<T>, Method, SoloutType> Ivp<EqType, T, Y, Method,
         normal: Y1,
         extractor: fn(&Y) -> Y1,
         direction: CrossingDirection,
-    ) -> Ivp<EqType, T, Y, Method, HyperplaneCrossingSolout<T, Y1, Y>> {
+    ) -> IVP<EqType, T, Y, Method, HyperplaneCrossingSolout<T, Y1, Y>> {
         let solout =
             HyperplaneCrossingSolout::new(point, normal, extractor).with_direction(direction);
         self.with_solout(solout)
     }
 }
 
-impl<EqType, T: Real, Y: State<T>, Method, SoloutType> Ivp<EqType, T, Y, Method, SoloutType>
+impl<EqType, T: Real, Y: State<T>, Method, SoloutType> IVP<EqType, T, Y, Method, SoloutType>
 where
     Method: ToleranceConfig<T>,
 {
@@ -283,7 +283,7 @@ where
     }
 }
 
-impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> Ivp<OdeEq<'a, F>, T, Y, Method, SoloutType>
+impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> IVP<OdeEq<'a, F>, T, Y, Method, SoloutType>
 where
     F: ODE<T, Y>,
     Method: OrdinaryNumericalMethod<T, Y> + Interpolation<T, Y>,
@@ -302,7 +302,7 @@ where
     }
 }
 
-impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> Ivp<DaeEq<'a, F>, T, Y, Method, SoloutType>
+impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> IVP<DaeEq<'a, F>, T, Y, Method, SoloutType>
 where
     F: DAE<T, Y>,
     Method: AlgebraicNumericalMethod<T, Y> + Interpolation<T, Y>,
@@ -321,7 +321,7 @@ where
     }
 }
 
-impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> Ivp<SdeEq<'a, F>, T, Y, Method, SoloutType>
+impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> IVP<SdeEq<'a, F>, T, Y, Method, SoloutType>
 where
     F: SDE<T, Y>,
     Method: StochasticNumericalMethod<T, Y> + Interpolation<T, Y>,
@@ -341,7 +341,7 @@ where
 }
 
 impl<'a, const L: usize, F, H, T: Real, Y: State<T>, Method, SoloutType>
-    Ivp<DdeEq<'a, L, F, H>, T, Y, Method, SoloutType>
+    IVP<DdeEq<'a, L, F, H>, T, Y, Method, SoloutType>
 where
     F: DDE<L, T, Y>,
     H: Fn(T) -> Y + Clone,

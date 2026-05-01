@@ -178,7 +178,7 @@ fn main() {
     let tf = 20.0;
     
     // Solve
-    let problem = Ivp::ode(&system, t0, tf, y0);
+    let problem = IVP::ode(&system, t0, tf, y0);
     match problem.even(0.1).method(solver).solve() {
         Ok(solution) => {
             // Print summary statistics

@@ -1,7 +1,7 @@
 use crate::systems::{chaotic::*, linear::*, oscillators::*};
 use criterion::{BenchmarkId, Criterion, criterion_group};
 use differential_equations::{
-    ivp::Ivp,
+    ivp::IVP,
     methods::{AdamsPredictorCorrector, ExplicitRungeKutta},
 };
 use nalgebra::vector;

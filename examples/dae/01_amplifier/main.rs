@@ -24,7 +24,7 @@
 //! - Working with singular mass matrices (index-1 DAE)
 //! - Using implicit Runge-Kutta methods for stiff DAE problems
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 
@@ -185,7 +185,7 @@ fn main() {
     let tf = 0.05; // 50 milliseconds
 
     // Solve the DAE with output at regular intervals
-    match Ivp::dae(&model, t0, tf, y0)
+    match IVP::dae(&model, t0, tf, y0)
         .even(0.0025)
         .method(
             ImplicitRungeKutta::radau5()

@@ -21,7 +21,7 @@
 //! - Event detection during solution output
 //! - Energy conservation monitoring with high-accuracy solvers
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 use std::f64::consts::PI;
@@ -162,7 +162,7 @@ fn main() {
     let energy = PendulumSolout::new(g, l, 0.1);
 
     // --- Solve the ODE with custom solout ---
-    let result = Ivp::ode(&pendulum, t0, tf, y0)
+    let result = IVP::ode(&pendulum, t0, tf, y0)
         // The custom solout is applied to the problem here
         .solout(PendulumSolout::new(g, l, 0.1).with_boost(0.05))
         .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8))

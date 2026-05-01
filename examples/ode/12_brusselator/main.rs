@@ -14,7 +14,7 @@
 //! J = [[-4 + 2*y0*y1,     y0^2],
 //!      [ 3 - 2*y0*y1,    -y0^2]]
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::Vector2;
 
@@ -48,7 +48,7 @@ fn main() {
     let ode = BrusselatorSystem;
 
     // --- Solve the ODE ---
-    match Ivp::ode(&ode, t0, tf, y0)
+    match IVP::ode(&ode, t0, tf, y0)
         .even(0.5)
         .method(ImplicitRungeKutta::gauss_legendre_6())
         .solve()

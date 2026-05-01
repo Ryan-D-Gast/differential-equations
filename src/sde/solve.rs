@@ -17,7 +17,7 @@ use crate::{
 /// It handles initialization, time stepping, event detection, and solution output
 /// according to the provided output strategy.
 ///
-/// Prefer [`crate::ivp::Ivp::sde`] for the high-level builder API. This function
+/// Prefer [`crate::ivp::IVP::sde`] for the high-level builder API. This function
 /// remains available for callers that need direct control over solver and output
 /// handler references.
 ///

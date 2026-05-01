@@ -63,7 +63,7 @@ Note that for clarity, the `ODE` is defined with generics `<T, Y>` where `T` is 
 
 ## Solving an Initial Value Problem
 
-The `Ivp::ode` builder is used to solve the system using the solver. The builder includes methods to set the initial conditions, output strategy, event handling, and numerical method. The `solve` method returns a `Result<Solution, Error>` where `Solution` contains output times, states, status, statistics, and solve time.
+The `IVP::ode` builder is used to solve the system using the solver. The builder includes methods to set the initial conditions, output strategy, event handling, and numerical method. The `solve` method returns a `Result<Solution, Error>` where `Solution` contains output times, states, status, statistics, and solve time.
 
 ```rust
 fn main() {
@@ -72,7 +72,7 @@ fn main() {
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
-    let logistic_growth_problem = Ivp::ode(&ode, t0, tf, y0);
+    let logistic_growth_problem = IVP::ode(&ode, t0, tf, y0);
     match logistic_growth_problem
         .even(1.0)          // uses EvenSolout to save with dt of 1.0
         .event(&ode)        // Add event detection using the Event trait implementation

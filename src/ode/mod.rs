@@ -1,7 +1,7 @@
 //! Ordinary Differential Equations (ODE) module.
 //!
 //! Provides traits and types for defining and solving ODE initial value problems.
-//! Use [`crate::ivp::Ivp::ode`] for the high-level builder API.
+//! Use [`crate::ivp::IVP::ode`] for the high-level builder API.
 
 mod numerical_method;
 mod ode;

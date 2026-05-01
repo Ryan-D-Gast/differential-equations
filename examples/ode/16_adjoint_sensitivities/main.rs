@@ -6,7 +6,7 @@
 //! ASA calculates the gradient of a cost function with respect to parameters
 //! by solving an adjoint ODE backward in time.
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::{Matrix2, SVector, vector};
 
@@ -112,7 +112,7 @@ fn main() {
 
     // 1. Solve the forward problem with dense output
     let forward_ode = ForwardOde { p };
-    let forward_solution = Ivp::ode(&forward_ode, t0, tf, y0)
+    let forward_solution = IVP::ode(&forward_ode, t0, tf, y0)
         .dense(10) // high density for accurate linear interpolation
         .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8))
         .solve()
@@ -130,7 +130,7 @@ fn main() {
     let adjoint_y0 = vector![dg_dy_final[0], dg_dy_final[1], 0.0, 0.0];
 
     // Integrate backwards from tf to t0
-    let adjoint_solution = Ivp::ode(&adjoint_ode, tf, t0, adjoint_y0)
+    let adjoint_solution = IVP::ode(&adjoint_ode, tf, t0, adjoint_y0)
         .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8))
         .solve()
         .unwrap();
@@ -154,7 +154,7 @@ fn main() {
     };
 
     let solve_cost = |p_test: SVector<f64, 2>| {
-        let sol = Ivp::ode(&ForwardOde { p: p_test }, t0, tf, y0)
+        let sol = IVP::ode(&ForwardOde { p: p_test }, t0, tf, y0)
             .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8))
             .solve()
             .unwrap();

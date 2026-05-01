@@ -1,4 +1,4 @@
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 // Suite of test cases for checking the interpolation of DDE solvers.
 
 use super::systems::ExponentialGrowth;
@@ -30,7 +30,7 @@ macro_rules! test_dde_interpolation {
             // For L=0, the history function's exact form for t < t0 is less critical
             // as long as it provides a value at t0 if needed by an internal mechanism.
             // The primary check is for t > t0 via interpolation.
-            let problem = Ivp::dde(&system, t0, tf, y0, phi);
+            let problem = IVP::dde(&system, t0, tf, y0, phi);
 
             // Initialize the solver
             let solver = $solver;

@@ -1,4 +1,4 @@
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 // Suite of test cases for numerical method error handling
 
 use differential_equations::{
@@ -46,7 +46,7 @@ macro_rules! test_solver_error {
             let tf = $tf;
             let y0 = $y0;
 
-            let problem = Ivp::ode(&system, t0, tf, y0);
+            let problem = IVP::ode(&system, t0, tf, y0);
             let solver = $solver;
 
             // Solve the system

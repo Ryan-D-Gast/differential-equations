@@ -107,7 +107,7 @@ fn main() {
     let solver = ExplicitRungeKutta::rk4(0.01);
     
     // Create and solve the problem
-    let solution = Ivp::sde(&mut sde, t0, tf, y0)
+    let solution = IVP::sde(&mut sde, t0, tf, y0)
         .method(solver)
         .solve()
         .unwrap();

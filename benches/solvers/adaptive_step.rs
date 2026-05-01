@@ -15,7 +15,7 @@ macro_rules! bench_adaptive_step {
                     b.iter(|| {
                         let solver = $solver_fn.rtol($rtol).atol($atol);
                         black_box(
-                            Ivp::ode($system, $t0, $t1, $y0.clone())
+                            IVP::ode($system, $t0, $t1, $y0.clone())
                                 .method(solver)
                                 .solve()
                                 .unwrap(),
@@ -41,7 +41,7 @@ macro_rules! bench_dormand_prince {
                     b.iter(|| {
                         let solver = $solver_fn.h0($h0).rtol($rtol).atol($atol);
                         black_box(
-                            Ivp::ode($system, $t0, $t1, $y0.clone())
+                            IVP::ode($system, $t0, $t1, $y0.clone())
                                 .method(solver)
                                 .solve()
                                 .unwrap(),

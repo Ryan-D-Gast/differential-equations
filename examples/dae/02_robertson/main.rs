@@ -22,7 +22,7 @@
 //! The system is highly stiff with widely separated time scales, making it
 //! an excellent test case for implicit DAE solvers.
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 use quill::prelude::*;
@@ -110,7 +110,7 @@ fn main() {
         .collect::<Vec<_>>();
 
     // Solve the DAE
-    match Ivp::dae(&model, t0, tf, y0)
+    match IVP::dae(&model, t0, tf, y0)
         .t_eval(points)
         .method(
             ImplicitRungeKutta::radau5()

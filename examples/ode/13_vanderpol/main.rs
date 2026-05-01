@@ -14,7 +14,7 @@
 //! J = [[0, 1],
 //!      [(-2*y0*y1 - 1)/mu,  (1 - y0^2)/mu]]
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::Vector2;
 
@@ -51,7 +51,7 @@ fn main() {
     let model = VanderPol::new(mu);
 
     // --- Solve the ODE ---
-    match Ivp::ode(&model, t0, tf, y0)
+    match IVP::ode(&model, t0, tf, y0)
         .even(0.2)
         .method(
             ImplicitRungeKutta::radau5()

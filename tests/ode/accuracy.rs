@@ -1,4 +1,4 @@
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 // Suite of test cases for numerical methods vs results of SciPy using DOP853 & Tolerences = 1e-12
 
 use super::systems::{
@@ -31,7 +31,7 @@ macro_rules! test_ode {
             let y0 = $y0;
 
             // Create Initial Value Problem for the system
-            let problem = Ivp::ode(&system, t0, tf, y0);
+            let problem = IVP::ode(&system, t0, tf, y0);
 
             // Initialize the solver
             let solver = $solver;

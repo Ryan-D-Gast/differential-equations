@@ -13,7 +13,7 @@
 //! The parameter is `k`. We want to know how the final state `y(t_f)` changes
 //! with respect to `k` (i.e., dy/dk).
 
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use differential_equations::traits::Real;
 use nalgebra::SVector;
@@ -52,7 +52,7 @@ fn main() {
 
     // Solve the ODE. The solver handles Dual64 through the same Real trait used
     // by f64.
-    let solution = Ivp::ode(&decay, t0, tf, y0).method(method).solve().unwrap();
+    let solution = IVP::ode(&decay, t0, tf, y0).method(method).solve().unwrap();
 
     // Extract the final state
     let y_final_dual = solution.y.last().unwrap()[0];

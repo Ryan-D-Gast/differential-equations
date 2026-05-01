@@ -1,4 +1,4 @@
-use differential_equations::ivp::Ivp;
+use differential_equations::ivp::IVP;
 // Suite of test cases for DDE NumericalMethods.
 // Expected results should be verified against a trusted solver.
 
@@ -29,7 +29,7 @@ macro_rules! test_dde {
             let history_fn = $history;
 
             // Create Initial Value Problem for the system
-            let problem = Ivp::dde(&system, t0, tf, y0, history_fn);
+            let problem = IVP::dde(&system, t0, tf, y0, history_fn);
 
             // Initialize the solver
             let solver = $solver;

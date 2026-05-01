@@ -121,7 +121,7 @@ fn main() {
         y0 // Return initial state for all t <= t0
     };
 
-    let problem = Ivp::dde(&system, t0, tf, y0, history_fn);
+    let problem = IVP::dde(&system, t0, tf, y0, history_fn);
 
     match problem
         .even(0.5) // Example: Save solution every 0.5 time units
