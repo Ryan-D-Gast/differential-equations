@@ -120,7 +120,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 // Max-norm and RHS
                 self.rhs_newton = residual.scaled(-T::one());
                 let mut residual_values = vec![T::zero(); dim];
-                residual.write_to_slice(&mut residual_values);
+                residual.copy_to_flat_slice(&mut residual_values);
                 let residual_norm = residual_values
                     .iter()
                     .fold(T::zero(), |norm, value| norm.max(value.abs()));
@@ -157,7 +157,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 // Update z and increment norm
                 self.z.add_scaled(T::one(), &self.delta_z);
                 let mut delta_values = vec![T::zero(); dim];
-                self.delta_z.write_to_slice(&mut delta_values);
+                self.delta_z.copy_to_flat_slice(&mut delta_values);
                 increment_norm = delta_values
                     .iter()
                     .fold(T::zero(), |norm, value| norm.max(value.abs()));

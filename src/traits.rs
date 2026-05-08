@@ -6,6 +6,8 @@ use num_complex::Complex;
 use simba::scalar::{RealField, SupersetOf};
 use std::fmt::Debug;
 
+use crate::tolerance::Tolerance;
+
 /// Real Number Trait
 ///
 /// This trait specifies the acceptable types for real numbers.
@@ -49,16 +51,14 @@ pub trait State<T: Real>: Clone + Debug {
         self.len() == 0
     }
 
-    /// Writes this state into a flat slice using the state's canonical solver layout.
-    ///
-    /// Backends with contiguous storage can override this to use `copy_from_slice`.
-    fn write_to_slice(&self, output: &mut [T]);
+    /// Copies this state into a flat slice using the state's canonical solver layout.
+    fn copy_to_flat_slice(&self, output: &mut [T]);
 
-    /// Updates this state from a flat slice using the state's canonical solver layout.
+    /// Copies values from a flat slice using the state's canonical solver layout.
     ///
-    /// This is the inverse of [`State::write_to_slice`] and is used to recover
+    /// This is the inverse of [`State::copy_to_flat_slice`] and is used to recover
     /// backend-specific states from solver-owned flat buffers.
-    fn read_from_slice(&mut self, input: &[T]);
+    fn copy_from_flat_slice(&mut self, input: &[T]);
 
     /// Constructs a zero-valued state with the same shape as `self`.
     fn zeros_like(&self) -> Self;
@@ -81,14 +81,14 @@ pub trait State<T: Real>: Clone + Debug {
         for x in buf.iter_mut() {
             *x = value;
         }
-        self.read_from_slice(&buf);
+        self.copy_from_flat_slice(&buf);
     }
 
     /// Copy values from another state with the same flat solver layout.
     fn copy_from_state(&mut self, other: &Self) {
         let mut buf = vec![T::zero(); other.len()];
-        other.write_to_slice(&mut buf);
-        self.read_from_slice(&buf);
+        other.copy_to_flat_slice(&mut buf);
+        self.copy_from_flat_slice(&buf);
     }
 
     /// In-place multiply and add with chaining: `self = self + alpha * other`.
@@ -150,7 +150,7 @@ pub trait State<T: Real>: Clone + Debug {
     /// Compute ||self||^2
     fn norm_squared(&self) -> T {
         let mut buf = vec![T::zero(); self.len()];
-        self.write_to_slice(&mut buf);
+        self.copy_to_flat_slice(&mut buf);
         let mut sum = T::zero();
         for &x in &buf {
             sum += x * x;
@@ -162,8 +162,8 @@ pub trait State<T: Real>: Clone + Debug {
     fn diff_norm_squared(&self, other: &Self) -> T {
         let mut buf_self = vec![T::zero(); self.len()];
         let mut buf_other = vec![T::zero(); self.len()];
-        self.write_to_slice(&mut buf_self);
-        other.write_to_slice(&mut buf_other);
+        self.copy_to_flat_slice(&mut buf_self);
+        other.copy_to_flat_slice(&mut buf_other);
         let mut sum = T::zero();
         for (a, b) in buf_self.iter().zip(buf_other.iter()) {
             let diff = *a - *b;
@@ -177,15 +177,15 @@ pub trait State<T: Real>: Clone + Debug {
         &self,
         y_new: &Self,
         err: &Self,
-        atol: &crate::tolerance::Tolerance<T>,
-        rtol: &crate::tolerance::Tolerance<T>,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
     ) -> T {
         let mut buf_y = vec![T::zero(); self.len()];
         let mut buf_y_new = vec![T::zero(); self.len()];
         let mut buf_err = vec![T::zero(); self.len()];
-        self.write_to_slice(&mut buf_y);
-        y_new.write_to_slice(&mut buf_y_new);
-        err.write_to_slice(&mut buf_err);
+        self.copy_to_flat_slice(&mut buf_y);
+        y_new.copy_to_flat_slice(&mut buf_y_new);
+        err.copy_to_flat_slice(&mut buf_err);
 
         let mut sum = T::zero();
         for i in 0..self.len() {
@@ -194,6 +194,29 @@ pub trait State<T: Real>: Clone + Debug {
             sum += e * e;
         }
         sum
+    }
+
+    /// Calculates the maximum weighted error used by some adaptive step-size controllers.
+    fn error_norm_inf(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
+    ) -> T {
+        let mut buf_y = vec![T::zero(); self.len()];
+        let mut buf_y_new = vec![T::zero(); self.len()];
+        let mut buf_err = vec![T::zero(); self.len()];
+        self.copy_to_flat_slice(&mut buf_y);
+        y_new.copy_to_flat_slice(&mut buf_y_new);
+        err.copy_to_flat_slice(&mut buf_err);
+
+        let mut max = T::zero();
+        for i in 0..self.len() {
+            let sk = atol[i] + rtol[i] * buf_y[i].abs().max(buf_y_new[i].abs());
+            max = max.max((buf_err[i] / sk).abs());
+        }
+        max
     }
 }
 
@@ -205,12 +228,12 @@ where
         N
     }
 
-    fn write_to_slice(&self, output: &mut [T]) {
+    fn copy_to_flat_slice(&self, output: &mut [T]) {
         output.copy_from_slice(self);
     }
 
-    fn read_from_slice(&mut self, input: &[T]) {
-        self.copy_from_slice(input);
+    fn copy_from_flat_slice(&mut self, input: &[T]) {
+        self.as_mut_slice().copy_from_slice(input);
     }
 
     fn zeros_like(&self) -> Self {
@@ -238,7 +261,7 @@ where
     }
 
     fn copy_from_state(&mut self, other: &Self) {
-        self.copy_from_slice(other);
+        self.as_mut_slice().copy_from_slice(other);
     }
 
     fn norm_squared(&self) -> T {
@@ -252,6 +275,37 @@ where
                 let diff = *a - *b;
                 sum + diff * diff
             })
+    }
+
+    fn error_norm(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
+    ) -> T {
+        let mut sum = T::zero();
+        for i in 0..N {
+            let sk = atol[i] + rtol[i] * self[i].abs().max(y_new[i].abs());
+            let e = err[i] / sk;
+            sum += e * e;
+        }
+        sum
+    }
+
+    fn error_norm_inf(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
+    ) -> T {
+        let mut max = T::zero();
+        for i in 0..N {
+            let sk = atol[i] + rtol[i] * self[i].abs().max(y_new[i].abs());
+            max = max.max((err[i] / sk).abs());
+        }
+        max
     }
 }
 
@@ -267,7 +321,7 @@ where
         self.nrows() * self.ncols()
     }
 
-    fn write_to_slice(&self, output: &mut [T]) {
+    fn copy_to_flat_slice(&self, output: &mut [T]) {
         assert_eq!(output.len(), self.len(), "Slice length mismatch");
         for r in 0..self.nrows() {
             for c in 0..self.ncols() {
@@ -276,7 +330,7 @@ where
         }
     }
 
-    fn read_from_slice(&mut self, input: &[T]) {
+    fn copy_from_flat_slice(&mut self, input: &[T]) {
         assert_eq!(input.len(), self.len(), "Slice length mismatch");
         for r in 0..self.nrows() {
             for c in 0..self.ncols() {
@@ -313,6 +367,91 @@ where
             self[(r, c)] *= alpha;
         }
     }
+
+    fn fill(&mut self, value: T) {
+        for i in 0..self.len() {
+            let c = i % self.ncols();
+            let r = i / self.ncols();
+            self[(r, c)] = value;
+        }
+    }
+
+    fn copy_from_state(&mut self, other: &Self) {
+        assert_eq!(self.nrows(), other.nrows(), "State row count mismatch");
+        assert_eq!(self.ncols(), other.ncols(), "State column count mismatch");
+        for i in 0..self.len() {
+            let c = i % self.ncols();
+            let r = i / self.ncols();
+            self[(r, c)] = other[(r, c)];
+        }
+    }
+
+    fn norm_squared(&self) -> T {
+        let mut sum = T::zero();
+        for i in 0..self.len() {
+            let c = i % self.ncols();
+            let r = i / self.ncols();
+            let value = self[(r, c)];
+            sum += value * value;
+        }
+        sum
+    }
+
+    fn diff_norm_squared(&self, other: &Self) -> T {
+        assert_eq!(self.nrows(), other.nrows(), "State row count mismatch");
+        assert_eq!(self.ncols(), other.ncols(), "State column count mismatch");
+        let mut sum = T::zero();
+        for i in 0..self.len() {
+            let c = i % self.ncols();
+            let r = i / self.ncols();
+            let diff = self[(r, c)] - other[(r, c)];
+            sum += diff * diff;
+        }
+        sum
+    }
+
+    fn error_norm(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
+    ) -> T {
+        assert_eq!(self.nrows(), y_new.nrows(), "State row count mismatch");
+        assert_eq!(self.ncols(), y_new.ncols(), "State column count mismatch");
+        assert_eq!(self.nrows(), err.nrows(), "State row count mismatch");
+        assert_eq!(self.ncols(), err.ncols(), "State column count mismatch");
+        let mut sum = T::zero();
+        for i in 0..self.len() {
+            let c = i % self.ncols();
+            let r = i / self.ncols();
+            let sk = atol[i] + rtol[i] * self[(r, c)].abs().max(y_new[(r, c)].abs());
+            let e = err[(r, c)] / sk;
+            sum += e * e;
+        }
+        sum
+    }
+
+    fn error_norm_inf(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
+    ) -> T {
+        assert_eq!(self.nrows(), y_new.nrows(), "State row count mismatch");
+        assert_eq!(self.ncols(), y_new.ncols(), "State column count mismatch");
+        assert_eq!(self.nrows(), err.nrows(), "State row count mismatch");
+        assert_eq!(self.ncols(), err.ncols(), "State column count mismatch");
+        let mut max = T::zero();
+        for i in 0..self.len() {
+            let c = i % self.ncols();
+            let r = i / self.ncols();
+            let sk = atol[i] + rtol[i] * self[(r, c)].abs().max(y_new[(r, c)].abs());
+            max = max.max((err[(r, c)] / sk).abs());
+        }
+        max
+    }
 }
 
 impl<T> State<T> for Complex<T>
@@ -323,13 +462,13 @@ where
         2
     }
 
-    fn write_to_slice(&self, output: &mut [T]) {
+    fn copy_to_flat_slice(&self, output: &mut [T]) {
         assert_eq!(output.len(), 2, "Slice length mismatch");
         output[0] = self.re;
         output[1] = self.im;
     }
 
-    fn read_from_slice(&mut self, input: &[T]) {
+    fn copy_from_flat_slice(&mut self, input: &[T]) {
         assert_eq!(input.len(), 2, "Slice length mismatch");
         self.re = input[0];
         self.im = input[1];
@@ -352,6 +491,52 @@ where
         self.re *= alpha;
         self.im *= alpha;
     }
+
+    fn fill(&mut self, value: T) {
+        self.re = value;
+        self.im = value;
+    }
+
+    fn copy_from_state(&mut self, other: &Self) {
+        self.re = other.re;
+        self.im = other.im;
+    }
+
+    fn norm_squared(&self) -> T {
+        self.re * self.re + self.im * self.im
+    }
+
+    fn diff_norm_squared(&self, other: &Self) -> T {
+        let re = self.re - other.re;
+        let im = self.im - other.im;
+        re * re + im * im
+    }
+
+    fn error_norm(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
+    ) -> T {
+        let sk_re = atol[0] + rtol[0] * self.re.abs().max(y_new.re.abs());
+        let sk_im = atol[1] + rtol[1] * self.im.abs().max(y_new.im.abs());
+        let e_re = err.re / sk_re;
+        let e_im = err.im / sk_im;
+        e_re * e_re + e_im * e_im
+    }
+
+    fn error_norm_inf(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
+    ) -> T {
+        let sk_re = atol[0] + rtol[0] * self.re.abs().max(y_new.re.abs());
+        let sk_im = atol[1] + rtol[1] * self.im.abs().max(y_new.im.abs());
+        (err.re / sk_re).abs().max((err.im / sk_im).abs())
+    }
 }
 
 impl<T> State<T> for Vec<T>
@@ -362,11 +547,11 @@ where
         self.len()
     }
 
-    fn write_to_slice(&self, output: &mut [T]) {
+    fn copy_to_flat_slice(&self, output: &mut [T]) {
         output.copy_from_slice(self);
     }
 
-    fn read_from_slice(&mut self, input: &[T]) {
+    fn copy_from_flat_slice(&mut self, input: &[T]) {
         self.clear();
         self.extend_from_slice(input);
     }
@@ -390,6 +575,63 @@ where
             *s *= alpha;
         }
     }
+
+    fn fill(&mut self, value: T) {
+        self.as_mut_slice().fill(value);
+    }
+
+    fn copy_from_state(&mut self, other: &Self) {
+        self.clone_from(other);
+    }
+
+    fn norm_squared(&self) -> T {
+        self.iter().fold(T::zero(), |sum, x| sum + *x * *x)
+    }
+
+    fn diff_norm_squared(&self, other: &Self) -> T {
+        assert_eq!(self.len(), other.len(), "State length mismatch");
+        self.iter()
+            .zip(other.iter())
+            .fold(T::zero(), |sum, (a, b)| {
+                let diff = *a - *b;
+                sum + diff * diff
+            })
+    }
+
+    fn error_norm(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
+    ) -> T {
+        assert_eq!(self.len(), y_new.len(), "State length mismatch");
+        assert_eq!(self.len(), err.len(), "State length mismatch");
+        let mut sum = T::zero();
+        for i in 0..self.len() {
+            let sk = atol[i] + rtol[i] * self[i].abs().max(y_new[i].abs());
+            let e = err[i] / sk;
+            sum += e * e;
+        }
+        sum
+    }
+
+    fn error_norm_inf(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
+    ) -> T {
+        assert_eq!(self.len(), y_new.len(), "State length mismatch");
+        assert_eq!(self.len(), err.len(), "State length mismatch");
+        let mut max = T::zero();
+        for i in 0..self.len() {
+            let sk = atol[i] + rtol[i] * self[i].abs().max(y_new[i].abs());
+            max = max.max((err[i] / sk).abs());
+        }
+        max
+    }
 }
 
 #[cfg(feature = "ndarray")]
@@ -402,14 +644,14 @@ where
         self.len()
     }
 
-    fn write_to_slice(&self, output: &mut [T]) {
+    fn copy_to_flat_slice(&self, output: &mut [T]) {
         assert_eq!(output.len(), self.len(), "Slice length mismatch");
         for (dst, src) in output.iter_mut().zip(self.iter()) {
             *dst = *src;
         }
     }
 
-    fn read_from_slice(&mut self, input: &[T]) {
+    fn copy_from_flat_slice(&mut self, input: &[T]) {
         assert_eq!(input.len(), self.len(), "Slice length mismatch");
         for (dst, src) in self.iter_mut().zip(input.iter()) {
             *dst = *src;
@@ -436,6 +678,68 @@ where
             *dst *= alpha;
         }
     }
+
+    fn fill(&mut self, value: T) {
+        for dst in self.iter_mut() {
+            *dst = value;
+        }
+    }
+
+    fn copy_from_state(&mut self, other: &Self) {
+        assert_eq!(self.shape(), other.shape(), "State shape mismatch");
+        for (dst, src) in self.iter_mut().zip(other.iter()) {
+            *dst = *src;
+        }
+    }
+
+    fn norm_squared(&self) -> T {
+        self.iter().fold(T::zero(), |sum, x| sum + *x * *x)
+    }
+
+    fn diff_norm_squared(&self, other: &Self) -> T {
+        assert_eq!(self.shape(), other.shape(), "State shape mismatch");
+        self.iter()
+            .zip(other.iter())
+            .fold(T::zero(), |sum, (a, b)| {
+                let diff = *a - *b;
+                sum + diff * diff
+            })
+    }
+
+    fn error_norm(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
+    ) -> T {
+        assert_eq!(self.shape(), y_new.shape(), "State shape mismatch");
+        assert_eq!(self.shape(), err.shape(), "State shape mismatch");
+        let mut sum = T::zero();
+        for (i, ((y, y_new), err)) in self.iter().zip(y_new.iter()).zip(err.iter()).enumerate() {
+            let sk = atol[i] + rtol[i] * (*y).abs().max((*y_new).abs());
+            let e = *err / sk;
+            sum += e * e;
+        }
+        sum
+    }
+
+    fn error_norm_inf(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
+    ) -> T {
+        assert_eq!(self.shape(), y_new.shape(), "State shape mismatch");
+        assert_eq!(self.shape(), err.shape(), "State shape mismatch");
+        let mut max = T::zero();
+        for (i, ((y, y_new), err)) in self.iter().zip(y_new.iter()).zip(err.iter()).enumerate() {
+            let sk = atol[i] + rtol[i] * (*y).abs().max((*y_new).abs());
+            max = max.max((*err / sk).abs());
+        }
+        max
+    }
 }
 
 #[cfg(feature = "faer")]
@@ -447,7 +751,7 @@ where
         self.nrows() * self.ncols()
     }
 
-    fn write_to_slice(&self, output: &mut [T]) {
+    fn copy_to_flat_slice(&self, output: &mut [T]) {
         assert_eq!(output.len(), self.len(), "Slice length mismatch");
         for r in 0..self.nrows() {
             for c in 0..self.ncols() {
@@ -456,7 +760,7 @@ where
         }
     }
 
-    fn read_from_slice(&mut self, input: &[T]) {
+    fn copy_from_flat_slice(&mut self, input: &[T]) {
         assert_eq!(input.len(), self.len(), "Slice length mismatch");
         for r in 0..self.nrows() {
             for c in 0..self.ncols() {
@@ -490,6 +794,93 @@ where
             }
         }
     }
+
+    fn fill(&mut self, value: T) {
+        for r in 0..self.nrows() {
+            for c in 0..self.ncols() {
+                *self.get_mut(r, c) = value;
+            }
+        }
+    }
+
+    fn copy_from_state(&mut self, other: &Self) {
+        assert_eq!(self.nrows(), other.nrows(), "State row count mismatch");
+        assert_eq!(self.ncols(), other.ncols(), "State column count mismatch");
+        for r in 0..self.nrows() {
+            for c in 0..self.ncols() {
+                *self.get_mut(r, c) = *other.get(r, c);
+            }
+        }
+    }
+
+    fn norm_squared(&self) -> T {
+        let mut sum = T::zero();
+        for r in 0..self.nrows() {
+            for c in 0..self.ncols() {
+                let value = *self.get(r, c);
+                sum += value * value;
+            }
+        }
+        sum
+    }
+
+    fn diff_norm_squared(&self, other: &Self) -> T {
+        assert_eq!(self.nrows(), other.nrows(), "State row count mismatch");
+        assert_eq!(self.ncols(), other.ncols(), "State column count mismatch");
+        let mut sum = T::zero();
+        for r in 0..self.nrows() {
+            for c in 0..self.ncols() {
+                let diff = *self.get(r, c) - *other.get(r, c);
+                sum += diff * diff;
+            }
+        }
+        sum
+    }
+
+    fn error_norm(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
+    ) -> T {
+        assert_eq!(self.nrows(), y_new.nrows(), "State row count mismatch");
+        assert_eq!(self.ncols(), y_new.ncols(), "State column count mismatch");
+        assert_eq!(self.nrows(), err.nrows(), "State row count mismatch");
+        assert_eq!(self.ncols(), err.ncols(), "State column count mismatch");
+        let mut sum = T::zero();
+        for r in 0..self.nrows() {
+            for c in 0..self.ncols() {
+                let i = r * self.ncols() + c;
+                let sk = atol[i] + rtol[i] * (*self.get(r, c)).abs().max((*y_new.get(r, c)).abs());
+                let e = *err.get(r, c) / sk;
+                sum += e * e;
+            }
+        }
+        sum
+    }
+
+    fn error_norm_inf(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
+    ) -> T {
+        assert_eq!(self.nrows(), y_new.nrows(), "State row count mismatch");
+        assert_eq!(self.ncols(), y_new.ncols(), "State column count mismatch");
+        assert_eq!(self.nrows(), err.nrows(), "State row count mismatch");
+        assert_eq!(self.ncols(), err.ncols(), "State column count mismatch");
+        let mut max = T::zero();
+        for r in 0..self.nrows() {
+            for c in 0..self.ncols() {
+                let i = r * self.ncols() + c;
+                let sk = atol[i] + rtol[i] * (*self.get(r, c)).abs().max((*y_new.get(r, c)).abs());
+                max = max.max((*err.get(r, c) / sk).abs());
+            }
+        }
+        max
+    }
 }
 
 #[cfg(test)]
@@ -502,11 +893,11 @@ mod tests {
         let state = [1.0, 2.0, 3.0];
         let mut buffer = [0.0; 3];
 
-        state.write_to_slice(&mut buffer);
+        state.copy_to_flat_slice(&mut buffer);
         assert_eq!(buffer, [1.0, 2.0, 3.0]);
 
         let mut recovered = <[f64; 3] as State<f64>>::zeros();
-        recovered.read_from_slice(&buffer);
+        recovered.copy_from_flat_slice(&buffer);
         assert_eq!(recovered, state);
     }
 
@@ -516,11 +907,11 @@ mod tests {
         let state = nalgebra::SMatrix::<f64, 2, 2>::new(1.0, 2.0, 3.0, 4.0);
         let mut buffer = [0.0; 4];
 
-        state.write_to_slice(&mut buffer);
+        state.copy_to_flat_slice(&mut buffer);
         assert_eq!(buffer, [1.0, 2.0, 3.0, 4.0]);
 
         let mut recovered = nalgebra::SMatrix::<f64, 2, 2>::zeros();
-        recovered.read_from_slice(&buffer);
+        recovered.copy_from_flat_slice(&buffer);
         assert_eq!(recovered, state);
     }
 
@@ -530,11 +921,11 @@ mod tests {
         let state = nalgebra::DMatrix::<f64>::from_row_slice(2, 2, &[1.0, 2.0, 3.0, 4.0]);
         let mut buffer = [0.0; 4];
 
-        state.write_to_slice(&mut buffer);
+        state.copy_to_flat_slice(&mut buffer);
         assert_eq!(buffer, [1.0, 2.0, 3.0, 4.0]);
 
         let mut recovered = state.zeros_like();
-        recovered.read_from_slice(&buffer);
+        recovered.copy_from_flat_slice(&buffer);
         assert_eq!(recovered, state);
     }
 
@@ -543,11 +934,11 @@ mod tests {
         let state = Complex::new(1.0, 2.0);
         let mut buffer = [0.0; 2];
 
-        state.write_to_slice(&mut buffer);
+        state.copy_to_flat_slice(&mut buffer);
         assert_eq!(buffer, [1.0, 2.0]);
 
         let mut recovered = Complex::new(0.0, 0.0);
-        recovered.read_from_slice(&buffer);
+        recovered.copy_from_flat_slice(&buffer);
         assert_eq!(recovered, state);
     }
 
@@ -557,11 +948,11 @@ mod tests {
         let state = ndarray::array![[1.0, 2.0], [3.0, 4.0]];
         let mut buffer = [0.0; 4];
 
-        state.write_to_slice(&mut buffer);
+        state.copy_to_flat_slice(&mut buffer);
         assert_eq!(buffer, [1.0, 2.0, 3.0, 4.0]);
 
         let mut recovered = state.zeros_like();
-        recovered.read_from_slice(&buffer);
+        recovered.copy_from_flat_slice(&buffer);
         assert_eq!(recovered, state);
     }
 
@@ -571,11 +962,11 @@ mod tests {
         let state = faer::Mat::from_fn(2, 2, |r, c| (r * 2 + c + 1) as f64);
         let mut buffer = [0.0; 4];
 
-        state.write_to_slice(&mut buffer);
+        state.copy_to_flat_slice(&mut buffer);
         assert_eq!(buffer, [1.0, 2.0, 3.0, 4.0]);
 
         let mut recovered = state.zeros_like();
-        recovered.read_from_slice(&buffer);
+        recovered.copy_from_flat_slice(&buffer);
         assert_eq!(*recovered.get(0, 0), 1.0);
         assert_eq!(*recovered.get(0, 1), 2.0);
         assert_eq!(*recovered.get(1, 0), 3.0);

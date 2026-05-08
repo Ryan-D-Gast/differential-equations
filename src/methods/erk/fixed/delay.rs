@@ -176,8 +176,8 @@ impl<
                 let n_dim = self.y.len();
                 let mut prev_values = vec![T::zero(); n_dim];
                 let mut next_values = vec![T::zero(); n_dim];
-                y_prev_candidate_iter.write_to_slice(&mut prev_values);
-                y_next.write_to_slice(&mut next_values);
+                y_prev_candidate_iter.copy_to_flat_slice(&mut prev_values);
+                y_next.copy_to_flat_slice(&mut next_values);
                 for i_dim in 0..n_dim {
                     let scale = T::from_f64(1e-10).unwrap()
                         + prev_values[i_dim].abs().max(next_values[i_dim].abs());

@@ -7,16 +7,16 @@ trait TestStateAccess<T: Real>: StateTrait<T> {
     fn component(&self, index: usize) -> T {
         assert!(index < self.len(), "Index out of bounds");
         let mut values = vec![T::zero(); self.len()];
-        self.write_to_slice(&mut values);
+        self.copy_to_flat_slice(&mut values);
         values[index]
     }
 
     fn set_component(&mut self, index: usize, value: T) {
         assert!(index < self.len(), "Index out of bounds");
         let mut values = vec![T::zero(); self.len()];
-        self.write_to_slice(&mut values);
+        self.copy_to_flat_slice(&mut values);
         values[index] = value;
-        self.read_from_slice(&values);
+        self.copy_from_flat_slice(&values);
     }
 }
 
@@ -41,11 +41,11 @@ fn test_state_basics<S: StateTrait<f64>>(state: &mut S, expected_len: usize) {
     }
 
     let mut buffer = vec![0.0; expected_len];
-    state.write_to_slice(&mut buffer);
+    state.copy_to_flat_slice(&mut buffer);
     for (i, value) in buffer.iter_mut().enumerate() {
         *value = i as f64 + 1.0;
     }
-    state.read_from_slice(&buffer);
+    state.copy_from_flat_slice(&buffer);
     for (i, value) in buffer.iter().copied().enumerate() {
         assert_eq!(state.component(i), value);
     }

@@ -144,7 +144,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
         }
 
         let mut scal_values = vec![T::zero(); n];
-        self.scal.write_to_slice(&mut scal_values);
+        self.scal.copy_to_flat_slice(&mut scal_values);
 
         // Index-2 scaling: scal[i] /= hhfac for index-2 variables
         for &i in &self.index2 {
@@ -154,7 +154,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
         for &i in &self.index3 {
             scal_values[i] /= self.hhfac * self.hhfac;
         }
-        self.scal.read_from_slice(&scal_values);
+        self.scal.copy_from_flat_slice(&scal_values);
 
         // Starting values for Newton iteration
         if self.first {
@@ -255,12 +255,12 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
             let mut z0_values = vec![T::zero(); n];
             let mut z1_values = vec![T::zero(); n];
             let mut z2_values = vec![T::zero(); n];
-            self.f[0].write_to_slice(&mut f0_values);
-            self.f[1].write_to_slice(&mut f1_values);
-            self.f[2].write_to_slice(&mut f2_values);
-            self.z[0].write_to_slice(&mut z0_values);
-            self.z[1].write_to_slice(&mut z1_values);
-            self.z[2].write_to_slice(&mut z2_values);
+            self.f[0].copy_to_flat_slice(&mut f0_values);
+            self.f[1].copy_to_flat_slice(&mut f1_values);
+            self.f[2].copy_to_flat_slice(&mut f2_values);
+            self.z[0].copy_to_flat_slice(&mut z0_values);
+            self.z[1].copy_to_flat_slice(&mut z1_values);
+            self.z[2].copy_to_flat_slice(&mut z2_values);
 
             // Assemble RHS and solve for (Z1, Z2, Z3)
             for i in 0..n {
@@ -278,9 +278,9 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
                 z1_values[i] += s2 * alphn - s3 * betan;
                 z2_values[i] += s3 * alphn + s2 * betan;
             }
-            self.z[0].read_from_slice(&z0_values);
-            self.z[1].read_from_slice(&z1_values);
-            self.z[2].read_from_slice(&z2_values);
+            self.z[0].copy_from_flat_slice(&z0_values);
+            self.z[1].copy_from_flat_slice(&z1_values);
+            self.z[2].copy_from_flat_slice(&z2_values);
 
             // Solve E1 * Z1 = RHS1 (real system)
             lin_solve(&self.e1, &mut self.z[0], &self.ip1);
@@ -297,10 +297,10 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
 
             // Convergence control
             let mut dyno = T::zero();
-            self.scal.write_to_slice(&mut scal_values);
-            self.z[0].write_to_slice(&mut z0_values);
-            self.z[1].write_to_slice(&mut z1_values);
-            self.z[2].write_to_slice(&mut z2_values);
+            self.scal.copy_to_flat_slice(&mut scal_values);
+            self.z[0].copy_to_flat_slice(&mut z0_values);
+            self.z[1].copy_to_flat_slice(&mut z1_values);
+            self.z[2].copy_to_flat_slice(&mut z2_values);
             for i in 0..n {
                 let sc = scal_values[i];
                 let v1 = z0_values[i] / sc;
@@ -386,8 +386,8 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
         let mut dydt_values = vec![T::zero(); n];
         let mut f2_values = vec![T::zero(); n];
         let mut cont_values = vec![T::zero(); n];
-        f1.write_to_slice(&mut f1_values);
-        self.dydt.write_to_slice(&mut dydt_values);
+        f1.copy_to_flat_slice(&mut f1_values);
+        self.dydt.copy_to_flat_slice(&mut dydt_values);
         for i in 0..n {
             let mut sum = T::zero();
             for j in 0..n {
@@ -396,15 +396,15 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
             f2_values[i] = sum;
             cont_values[i] = sum + dydt_values[i];
         }
-        f2.read_from_slice(&f2_values);
-        cont.read_from_slice(&cont_values);
+        f2.copy_from_flat_slice(&f2_values);
+        cont.copy_from_flat_slice(&cont_values);
         lin_solve(&self.e1, &mut cont, &self.ip1);
         evals.solves += 1;
 
         // Error estimate
         let mut err = T::zero();
-        cont.write_to_slice(&mut cont_values);
-        self.scal.write_to_slice(&mut scal_values);
+        cont.copy_to_flat_slice(&mut cont_values);
+        self.scal.copy_to_flat_slice(&mut scal_values);
         for i in 0..n {
             let r = cont_values[i] / scal_values[i];
             err += r * r;
@@ -426,8 +426,8 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
 
             // Recompute error
             err = T::zero();
-            cont.write_to_slice(&mut cont_values);
-            self.scal.write_to_slice(&mut scal_values);
+            cont.copy_to_flat_slice(&mut cont_values);
+            self.scal.copy_to_flat_slice(&mut scal_values);
             for i in 0..n {
                 let r = cont_values[i] / scal_values[i];
                 err += r * r;
@@ -494,12 +494,12 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
 
             // Compute error scale
             let mut y_values = vec![T::zero(); n];
-            self.y.write_to_slice(&mut y_values);
-            self.scal.write_to_slice(&mut scal_values);
+            self.y.copy_to_flat_slice(&mut y_values);
+            self.scal.copy_to_flat_slice(&mut scal_values);
             for i in 0..n {
                 scal_values[i] = self.atol[i] + self.rtol[i] * y_values[i].abs();
             }
-            self.scal.read_from_slice(&scal_values);
+            self.scal.copy_from_flat_slice(&scal_values);
 
             // Constrain new step size to [h_min, h_max]
             hnew = constrain_step_size(hnew, self.h_min, self.h_max);

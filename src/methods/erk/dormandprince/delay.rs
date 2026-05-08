@@ -194,45 +194,23 @@ impl<
             // Dormand–Prince error estimation
             let er = self.er.unwrap();
             let n = self.y.len();
-            let mut err_val = T::zero();
             let mut err2 = T::zero();
-            let mut y_values = vec![T::zero(); n];
-            let mut y_new_values = vec![T::zero(); n];
-            let mut yseg_values = vec![T::zero(); n];
-            let mut k_values = (0..self.stages)
-                .map(|_| vec![T::zero(); n])
-                .collect::<Vec<_>>();
-            self.y.write_to_slice(&mut y_values);
-            y_new.write_to_slice(&mut y_new_values);
-            yseg.write_to_slice(&mut yseg_values);
-            for (k, values) in self.k.iter().zip(k_values.iter_mut()) {
-                k.write_to_slice(values);
+            let mut err_state = self.y.zeros_like();
+            for (j, coefficient) in er.iter().enumerate().take(self.stages) {
+                err_state.add_scaled(*coefficient, &self.k[j]);
             }
-            for i in 0..n {
-                // Calculate the error scale
-                let sk = self.atol[i] + self.rtol[i] * y_values[i].abs().max(y_new_values[i].abs());
+            let err_val = self
+                .y
+                .error_norm(&y_new, &err_state, &self.atol, &self.rtol);
 
-                // Primary error term
-                let mut erri = T::zero();
-                for j in 0..self.stages {
-                    erri += er[j] * k_values[j][i];
+            if let Some(bh) = &self.bh {
+                let mut err2_state = yseg.clone();
+                for (j, coefficient) in bh.iter().enumerate().take(self.stages) {
+                    err2_state.add_scaled(-*coefficient, &self.k[j]);
                 }
-                err_val += {
-                    let val = erri / sk;
-                    val * val
-                };
-
-                // Optional secondary error term
-                if let Some(bh) = &self.bh {
-                    erri = yseg_values[i];
-                    for j in 0..self.stages {
-                        erri -= bh[j] * k_values[j][i];
-                    }
-                    err2 += {
-                        let val = erri / sk;
-                        val * val
-                    };
-                }
+                err2 = self
+                    .y
+                    .error_norm(&y_new, &err2_state, &self.atol, &self.rtol);
             }
             let mut deno = err_val + T::from_f64(0.01).unwrap() * err2;
             if deno <= T::zero() {
@@ -243,24 +221,10 @@ impl<
 
             // Convergence check (if iterating)
             if max_iter > 1 && it > 0 {
-                let mut dde_iteration_error = T::zero();
                 let n_dim = self.y.len();
-                let mut y_prev_values = vec![T::zero(); n_dim];
-                let mut y_new_values = vec![T::zero(); n_dim];
-                y_next_est_prev.write_to_slice(&mut y_prev_values);
-                y_new.write_to_slice(&mut y_new_values);
-                for i_dim in 0..n_dim {
-                    let scale = self.atol[i_dim]
-                        + self.rtol[i_dim]
-                            * y_prev_values[i_dim].abs().max(y_new_values[i_dim].abs());
-                    if scale > T::zero() {
-                        let diff_val = y_new_values[i_dim] - y_prev_values[i_dim];
-                        dde_iteration_error += {
-                            let val = diff_val / scale;
-                            val * val
-                        };
-                    }
-                }
+                let iter_diff = y_new.minus(&y_next_est_prev);
+                let mut dde_iteration_error =
+                    y_next_est_prev.error_norm(&y_new, &iter_diff, &self.atol, &self.rtol);
                 if n_dim > 0 {
                     dde_iteration_error =
                         (dde_iteration_error / T::from_usize(n_dim).unwrap()).sqrt();

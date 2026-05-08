@@ -28,16 +28,16 @@ impl<E, T: Real, Y: State<T>> Interpolation<T, Y> for Radau5<E, T, Y> {
         let mut cont2 = vec![T::zero(); dim];
         let mut cont3 = vec![T::zero(); dim];
         let mut values = vec![T::zero(); dim];
-        self.cont[0].write_to_slice(&mut cont0);
-        self.cont[1].write_to_slice(&mut cont1);
-        self.cont[2].write_to_slice(&mut cont2);
-        self.cont[3].write_to_slice(&mut cont3);
+        self.cont[0].copy_to_flat_slice(&mut cont0);
+        self.cont[1].copy_to_flat_slice(&mut cont1);
+        self.cont[2].copy_to_flat_slice(&mut cont2);
+        self.cont[3].copy_to_flat_slice(&mut cont3);
         for i in 0..dim {
             // CONT0 + S*(C1 + (S-C2M1)*(C2 + (S-C1M1)*C3))
             values[i] = cont0[i]
                 + s * (cont1[i] + (s - self.c2m1) * (cont2[i] + (s - self.c1m1) * cont3[i]));
         }
-        y.read_from_slice(&values);
+        y.copy_from_flat_slice(&values);
 
         Ok(y)
     }

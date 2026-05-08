@@ -2,6 +2,7 @@
 
 use crate::{
     error::Error,
+    linalg::LinalgError,
     traits::{Real, State},
 };
 
@@ -30,7 +31,7 @@ impl<T: Real> Matrix<T> {
 
         // 2) Copy b into a dense vector x and perform solve
         let mut x = vec![T::zero(); n];
-        b.write_to_slice(&mut x);
+        b.copy_to_flat_slice(&mut x);
 
         // 3) LU factorization with partial pivoting and singularity checking
         let mut piv: Vec<usize> = (0..n).collect();
@@ -52,7 +53,7 @@ impl<T: Real> Matrix<T> {
             // Check for singularity
             if pivot_val <= eps {
                 // Note the t, y are not known here and should be updated by caller before returning to user
-                return Err(crate::linalg::LinalgError::Singular { step: k + 1 }.into());
+                return Err(LinalgError::Singular { step: k + 1 }.into());
             }
 
             if pivot_row != k {
@@ -98,12 +99,12 @@ impl<T: Real> Matrix<T> {
 
         // Build output State from x
         let mut out = b.zeros_like();
-        out.read_from_slice(&x);
+        out.copy_from_flat_slice(&x);
         Ok(out)
     }
 
     /// In-place solve: overwrites `b` with `x`.
-    pub fn lin_solve_mut(&self, b: &mut [T]) -> Result<(), crate::linalg::LinalgError> {
+    pub fn lin_solve_mut(&self, b: &mut [T]) -> Result<(), LinalgError> {
         let n = self.n;
         assert_eq!(
             self.m, n,
@@ -135,7 +136,7 @@ impl<T: Real> Matrix<T> {
                 }
             }
             if pivot_val == T::zero() {
-                return Err(crate::linalg::LinalgError::Singular { step: k + 1 });
+                return Err(LinalgError::Singular { step: k + 1 });
             }
             if pivot_row != k {
                 for j in 0..n {

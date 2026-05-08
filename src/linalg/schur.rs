@@ -38,7 +38,7 @@ pub fn schur_complement<T: Real, V: State<T>>(
         let mut e_values = vec![T::zero(); n];
         e_values[j] = T::one();
         let mut e = r.zeros_like();
-        e.read_from_slice(&e_values);
+        e.copy_from_flat_slice(&e_values);
         // u = B e_j
         let u = b.mul_state::<V>(&e);
         // v = A^{-1} u
@@ -49,8 +49,8 @@ pub fn schur_complement<T: Real, V: State<T>>(
         let d_ej = d.mul_state::<V>(&e);
         let mut d_ej_values = vec![T::zero(); n];
         let mut z_values = vec![T::zero(); n];
-        d_ej.write_to_slice(&mut d_ej_values);
-        z.write_to_slice(&mut z_values);
+        d_ej.copy_to_flat_slice(&mut d_ej_values);
+        z.copy_to_flat_slice(&mut z_values);
         for i in 0..n {
             s_dense[(i, j)] = d_ej_values[i] - z_values[i];
         }
@@ -61,13 +61,13 @@ pub fn schur_complement<T: Real, V: State<T>>(
     let car = c.mul_state::<V>(&ar);
     let mut s_values = vec![T::zero(); n];
     let mut car_values = vec![T::zero(); n];
-    s.write_to_slice(&mut s_values);
-    car.write_to_slice(&mut car_values);
+    s.copy_to_flat_slice(&mut s_values);
+    car.copy_to_flat_slice(&mut car_values);
     for i in 0..n {
         s_values[i] -= car_values[i];
     }
     let mut w = s.zeros_like();
-    w.read_from_slice(&s_values);
+    w.copy_from_flat_slice(&s_values);
 
     // Solve S y = w
     let y = s_dense.lin_solve(w).unwrap();
@@ -76,13 +76,13 @@ pub fn schur_complement<T: Real, V: State<T>>(
     let by = b.mul_state::<V>(&y);
     let mut r_values = vec![T::zero(); n];
     let mut by_values = vec![T::zero(); n];
-    r.write_to_slice(&mut r_values);
-    by.write_to_slice(&mut by_values);
+    r.copy_to_flat_slice(&mut r_values);
+    by.copy_to_flat_slice(&mut by_values);
     for i in 0..n {
         r_values[i] -= by_values[i];
     }
     let mut rhs_x = r.zeros_like();
-    rhs_x.read_from_slice(&r_values);
+    rhs_x.copy_from_flat_slice(&r_values);
     let x = solve_a(rhs_x);
 
     (x, y)

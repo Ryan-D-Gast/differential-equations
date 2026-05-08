@@ -121,7 +121,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
                 // Infinity norm and RHS
                 let mut residual_values = vec![T::zero(); dim];
-                residual.write_to_slice(&mut residual_values);
+                residual.copy_to_flat_slice(&mut residual_values);
                 for (row_idx, res_val) in residual_values.iter().copied().enumerate() {
                     residual_norm = residual_norm.max(res_val.abs());
                     // Store residual in Newton RHS (negative for solving delta_z)
@@ -183,21 +183,21 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             // Solve (I - h*A⊗J) Δz = -F(z) using in-place LU on our matrix
             let mut rhs = self.rhs_newton.clone();
             self.newton_matrix.lin_solve_mut(&mut rhs[..])?;
-            self.delta_k_vec.copy_from_slice(&rhs);
+            self.delta_k_vec.copy_from_flat_slice(&rhs);
             self.lu_decompositions += 1;
 
             // Update z_i and increment norm
             increment_norm = T::zero();
             for i in 0..self.stages {
                 let mut z_values = vec![T::zero(); dim];
-                self.z[i].write_to_slice(&mut z_values);
+                self.z[i].copy_to_flat_slice(&mut z_values);
                 for (row_idx, z_value) in z_values.iter_mut().enumerate() {
                     let delta_val = self.delta_k_vec[i * dim + row_idx];
                     *z_value += delta_val;
                     // Calculate infinity norm of increment
                     increment_norm = increment_norm.max(delta_val.abs());
                 }
-                self.z[i].read_from_slice(&z_values);
+                self.z[i].copy_from_flat_slice(&z_values);
             }
 
             // Next loop will re-check

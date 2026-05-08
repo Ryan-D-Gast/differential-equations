@@ -84,7 +84,7 @@ impl<T: Real> Matrix<T> {
 
         let mut vec_values = vec![T::zero(); vec.len()];
         let mut result_values = vec![T::zero(); n];
-        vec.write_to_slice(&mut vec_values);
+        vec.copy_to_flat_slice(&mut vec_values);
         if let MatrixStorage::Sparse { ref coords, .. } = self.storage {
             for &(r, c, v) in coords {
                 result_values[r] += v * vec_values[c];
@@ -99,7 +99,7 @@ impl<T: Real> Matrix<T> {
             }
         }
         let mut result = vec.zeros_like();
-        result.read_from_slice(&result_values);
+        result.copy_from_flat_slice(&result_values);
         result
     }
 }

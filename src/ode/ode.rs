@@ -75,8 +75,8 @@ where
         let mut y_perturbed_values = vec![T::zero(); dim];
         let mut f_origin_values = vec![T::zero(); dim];
         let mut f_perturbed_values = vec![T::zero(); dim];
-        y.write_to_slice(&mut y_values);
-        f_origin.write_to_slice(&mut f_origin_values);
+        y.copy_to_flat_slice(&mut y_values);
+        f_origin.copy_to_flat_slice(&mut f_origin_values);
 
         // Use sqrt of machine epsilon for finite differences
         let eps = T::default_epsilon().sqrt();
@@ -90,17 +90,17 @@ where
             let perturbation = eps * y_original_j.abs().max(T::one());
 
             // Perturb the component
-            y_perturbed.write_to_slice(&mut y_perturbed_values);
+            y_perturbed.copy_to_flat_slice(&mut y_perturbed_values);
             y_perturbed_values[j_col] = y_original_j + perturbation;
-            y_perturbed.read_from_slice(&y_perturbed_values);
+            y_perturbed.copy_from_flat_slice(&y_perturbed_values);
 
             // Evaluate function with perturbed value
             self.diff(t, &y_perturbed, &mut f_perturbed);
-            f_perturbed.write_to_slice(&mut f_perturbed_values);
+            f_perturbed.copy_to_flat_slice(&mut f_perturbed_values);
 
             // Restore original value
             y_perturbed_values[j_col] = y_original_j;
-            y_perturbed.read_from_slice(&y_perturbed_values);
+            y_perturbed.copy_from_flat_slice(&y_perturbed_values);
 
             // Compute finite difference approximation for this column
             for i_row in 0..dim {

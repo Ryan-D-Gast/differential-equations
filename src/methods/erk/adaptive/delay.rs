@@ -194,40 +194,15 @@ impl<
                 y_low.add_scaled(bh[i] * self.h, &self.k[i]);
             }
 
-            // Infinity-norm-like error scaled by atol/rtol
-            err_norm = T::zero();
-            let dim = self.y.len();
-            let mut y_values = vec![T::zero(); dim];
-            let mut y_high_values = vec![T::zero(); dim];
-            let mut y_low_values = vec![T::zero(); dim];
-            self.y.write_to_slice(&mut y_values);
-            y_high.write_to_slice(&mut y_high_values);
-            y_low.write_to_slice(&mut y_low_values);
-            for n in 0..dim {
-                let tol =
-                    self.atol[n] + self.rtol[n] * y_values[n].abs().max(y_high_values[n].abs());
-                err_norm = err_norm.max(((y_high_values[n] - y_low_values[n]) / tol).abs());
-            }
+            let err = y_high.minus(&y_low);
+            err_norm = self.y.error_norm_inf(&y_high, &err, &self.atol, &self.rtol);
 
             // Iteration convergence (if iterating)
             if max_iter > 1 && it > 0 {
-                let mut iter_err = T::zero();
                 let n_dim = self.y.len();
-                let mut y_prev_values = vec![T::zero(); n_dim];
-                let mut y_high_values = vec![T::zero(); n_dim];
-                y_next_est_prev.write_to_slice(&mut y_prev_values);
-                y_high.write_to_slice(&mut y_high_values);
-                for d in 0..n_dim {
-                    let scale = self.atol[d]
-                        + self.rtol[d] * y_prev_values[d].abs().max(y_high_values[d].abs());
-                    if scale > T::zero() {
-                        let diff_val = y_high_values[d] - y_prev_values[d];
-                        iter_err += {
-                            let val = diff_val / scale;
-                            val * val
-                        };
-                    }
-                }
+                let iter_diff = y_high.minus(&y_next_est_prev);
+                let mut iter_err =
+                    y_next_est_prev.error_norm(&y_high, &iter_diff, &self.atol, &self.rtol);
                 if n_dim > 0 {
                     iter_err = (iter_err / T::from_usize(n_dim).unwrap()).sqrt();
                 }

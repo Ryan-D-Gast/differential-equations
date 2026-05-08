@@ -163,11 +163,11 @@ impl<E, T: Real, Y: State<T>> Radau5<E, T, Y> {
         // Calculate tolerance
         let mut y_values = vec![T::zero(); n];
         let mut scal_values = vec![T::zero(); n];
-        self.y.write_to_slice(&mut y_values);
+        self.y.copy_to_flat_slice(&mut y_values);
         for i in 0..n {
             scal_values[i] = self.atol[i] + self.rtol[i] * y_values[i].abs();
         }
-        self.scal.read_from_slice(&scal_values);
+        self.scal.copy_from_flat_slice(&scal_values);
 
         // Workspace
         self.z = core::array::from_fn(|_| y0.zeros_like());

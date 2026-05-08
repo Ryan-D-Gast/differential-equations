@@ -45,8 +45,8 @@ impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
         let mut sum = T::zero();
         let mut value_buf = vec![T::zero(); value.len()];
         let mut scale_buf = vec![T::zero(); scale.len()];
-        value.write_to_slice(&mut value_buf);
-        scale.write_to_slice(&mut scale_buf);
+        value.copy_to_flat_slice(&mut value_buf);
+        scale.copy_to_flat_slice(&mut scale_buf);
         for i in 0..value_buf.len() {
             let scaled = value_buf[i] / scale_buf[i];
             sum += scaled * scaled;
@@ -56,12 +56,12 @@ impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
 
     fn scale_from(&self, y: &Y) -> Y {
         let mut values = vec![T::zero(); y.len()];
-        y.write_to_slice(&mut values);
+        y.copy_to_flat_slice(&mut values);
         for (i, value) in values.iter_mut().enumerate() {
             *value = self.atol[i] + self.rtol[i] * value.abs();
         }
         let mut scale = y.zeros_like();
-        scale.read_from_slice(&values);
+        scale.copy_from_flat_slice(&values);
         scale
     }
 

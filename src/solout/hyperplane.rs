@@ -128,11 +128,11 @@ where
         let norm = normal.norm_squared().sqrt();
         if norm > T::default_epsilon() {
             let mut normal_values = vec![T::zero(); normal.len()];
-            normal.write_to_slice(&mut normal_values);
+            normal.copy_to_flat_slice(&mut normal_values);
             for value in normal_values.iter_mut() {
                 *value /= norm;
             }
-            normal.read_from_slice(&normal_values);
+            normal.copy_from_flat_slice(&normal_values);
         }
 
         HyperplaneCrossingSolout {
@@ -198,9 +198,9 @@ where
         let mut pos_values = vec![T::zero(); pos.len()];
         let mut point_values = vec![T::zero(); self.point.len()];
         let mut normal_values = vec![T::zero(); self.normal.len()];
-        pos.write_to_slice(&mut pos_values);
-        self.point.write_to_slice(&mut point_values);
-        self.normal.write_to_slice(&mut normal_values);
+        pos.copy_to_flat_slice(&mut pos_values);
+        self.point.copy_to_flat_slice(&mut point_values);
+        self.normal.copy_to_flat_slice(&mut normal_values);
 
         let mut distance = T::zero();
         for ((pos_i, point_i), normal_i) in pos_values

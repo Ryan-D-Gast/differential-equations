@@ -152,14 +152,14 @@ pub fn generate_state_impl(
                 #total_elements
             }
 
-            fn write_to_slice(&self, output: &mut [T]) {
+            fn copy_to_flat_slice(&self, output: &mut [T]) {
                 assert_eq!(output.len(), self.len(), "Slice length mismatch");
                 for i in 0..self.len() {
                     output[i] = self.__state_get(i);
                 }
             }
 
-            fn read_from_slice(&mut self, input: &[T]) {
+            fn copy_from_flat_slice(&mut self, input: &[T]) {
                 assert_eq!(input.len(), self.len(), "Slice length mismatch");
                 for i in 0..self.len() {
                     self.__state_set(i, input[i]);
@@ -187,6 +187,67 @@ pub fn generate_state_impl(
                     let value = self.__state_get(i) * alpha;
                     self.__state_set(i, value);
                 }
+            }
+
+            fn fill(&mut self, value: T) {
+                for i in 0..self.len() {
+                    self.__state_set(i, value);
+                }
+            }
+
+            fn copy_from_state(&mut self, other: &Self) {
+                for i in 0..self.len() {
+                    self.__state_set(i, other.__state_get(i));
+                }
+            }
+
+            fn norm_squared(&self) -> T {
+                let mut sum = T::zero();
+                for i in 0..self.len() {
+                    let value = self.__state_get(i);
+                    sum += value * value;
+                }
+                sum
+            }
+
+            fn diff_norm_squared(&self, other: &Self) -> T {
+                let mut sum = T::zero();
+                for i in 0..self.len() {
+                    let diff = self.__state_get(i) - other.__state_get(i);
+                    sum += diff * diff;
+                }
+                sum
+            }
+
+            fn error_norm(
+                &self,
+                y_new: &Self,
+                err: &Self,
+                atol: &differential_equations::tolerance::Tolerance<T>,
+                rtol: &differential_equations::tolerance::Tolerance<T>,
+            ) -> T {
+                let mut sum = T::zero();
+                for i in 0..self.len() {
+                    let sk = atol[i] + rtol[i] * self.__state_get(i).abs().max(y_new.__state_get(i).abs());
+                    let e = err.__state_get(i) / sk;
+                    sum += e * e;
+                }
+                sum
+            }
+
+            fn error_norm_inf(
+                &self,
+                y_new: &Self,
+                err: &Self,
+                atol: &differential_equations::tolerance::Tolerance<T>,
+                rtol: &differential_equations::tolerance::Tolerance<T>,
+            ) -> T {
+                let mut max = T::zero();
+                for i in 0..self.len() {
+                    let sk = atol[i] + rtol[i] * self.__state_get(i).abs().max(y_new.__state_get(i).abs());
+                    max = max.max((err.__state_get(i) / sk).abs());
+                }
+                max
             }
         }
 

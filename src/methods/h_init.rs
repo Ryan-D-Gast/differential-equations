@@ -76,8 +76,8 @@ impl InitialStepSize<Ordinary> {
         let mut sk_vec = Vec::with_capacity(n_dim);
         let mut y0_values = vec![T::zero(); n_dim];
         let mut f0_values = vec![T::zero(); n_dim];
-        y0.write_to_slice(&mut y0_values);
-        f0.write_to_slice(&mut f0_values);
+        y0.copy_to_flat_slice(&mut y0_values);
+        f0.copy_to_flat_slice(&mut f0_values);
 
         // Loop through all elements to compute weighted norms
         for n in 0..n_dim {
@@ -107,7 +107,7 @@ impl InitialStepSize<Ordinary> {
         // Estimate the second derivative
         let mut der2 = T::zero();
         let mut f1_values = vec![T::zero(); n_dim];
-        f1.write_to_slice(&mut f1_values);
+        f1.copy_to_flat_slice(&mut f1_values);
 
         for n in 0..n_dim {
             let sk = sk_vec[n];
@@ -194,8 +194,8 @@ impl InitialStepSize<Delay> {
         let mut sk_vec = Vec::with_capacity(n_dim);
         let mut y0_values = vec![T::zero(); n_dim];
         let mut f0_values = vec![T::zero(); n_dim];
-        y0.write_to_slice(&mut y0_values);
-        f0.write_to_slice(&mut f0_values);
+        y0.copy_to_flat_slice(&mut y0_values);
+        f0.copy_to_flat_slice(&mut f0_values);
         for n in 0..n_dim {
             let sk = atol[n] + rtol[n] * y0_values[n].abs();
             sk_vec.push(sk);
@@ -284,7 +284,7 @@ impl InitialStepSize<Delay> {
 
         let mut der2 = T::zero();
         let mut f1_values = vec![T::zero(); n_dim];
-        f1.write_to_slice(&mut f1_values);
+        f1.copy_to_flat_slice(&mut f1_values);
         for n in 0..n_dim {
             let sk = sk_vec[n];
             if sk <= T::zero() {
@@ -390,8 +390,8 @@ impl InitialStepSize<Algebraic> {
         let mut sk_vec = Vec::with_capacity(dim);
         let mut y0_values = vec![T::zero(); dim];
         let mut f0_values = vec![T::zero(); dim];
-        y0.write_to_slice(&mut y0_values);
-        f0.write_to_slice(&mut f0_values);
+        y0.copy_to_flat_slice(&mut y0_values);
+        f0.copy_to_flat_slice(&mut f0_values);
         for n in 0..dim {
             let sk = atol[n] + rtol[n] * y0_values[n].abs();
             sk_vec.push(sk);
@@ -430,7 +430,7 @@ impl InitialStepSize<Algebraic> {
         // Second derivative estimate on differential components only
         let mut der2 = T::zero();
         let mut f1_values = vec![T::zero(); dim];
-        f1.write_to_slice(&mut f1_values);
+        f1.copy_to_flat_slice(&mut f1_values);
         for n in 0..dim {
             if !is_diff[n] {
                 continue;

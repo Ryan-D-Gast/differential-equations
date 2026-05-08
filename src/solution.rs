@@ -210,7 +210,7 @@ where
         for (t, y) in self.iter() {
             let mut row = format!("{:?}", t);
             let mut y_values = vec![T::zero(); n];
-            y.write_to_slice(&mut y_values);
+            y.copy_to_flat_slice(&mut y_values);
             for value in y_values {
                 row.push_str(&format!(",{:?}", value));
             }
@@ -255,7 +255,7 @@ where
             .iter()
             .map(|y| {
                 let mut values = vec![T::zero(); n];
-                y.write_to_slice(&mut values);
+                y.copy_to_flat_slice(&mut values);
                 values
             })
             .collect::<Vec<_>>();
@@ -300,7 +300,7 @@ where
             .iter()
             .map(|y| {
                 let mut values = vec![T::zero(); n];
-                y.write_to_slice(&mut values);
+                y.copy_to_flat_slice(&mut values);
                 values
             })
             .collect::<Vec<_>>();
@@ -348,7 +348,7 @@ where
             .iter()
             .map(|y| {
                 let mut values = vec![T::zero(); n];
-                y.write_to_slice(&mut values);
+                y.copy_to_flat_slice(&mut values);
                 values
             })
             .collect::<Vec<_>>();

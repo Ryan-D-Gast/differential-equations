@@ -55,12 +55,12 @@ pub fn lin_solve<T: Real, Y: State<T>>(a: &Matrix<T>, b: &mut Y, ip: &[usize]) {
     let n = a.nrows();
     debug_assert_eq!(b.len(), n, "RHS length must match matrix size");
     let mut values = vec![T::zero(); n];
-    b.write_to_slice(&mut values);
+    b.copy_to_flat_slice(&mut values);
 
     // Handle trivial case
     if n == 1 {
         values[0] /= a[(0, 0)];
-        b.read_from_slice(&values);
+        b.copy_from_flat_slice(&values);
         return;
     }
 
@@ -98,7 +98,7 @@ pub fn lin_solve<T: Real, Y: State<T>>(a: &Matrix<T>, b: &mut Y, ip: &[usize]) {
 
     // Final division for the first element
     values[0] /= a[(0, 0)];
-    b.read_from_slice(&values);
+    b.copy_from_flat_slice(&values);
 }
 
 /// Solves a complex linear system (AR + i*AI)*X = (BR + i*BI) using LU decomposition.
@@ -152,8 +152,8 @@ pub fn lin_solve_complex<T: Real, Y: State<T>>(
     debug_assert_eq!(bi.len(), n, "RHS length must match matrix size");
     let mut br_values = vec![T::zero(); n];
     let mut bi_values = vec![T::zero(); n];
-    br.write_to_slice(&mut br_values);
-    bi.write_to_slice(&mut bi_values);
+    br.copy_to_flat_slice(&mut br_values);
+    bi.copy_to_flat_slice(&mut bi_values);
 
     // Handle trivial case with complex division
     if n == 1 {
@@ -163,8 +163,8 @@ pub fn lin_solve_complex<T: Real, Y: State<T>>(
         let temp_i = (bi_values[0] * ar[(0, 0)] - br_values[0] * ai[(0, 0)]) / den;
         br_values[0] = temp_r;
         bi_values[0] = temp_i;
-        br.read_from_slice(&br_values);
-        bi.read_from_slice(&bi_values);
+        br.copy_from_flat_slice(&br_values);
+        bi.copy_from_flat_slice(&bi_values);
         return;
     }
 
@@ -221,8 +221,8 @@ pub fn lin_solve_complex<T: Real, Y: State<T>>(
     let temp_i = (bi_values[0] * ar[(0, 0)] - br_values[0] * ai[(0, 0)]) / den;
     br_values[0] = temp_r;
     bi_values[0] = temp_i;
-    br.read_from_slice(&br_values);
-    bi.read_from_slice(&bi_values);
+    br.copy_from_flat_slice(&br_values);
+    bi.copy_from_flat_slice(&bi_values);
 }
 
 #[cfg(all(test, feature = "nalgebra"))]

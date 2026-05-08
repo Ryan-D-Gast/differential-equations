@@ -121,20 +121,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         }
 
         // Calculate error norm
-        let mut err_norm: T = T::zero();
-        let dim = self.y.len();
-        let mut y_values = vec![T::zero(); dim];
-        let mut y_high_values = vec![T::zero(); dim];
-        let mut y_low_values = vec![T::zero(); dim];
-        self.y.write_to_slice(&mut y_values);
-        y_high.write_to_slice(&mut y_high_values);
-        y_low.write_to_slice(&mut y_low_values);
-
-        // Iterate through state elements
-        for n in 0..dim {
-            let tol = self.atol[n] + self.rtol[n] * y_values[n].abs().max(y_high_values[n].abs());
-            err_norm = err_norm.max(((y_high_values[n] - y_low_values[n]) / tol).abs());
-        }
+        let err = y_high.minus(&y_low);
+        let err_norm = self.y.error_norm_inf(&y_high, &err, &self.atol, &self.rtol);
 
         // Step size scale factor
         let order = T::from_usize(self.order).unwrap();

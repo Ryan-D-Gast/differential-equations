@@ -27,16 +27,16 @@ trait TestStateAccess<T: Real>: StateTrait<T> {
     fn component(&self, index: usize) -> T {
         assert!(index < self.len(), "Index out of bounds");
         let mut values = vec![T::zero(); self.len()];
-        self.write_to_slice(&mut values);
+        self.copy_to_flat_slice(&mut values);
         values[index]
     }
 
     fn set_component(&mut self, index: usize, value: T) {
         assert!(index < self.len(), "Index out of bounds");
         let mut values = vec![T::zero(); self.len()];
-        self.write_to_slice(&mut values);
+        self.copy_to_flat_slice(&mut values);
         values[index] = value;
-        self.read_from_slice(&values);
+        self.copy_from_flat_slice(&values);
     }
 }
 
