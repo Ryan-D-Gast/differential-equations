@@ -4,6 +4,7 @@ use crate::{
     interpolate::{Interpolation, cubic_hermite_interpolate},
     methods::{Adaptive, ExplicitRungeKutta, Ordinary, h_init::InitialStepSize},
     ode::{ODE, OrdinaryNumericalMethod},
+    state_ops,
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -40,14 +41,19 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // Initialize State
         self.t = t0;
-        self.y = *y0;
+        self.y = y0.clone();
+        self.dydt = y0.zeros_like();
+        self.y_prev = y0.clone();
+        self.dydt_prev = y0.zeros_like();
+        self.k = core::array::from_fn(|_| y0.zeros_like());
+        self.cont = core::array::from_fn(|_| y0.zeros_like());
         ode.diff(self.t, &self.y, &mut self.dydt);
         evals.function += 1;
 
         // Initialize previous state
         self.t_prev = self.t;
-        self.y_prev = self.y;
-        self.dydt_prev = self.dydt;
+        self.y_prev = self.y.clone();
+        self.dydt_prev = self.dydt.clone();
 
         // Initialize Status
         self.status = Status::Initialized;
@@ -65,11 +71,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         if self.h.abs() < self.h_prev.abs() * T::from_f64(1e-14).unwrap() {
             self.status = Status::Error(Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
 
@@ -77,24 +83,24 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
         self.steps += 1;
 
         // Save k[0] as the current derivative
-        self.k[0] = self.dydt;
+        self.k[0] = self.dydt.clone();
 
         // Compute stages
         for i in 1..self.stages {
-            let mut y_stage = self.y;
+            let mut y_stage = self.y.clone();
 
             for j in 0..i {
-                y_stage += self.k[j] * (self.a[i][j] * self.h);
+                state_ops::axpy(&mut y_stage, self.a[i][j] * self.h, &self.k[j]);
             }
 
             ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
@@ -103,20 +109,17 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // For adaptive methods with error estimation
         // Compute higher order solution
-        let mut y_high = self.y;
+        let mut y_high = self.y.clone();
         for i in 0..self.stages {
-            y_high += self.k[i] * (self.b[i] * self.h);
+            state_ops::axpy(&mut y_high, self.b[i] * self.h, &self.k[i]);
         }
 
         // Compute lower order solution for error estimation
-        let mut y_low = self.y;
+        let mut y_low = self.y.clone();
         let bh = &self.bh.unwrap();
         for i in 0..self.stages {
-            y_low += self.k[i] * (bh[i] * self.h);
+            state_ops::axpy(&mut y_low, bh[i] * self.h, &self.k[i]);
         }
-
-        // Compute error estimate
-        let err = y_high - y_low;
 
         // Calculate error norm
         let mut err_norm: T = T::zero();
@@ -124,7 +127,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // Iterate through state elements
         for n in 0..self.y.len() {
             let tol = self.atol[n] + self.rtol[n] * self.y.get(n).abs().max(y_high.get(n).abs());
-            err_norm = err_norm.max((err.get(n) / tol).abs());
+            err_norm = err_norm.max(((y_high.get(n) - y_low.get(n)) / tol).abs());
         }
 
         // Step size scale factor
@@ -139,8 +142,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         if err_norm <= T::one() {
             // Log previous state
             self.t_prev = self.t;
-            self.y_prev = self.y;
-            self.dydt_prev = self.k[0];
+            self.y_prev = self.y.clone();
+            self.dydt_prev = self.k[0].clone();
             self.h_prev = self.h;
 
             if let Status::RejectedStep = self.status {
@@ -155,9 +158,13 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             if self.bi.is_some() {
                 // Compute extra stages for dense output
                 for i in 0..(I - S) {
-                    let mut y_stage = self.y;
+                    let mut y_stage = self.y.clone();
                     for j in 0..self.stages + i {
-                        y_stage += self.k[j] * (self.a[self.stages + i][j] * self.h);
+                        state_ops::axpy(
+                            &mut y_stage,
+                            self.a[self.stages + i][j] * self.h,
+                            &self.k[j],
+                        );
                     }
 
                     ode.diff(
@@ -176,7 +183,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             // Compute the derivative for the next step
             if self.fsal {
                 // If FSAL (First Same As Last) is enabled, we can reuse the last derivative
-                self.dydt = self.k[S - 1];
+                self.dydt = self.k[S - 1].clone();
             } else {
                 // Otherwise, compute the new derivative
                 ode.diff(self.t, &self.y, &mut self.dydt);
@@ -191,11 +198,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             if self.stiffness_counter >= self.max_rejects {
                 self.status = Status::Error(Error::Stiffness {
                     t: self.t,
-                    y: self.y,
+                    y: self.y.clone(),
                 });
                 return Err(Error::Stiffness {
                     t: self.t,
-                    y: self.y,
+                    y: self.y.clone(),
                 });
             }
         }
@@ -272,9 +279,9 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
             }
 
             // Compute the interpolated value
-            let mut y_interp = self.y_prev;
+            let mut y_interp = self.y_prev.clone();
             for i in 0..I {
-                y_interp += self.k[i] * cont[i] * self.h_prev;
+                state_ops::axpy(&mut y_interp, cont[i] * self.h_prev, &self.k[i]);
             }
 
             Ok(y_interp)

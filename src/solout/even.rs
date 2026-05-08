@@ -111,7 +111,7 @@ where
             None => {
                 // First time through, we need to include t0
                 if (t_prev - self.t0).abs() < T::default_epsilon() {
-                    solution.push(self.t0, *y_prev);
+                    solution.push(self.t0, y_prev.clone());
                     self.last_output_t = Some(self.t0);
                     self.t0 + self.dt * self.direction
                 } else {
@@ -172,15 +172,15 @@ where
                     if (t_last - self.tf).abs() <= tol {
                         // Replace the near-duplicate last point with the exact final time
                         let _ = solution.pop();
-                        solution.push(self.tf, *y_curr);
+                        solution.push(self.tf, y_curr.clone());
                         self.last_output_t = Some(self.tf);
                     } else if t_last != self.tf {
-                        solution.push(self.tf, *y_curr);
+                        solution.push(self.tf, y_curr.clone());
                         self.last_output_t = Some(self.tf);
                     }
                 }
                 None => {
-                    solution.push(self.tf, *y_curr);
+                    solution.push(self.tf, y_curr.clone());
                     self.last_output_t = Some(self.tf);
                 }
             }

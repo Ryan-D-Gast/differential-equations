@@ -1,6 +1,6 @@
 //! Schur complement helpers for block systems used in IRK solvers.
 
-use crate::traits::{Real, State};
+use crate::traits::{Real, StateAlgebra};
 
 use super::Matrix;
 
@@ -12,7 +12,7 @@ use super::Matrix;
 /// - This forms the dense Schur complement S = D - C A^{-1} B explicitly.
 ///   For small per-stage blocks (common in IRK), this is acceptable and simple.
 /// - For larger blocks, prefer an operator-based approach that applies S without forming it.
-pub fn schur_complement<T: Real, V: State<T>>(
+pub fn schur_complement<T: Real, V: StateAlgebra<T>>(
     a: &Matrix<T>,
     b: &Matrix<T>,
     c: &Matrix<T>,

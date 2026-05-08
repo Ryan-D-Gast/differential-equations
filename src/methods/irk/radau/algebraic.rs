@@ -7,11 +7,11 @@ use crate::{
     methods::{Algebraic, h_init::InitialStepSize, irk::radau::Radau5},
     stats::Evals,
     status::Status,
-    traits::{Real, State},
+    traits::{Real, StateAlgebra},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
-impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, T, Y> {
+impl<T: Real, Y: StateAlgebra<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, T, Y> {
     fn init<F>(&mut self, dae: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
         F: DAE<T, Y>,

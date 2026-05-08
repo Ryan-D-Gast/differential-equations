@@ -12,12 +12,12 @@ use crate::{
     methods::{ImplicitRungeKutta, Radau},
     status::Status,
     tolerance::Tolerance,
-    traits::{Real, State},
+    traits::{Real, State, StateAlgebra},
     utils::constrain_step_size,
 };
 
 /// Constructor for Radau5
-impl<E, T: Real, Y: State<T>> ImplicitRungeKutta<E, Radau, T, Y, 5, 3, 3> {
+impl<E, T: Real, Y: StateAlgebra<T>> ImplicitRungeKutta<E, Radau, T, Y, 5, 3, 3> {
     /// Creates a new Radau IIA 3-stage implicit Runge-Kutta method of order 5.
     ///
     /// For full usage details, DAE index handling, tuning notes and examples,
@@ -242,7 +242,7 @@ pub struct Radau5<E, T: Real, Y: State<T>> {
     equation: PhantomData<E>,
 }
 
-impl<E, T: Real, Y: State<T>> Default for Radau5<E, T, Y> {
+impl<E, T: Real, Y: StateAlgebra<T>> Default for Radau5<E, T, Y> {
     fn default() -> Self {
         // Radau IIA(5) constants
         let c1_t = T::from_f64(0.155_051_025_721_682_2).unwrap();
@@ -341,9 +341,9 @@ impl<E, T: Real, Y: State<T>> Default for Radau5<E, T, Y> {
             tinv,
 
             // Workspace
-            z: [Y::zeros(); 3],
-            k: [Y::zeros(); 3],
-            f: [Y::zeros(); 3],
+            z: core::array::from_fn(|_| Y::zeros()),
+            k: core::array::from_fn(|_| Y::zeros()),
+            f: core::array::from_fn(|_| Y::zeros()),
             jacobian: Matrix::zeros(0, 0),
             jacobian_age: 0,
             a: Matrix::zeros(0, 0),
@@ -378,7 +378,7 @@ impl<E, T: Real, Y: State<T>> Default for Radau5<E, T, Y> {
             index3: Vec::new(),
 
             // Dense output coefficients
-            cont: [Y::zeros(); 4],
+            cont: core::array::from_fn(|_| Y::zeros()),
 
             // Error recovery
             singular_count: 0,
@@ -405,7 +405,7 @@ impl<E, T: Real, Y: State<T>> Default for Radau5<E, T, Y> {
     }
 }
 
-impl<E, T: Real, Y: State<T>> Radau5<E, T, Y> {
+impl<E, T: Real, Y: StateAlgebra<T>> Radau5<E, T, Y> {
     // Builder methods
     /// Set the relative tolerance for the solver.
     pub fn rtol<V: Into<Tolerance<T>>>(mut self, rtol: V) -> Self {

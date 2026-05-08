@@ -4,7 +4,7 @@
 //! crosses a hyperplane in the state space.
 
 use super::*;
-use crate::linalg::dot;
+use crate::traits::State;
 
 /// Function type for extracting position components from state vector
 pub type ExtractorFn<Y, P> = fn(&Y) -> P;
@@ -126,7 +126,7 @@ where
     ///
     pub fn new(point: Y1, mut normal: Y1, extractor: ExtractorFn<Y2, Y1>) -> Self {
         // Normalize the normal vector
-        let norm = |y: Y1| {
+        let norm = |y: &Y1| {
             let mut norm = T::zero();
             for i in 0..y.len() {
                 norm += {
@@ -136,9 +136,11 @@ where
             }
             norm.sqrt()
         };
-        let norm = norm(normal);
+        let norm = norm(&normal);
         if norm > T::default_epsilon() {
-            normal = normal * T::one() / norm;
+            for i in 0..normal.len() {
+                normal.set(i, normal.get(i) / norm);
+            }
         }
 
         HyperplaneCrossingSolout {
@@ -201,11 +203,11 @@ where
     /// * Signed distance (positive if on same side as normal vector)
     ///
     fn signed_distance(&self, pos: &Y1) -> T {
-        // Calculate displacement vector from plane point to position
-        let displacement = *pos - self.point;
-
-        // Dot product with normal gives signed distance
-        dot(&displacement, &self.normal)
+        let mut distance = T::zero();
+        for i in 0..pos.len() {
+            distance += (pos.get(i) - self.point.get(i)) * self.normal.get(i);
+        }
+        distance
     }
 }
 

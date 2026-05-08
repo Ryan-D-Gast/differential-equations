@@ -4,6 +4,7 @@ use crate::{
     interpolate::Interpolation,
     methods::{DormandPrince, ExplicitRungeKutta, Ordinary, h_init::InitialStepSize},
     ode::{ODE, OrdinaryNumericalMethod},
+    state_ops,
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -39,15 +40,20 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // Initialize State
         self.t = t0;
-        self.y = *y0;
+        self.y = y0.clone();
+        self.dydt = y0.zeros_like();
+        self.y_prev = y0.clone();
+        self.dydt_prev = y0.zeros_like();
+        self.k = core::array::from_fn(|_| y0.zeros_like());
+        self.cont = core::array::from_fn(|_| y0.zeros_like());
         ode.diff(self.t, &self.y, &mut self.k[0]);
-        self.dydt = self.k[0];
+        self.dydt = self.k[0].clone();
         evals.function += 1;
 
         // Initialize previous state
         self.t_prev = self.t;
-        self.y_prev = self.y;
-        self.dydt_prev = self.dydt;
+        self.y_prev = self.y.clone();
+        self.dydt_prev = self.dydt.clone();
 
         // Initialize Status
         self.status = Status::Initialized;
@@ -65,11 +71,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         if self.h.abs() < self.h_prev.abs() * T::from_f64(1e-14).unwrap() {
             self.status = Status::Error(Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
 
@@ -77,39 +83,38 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
         self.steps += 1;
 
         // Compute stages
-        let mut y_stage = Y::zeros();
+        let mut y_stage = self.y.zeros_like();
         for i in 1..self.stages {
-            y_stage = Y::zeros();
+            y_stage = self.y.clone();
 
             for j in 0..i {
-                y_stage += self.k[j] * self.a[i][j];
+                state_ops::axpy(&mut y_stage, self.a[i][j] * self.h, &self.k[j]);
             }
-            y_stage = self.y + y_stage * self.h;
 
             ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
         }
 
         // The last stage will be used for stiffness detection
-        let ysti = y_stage;
+        let ysti = y_stage.clone();
 
         // Calculate the line segment for the new y value
-        let mut yseg = Y::zeros();
+        let mut yseg = self.y.zeros_like();
         for i in 0..self.stages {
-            yseg += self.k[i] * self.b[i];
+            state_ops::axpy(&mut yseg, self.b[i], &self.k[i]);
         }
 
         // Calculate the new y value using the line segment
-        let y_new = self.y + yseg * self.h;
+        let y_new = state_ops::from_base_plus(&self.y, &[(&yseg, self.h)]);
 
         // Evaluate derivative at new point for error estimation
         let t_new = self.t + self.h;
@@ -172,22 +177,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             // stiffness detection
             let n_stiff_threshold = 100;
             if self.steps.is_multiple_of(n_stiff_threshold) {
-                let mut stdnum = T::zero();
-                let mut stden = T::zero();
-                let sqr = yseg - self.k[S - 1];
-                for i in 0..sqr.len() {
-                    stdnum += {
-                        let val = sqr.get(i);
-                        val * val
-                    };
-                }
-                let sqr = self.dydt - ysti;
-                for i in 0..sqr.len() {
-                    stden += {
-                        let val = sqr.get(i);
-                        val * val
-                    };
-                }
+                let stdnum = state_ops::diff_norm_squared(&yseg, &self.k[S - 1]);
+                let stden = state_ops::diff_norm_squared(&self.dydt, &ysti);
 
                 if stden > T::zero() {
                     let h_lamb = self.h * (stdnum / stden).sqrt();
@@ -198,11 +189,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                             // Early Exit Stiffness Detected
                             self.status = Status::Error(Error::Stiffness {
                                 t: self.t,
-                                y: self.y,
+                                y: self.y.clone(),
                             });
                             return Err(Error::Stiffness {
                                 t: self.t,
-                                y: self.y,
+                                y: self.y.clone(),
                             });
                         }
                     }
@@ -215,26 +206,30 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             }
 
             // Preparation for dense output / interpolation
-            self.cont[0] = self.y;
-            let ydiff = y_new - self.y;
-            self.cont[1] = ydiff;
-            let bspl = self.k[0] * self.h - ydiff;
-            self.cont[2] = bspl;
-            self.cont[3] = ydiff - self.dydt * self.h - bspl;
+            self.cont[0] = self.y.clone();
+            let ydiff = state_ops::sub(&y_new, &self.y);
+            self.cont[1] = ydiff.clone();
+            let mut bspl = ydiff.zeros_like();
+            state_ops::axpy(&mut bspl, self.h, &self.k[0]);
+            state_ops::axpy(&mut bspl, -T::one(), &ydiff);
+            self.cont[2] = bspl.clone();
+            let mut cont3 = ydiff;
+            state_ops::axpy(&mut cont3, -self.h, &self.dydt);
+            state_ops::axpy(&mut cont3, -T::one(), &bspl);
+            self.cont[3] = cont3;
 
             // If method has dense output stages, compute them
             if let Some(bi) = &self.bi {
                 // Compute extra stages for dense output
                 if I > S {
                     // First dense output coefficient, k{i=order+1}, is the derivative at the new point
-                    self.k[self.stages] = self.dydt;
+                    self.k[self.stages] = self.dydt.clone();
 
                     for i in S + 1..I {
-                        let mut y_stage = Y::zeros();
+                        let mut y_stage = self.y.clone();
                         for j in 0..i {
-                            y_stage += self.k[j] * self.a[i][j];
+                            state_ops::axpy(&mut y_stage, self.a[i][j] * self.h, &self.k[j]);
                         }
-                        y_stage = self.y + y_stage * self.h;
 
                         ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
                         evals.function += 1;
@@ -243,24 +238,26 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
                 // Compute dense output coefficients
                 for i in 4..self.order {
-                    self.cont[i] = Y::zeros();
+                    state_ops::fill(&mut self.cont[i], T::zero());
                     for j in 0..self.dense_stages {
-                        self.cont[i] += self.k[j] * bi[i][j];
+                        state_ops::axpy(&mut self.cont[i], bi[i][j], &self.k[j]);
                     }
-                    self.cont[i] = self.cont[i] * self.h;
+                    for n in 0..self.cont[i].len() {
+                        self.cont[i].set(n, self.cont[i].get(n) * self.h);
+                    }
                 }
             }
 
             // For interpolation
             self.t_prev = self.t;
-            self.y_prev = self.y;
-            self.dydt_prev = self.k[0];
+            self.y_prev = self.y.clone();
+            self.dydt_prev = self.k[0].clone();
             self.h_prev = self.h;
 
             // Update the state with new values
             self.t = t_new;
             self.y = y_new;
-            self.k[0] = self.dydt;
+            self.k[0] = self.dydt.clone();
 
             // Check if previous step is rejected
             if let Status::RejectedStep = self.status {
@@ -331,19 +328,24 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
 
         // Functional implementation of: cont[0] + (cont[1] + (cont[2] + (cont[3] + conpar*s1)*s)*s1)*s
         let ilast = self.cont.len() - 1;
-        let poly = (1..ilast).rev().fold(self.cont[ilast], |acc, i| {
-            let factor = if i >= 4 {
-                // For the higher-order part (conpar), alternate s and s1 based on index parity
-                if (ilast - i) % 2 == 1 { s1 } else { s }
-            } else {
-                // For the main polynomial part, pattern is [s1, s, s1] for indices [3, 2, 1]
-                if i % 2 == 1 { s1 } else { s }
-            };
-            acc * factor + self.cont[i]
-        });
+        let poly = (1..ilast)
+            .rev()
+            .fold(self.cont[ilast].clone(), |mut acc, i| {
+                let factor = if i >= 4 {
+                    // For the higher-order part (conpar), alternate s and s1 based on index parity
+                    if (ilast - i) % 2 == 1 { s1 } else { s }
+                } else {
+                    // For the main polynomial part, pattern is [s1, s, s1] for indices [3, 2, 1]
+                    if i % 2 == 1 { s1 } else { s }
+                };
+                for n in 0..acc.len() {
+                    acc.set(n, acc.get(n) * factor + self.cont[i].get(n));
+                }
+                acc
+            });
 
         // Final multiplication by s for the outermost level
-        let y_interp = self.cont[0] + poly * s;
+        let y_interp = state_ops::from_base_plus(&self.cont[0], &[(&poly, s)]);
 
         Ok(y_interp)
     }

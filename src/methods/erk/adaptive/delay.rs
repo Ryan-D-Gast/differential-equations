@@ -6,6 +6,7 @@ use crate::{
     error::Error,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     methods::{Adaptive, Delay, ExplicitRungeKutta, h_init::InitialStepSize},
+    state_ops,
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -36,9 +37,14 @@ impl<
         // Init solver state
         self.t0 = t0;
         self.t = t0;
-        self.y = *y0;
+        self.y = y0.clone();
+        self.dydt = y0.zeros_like();
+        self.y_prev = y0.clone();
+        self.dydt_prev = y0.zeros_like();
+        self.k = core::array::from_fn(|_| y0.zeros_like());
+        self.cont = core::array::from_fn(|_| y0.zeros_like());
         self.t_prev = self.t;
-        self.y_prev = self.y;
+        self.y_prev = self.y.clone();
         self.status = Status::Initialized;
         self.steps = 0;
         self.stiffness_counter = 0;
@@ -46,7 +52,7 @@ impl<
 
         // Delay buffers
         let mut delays = [T::zero(); L];
-        let mut y_delayed = [Y::zeros(); L];
+        let mut y_delayed = core::array::from_fn(|_| y0.zeros_like());
 
         // Initial delays and history
         dde.lags(self.t, &self.y, &mut delays);
@@ -67,8 +73,9 @@ impl<
         // Initial derivative and seed history
         dde.diff(self.t, &self.y, &y_delayed, &mut self.dydt);
         evals.function += 1;
-        self.dydt_prev = self.dydt; // Store initial state in history
-        self.history.push_back((self.t, self.y, self.dydt));
+        self.dydt_prev = self.dydt.clone(); // Store initial state in history
+        self.history
+            .push_back((self.t, self.y.clone(), self.dydt.clone()));
 
         // Initial step size
         if self.h0 == T::zero() {
@@ -98,11 +105,11 @@ impl<
         if self.h.abs() < self.h_prev.abs() * T::from_f64(1e-14).unwrap() {
             self.status = Status::Error(Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
 
@@ -110,26 +117,26 @@ impl<
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
         self.steps += 1;
 
         // Step buffers
         let mut delays = [T::zero(); L];
-        let mut y_delayed = [Y::zeros(); L];
+        let mut y_delayed = core::array::from_fn(|_| self.y.zeros_like());
 
         // Seed k[0]
-        self.k[0] = self.dydt;
+        self.k[0] = self.dydt.clone();
 
         // Check if delay iteration is needed
         let mut min_delay_abs = T::infinity();
         // Predict y(t+h) to estimate delays at t+h
-        let y_pred_for_lags = self.y + self.k[0] * self.h;
+        let y_pred_for_lags = state_ops::from_base_plus(&self.y, &[(&self.k[0], self.h)]);
         dde.lags(self.t + self.h, &y_pred_for_lags, &mut delays);
         for i in 0..L {
             min_delay_abs = min_delay_abs.min(delays[i].abs());
@@ -142,23 +149,23 @@ impl<
             1
         };
 
-        let mut y_next_est = self.y;
-        let mut dydt_next_est = Y::zeros();
-        let mut y_next_est_prev = self.y;
+        let mut y_next_est = self.y.clone();
+        let mut dydt_next_est = self.y.zeros_like();
+        let mut y_next_est_prev = self.y.clone();
         let mut dde_iter_failed = false;
         let mut err_norm: T = T::zero();
 
         // DDE iteration loop
         for it in 0..max_iter {
             if it > 0 {
-                y_next_est_prev = y_next_est;
+                y_next_est_prev = y_next_est.clone();
             }
 
             // Compute stages
             for i in 1..self.stages {
-                let mut y_stage = self.y;
+                let mut y_stage = self.y.clone();
                 for j in 0..i {
-                    y_stage += self.k[j] * (self.a[i][j] * self.h);
+                    state_ops::axpy(&mut y_stage, self.a[i][j] * self.h, &self.k[j]);
                 }
                 // Delayed states for this stage
                 let t_stage = self.t + self.c[i] * self.h;
@@ -178,23 +185,22 @@ impl<
             evals.function += self.stages - 1;
 
             // High/low order solutions for error
-            let mut y_high = self.y;
+            let mut y_high = self.y.clone();
             for i in 0..self.stages {
-                y_high += self.k[i] * (self.b[i] * self.h);
+                state_ops::axpy(&mut y_high, self.b[i] * self.h, &self.k[i]);
             }
-            let mut y_low = self.y;
+            let mut y_low = self.y.clone();
             let bh = &self.bh.unwrap();
             for i in 0..self.stages {
-                y_low += self.k[i] * (bh[i] * self.h);
+                state_ops::axpy(&mut y_low, bh[i] * self.h, &self.k[i]);
             }
-            let err_vec: Y = y_high - y_low;
 
             // Infinity-norm-like error scaled by atol/rtol
             err_norm = T::zero();
             for n in 0..self.y.len() {
                 let tol =
                     self.atol[n] + self.rtol[n] * self.y.get(n).abs().max(y_high.get(n).abs());
-                err_norm = err_norm.max((err_vec.get(n) / tol).abs());
+                err_norm = err_norm.max(((y_high.get(n) - y_low.get(n)) / tol).abs());
             }
 
             // Iteration convergence (if iterating)
@@ -217,7 +223,7 @@ impl<
                 }
 
                 if iter_err <= self.rtol.average() * T::from_f64(0.1).unwrap() {
-                    y_next_est = y_high;
+                    y_next_est = y_high.clone();
                     dde.lags(self.t + self.h, &y_next_est, &mut delays);
                     if let Err(e) = self.lagvals(self.t + self.h, &delays, &mut y_delayed, phi) {
                         self.status = Status::Error(e.clone());
@@ -233,7 +239,7 @@ impl<
             }
 
             // Update candidate
-            y_next_est = y_high;
+            y_next_est = y_high.clone();
 
             // Derivative at t+h for candidate
             dde.lags(self.t + self.h, &y_next_est, &mut delays);
@@ -270,8 +276,8 @@ impl<
         if err_norm <= T::one() {
             // Accept
             self.t_prev = self.t;
-            self.y_prev = self.y;
-            self.dydt_prev = self.dydt;
+            self.y_prev = self.y.clone();
+            self.dydt_prev = self.dydt.clone();
             self.h_prev = self.h;
 
             if let Status::RejectedStep = self.status {
@@ -284,9 +290,13 @@ impl<
             // Dense output stages
             if self.bi.is_some() {
                 for i in 0..(I - S) {
-                    let mut y_stage = self.y;
+                    let mut y_stage = self.y.clone();
                     for j in 0..self.stages + i {
-                        y_stage += self.k[j] * (self.a[self.stages + i][j] * self.h);
+                        state_ops::axpy(
+                            &mut y_stage,
+                            self.a[self.stages + i][j] * self.h,
+                            &self.k[j],
+                        );
                     }
                     let t_stage = self.t + self.c[self.stages + i] * self.h;
                     dde.lags(t_stage, &y_stage, &mut delays);
@@ -310,7 +320,7 @@ impl<
 
             // Derivative for next step
             if self.fsal {
-                self.dydt = self.k[S - 1];
+                self.dydt = self.k[S - 1].clone();
             } else {
                 dde.lags(self.t, &self.y, &mut delays);
                 if let Err(e) = self.lagvals(self.t, &delays, &mut y_delayed, phi) {
@@ -322,7 +332,8 @@ impl<
             }
 
             // Append to history and prune
-            self.history.push_back((self.t, self.y, self.dydt));
+            self.history
+                .push_back((self.t, self.y.clone(), self.dydt.clone()));
             if let Some(max_delay) = self.max_delay {
                 let cutoff_time = self.t - max_delay;
                 while let Some((t_front, _, _)) = self.history.get(1) {
@@ -341,11 +352,11 @@ impl<
             if self.stiffness_counter >= self.max_rejects {
                 self.status = Status::Error(Error::Stiffness {
                     t: self.t,
-                    y: self.y,
+                    y: self.y.clone(),
                 });
                 return Err(Error::Stiffness {
                     t: self.t,
-                    y: self.y,
+                    y: self.y.clone(),
                 });
             }
         }
@@ -419,10 +430,14 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                         }
                     }
 
-                    let mut y_interp = self.y_prev;
+                    let mut y_interp = self.y_prev.clone();
                     for s_idx in 0..I {
                         if s_idx < self.k.len() && s_idx < self.cont.len() {
-                            y_interp += self.k[s_idx] * (coeffs[s_idx] * self.h_prev);
+                            state_ops::axpy(
+                                &mut y_interp,
+                                coeffs[s_idx] * self.h_prev,
+                                &self.k[s_idx],
+                            );
                         }
                     }
                     y_delayed[idx] = y_interp;
@@ -513,9 +528,9 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
             }
 
             // Compute the interpolated value
-            let mut y_interp = self.y_prev;
+            let mut y_interp = self.y_prev.clone();
             for i in 0..I {
-                y_interp += self.k[i] * coeffs[i] * self.h_prev;
+                state_ops::axpy(&mut y_interp, coeffs[i] * self.h_prev, &self.k[i]);
             }
 
             Ok(y_interp)

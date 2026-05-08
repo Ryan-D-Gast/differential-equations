@@ -7,6 +7,7 @@ use crate::{
     linalg::Matrix,
     traits::{Real, State},
 };
+use nalgebra::SVector;
 
 /// DAE Trait for Differential Algebraic Equations
 ///
@@ -23,7 +24,7 @@ use crate::{
 ///
 /// Note that the event function is optional and can be left out when implementing
 /// in which case it will be set to return Continue by default.
-pub trait DAE<T = f64, V = f64>
+pub trait DAE<T = f64, V = SVector<T, 1>>
 where
     T: Real,
     V: State<T>,
@@ -82,7 +83,7 @@ where
     fn jacobian(&self, t: T, y: &V, j: &mut Matrix<T>) {
         // Default implementation using forward finite differences
         let dim = y.len();
-        let mut y_perturbed = *y;
+        let mut y_perturbed = y.clone();
         let mut f_perturbed = V::zeros();
         let mut f_origin = V::zeros();
 

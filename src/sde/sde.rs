@@ -4,6 +4,7 @@
 //! given a condition or event.
 
 use crate::traits::{Real, State};
+use nalgebra::SVector;
 
 /// SDE Trait for Stochastic Differential Equations
 ///
@@ -19,7 +20,7 @@ use crate::traits::{Real, State};
 /// * `event`     - Event function to interupt solver when condition is met or event occurs.
 ///
 /// Note that the event function is optional and can be left out when implementing.
-pub trait SDE<T = f64, Y = f64>
+pub trait SDE<T = f64, Y = SVector<T, 1>>
 where
     T: Real,
     Y: State<T>,

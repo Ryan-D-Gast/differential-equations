@@ -2,9 +2,9 @@ use crate::error::Error;
 use crate::linalg::Matrix;
 use crate::methods::irk::radau::Radau5;
 use crate::status::Status;
-use crate::traits::{Real, State};
+use crate::traits::{Real, StateAlgebra};
 
-impl<E, T: Real, Y: State<T>> Radau5<E, T, Y> {
+impl<E, T: Real, Y: StateAlgebra<T>> Radau5<E, T, Y> {
     /// Initialize Radau5: combines `set_parameters` and common workspace setup.
     pub fn initialize(&mut self, t0: T, tf: T, y0: &Y) -> Result<(), Error<T, Y>> {
         // Dimension of system
@@ -167,9 +167,9 @@ impl<E, T: Real, Y: State<T>> Radau5<E, T, Y> {
         }
 
         // Workspace
-        self.z = [Y::zeros(), Y::zeros(), Y::zeros()];
-        self.k = [Y::zeros(), Y::zeros(), Y::zeros()];
-        self.f = [Y::zeros(), Y::zeros(), Y::zeros()];
+        self.z = core::array::from_fn(|_| y0.zeros_like());
+        self.k = core::array::from_fn(|_| y0.zeros_like());
+        self.f = core::array::from_fn(|_| y0.zeros_like());
         self.jacobian = Matrix::zeros(n, n);
         self.e1 = Matrix::zeros(n, n);
         self.e2r = Matrix::zeros(n, n);
@@ -180,7 +180,7 @@ impl<E, T: Real, Y: State<T>> Radau5<E, T, Y> {
         self.b = vec![T::zero(); 2 * n];
 
         // Dense output coefficients
-        self.cont = [Y::zeros(); 4];
+        self.cont = core::array::from_fn(|_| y0.zeros_like());
 
         // Flags
         self.first = true;

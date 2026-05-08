@@ -17,6 +17,7 @@
 
 use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
+use nalgebra::Vector1;
 use quill::prelude::*;
 
 struct LogisticGrowth {
@@ -25,8 +26,8 @@ struct LogisticGrowth {
 }
 
 impl ODE for LogisticGrowth {
-    fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
-        *dydt = self.k * y * (1.0 - y / self.m);
+    fn diff(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
+        dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
     }
 }
 
@@ -36,14 +37,14 @@ impl Event for LogisticGrowth {
     }
 
     /// Event function g(t,y) = y - 0.9*m
-    fn event(&self, _t: f64, y: &f64) -> f64 {
+    fn event(&self, _t: f64, y: &Vector1<f64>) -> f64 {
         // Event function g(t,y) = y - 0.9*m
-        y - 0.9 * self.m
+        y[0] - 0.9 * self.m
     }
 }
 
 fn main() {
-    let y0 = 1.0;
+    let y0 = Vector1::new(1.0);
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
@@ -64,7 +65,7 @@ fn main() {
             // The output points, (t, y), can be iterated over
             println!("Solution:");
             for (t, y) in solution.iter() {
-                println!("({:.4}, {:.4})", t, y);
+                println!("({:.4}, {:.4})", t, y[0]);
             }
 
             // Print the statistics
@@ -87,7 +88,7 @@ fn main() {
                     Series::builder()
                         .name("Numerical Solution")
                         .color("Blue")
-                        .data(solution.iter().map(|(t, y)| (*t, *y)).collect::<Vec<_>>())
+                        .data(solution.iter().map(|(t, y)| (*t, y[0])).collect::<Vec<_>>())
                         .build(),
                     Series::builder()
                         .name("Termination Asymptote")

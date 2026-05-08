@@ -89,7 +89,7 @@ where
         I: Interpolation<T, Y>,
     {
         // Output the current time and state to the vectors
-        solution.push(t_curr, *y_curr);
+        solution.push(t_curr, y_curr.clone());
 
         // Continue the integration
         ControlFlag::Continue

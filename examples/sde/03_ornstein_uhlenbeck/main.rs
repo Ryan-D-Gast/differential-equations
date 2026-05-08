@@ -16,6 +16,7 @@
 
 use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
+use nalgebra::Vector1;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
 
@@ -38,17 +39,17 @@ impl OrnsteinUhlenbeck {
 }
 
 impl SDE for OrnsteinUhlenbeck {
-    fn drift(&self, _t: f64, y: &f64, dydt: &mut f64) {
-        *dydt = self.theta * (self.mu - *y);
+    fn drift(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
+        dydt[0] = self.theta * (self.mu - y[0]);
     }
 
-    fn diffusion(&self, _t: f64, _y: &f64, dydw: &mut f64) {
-        *dydw = self.sigma;
+    fn diffusion(&self, _t: f64, _y: &Vector1<f64>, dydw: &mut Vector1<f64>) {
+        dydw[0] = self.sigma;
     }
 
-    fn noise(&mut self, dt: f64, dw: &mut f64) {
+    fn noise(&mut self, dt: f64, dw: &mut Vector1<f64>) {
         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
-        *dw = normal.sample(&mut self.rng);
+        dw[0] = normal.sample(&mut self.rng);
     }
 }
 
@@ -64,7 +65,7 @@ fn main() {
     // Time settings
     let t0 = 0.0;
     let tf = 10.0;
-    let y0 = 5.0; // Initial value, far from mean
+    let y0 = Vector1::new(5.0); // Initial value, far from mean
 
     // Create the Ornstein-Uhlenbeck SDE problem
     let mut sde = OrnsteinUhlenbeck::new(theta, mu, sigma, seed);
@@ -79,7 +80,7 @@ fn main() {
         .unwrap();
 
     // --- Print the results ---
-    let final_value = *solution.y.last().unwrap();
+    let final_value = solution.y.last().unwrap()[0];
 
     println!("Simulating Ornstein-Uhlenbeck process with parameters:");
     println!("θ = {}, μ = {}, σ = {}", theta, mu, sigma);

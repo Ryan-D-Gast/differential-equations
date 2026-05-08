@@ -116,6 +116,7 @@ Once configured, a solver can be used with `IVP::ode`:
 
 ```rust
 use differential_equations::prelude::*;
+use nalgebra::Vector1;
 
 // Define your ODE implementation (see Defining a Differential Equation)
 struct MyODE;
@@ -129,7 +130,7 @@ let system = MyODE;
 let solver = ExplicitRungeKutta::dopri5().rtol(1e-6).atol(1e-9);
 
 // Solve the problem
-let solution = IVP::ode(&system, 0.0, 10.0, 1.0)
+let solution = IVP::ode(&system, 0.0, 10.0, Vector1::new(1.0))
     .method(solver)
     .solve()
     .unwrap();

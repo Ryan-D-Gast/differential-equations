@@ -83,8 +83,8 @@ use crate::{
 /// struct ExponentialGrowth;
 ///
 /// impl ODE for ExponentialGrowth {
-///     fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
-///         *dydt = *y;
+///     fn diff(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
+///         dydt[0] = y[0];
 ///     }
 /// }
 ///
@@ -92,12 +92,12 @@ use crate::{
 /// let mut method = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-10);
 /// let mut solout = DefaultSolout::new();
 /// let system = ExponentialGrowth;
-/// let y0 = 1.0;
+/// let y0 = Vector1::new(1.0);
 /// let result = solve_ode(&mut method, &system, 0.0, 1.0, &y0, &mut solout);
 ///
 /// match result {
 ///     Ok(solution) => {
-///         println!("Final value: {}", solution.y.last().unwrap());
+///         println!("Final value: {}", solution.y.last().unwrap()[0]);
 ///         println!("Number of steps: {}", solution.steps.total());
 ///     },
 ///     Err(status) => {
@@ -154,8 +154,8 @@ where
     }
 
     // Call solout to initialize the output strategy
-    let mut y_curr = *solver.y();
-    let mut y_prev = *solver.y_prev();
+    let mut y_curr = solver.y().clone();
+    let mut y_prev = solver.y_prev().clone();
     match solout.solout(
         solver.t(),
         solver.t_prev(),
@@ -228,8 +228,8 @@ where
         }
 
         // Record the result
-        y_curr = *solver.y();
-        y_prev = *solver.y_prev();
+        y_curr = solver.y().clone();
+        y_prev = solver.y_prev().clone();
         match solout.solout(
             solver.t(),
             solver.t_prev(),

@@ -15,6 +15,16 @@ fn test_state_basics<S: StateTrait<f64>>(state: &mut S, expected_len: usize) {
         assert_eq!(state.get(i), 42.0);
         state.set(i, original); // Restore
     }
+
+    let mut buffer = vec![0.0; expected_len];
+    state.write_to_slice(&mut buffer);
+    for (i, value) in buffer.iter_mut().enumerate() {
+        *value = i as f64 + 1.0;
+    }
+    state.read_from_slice(&buffer);
+    for (i, value) in buffer.iter().copied().enumerate() {
+        assert_eq!(state.get(i), value);
+    }
 }
 
 #[test]

@@ -99,7 +99,7 @@ impl<E, T: Real, Y: State<T>> Default for BDF<E, T, Y> {
             t_prev: T::zero(),
             y_prev: Y::zeros(),
             h_prev: T::zero(),
-            d: [Y::zeros(); BDF_ROWS],
+            d: core::array::from_fn(|_| Y::zeros()),
 
             order: 1,
             n_equal_steps: 0,

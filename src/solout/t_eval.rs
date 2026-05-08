@@ -112,7 +112,7 @@ where
             if in_range {
                 // If the evaluation point is exactly at the current step, just use the solver's state
                 if t_eval == t_curr {
-                    solution.push(t_eval, *y_curr);
+                    solution.push(t_eval, y_curr.clone());
                 } else {
                     // Otherwise interpolate
                     let y_eval = interpolator.interpolate(t_eval).unwrap();

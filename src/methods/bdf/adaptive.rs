@@ -6,13 +6,13 @@ use crate::{
     ode::{ODE, OrdinaryNumericalMethod},
     stats::Evals,
     status::Status,
-    traits::{Real, State},
+    traits::{Real, StateAlgebra},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
 use super::{BDF, BDF_ROWS, MAX_ORDER};
 
-impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
+impl<T: Real, Y: StateAlgebra<T>> BDF<Ordinary, T, Y> {
     fn scalar(value: f64) -> T {
         T::from_f64(value).expect("BDF constants must be representable as the solver scalar type")
     }
@@ -207,7 +207,7 @@ impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
     }
 }
 
-impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y> {
+impl<T: Real, Y: StateAlgebra<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y> {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
         F: ODE<T, Y>,
@@ -243,9 +243,9 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
         evals.function += 1;
 
         let dim = y0.len();
-        self.d = [Y::zeros(); BDF_ROWS];
+        self.d = core::array::from_fn(|_| y0.zeros_like());
         self.d[0] = *y0;
-        self.d[1] = self.dydt * self.h;
+        self.d[1] = crate::state_ops::scaled(y0, &self.dydt, self.h);
         self.jacobian = Matrix::zeros(dim, dim);
         self.newton_matrix = Matrix::zeros(dim, dim);
         self.ip = vec![0; dim];
@@ -452,7 +452,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
     }
 }
 
-impl<T: Real, Y: State<T>> Interpolation<T, Y> for BDF<Ordinary, T, Y> {
+impl<T: Real, Y: StateAlgebra<T>> Interpolation<T, Y> for BDF<Ordinary, T, Y> {
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         if t_interp < self.t_prev || t_interp > self.t {
             return Err(Error::OutOfBounds {

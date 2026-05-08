@@ -31,7 +31,7 @@ where
     T: Real,
     Y: State<T>,
 {
-    let mut result = *a;
+    let mut result = a.clone();
     for i in 0..a.len() {
         result.set(i, a.get(i) * b.get(i));
     }
@@ -39,7 +39,7 @@ where
 }
 
 pub fn component_square<T: Real, Y: State<T>>(v: &Y) -> Y {
-    let mut result = Y::zeros();
+    let mut result = v.zeros_like();
 
     for i in 0..v.len() {
         let val = v.get(i);

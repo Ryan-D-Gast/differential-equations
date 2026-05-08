@@ -1,6 +1,7 @@
 //! Solout implementation which takes a Event object and uses it to detect events
 
 use super::*;
+use nalgebra::SVector;
 
 pub struct EventConfig {
     /// Direction of zero crossing to detect
@@ -45,7 +46,7 @@ impl EventConfig {
     }
 }
 
-pub trait Event<T: Real = f64, Y: State<T> = f64> {
+pub trait Event<T: Real = f64, Y: State<T> = SVector<T, 1>> {
     /// Configure the event detection parameters (called once at initialization).
     fn config(&self) -> EventConfig {
         EventConfig::default()

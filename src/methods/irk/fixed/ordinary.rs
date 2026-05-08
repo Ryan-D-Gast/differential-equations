@@ -6,6 +6,7 @@ use crate::{
     linalg::Matrix,
     methods::{Fixed, ImplicitRungeKutta, Ordinary},
     ode::{ODE, OrdinaryNumericalMethod},
+    state_ops,
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -36,14 +37,19 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // State
         self.t = t0;
-        self.y = *y0;
+        self.y = y0.clone();
+        self.dydt = y0.zeros_like();
+        self.y_prev = y0.clone();
+        self.dydt_prev = y0.zeros_like();
+        self.k = core::array::from_fn(|_| y0.zeros_like());
+        self.z = core::array::from_fn(|_| y0.zeros_like());
         ode.diff(self.t, &self.y, &mut self.dydt);
         evals.function += 1;
 
         // Previous state
         self.t_prev = self.t;
-        self.y_prev = self.y;
-        self.dydt_prev = self.dydt;
+        self.y_prev = self.y.clone();
+        self.dydt_prev = self.dydt.clone();
 
         // Linear algebra workspace
         let dim = y0.len();
@@ -70,11 +76,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
         self.steps += 1;
@@ -82,7 +88,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // Initial stage guesses: copy current state
         let dim = self.y.len();
         for i in 0..self.stages {
-            self.z[i] = self.y;
+            self.z[i] = self.y.clone();
         }
 
         // Newton solve for F(z) = z - y_n - h*A*f(z) = 0
@@ -107,11 +113,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             let mut residual_norm = T::zero();
             for i in 0..self.stages {
                 // Start with z_i - y_n
-                let mut residual = self.z[i] - self.y;
+                let mut residual = state_ops::sub(&self.z[i], &self.y);
 
                 // Subtract h*sum(a_ij * f_j)
                 for j in 0..self.stages {
-                    residual = residual - self.k[j] * (self.a[i][j] * self.h);
+                    state_ops::axpy(&mut residual, -(self.a[i][j] * self.h), &self.k[j]);
                 }
 
                 // Infinity norm and RHS
@@ -199,11 +205,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         if !newton_converged {
             self.status = Status::Error(Error::Stiffness {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::Stiffness {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
 
@@ -214,9 +220,9 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         evals.function += self.stages;
 
         // y_{n+1} = y_n + h Σ b_i f_i
-        let mut y_new = self.y;
+        let mut y_new = self.y.clone();
         for i in 0..self.stages {
-            y_new += self.k[i] * (self.b[i] * self.h);
+            state_ops::axpy(&mut y_new, self.b[i] * self.h, &self.k[i]);
         }
 
         // Fixed step: always accept
@@ -224,8 +230,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // Log previous
         self.t_prev = self.t;
-        self.y_prev = self.y;
-        self.dydt_prev = self.dydt;
+        self.y_prev = self.y.clone();
+        self.dydt_prev = self.dydt.clone();
         self.h_prev = self.h;
 
         // Advance state

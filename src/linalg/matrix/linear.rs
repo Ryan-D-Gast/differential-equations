@@ -96,7 +96,7 @@ impl<T: Real> Matrix<T> {
         }
 
         // Build output State from x
-        let mut out = Y::zeros();
+        let mut out = x.zeros_like();
         for i in 0..n {
             out.set(i, x.get(i));
         }

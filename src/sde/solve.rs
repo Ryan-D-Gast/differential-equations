@@ -173,8 +173,8 @@ where
     }
 
     // Call solout to initialize the output strategy
-    let mut y_curr = *solver.y();
-    let mut y_prev = *solver.y_prev();
+    let mut y_curr = solver.y().clone();
+    let mut y_prev = solver.y_prev().clone();
     match solout.solout(
         solver.t(),
         solver.t_prev(),
@@ -238,8 +238,8 @@ where
         }
 
         // Record the result
-        y_curr = *solver.y();
-        y_prev = *solver.y_prev();
+        y_curr = solver.y().clone();
+        y_prev = solver.y_prev().clone();
         match solout.solout(
             solver.t(),
             solver.t_prev(),

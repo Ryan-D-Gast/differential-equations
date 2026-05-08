@@ -5,6 +5,7 @@ use crate::{
     interpolate::{Interpolation, cubic_hermite_interpolate},
     methods::{Fixed, Ordinary},
     ode::{ODE, OrdinaryNumericalMethod},
+    state_ops,
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -79,13 +80,18 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
 
         // Initialize state
         self.t = t0;
-        self.y = *y0;
+        self.y = y0.clone();
+        self.dydt = y0.zeros_like();
+        self.dydt_old = y0.zeros_like();
+        self.y_old = y0.clone();
+        self.y_prev = core::array::from_fn(|_| y0.zeros_like());
+        self.k = core::array::from_fn(|_| y0.zeros_like());
         self.t_prev[0] = t0;
-        self.y_prev[0] = *y0;
+        self.y_prev[0] = y0.clone();
 
         // Old state for interpolation
         self.t_old = self.t;
-        self.y_old = self.y;
+        self.y_old = self.y.clone();
 
         let two = T::from_f64(2.0).unwrap();
         let six = T::from_f64(6.0).unwrap();
@@ -94,30 +100,33 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
             ode.diff(self.t, &self.y, &mut self.k[0]);
             ode.diff(
                 self.t + self.h / two,
-                &(self.y + self.k[0] * (self.h / two)),
+                &state_ops::from_base_plus(&self.y, &[(&self.k[0], self.h / two)]),
                 &mut self.k[1],
             );
             ode.diff(
                 self.t + self.h / two,
-                &(self.y + self.k[1] * (self.h / two)),
+                &state_ops::from_base_plus(&self.y, &[(&self.k[1], self.h / two)]),
                 &mut self.k[2],
             );
             ode.diff(
                 self.t + self.h,
-                &(self.y + self.k[2] * self.h),
+                &state_ops::from_base_plus(&self.y, &[(&self.k[2], self.h)]),
                 &mut self.k[3],
             );
 
             // Update State
-            self.y += (self.k[0] + self.k[1] * two + self.k[2] * two + self.k[3]) * (self.h / six);
+            state_ops::axpy(&mut self.y, self.h / six, &self.k[0]);
+            state_ops::axpy(&mut self.y, two * self.h / six, &self.k[1]);
+            state_ops::axpy(&mut self.y, two * self.h / six, &self.k[2]);
+            state_ops::axpy(&mut self.y, self.h / six, &self.k[3]);
             self.t += self.h;
             self.t_prev[i] = self.t;
-            self.y_prev[i] = self.y;
+            self.y_prev[i] = self.y.clone();
             evals.function += 4; // 4 evaluations per Runge-Kutta step
 
             if i == 1 {
-                self.dydt = self.k[0];
-                self.dydt_old = self.dydt;
+                self.dydt = self.k[0].clone();
+                self.dydt_old = self.dydt.clone();
             }
         }
 
@@ -133,8 +142,8 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
 
         // state for interpolation
         self.t_old = self.t;
-        self.y_old = self.y;
-        self.dydt_old = self.dydt;
+        self.y_old = self.y.clone();
+        self.dydt_old = self.dydt.clone();
 
         // Compute derivatives for history
         ode.diff(self.t_prev[3], &self.y_prev[3], &mut self.k[0]);
@@ -142,20 +151,48 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
         ode.diff(self.t_prev[1], &self.y_prev[1], &mut self.k[2]);
         ode.diff(self.t_prev[0], &self.y_prev[0], &mut self.k[3]);
 
-        let predictor = self.y_prev[3]
-            + (self.k[0] * T::from_f64(55.0).unwrap() - self.k[1] * T::from_f64(59.0).unwrap()
-                + self.k[2] * T::from_f64(37.0).unwrap()
-                - self.k[3] * T::from_f64(9.0).unwrap())
-                * self.h
-                / T::from_f64(24.0).unwrap();
+        let predictor = state_ops::from_base_plus(
+            &self.y_prev[3],
+            &[
+                (
+                    &self.k[0],
+                    self.h * T::from_f64(55.0).unwrap() / T::from_f64(24.0).unwrap(),
+                ),
+                (
+                    &self.k[1],
+                    -self.h * T::from_f64(59.0).unwrap() / T::from_f64(24.0).unwrap(),
+                ),
+                (
+                    &self.k[2],
+                    self.h * T::from_f64(37.0).unwrap() / T::from_f64(24.0).unwrap(),
+                ),
+                (
+                    &self.k[3],
+                    -self.h * T::from_f64(9.0).unwrap() / T::from_f64(24.0).unwrap(),
+                ),
+            ],
+        );
 
         // Corrector step:
         ode.diff(self.t + self.h, &predictor, &mut self.k[3]);
-        let corrector = self.y_prev[3]
-            + (self.k[3] * T::from_f64(9.0).unwrap() + self.k[0] * T::from_f64(19.0).unwrap()
-                - self.k[1] * T::from_f64(5.0).unwrap()
-                + self.k[2] * T::from_f64(1.0).unwrap())
-                * (self.h / T::from_f64(24.0).unwrap());
+        let corrector = state_ops::from_base_plus(
+            &self.y_prev[3],
+            &[
+                (
+                    &self.k[3],
+                    self.h * T::from_f64(9.0).unwrap() / T::from_f64(24.0).unwrap(),
+                ),
+                (
+                    &self.k[0],
+                    self.h * T::from_f64(19.0).unwrap() / T::from_f64(24.0).unwrap(),
+                ),
+                (
+                    &self.k[1],
+                    -self.h * T::from_f64(5.0).unwrap() / T::from_f64(24.0).unwrap(),
+                ),
+                (&self.k[2], self.h / T::from_f64(24.0).unwrap()),
+            ],
+        );
 
         // Update state
         self.t += self.h;
@@ -165,9 +202,9 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
 
         // Shift history: drop the oldest and add the new state at the end.
         self.t_prev.copy_within(1..4, 0);
-        self.y_prev.copy_within(1..4, 0);
+        self.y_prev.rotate_left(1);
         self.t_prev[3] = self.t;
-        self.y_prev[3] = self.y;
+        self.y_prev[3] = self.y.clone();
         Ok(evals)
     }
 

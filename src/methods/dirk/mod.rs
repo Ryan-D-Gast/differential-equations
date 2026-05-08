@@ -116,7 +116,7 @@ impl<E, F, T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             t_prev: T::zero(),
             y_prev: Y::zeros(),
             dydt_prev: Y::zeros(),
-            k: [Y::zeros(); I],
+            k: core::array::from_fn(|_| Y::zeros()),
             z: Y::zeros(),
             c: [T::zero(); S],
             a: [[T::zero(); S]; S],

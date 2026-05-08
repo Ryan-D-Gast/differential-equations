@@ -220,13 +220,15 @@ impl ODE<f64, SIRState<f64>, PopulationMonitor> for SIRModel {
 If you prefer using vectors instead of custom state types, you can do so:
 
 ```rust
+use nalgebra::Vector1;
+
 struct SimpleModel {
     parameter: f64,
 }
 
 impl ODE for SimpleModel {
-    fn diff(&self, t: f64, y: &f64, dydt: &mut f64) {
-        *dydt = t * (*y) + self.parameter;
+    fn diff(&self, t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
+        dydt[0] = t * y[0] + self.parameter;
     }
 }
 

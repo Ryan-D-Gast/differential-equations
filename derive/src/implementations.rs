@@ -163,6 +163,20 @@ pub fn generate_state_impl(
                 #(#field_set_branches)*
                 unreachable!();
             }
+
+            fn write_to_slice(&self, output: &mut [T]) {
+                assert_eq!(output.len(), self.len(), "Slice length mismatch");
+                for i in 0..self.len() {
+                    output[i] = self.get(i);
+                }
+            }
+
+            fn read_from_slice(&mut self, input: &[T]) {
+                assert_eq!(input.len(), self.len(), "Slice length mismatch");
+                for i in 0..self.len() {
+                    self.set(i, input[i]);
+                }
+            }
             
             fn zeros() -> Self {
                 #zeros_constructor

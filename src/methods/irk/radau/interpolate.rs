@@ -4,10 +4,10 @@ use crate::{
     error::Error,
     interpolate::Interpolation,
     methods::irk::radau::Radau5,
-    traits::{Real, State},
+    traits::{Real, StateAlgebra},
 };
 
-impl<E, T: Real, Y: State<T>> Interpolation<T, Y> for Radau5<E, T, Y> {
+impl<E, T: Real, Y: StateAlgebra<T>> Interpolation<T, Y> for Radau5<E, T, Y> {
     /// Dense output on [t_prev, t].
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         if t_interp < self.t_prev || t_interp > self.t {
