@@ -69,15 +69,26 @@ impl<T: Real> Matrix<T> {
         }
     }
 
-    /// Creates a matrix from a vector.
-    pub fn from_vec(n: usize, m: usize, data: Vec<T>) -> Self {
-        assert_eq!(data.len(), n * m, "Incompatible data length");
-        Matrix {
+    /// Creates a dense row-major matrix from a vector.
+    ///
+    /// # Errors
+    /// Returns [`crate::linalg::LinalgError::BadInput`] when `data.len() != n * m`.
+    pub fn from_vec(n: usize, m: usize, data: Vec<T>) -> Result<Self, crate::linalg::LinalgError> {
+        if data.len() != n * m {
+            return Err(crate::linalg::LinalgError::BadInput {
+                message: format!(
+                    "Incompatible data length: expected {}, got {}",
+                    n * m,
+                    data.len()
+                ),
+            });
+        }
+        Ok(Matrix {
             n,
             m,
             data,
             storage: MatrixStorage::Full,
-        }
+        })
     }
 
     /// Empty sparse matrix of size n x m.
@@ -373,6 +384,18 @@ mod tests {
         let u: Matrix<f64> = Matrix::upper_triangular(4);
         // Below main diagonal reads zero
         assert_eq!(u[(3, 0)], 0.0);
+    }
+
+    #[test]
+    fn from_vec_rejects_incompatible_data_length() {
+        let result = Matrix::<f64>::from_vec(2, 3, vec![1.0, 2.0, 3.0, 4.0]);
+
+        assert_eq!(
+            result,
+            Err(crate::linalg::LinalgError::BadInput {
+                message: "Incompatible data length: expected 6, got 4".to_string(),
+            })
+        );
     }
 
     #[test]

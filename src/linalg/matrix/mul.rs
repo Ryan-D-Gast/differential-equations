@@ -117,7 +117,7 @@ mod tests {
 
     #[test]
     fn mul_matrix_full() {
-        let a: Matrix<f64> = Matrix::from_vec(2, 2, vec![1.0, 2.0, 3.0, 4.0]);
+        let a: Matrix<f64> = Matrix::from_vec(2, 2, vec![1.0, 2.0, 3.0, 4.0]).unwrap();
         let s = 5.0;
         let out = a.component_mul(s);
         assert_eq!(out[(0, 0)], 5.0);

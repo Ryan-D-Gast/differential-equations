@@ -265,7 +265,7 @@ mod tests {
 
     #[test]
     fn sub_scalar_full() {
-        let m: Matrix<f64> = Matrix::from_vec(2, 2, vec![1.0, 2.0, 3.0, 4.0]);
+        let m: Matrix<f64> = Matrix::from_vec(2, 2, vec![1.0, 2.0, 3.0, 4.0]).unwrap();
         let r = m.component_sub(1.0);
         assert_eq!(r[(0, 0)], 0.0);
         assert_eq!(r[(0, 1)], 1.0);
@@ -286,8 +286,8 @@ mod tests {
 
     #[test]
     fn sub_matrix_full_full() {
-        let a: Matrix<f64> = Matrix::from_vec(2, 2, vec![1.0, 2.0, 3.0, 4.0]);
-        let b: Matrix<f64> = Matrix::from_vec(2, 2, vec![4.0, 3.0, 2.0, 1.0]);
+        let a: Matrix<f64> = Matrix::from_vec(2, 2, vec![1.0, 2.0, 3.0, 4.0]).unwrap();
+        let b: Matrix<f64> = Matrix::from_vec(2, 2, vec![4.0, 3.0, 2.0, 1.0]).unwrap();
         let r = a - b;
         assert_eq!(r[(0, 0)], -3.0);
         assert_eq!(r[(0, 1)], -1.0);

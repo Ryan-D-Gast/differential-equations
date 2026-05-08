@@ -53,7 +53,7 @@ use crate::{
 /// ```rust,ignore
 /// use differential_equations::linalg::{Matrix, lu::lu_decomp};
 ///
-/// let mut a = Matrix::from_vec(2, 2, vec![2.0, 1.0, 1.0, 1.0]);
+/// let mut a = Matrix::from_vec(2, 2, vec![2.0, 1.0, 1.0, 1.0]).unwrap();
 /// let mut ip = [0; 2];
 ///
 /// match lu_decomp(&mut a, &mut ip) {
@@ -191,8 +191,8 @@ pub fn lu_decomp<T: Real>(a: &mut Matrix<T>, ip: &mut [usize]) -> Result<(), Lin
 /// ```rust,ignore
 /// use differential_equations::linalg::{Matrix, lu_decomp_complex};
 ///
-/// let mut ar = Matrix::from_vec(2, 2, vec![1.0, 0.0, 0.0, 1.0]);
-/// let mut ai = Matrix::from_vec(2, 2, vec![0.0, 1.0, 1.0, 0.0]);
+/// let mut ar = Matrix::from_vec(2, 2, vec![1.0, 0.0, 0.0, 1.0]).unwrap();
+/// let mut ai = Matrix::from_vec(2, 2, vec![0.0, 1.0, 1.0, 0.0]).unwrap();
 /// let mut ip = [0; 2];
 ///
 /// match lu_decomp_complex(&mut ar, &mut ai, &mut ip) {
@@ -345,7 +345,7 @@ mod tests {
     #[test]
     fn test_dec_simple() {
         // Test LU decomposition of a simple 2x2 matrix
-        let mut a = Matrix::from_vec(2, 2, vec![2.0_f64, 1.0, 4.0, 3.0]);
+        let mut a = Matrix::from_vec(2, 2, vec![2.0_f64, 1.0, 4.0, 3.0]).unwrap();
         let mut ip = [0; 2];
 
         let result = lu_decomp(&mut a, &mut ip);
@@ -360,7 +360,7 @@ mod tests {
     #[test]
     fn test_dec_singular() {
         // Test with a singular matrix
-        let mut a = Matrix::from_vec(2, 2, vec![1.0_f64, 0.0, 0.0, 0.0]);
+        let mut a = Matrix::from_vec(2, 2, vec![1.0_f64, 0.0, 0.0, 0.0]).unwrap();
         let mut ip = [0; 2];
 
         let result = lu_decomp(&mut a, &mut ip);
@@ -371,7 +371,7 @@ mod tests {
     #[test]
     fn test_dec_1x1() {
         // Test with a 1x1 matrix
-        let mut a = Matrix::from_vec(1, 1, vec![5.0_f64]);
+        let mut a = Matrix::from_vec(1, 1, vec![5.0_f64]).unwrap();
         let mut ip = [0; 1];
 
         let result = lu_decomp(&mut a, &mut ip);
@@ -382,7 +382,7 @@ mod tests {
     #[test]
     fn test_dec_1x1_singular() {
         // Test with a singular 1x1 matrix
-        let mut a = Matrix::from_vec(1, 1, vec![0.0_f64]);
+        let mut a = Matrix::from_vec(1, 1, vec![0.0_f64]).unwrap();
         let mut ip = [0; 1];
 
         let result = lu_decomp(&mut a, &mut ip);
@@ -393,8 +393,8 @@ mod tests {
     #[test]
     fn test_decc_simple() {
         // Test complex LU decomposition of a simple 2x2 matrix
-        let mut ar = Matrix::from_vec(2, 2, vec![1.0_f64, 0.0, 0.0, 1.0]);
-        let mut ai = Matrix::from_vec(2, 2, vec![0.0, 1.0, 1.0, 0.0]);
+        let mut ar = Matrix::from_vec(2, 2, vec![1.0_f64, 0.0, 0.0, 1.0]).unwrap();
+        let mut ai = Matrix::from_vec(2, 2, vec![0.0, 1.0, 1.0, 0.0]).unwrap();
         let mut ip = [0; 2];
 
         let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
@@ -410,8 +410,8 @@ mod tests {
     #[test]
     fn test_decc_singular() {
         // Test with a singular complex matrix
-        let mut ar = Matrix::from_vec(2, 2, vec![1.0_f64, 1.0, 1.0, 1.0]);
-        let mut ai = Matrix::from_vec(2, 2, vec![0.0_f64, 0.0, 0.0, 0.0]);
+        let mut ar = Matrix::from_vec(2, 2, vec![1.0_f64, 1.0, 1.0, 1.0]).unwrap();
+        let mut ai = Matrix::from_vec(2, 2, vec![0.0_f64, 0.0, 0.0, 0.0]).unwrap();
         let mut ip = [0; 2];
 
         let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
@@ -421,8 +421,8 @@ mod tests {
     #[test]
     fn test_decc_1x1() {
         // Test with a 1x1 complex matrix
-        let mut ar = Matrix::from_vec(1, 1, vec![3.0_f64]);
-        let mut ai = Matrix::from_vec(1, 1, vec![4.0_f64]); // 3 + 4i
+        let mut ar = Matrix::from_vec(1, 1, vec![3.0_f64]).unwrap();
+        let mut ai = Matrix::from_vec(1, 1, vec![4.0_f64]).unwrap(); // 3 + 4i
         let mut ip = [0; 1];
 
         let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
@@ -433,8 +433,8 @@ mod tests {
     #[test]
     fn test_decc_1x1_singular() {
         // Test with a singular 1x1 complex matrix
-        let mut ar = Matrix::from_vec(1, 1, vec![0.0_f64]);
-        let mut ai = Matrix::from_vec(1, 1, vec![0.0_f64]);
+        let mut ar = Matrix::from_vec(1, 1, vec![0.0_f64]).unwrap();
+        let mut ai = Matrix::from_vec(1, 1, vec![0.0_f64]).unwrap();
         let mut ip = [0; 1];
 
         let result = lu_decomp_complex(&mut ar, &mut ai, &mut ip);
