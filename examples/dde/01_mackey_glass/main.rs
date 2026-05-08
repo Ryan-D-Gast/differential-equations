@@ -16,7 +16,6 @@
 
 use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::Vector1;
 use quill::prelude::*;
 
 struct MackeyGlass {
@@ -27,13 +26,13 @@ struct MackeyGlass {
 }
 
 // Generic "L" is the number of lags, here we have 1 lag tau
-impl DDE<1> for MackeyGlass {
-    fn diff(&self, _t: f64, y: &Vector1<f64>, yd: &[Vector1<f64>; 1], dydt: &mut Vector1<f64>) {
+impl DDE<1, f64, Vec<f64>> for MackeyGlass {
+    fn diff(&self, _t: f64, y: &Vec<f64>, yd: &[Vec<f64>; 1], dydt: &mut Vec<f64>) {
         dydt[0] = (self.beta * yd[0][0]) / (1.0 + yd[0][0].powf(self.n)) - self.gamma * y[0];
     }
 
     // Define a constant delay for the model of tau
-    fn lags(&self, _t: f64, _y: &Vector1<f64>, lags: &mut [f64; 1]) {
+    fn lags(&self, _t: f64, _y: &Vec<f64>, lags: &mut [f64; 1]) {
         lags[0] = self.tau;
     }
 }
@@ -50,11 +49,12 @@ fn main() {
     // Define initial conditions
     let t0 = 0.0;
     let tf = 200.0;
-    let y0 = Vector1::new(0.1);
+    let y0 = vec![0.1];
 
     // Define the initial history function phi(t) for t <= t0
     // Often a constant history is used matching the initial condition
-    let phi = |_t: f64| -> Vector1<f64> { y0 };
+    let phi_y0 = y0.clone();
+    let phi = move |_t: f64| -> Vec<f64> { phi_y0.clone() };
 
     // --- Solve the Problem ---
     println!("Solving Mackey-Glass equation from t={} to t={}...", t0, tf);

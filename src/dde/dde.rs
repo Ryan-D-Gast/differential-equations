@@ -1,7 +1,6 @@
 //! Defines the trait for systems of Delay Differential Equations (DDEs) used by numerical solvers.
 
-use crate::traits::{Real, State};
-use nalgebra::SVector;
+use crate::traits::{DefaultState, Real, State};
 
 /// Trait for defining a system of Delay Differential Equations (DDEs).
 ///
@@ -10,7 +9,7 @@ use nalgebra::SVector;
 /// where `y` is the state vector, `t` is time, and `y(t - tau_i)` represents
 /// the state at some past time (a delay).
 ///
-pub trait DDE<const L: usize, T = f64, Y = SVector<T, 1>>
+pub trait DDE<const L: usize, T = f64, Y = DefaultState<T>>
 where
     T: Real,
     Y: State<T>,

@@ -5,9 +5,8 @@
 
 use crate::{
     linalg::Matrix,
-    traits::{Real, State},
+    traits::{DefaultState, Real, State},
 };
-use nalgebra::SVector;
 
 /// DAE Trait for Differential Algebraic Equations
 ///
@@ -24,7 +23,7 @@ use nalgebra::SVector;
 ///
 /// Note that the event function is optional and can be left out when implementing
 /// in which case it will be set to return Continue by default.
-pub trait DAE<T = f64, V = SVector<T, 1>>
+pub trait DAE<T = f64, V = DefaultState<T>>
 where
     T: Real,
     V: State<T>,

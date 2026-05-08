@@ -73,7 +73,7 @@ pub fn linear_interpolate<T: Real, Y: State<T>>(t0: T, t1: T, y0: &Y, y1: &Y, t:
     y0.linear_combination(&[(y0, T::one() - s), (y1, s)])
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nalgebra"))]
 mod tests {
     use super::*;
     use nalgebra::SMatrix;

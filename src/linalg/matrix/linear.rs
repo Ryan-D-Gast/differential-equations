@@ -174,7 +174,7 @@ impl<T: Real> Matrix<T> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nalgebra"))]
 mod tests {
     use crate::linalg::matrix::Matrix;
     use nalgebra::Vector2;

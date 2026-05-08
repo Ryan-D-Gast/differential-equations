@@ -13,7 +13,6 @@
 
 use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::Vector1;
 use quill::prelude::*;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
@@ -36,17 +35,17 @@ impl BrownianMotion {
 /// Implementation of the SDE trait for Brownian motion
 impl SDE for BrownianMotion {
     /// Drift term for Brownian motion (0 for standard Brownian motion)
-    fn drift(&self, _t: f64, _y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
+    fn drift(&self, _t: f64, _y: &[f64; 1], dydt: &mut [f64; 1]) {
         dydt[0] = 0.0; // No drift for standard Brownian motion
     }
 
     /// Diffusion term for Brownian motion (σ)
-    fn diffusion(&self, _t: f64, _y: &Vector1<f64>, dydw: &mut Vector1<f64>) {
+    fn diffusion(&self, _t: f64, _y: &[f64; 1], dydw: &mut [f64; 1]) {
         dydw[0] = self.sigma;
     }
 
     /// Generate noise for Brownian motion
-    fn noise(&mut self, dt: f64, dw: &mut Vector1<f64>) {
+    fn noise(&mut self, dt: f64, dw: &mut [f64; 1]) {
         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
         dw[0] = normal.sample(&mut self.rng);
     }
@@ -56,7 +55,7 @@ fn main() {
     // --- Problem Configuration ---
     let t0 = 0.0;
     let tf = 5.0;
-    let y0 = Vector1::new(1.0);
+    let y0 = [1.0];
     let sigma = 0.5;
     let seed = 42;
     let mut sde = BrownianMotion::new(sigma, seed);
@@ -70,11 +69,11 @@ fn main() {
 
     println!("Simulating Brownian motion with σ = {}", sigma);
     println!("Time interval: [{}, {}], Step size: {}", t0, tf, dt);
-    println!("Initial position: {}", y0);
+    println!("Initial position: {:?}", y0);
     println!("Random seed: {}", seed);
     println!("Simulation completed:");
     println!("  Number of time steps: {}", solution.t.len());
-    println!("  Final position: {}", solution.y.last().unwrap());
+    println!("  Final position: {:?}", solution.y.last().unwrap());
     println!("  Function evaluations: {}", solution.evals.function);
     println!("  Total steps: {}", solution.steps.total());
     println!("  Solution time: {:.6} seconds", solution.timer.elapsed());

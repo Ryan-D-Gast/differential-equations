@@ -38,7 +38,7 @@ impl OrnsteinUhlenbeck {
     }
 }
 
-impl SDE for OrnsteinUhlenbeck {
+impl SDE<f64, Vector1<f64>> for OrnsteinUhlenbeck {
     fn drift(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
         dydt[0] = self.theta * (self.mu - y[0]);
     }

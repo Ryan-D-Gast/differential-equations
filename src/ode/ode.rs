@@ -5,9 +5,8 @@
 
 use crate::{
     linalg::Matrix,
-    traits::{Real, State},
+    traits::{DefaultState, Real, State},
 };
-use nalgebra::SVector;
 
 /// ODE Trait for Differential Equations
 ///
@@ -22,7 +21,7 @@ use nalgebra::SVector;
 /// * `jacobian` - Jacobian matrix J = df/dy for the system of equations.
 ///
 /// Note that the event and jacobian functions are optional and can be left out when implementing.
-pub trait ODE<T = f64, Y = SVector<T, 1>>
+pub trait ODE<T = f64, Y = DefaultState<T>>
 where
     T: Real,
     Y: State<T>,

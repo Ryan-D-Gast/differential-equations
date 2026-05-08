@@ -156,7 +156,7 @@ pub fn validate_step_size_parameters<T: Real, Y: State<T>>(
     Ok(h0)
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nalgebra"))]
 mod tests {
     use super::*;
     use crate::error::Error;

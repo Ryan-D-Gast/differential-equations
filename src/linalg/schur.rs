@@ -88,7 +88,7 @@ pub fn schur_complement<T: Real, V: State<T>>(
     (x, y)
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nalgebra"))]
 mod tests {
     use super::{Matrix, schur_complement};
     use nalgebra::Vector2;

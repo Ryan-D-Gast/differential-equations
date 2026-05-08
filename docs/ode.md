@@ -32,7 +32,6 @@ For event detection with precise zero-crossing detection, implement the separate
 // Includes required elements and common methods.
 // Less common methods are in the `methods` module
 use differential_equations::prelude::*; 
-use nalgebra::{SVector, vector};
 
 struct LogisticGrowth {
     k: f64,
@@ -40,7 +39,7 @@ struct LogisticGrowth {
 }
 
 impl ODE for LogisticGrowth {
-    fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
+    fn diff(&self, _t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
         dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
     }
 }
@@ -51,7 +50,7 @@ impl Event for LogisticGrowth {
         EventConfig::new(CrossingDirection::Positive, Some(1)) // Terminate after first event
     }
 
-    fn event(&self, _t: f64, y: &SVector<f64, 1>) -> f64 {
+    fn event(&self, _t: f64, y: &[f64; 1]) -> f64 {
         // Event function g(t,y) = y - 0.9*m
         // Zero crossing occurs when y = 0.9*m
         y[0] - 0.9 * self.m

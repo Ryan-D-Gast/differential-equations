@@ -8,7 +8,9 @@
 //! - k is the growth rate constant
 //! - m is the carrying capacity of the environment
 //! - t is time
+//!
 //! The logistic growth model is used in ecology to describe how populations grow in an environment with limited resources.
+//!
 //! This example showcases:
 //! - Custom ODE implementation with event detection
 //! - Using the DOP853 method for high accuracy
@@ -17,7 +19,7 @@
 
 use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::Vector1;
+use ndarray::{Array1, array};
 use quill::prelude::*;
 
 struct LogisticGrowth {
@@ -25,26 +27,26 @@ struct LogisticGrowth {
     m: f64,
 }
 
-impl ODE for LogisticGrowth {
-    fn diff(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
+impl ODE<f64, Array1<f64>> for LogisticGrowth {
+    fn diff(&self, _t: f64, y: &Array1<f64>, dydt: &mut Array1<f64>) {
         dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
     }
 }
 
-impl Event for LogisticGrowth {
+impl Event<f64, Array1<f64>> for LogisticGrowth {
     fn config(&self) -> EventConfig {
         EventConfig::default().terminal() // Will terminate after the first event
     }
 
     /// Event function g(t,y) = y - 0.9*m
-    fn event(&self, _t: f64, y: &Vector1<f64>) -> f64 {
+    fn event(&self, _t: f64, y: &Array1<f64>) -> f64 {
         // Event function g(t,y) = y - 0.9*m
         y[0] - 0.9 * self.m
     }
 }
 
 fn main() {
-    let y0 = Vector1::new(1.0);
+    let y0 = array![1.0];
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };

@@ -25,7 +25,6 @@ Here's an example of implementing the `ODE` trait for a logistic growth model:
 // Includes required elements and common methods.
 // Less common methods are in the modules such as`ode::methods::...`
 use differential_equations::prelude::*; 
-use nalgebra::{SVector, vector};
 
 // Define a struct to hold parameters for the ODE
 struct LogisticGrowth {
@@ -34,14 +33,14 @@ struct LogisticGrowth {
 }
 
 // Implement the ODE trait for the LogisticGrowth struct
-impl ODE<f64, SVector<f64, 1>> for LogisticGrowth {
+impl ODE for LogisticGrowth {
     // Define the differential equation: dy/dt = k * y * (1 - y / m)
-    fn diff(&self, t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
+    fn diff(&self, t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
         dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
     }
 
     // Optional: Define an event function to stop the solver
-    fn event(&self, t: f64, y: &SVector<f64, 1>) -> ControlFlag {
+    fn event(&self, t: f64, y: &[f64; 1]) -> ControlFlag {
         if y[0] > 0.9 * self.m { // If population exceeds 90% of carrying capacity
             ControlFlag::Terminate("Reached 90% of carrying capacity".to_string())
         } else {
@@ -81,7 +80,6 @@ Here's how to solve the `LogisticGrowth` model defined earlier:
 
 ```rust
 use differential_equations::prelude::*; 
-use nalgebra::{SVector, vector};
 
 fn main() {
     // Choose a numerical method and set tolerances
@@ -90,7 +88,7 @@ fn main() {
         .atol(1e-7);// Set absolute tolerance
 
     // Define initial conditions and time span
-    let y0 = vector![1.0]; // Initial population
+    let y0 = [1.0];        // Initial population
     let t0 = 0.0;          // Start time
     let tf = 10.0;         // End time
 
@@ -152,14 +150,24 @@ The `ODE` trait and related components like `IVP::ode` are defined with generics
 
 *   `T`: Represents the floating-point type used for calculations (e.g., `f64` or `f32`). This type applies to time and the components of the state vector.
 *   `Y`: Represents the type of the state vector. This can be:
-    *   An `nalgebra::SVector<T, 1>` or `Vector1<T>` for a single ODE.
-    *   An `nalgebra::SVector<T, N>` for a system of N ODEs, where `N` is the number of equations.
+    *   A `[T; N]` fixed-size array.
+    *   A `Vec<T>` dynamically sized vector.
+    *   An `nalgebra::SVector<T, N>` or dynamic nalgebra matrix/vector with the `nalgebra` feature.
+    *   An `ndarray::Array<T, D>` with the `ndarray` feature.
+    *   A `faer::Mat<T>` with the `faer` feature.
     *   A custom struct (deriving the `State` trait) with fields of type `T`.
 
-By default, if generics are omitted when implementing the `ODE` trait, they are assumed to be
-`f64` for `T` and `SVector<f64, 1>` for `Y`. Scalar `f64` and `f32` values are not state
-types.
+The examples directory intentionally uses a mix of these forms: arrays for the
+smallest scalar examples, `Vec<f64>` for dynamic vector states, `ndarray::Array1`
+for an event example, `faer::Mat` for a matrix-backed scalar integration example,
+nalgebra vectors/matrices for linear algebra-heavy examples, and custom structs
+with `#[derive(State)]` for named domain state.
 
-In the `LogisticGrowth` example, `ODE<f64, SVector<f64, 1>>` explicitly defines `T` as `f64` and `Y` as an `SVector` containing one `f64` element. This is consistent with how systems of multiple ODEs (e.g., `SVector<f64, N>`) are defined.
+Omitted `ODE` generics default to `T = f64` and `Y = [f64; 1]`. Scalar `f64` and
+`f32` values are not state types.
+
+In the `LogisticGrowth` example, `impl ODE` uses the default single-component array
+state. For multi-component systems, use `[f64; N]`, `Vec<f64>`, a feature-backed
+matrix/array type, or a custom `State` struct.
 
 This generic setup provides flexibility, allowing you to define simple or complex systems of differential equations tailored to your specific numerical precision and state representation needs.

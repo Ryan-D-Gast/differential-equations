@@ -22,15 +22,14 @@
 //!
 //! ```rust
 //! use differential_equations::prelude::*;
-//! use nalgebra::{SVector, vector};
 //!
 //! pub struct LinearEquation {
 //!     pub a: f64,
 //!     pub b: f64,
 //! }
 //!
-//! impl ODE<f64, SVector<f64, 1>> for LinearEquation {
-//!     fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
+//! impl ODE for LinearEquation {
+//!     fn diff(&self, _t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
 //!         dydt[0] = self.a + self.b * y[0];
 //!     }
 //! }
@@ -39,7 +38,7 @@
 //!     let system = LinearEquation { a: 1.0, b: 2.0 };
 //!     let t0 = 0.0;
 //!     let tf = 1.0;
-//!     let y0 = vector![1.0];
+//!     let y0 = [1.0];
 //!     let solver = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-6);
 //!     let solution = match IVP::ode(&system, t0, tf, y0).method(solver).solve() {
 //!         Ok(sol) => sol,

@@ -22,16 +22,15 @@ use super::*;
 ///
 /// # Example
 ///
-/// ```
+/// ```rust
 /// use differential_equations::prelude::*;
 /// use differential_equations::solout::CrossingSolout;
-/// use nalgebra::{Vector2, vector};
 ///
 /// // Simple harmonic oscillator - position will cross zero periodically
 /// struct HarmonicOscillator;
 ///
-/// impl ODE<f64, Vector2<f64>> for HarmonicOscillator {
-///     fn diff(&self, _t: f64, y: &Vector2<f64>, dydt: &mut Vector2<f64>) {
+/// impl ODE<f64, [f64; 2]> for HarmonicOscillator {
+///     fn diff(&self, _t: f64, y: &[f64; 2], dydt: &mut [f64; 2]) {
 ///         // y[0] = position, y[1] = velocity
 ///         dydt[0] = y[1];
 ///         dydt[1] = -y[0];
@@ -42,7 +41,7 @@ use super::*;
 /// let system = HarmonicOscillator;
 /// let t0 = 0.0;
 /// let tf = 10.0;
-/// let y0 = vector![1.0, 0.0]; // Start with positive position, zero velocity
+/// let y0 = [1.0, 0.0]; // Start with positive position, zero velocity
 /// let solver = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8);
 ///
 /// // Detect zero-crossings of the position component (index 0)

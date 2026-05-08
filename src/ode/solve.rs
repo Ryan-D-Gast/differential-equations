@@ -71,19 +71,18 @@ use crate::{
 ///
 /// # Examples
 ///
-/// ```
+/// ```rust
 /// use differential_equations::{
 ///     prelude::*,
 ///     solout::DefaultSolout,
 ///     ode::solve_ode,
 /// };
-/// use nalgebra::Vector1;
 ///
 /// // Define a simple exponential growth ode: dy/dt = y
 /// struct ExponentialGrowth;
 ///
 /// impl ODE for ExponentialGrowth {
-///     fn diff(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
+///     fn diff(&self, _t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
 ///         dydt[0] = y[0];
 ///     }
 /// }
@@ -92,7 +91,7 @@ use crate::{
 /// let mut method = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-10);
 /// let mut solout = DefaultSolout::new();
 /// let system = ExponentialGrowth;
-/// let y0 = Vector1::new(1.0);
+/// let y0 = [1.0];
 /// let result = solve_ode(&mut method, &system, 0.0, 1.0, &y0, &mut solout);
 ///
 /// match result {

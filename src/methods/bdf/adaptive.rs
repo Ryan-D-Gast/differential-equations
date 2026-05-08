@@ -499,7 +499,7 @@ impl<T: Real, Y: State<T>> Interpolation<T, Y> for BDF<Ordinary, T, Y> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nalgebra"))]
 mod tests {
     use super::*;
     use crate::prelude::*;

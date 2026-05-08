@@ -153,15 +153,14 @@ Here's a complete example of solving an ODE and processing the solution:
 
 ```rust
 use differential_equations::prelude::*;
-use nalgebra::{Vector2, vector};
 
 // Define ODE system (damped harmonic oscillator)
 struct DampedOscillator {
     damping: f64,
 }
 
-impl ODE<f64, Vector2<f64>> for DampedOscillator {
-    fn diff(&self, _t: f64, y: &Vector2<f64>, dydt: &mut Vector2<f64>) {
+impl ODE<f64, [f64; 2]> for DampedOscillator {
+    fn diff(&self, _t: f64, y: &[f64; 2], dydt: &mut [f64; 2]) {
         dydt[0] = y[1];
         dydt[1] = -y[0] - self.damping * y[1];
     }
@@ -173,7 +172,7 @@ fn main() {
     let solver = DOPRI5::new().rtol(1e-6).atol(1e-8);
     
     // Initial conditions: position = 1.0, velocity = 0.0
-    let y0 = vector![1.0, 0.0];
+    let y0 = [1.0, 0.0];
     let t0 = 0.0;
     let tf = 20.0;
     

@@ -7,7 +7,7 @@ Event handling in this library has been redesigned to provide robust, SciPy-like
 The core of the new event system is the `Event` trait:
 
 ```rust
-pub trait Event<T: Real = f64, Y: State<T> = SVector<T, 1>> {
+pub trait Event<T: Real = f64, Y: State<T> = DefaultState<T>> {
     /// Configure the event detection parameters (called once at initialization).
     fn config(&self) -> EventConfig {
         EventConfig::default()
@@ -42,7 +42,6 @@ pub struct EventConfig {
 ```rust
 use differential_equations::prelude::*;
 use differential_equations::solout::{Event, EventConfig, CrossingDirection};
-use nalgebra::Vector1;
 
 struct PopulationThreshold {
     threshold: f64,
@@ -59,7 +58,7 @@ impl Event for PopulationThreshold {
         EventConfig::new(CrossingDirection::Positive, Some(1)) // Terminate after first event
     }
 
-    fn event(&self, _t: f64, y: &Vector1<f64>) -> f64 {
+    fn event(&self, _t: f64, y: &[f64; 1]) -> f64 {
         // Event function: g(t,y) = y - threshold
         // Zero crossing occurs when y = threshold
         y[0] - self.threshold

@@ -1,7 +1,9 @@
 //! Defines Generics for the library. Includes generics for the floating point numbers.
 
-use nalgebra::{RealField, SMatrix};
+#[cfg(feature = "nalgebra")]
+use nalgebra::{DefaultAllocator, Dim, OMatrix, allocator::Allocator};
 use num_complex::Complex;
+use simba::scalar::{RealField, SupersetOf};
 use std::fmt::Debug;
 
 /// Real Number Trait
@@ -12,26 +14,32 @@ use std::fmt::Debug;
 /// * `f64` - 64-bit floating point
 ///
 /// Provides additional functionality required for ODE solvers beyond
-/// what's provided by nalgebra's RealField trait.
+/// what's provided by simba's RealField trait.
 ///
-pub trait Real: Copy + RealField {
+pub trait Real: Copy + RealField + SupersetOf<f64> {
     fn infinity() -> Self;
 }
 
-impl<T: Copy + RealField> Real for T {
+impl<T: Copy + RealField + SupersetOf<f64>> Real for T {
     #[inline]
     fn infinity() -> Self {
         Self::from_subset(&f64::INFINITY)
     }
 }
 
+pub type DefaultState<T> = [T; 1];
+
 /// State vector trait
 ///
 /// Represents the state of the system being solved.
 ///
 /// Implements for the following types:
-/// * `SMatrix` - Matrix type from nalgebra
+/// * `[T; N]` - Fixed-size array state
+/// * `OMatrix` - Matrix type from nalgebra, enabled with the `nalgebra` feature
 /// * `Complex` - Complex number type from num-complex
+/// * `Vec<T>` - Dynamically sized vector state
+/// * `ndarray::Array<T, D>` - Array state, enabled with the `ndarray` feature
+/// * `faer::Mat<T>` - Matrix state, enabled with the `faer` feature
 /// * `Struct<T>` - Any struct with all fields of type T using #[derive(State)] from the `derive` module
 ///
 pub trait State<T: Real>: Clone + Debug {
@@ -189,49 +197,120 @@ pub trait State<T: Real>: Clone + Debug {
     }
 }
 
-impl<T, const R: usize, const C: usize> State<T> for SMatrix<T, R, C>
+impl<T, const N: usize> State<T> for [T; N]
 where
     T: Real,
 {
     fn len(&self) -> usize {
-        R * C
+        N
+    }
+
+    fn write_to_slice(&self, output: &mut [T]) {
+        output.copy_from_slice(self);
+    }
+
+    fn read_from_slice(&mut self, input: &[T]) {
+        self.copy_from_slice(input);
+    }
+
+    fn zeros_like(&self) -> Self {
+        [T::zero(); N]
+    }
+
+    fn zeros() -> Self {
+        [T::zero(); N]
+    }
+
+    fn mul_add_assign(&mut self, alpha: T, other: &Self) {
+        for (s, o) in self.iter_mut().zip(other.iter()) {
+            *s += alpha * *o;
+        }
+    }
+
+    fn scale_mut(&mut self, alpha: T) {
+        for s in self.iter_mut() {
+            *s *= alpha;
+        }
+    }
+
+    fn fill(&mut self, value: T) {
+        self.as_mut_slice().fill(value);
+    }
+
+    fn copy_from_state(&mut self, other: &Self) {
+        self.copy_from_slice(other);
+    }
+
+    fn norm_squared(&self) -> T {
+        self.iter().fold(T::zero(), |sum, x| sum + *x * *x)
+    }
+
+    fn diff_norm_squared(&self, other: &Self) -> T {
+        self.iter()
+            .zip(other.iter())
+            .fold(T::zero(), |sum, (a, b)| {
+                let diff = *a - *b;
+                sum + diff * diff
+            })
+    }
+}
+
+#[cfg(feature = "nalgebra")]
+impl<T, R, C> State<T> for OMatrix<T, R, C>
+where
+    T: Real,
+    R: Dim,
+    C: Dim,
+    DefaultAllocator: Allocator<R, C>,
+{
+    fn len(&self) -> usize {
+        self.nrows() * self.ncols()
     }
 
     fn write_to_slice(&self, output: &mut [T]) {
         assert_eq!(output.len(), self.len(), "Slice length mismatch");
-        for r in 0..R {
-            for c in 0..C {
-                output[r * C + c] = self[(r, c)];
+        for r in 0..self.nrows() {
+            for c in 0..self.ncols() {
+                output[r * self.ncols() + c] = self[(r, c)];
             }
         }
     }
 
     fn read_from_slice(&mut self, input: &[T]) {
         assert_eq!(input.len(), self.len(), "Slice length mismatch");
-        for r in 0..R {
-            for c in 0..C {
-                self[(r, c)] = input[r * C + c];
+        for r in 0..self.nrows() {
+            for c in 0..self.ncols() {
+                self[(r, c)] = input[r * self.ncols() + c];
             }
         }
     }
 
     fn zeros_like(&self) -> Self {
-        SMatrix::<T, R, C>::zeros()
+        let (nrows, ncols) = self.shape_generic();
+        Self::zeros_generic(nrows, ncols)
     }
 
     fn zeros() -> Self {
-        SMatrix::<T, R, C>::zeros()
+        let nrows = R::from_usize(R::try_to_usize().unwrap_or(0));
+        let ncols = C::from_usize(C::try_to_usize().unwrap_or(0));
+        Self::zeros_generic(nrows, ncols)
     }
 
     fn mul_add_assign(&mut self, alpha: T, other: &Self) {
+        assert_eq!(self.nrows(), other.nrows(), "State row count mismatch");
+        assert_eq!(self.ncols(), other.ncols(), "State column count mismatch");
         for i in 0..self.len() {
-            self[(i / C, i % C)] += alpha * other[(i / C, i % C)];
+            let c = i % self.ncols();
+            let r = i / self.ncols();
+            self[(r, c)] += alpha * other[(r, c)];
         }
     }
 
     fn scale_mut(&mut self, alpha: T) {
         for i in 0..self.len() {
-            self[(i / C, i % C)] *= alpha;
+            let c = i % self.ncols();
+            let r = i / self.ncols();
+            self[(r, c)] *= alpha;
         }
     }
 }
@@ -419,14 +498,42 @@ mod tests {
     use num_complex::Complex;
 
     #[test]
-    fn test_smatrix_flat_slice_round_trip_uses_row_major_layout() {
-        let state = SMatrix::<f64, 2, 2>::new(1.0, 2.0, 3.0, 4.0);
+    fn test_array_flat_slice_round_trip() {
+        let state = [1.0, 2.0, 3.0];
+        let mut buffer = [0.0; 3];
+
+        state.write_to_slice(&mut buffer);
+        assert_eq!(buffer, [1.0, 2.0, 3.0]);
+
+        let mut recovered = <[f64; 3] as State<f64>>::zeros();
+        recovered.read_from_slice(&buffer);
+        assert_eq!(recovered, state);
+    }
+
+    #[cfg(feature = "nalgebra")]
+    #[test]
+    fn test_nalgebra_matrix_flat_slice_round_trip_uses_row_major_layout() {
+        let state = nalgebra::SMatrix::<f64, 2, 2>::new(1.0, 2.0, 3.0, 4.0);
         let mut buffer = [0.0; 4];
 
         state.write_to_slice(&mut buffer);
         assert_eq!(buffer, [1.0, 2.0, 3.0, 4.0]);
 
-        let mut recovered = SMatrix::<f64, 2, 2>::zeros();
+        let mut recovered = nalgebra::SMatrix::<f64, 2, 2>::zeros();
+        recovered.read_from_slice(&buffer);
+        assert_eq!(recovered, state);
+    }
+
+    #[cfg(feature = "nalgebra")]
+    #[test]
+    fn test_nalgebra_dynamic_matrix_flat_slice_round_trip() {
+        let state = nalgebra::DMatrix::<f64>::from_row_slice(2, 2, &[1.0, 2.0, 3.0, 4.0]);
+        let mut buffer = [0.0; 4];
+
+        state.write_to_slice(&mut buffer);
+        assert_eq!(buffer, [1.0, 2.0, 3.0, 4.0]);
+
+        let mut recovered = state.zeros_like();
         recovered.read_from_slice(&buffer);
         assert_eq!(recovered, state);
     }

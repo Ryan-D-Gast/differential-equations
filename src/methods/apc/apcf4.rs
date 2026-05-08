@@ -25,16 +25,15 @@ impl<T: Real, Y: State<T>> AdamsPredictorCorrector<Ordinary, Fixed, T, Y, 4> {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```rust
     /// use differential_equations::prelude::*;
-    /// use nalgebra::{SVector, vector};
     ///
     /// struct HarmonicOscillator {
     ///     k: f64,
     /// }
     ///
-    /// impl ODE<f64, SVector<f64, 2>> for HarmonicOscillator {
-    ///     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
+    /// impl ODE<f64, [f64; 2]> for HarmonicOscillator {
+    ///     fn diff(&self, _t: f64, y: &[f64; 2], dydt: &mut [f64; 2]) {
     ///         dydt[0] = y[1];
     ///         dydt[1] = -self.k * y[0];
     ///     }
@@ -42,10 +41,10 @@ impl<T: Real, Y: State<T>> AdamsPredictorCorrector<Ordinary, Fixed, T, Y, 4> {
     /// let apcf4 = AdamsPredictorCorrector::f4(0.01);
     /// let t0 = 0.0;
     /// let tf = 10.0;
-    /// let y0 = vector![1.0, 0.0];
+    /// let y0 = [1.0, 0.0];
     /// let system = HarmonicOscillator { k: 1.0 };
     /// let results = IVP::ode(&system, t0, tf, y0).method(apcf4).solve().unwrap();
-    /// let expected = vector![-0.83907153, 0.54402111];
+    /// let expected = [-0.83907153, 0.54402111];
     /// assert!((results.y.last().unwrap()[0] - expected[0]).abs() < 1e-2);
     /// assert!((results.y.last().unwrap()[1] - expected[1]).abs() < 1e-2);
     /// ```

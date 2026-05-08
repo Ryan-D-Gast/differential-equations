@@ -76,13 +76,12 @@ use crate::{
 ///
 /// # Examples
 ///
-/// ```
+/// ```rust,no_run
 /// use differential_equations::{
 ///     prelude::*,
 ///     sde::solve_sde,
 ///     solout::DefaultSolout,
 /// };
-/// use nalgebra::SVector;
 /// use rand::SeedableRng;
 /// use rand_distr::{Distribution, Normal};
 ///
@@ -98,16 +97,16 @@ use crate::{
 ///     }
 /// }
 ///
-/// impl SDE<f64, SVector<f64, 1>> for GBM {
-///     fn drift(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
+/// impl SDE for GBM {
+///     fn drift(&self, _t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
 ///         dydt[0] = 0.1 * y[0]; // μS
 ///     }
 ///     
-///     fn diffusion(&self, _t: f64, y: &SVector<f64, 1>, dydw: &mut SVector<f64, 1>) {
+///     fn diffusion(&self, _t: f64, y: &[f64; 1], dydw: &mut [f64; 1]) {
 ///         dydw[0] = 0.2 * y[0]; // σS
 ///     }
 ///     
-///     fn noise(&mut self, dt: f64, dw: &mut SVector<f64, 1>) {
+///     fn noise(&mut self, dt: f64, dw: &mut [f64; 1]) {
 ///         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
 ///         dw[0] = normal.sample(&mut self.rng);
 ///     }
@@ -115,7 +114,7 @@ use crate::{
 ///
 /// let t0 = 0.0;
 /// let tf = 1.0;
-/// let y0 = SVector::<f64, 1>::new(100.0);
+/// let y0 = [100.0];
 /// let mut gbm = GBM::new(42);
 /// let mut solver = ExplicitRungeKutta::euler(0.01);
 /// let mut solout = DefaultSolout::new();

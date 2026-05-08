@@ -225,7 +225,7 @@ pub fn lin_solve_complex<T: Real, Y: State<T>>(
     bi.read_from_slice(&bi_values);
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nalgebra"))]
 mod tests {
     use super::*;
     use nalgebra::SMatrix;

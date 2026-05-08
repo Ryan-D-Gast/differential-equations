@@ -30,6 +30,7 @@ exclude = [
 
 [features]
 default = []
+nalgebra = ["dep:nalgebra"]
 polars = ["dep:polars"]
 serde = ["dep:serde"]
 ndarray = ["dep:ndarray"]
@@ -41,7 +42,8 @@ needless_range_loop = "allow"
 too_many_arguments = "allow"
 
 [dependencies]
-nalgebra = "^0.34.2" # Linear algebra library for matrix operations
+simba = "0.9.1" # Scalar traits shared with nalgebra without requiring nalgebra
+nalgebra = { version = "^0.34.2", optional = true } # Linear algebra state backend
 num-complex = "^0.4.6" # Complex number support
 differential-equations-derive = { version = "0.1.3", path = "derive" } # Derives State trait on structs
 polars = { version = "^0.53.0", optional = true } # DataFrame integration for the solution
@@ -56,6 +58,16 @@ num-dual = "0.13.6" # Dual numbers
 rand = "0.10.0" # Random number generation for SDE examples
 rand_distr = "0.6.0" # Random distributions for SDE examples
 
+[[test]]
+name = "ode"
+path = "tests/ode/main.rs"
+required-features = ["nalgebra"]
+
+[[test]]
+name = "dde"
+path = "tests/dde/main.rs"
+required-features = ["nalgebra"]
+
 # Ordinary Differential Equation (ODE) examples
 [[example]]
 name = "ode_01_exponential_growth"
@@ -68,6 +80,7 @@ path = "examples/ode/02_harmonic_oscillator/main.rs"
 [[example]]
 name = "ode_03_logistic_growth"
 path = "examples/ode/03_logistic_growth/main.rs"
+required-features = ["ndarray"]
 
 [[example]]
 name = "ode_04_sir_model"
@@ -76,26 +89,32 @@ path = "examples/ode/04_sir_model/main.rs"
 [[example]]
 name = "ode_05_damped_pendulum"
 path = "examples/ode/05_damped_pendulum/main.rs"
+required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_06_integration"
 path = "examples/ode/06_integration/main.rs"
+required-features = ["faer"]
 
 [[example]]
 name = "ode_07_cr3bp"
 path = "examples/ode/07_cr3bp/main.rs"
+required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_08_damped_oscillator"
 path = "examples/ode/08_damped_oscillator/main.rs"
+required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_09_matrix_ode"
 path = "examples/ode/09_matrix_ode/main.rs"
+required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_10_custom_solout"
 path = "examples/ode/10_custom_solout/main.rs"
+required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_11_schrodinger"
@@ -104,39 +123,48 @@ path = "examples/ode/11_schrodinger/main.rs"
 [[example]]
 name = "ode_12_brusselator"
 path = "examples/ode/12_brusselator/main.rs"
+required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_13_vanderpol"
 path = "examples/ode/13_vanderpol/main.rs"
+required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_14_r2bp_stm"
 path = "examples/ode/14_r2bp_stm/main.rs"
+required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_15_forward_sensitivity_analysis"
 path = "examples/ode/15_forward_sensitivity_analysis/main.rs"
+required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_16_adjoint_sensitivities"
 path = "examples/ode/16_adjoint_sensitivities/main.rs"
+required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_17_quadrature"
 path = "examples/ode/17_quadrature/main.rs"
+required-features = ["nalgebra"]
 
 # Differential-Algebraic Equation (DAE) examples
 [[example]]
 name = "dae_01_amplifier"
 path = "examples/dae/01_amplifier/main.rs"
+required-features = ["nalgebra"]
 
 [[example]]
 name = "dae_02_robertson"
 path = "examples/dae/02_robertson/main.rs"
+required-features = ["nalgebra"]
 
 [[example]]
 name = "dae_03_pendulum"
 path = "examples/dae/03_pendulum/main.rs"
+required-features = ["nalgebra"]
 
 # Stochastic Differential Equation (SDE) examples
 [[example]]
@@ -150,6 +178,7 @@ path = "examples/sde/02_heston_model/main.rs"
 [[example]]
 name = "sde_03_ornstein_uhlenbeck"
 path = "examples/sde/03_ornstein_uhlenbeck/main.rs"
+required-features = ["nalgebra"]
 
 # Delay Differential Equation (DDE) examples
 [[example]]
@@ -159,9 +188,11 @@ path = "examples/dde/01_mackey_glass/main.rs"
 [[example]]
 name = "dde_02_breast_cancer_model"
 path = "examples/dde/02_breast_cancer_model/main.rs"
+required-features = ["nalgebra"]
 
 # Benchmarks
 [[bench]]
 name = "ode_solver_benchmarks"
 harness = false
 path = "benches/main.rs"
+required-features = ["nalgebra"]
