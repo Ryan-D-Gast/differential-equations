@@ -17,7 +17,6 @@
 //! - Setting custom tolerances for high accuracy
 //! - Accessing solution statistics like step counts and evaluations
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use quill::prelude::*;
 

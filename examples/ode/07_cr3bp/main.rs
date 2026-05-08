@@ -22,7 +22,6 @@
 //! - State extraction for specialized calculations
 
 use differential_equations::derive::State;
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::{Vector3, vector};
 

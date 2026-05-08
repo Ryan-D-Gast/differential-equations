@@ -21,7 +21,6 @@
 //! - Comparing numerical solution with analytical matrix exponential
 //! - Understanding matrix evolution in continuous time
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::SMatrix;
 

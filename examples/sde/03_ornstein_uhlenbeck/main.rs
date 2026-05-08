@@ -14,9 +14,7 @@
 //! It has applications in physics, finance (for modeling interest rates), and
 //! various other fields.
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::Vector1;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
 
@@ -38,16 +36,16 @@ impl OrnsteinUhlenbeck {
     }
 }
 
-impl SDE<f64, Vector1<f64>> for OrnsteinUhlenbeck {
-    fn drift(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
+impl SDE<f64, [f64; 1]> for OrnsteinUhlenbeck {
+    fn drift(&self, _t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
         dydt[0] = self.theta * (self.mu - y[0]);
     }
 
-    fn diffusion(&self, _t: f64, _y: &Vector1<f64>, dydw: &mut Vector1<f64>) {
+    fn diffusion(&self, _t: f64, _y: &[f64; 1], dydw: &mut [f64; 1]) {
         dydw[0] = self.sigma;
     }
 
-    fn noise(&mut self, dt: f64, dw: &mut Vector1<f64>) {
+    fn noise(&mut self, dt: f64, dw: &mut [f64; 1]) {
         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
         dw[0] = normal.sample(&mut self.rng);
     }
@@ -65,7 +63,7 @@ fn main() {
     // Time settings
     let t0 = 0.0;
     let tf = 10.0;
-    let y0 = Vector1::new(5.0); // Initial value, far from mean
+    let y0 = [5.0]; // Initial value, far from mean
 
     // Create the Ornstein-Uhlenbeck SDE problem
     let mut sde = OrnsteinUhlenbeck::new(theta, mu, sigma, seed);
@@ -85,7 +83,7 @@ fn main() {
     println!("Simulating Ornstein-Uhlenbeck process with parameters:");
     println!("θ = {}, μ = {}, σ = {}", theta, mu, sigma);
     println!("Time interval: [{}, {}], Step size: {}", t0, tf, dt);
-    println!("Initial value: {}", y0);
+    println!("Initial value: {}", y0[0]);
     println!("Random seed: {}", seed);
     println!("Simulation completed:");
     println!("  Number of time steps: {}", solution.t.len());
@@ -107,6 +105,6 @@ fn main() {
 
     println!("\nIntermediate values:");
     for (t, y) in solution.iter() {
-        println!("  t = {:.2}: y = {:.6}", t, y);
+        println!("  t = {:.2}: y = {:.6}", t, y[0]);
     }
 }

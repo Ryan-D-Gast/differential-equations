@@ -6,7 +6,6 @@
 //! ASA calculates the gradient of a cost function with respect to parameters
 //! by solving an adjoint ODE backward in time.
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use nalgebra::{Matrix2, SVector, vector};
 

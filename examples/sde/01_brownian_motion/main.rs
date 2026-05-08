@@ -11,7 +11,6 @@
 //! moves randomly due to collisions with molecules. It has many applications
 //! in science, finance, and mathematics.
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use quill::prelude::*;
 use rand::SeedableRng;
