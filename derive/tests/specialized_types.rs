@@ -6,30 +6,6 @@ use nalgebra::{
 };
 use num_complex::Complex;
 
-trait TestStateAccess<T: Real>: StateTrait<T> {
-    fn component(&self, index: usize) -> T {
-        assert!(index < self.len(), "Index out of bounds");
-        let mut values = vec![T::zero(); self.len()];
-        self.copy_to_flat_slice(&mut values);
-        values[index]
-    }
-
-    fn set_component(&mut self, index: usize, value: T) {
-        assert!(index < self.len(), "Index out of bounds");
-        let mut values = vec![T::zero(); self.len()];
-        self.copy_to_flat_slice(&mut values);
-        values[index] = value;
-        self.copy_from_flat_slice(&values);
-    }
-}
-
-impl<T, Y> TestStateAccess<T> for Y
-where
-    T: Real,
-    Y: StateTrait<T>,
-{
-}
-
 #[test]
 fn test_all_vector_types() {
     #[derive(State)]
@@ -53,18 +29,18 @@ fn test_all_vector_types() {
     assert_eq!(state.len(), 20);
 
     // Test first and last elements
-    assert_eq!(state.component(0), 1.0); // v2[0]
-    assert_eq!(state.component(1), 2.0); // v2[1]
-    assert_eq!(state.component(19), 20.0); // v6[5]
+    assert_eq!(state.get_component(0), 1.0); // v2[0]
+    assert_eq!(state.get_component(1), 2.0); // v2[1]
+    assert_eq!(state.get_component(19), 20.0); // v6[5]
 
     // Test setting values
     state.set_component(0, 100.0);
-    assert_eq!(state.component(0), 100.0);
+    assert_eq!(state.get_component(0), 100.0);
 
     // Test zeros
     let zero_state = AllVectors::<f64>::zeros();
     for i in 0..20 {
-        assert_eq!(zero_state.component(i), 0.0);
+        assert_eq!(zero_state.get_component(i), 0.0);
     }
 }
 
@@ -91,15 +67,15 @@ fn test_all_matrix_types() {
     assert_eq!(state.len(), 90);
 
     // Test some specific elements
-    assert_eq!(state.component(0), 1.0); // m2[(0,0)]
-    assert_eq!(state.component(1), 2.0); // m2[(0,1)]
-    assert_eq!(state.component(2), 3.0); // m2[(1,0)]
-    assert_eq!(state.component(3), 4.0); // m2[(1,1)]
+    assert_eq!(state.get_component(0), 1.0); // m2[(0,0)]
+    assert_eq!(state.get_component(1), 2.0); // m2[(0,1)]
+    assert_eq!(state.get_component(2), 3.0); // m2[(1,0)]
+    assert_eq!(state.get_component(3), 4.0); // m2[(1,1)]
 
     // Test zeros initialization
     let zero_state = AllMatrices::<f64>::zeros();
     for i in 0..90 {
-        assert_eq!(zero_state.component(i), 0.0);
+        assert_eq!(zero_state.get_component(i), 0.0);
     }
 }
 
@@ -119,11 +95,11 @@ fn test_row_vectors() {
     // Total elements: 2 + 3 = 5
     assert_eq!(state.len(), 5);
 
-    assert_eq!(state.component(0), 1.0); // rv2[0]
-    assert_eq!(state.component(1), 2.0); // rv2[1]
-    assert_eq!(state.component(2), 3.0); // rv3[0]
-    assert_eq!(state.component(3), 4.0); // rv3[1]
-    assert_eq!(state.component(4), 5.0); // rv3[2]
+    assert_eq!(state.get_component(0), 1.0); // rv2[0]
+    assert_eq!(state.get_component(1), 2.0); // rv2[1]
+    assert_eq!(state.get_component(2), 3.0); // rv3[0]
+    assert_eq!(state.get_component(3), 4.0); // rv3[1]
+    assert_eq!(state.get_component(4), 5.0); // rv3[2]
 }
 
 #[test]
@@ -147,9 +123,9 @@ fn test_explicit_smatrix_types() {
     assert_eq!(state.len(), 22);
 
     // Test some specific elements
-    assert_eq!(state.component(0), 1.0); // sm_2x3[(0,0)]
-    assert_eq!(state.component(5), 6.0); // sm_2x3[(1,2)]
-    assert_eq!(state.component(21), 22.0); // sm_5x1[(4,0)]
+    assert_eq!(state.get_component(0), 1.0); // sm_2x3[(0,0)]
+    assert_eq!(state.get_component(5), 6.0); // sm_2x3[(1,2)]
+    assert_eq!(state.get_component(21), 22.0); // sm_5x1[(4,0)]
 }
 
 #[test]
@@ -212,14 +188,14 @@ fn test_complex_array_combinations() {
     assert_eq!(state.len(), 10);
 
     // Test complex array element access
-    assert_eq!(state.component(0), 1.0); // complex_array[0].re
-    assert_eq!(state.component(1), 2.0); // complex_array[0].im
-    assert_eq!(state.component(2), 3.0); // complex_array[1].re
-    assert_eq!(state.component(3), 4.0); // complex_array[1].im
-    assert_eq!(state.component(4), 5.0); // complex_array[2].re
-    assert_eq!(state.component(5), 6.0); // complex_array[2].im
-    assert_eq!(state.component(6), 7.0); // mixed_array[0]
-    assert_eq!(state.component(7), 8.0); // mixed_array[1]
-    assert_eq!(state.component(8), 9.0); // single_complex.re
-    assert_eq!(state.component(9), 10.0); // single_complex.im
+    assert_eq!(state.get_component(0), 1.0); // complex_array[0].re
+    assert_eq!(state.get_component(1), 2.0); // complex_array[0].im
+    assert_eq!(state.get_component(2), 3.0); // complex_array[1].re
+    assert_eq!(state.get_component(3), 4.0); // complex_array[1].im
+    assert_eq!(state.get_component(4), 5.0); // complex_array[2].re
+    assert_eq!(state.get_component(5), 6.0); // complex_array[2].im
+    assert_eq!(state.get_component(6), 7.0); // mixed_array[0]
+    assert_eq!(state.get_component(7), 8.0); // mixed_array[1]
+    assert_eq!(state.get_component(8), 9.0); // single_complex.re
+    assert_eq!(state.get_component(9), 10.0); // single_complex.im
 }

@@ -127,12 +127,7 @@ where
         // Normalize the normal vector
         let norm = normal.norm_squared().sqrt();
         if norm > T::default_epsilon() {
-            let mut normal_values = vec![T::zero(); normal.len()];
-            normal.copy_to_flat_slice(&mut normal_values);
-            for value in normal_values.iter_mut() {
-                *value /= norm;
-            }
-            normal.copy_from_flat_slice(&normal_values);
+            normal.scale_by(T::one() / norm);
         }
 
         HyperplaneCrossingSolout {
@@ -195,22 +190,7 @@ where
     /// * Signed distance (positive if on same side as normal vector)
     ///
     fn signed_distance(&self, pos: &Y1) -> T {
-        let mut pos_values = vec![T::zero(); pos.len()];
-        let mut point_values = vec![T::zero(); self.point.len()];
-        let mut normal_values = vec![T::zero(); self.normal.len()];
-        pos.copy_to_flat_slice(&mut pos_values);
-        self.point.copy_to_flat_slice(&mut point_values);
-        self.normal.copy_to_flat_slice(&mut normal_values);
-
-        let mut distance = T::zero();
-        for ((pos_i, point_i), normal_i) in pos_values
-            .iter()
-            .zip(point_values.iter())
-            .zip(normal_values.iter())
-        {
-            distance += (*pos_i - *point_i) * *normal_i;
-        }
-        distance
+        pos.minus(&self.point).dot(&self.normal)
     }
 }
 

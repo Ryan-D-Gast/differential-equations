@@ -52,53 +52,7 @@ use crate::{
 /// 1. Solve Ly = Pb (forward substitution with pivoting)
 /// 2. Solve Ux = y (back substitution)
 pub fn lin_solve<T: Real, Y: State<T>>(a: &Matrix<T>, b: &mut Y, ip: &[usize]) {
-    let n = a.nrows();
-    debug_assert_eq!(b.len(), n, "RHS length must match matrix size");
-    let mut values = vec![T::zero(); n];
-    b.copy_to_flat_slice(&mut values);
-
-    // Handle trivial case
-    if n == 1 {
-        values[0] /= a[(0, 0)];
-        b.copy_from_flat_slice(&values);
-        return;
-    }
-
-    let nm1 = n - 1;
-
-    // Forward elimination with partial pivoting
-    for k in 0..nm1 {
-        let kp1 = k + 1;
-        let m = ip[k]; // Pivot row index
-
-        // Apply row permutation (swap b[m] and b[k])
-        let t = values[m];
-        values.swap(m, k);
-
-        // Forward substitution step: b[i] += L[i,k] * b[k]
-        for i in kp1..n {
-            values[i] += a[(i, k)] * t;
-        }
-    }
-
-    // Back substitution: solve Ux = y
-    for kb in 1..n {
-        let k = n - kb;
-
-        // Divide by diagonal element
-        let xk = values[k] / a[(k, k)];
-        values[k] = xk;
-        let t = -xk;
-
-        // Back substitution step: b[i] += U[i,k] * (-b[k])
-        for i in 0..k {
-            values[i] += a[(i, k)] * t;
-        }
-    }
-
-    // Final division for the first element
-    values[0] /= a[(0, 0)];
-    b.copy_from_flat_slice(&values);
+    b.apply_linear_solve(&a.data, ip);
 }
 
 /// Solves a complex linear system (AR + i*AI)*X = (BR + i*BI) using LU decomposition.
@@ -147,82 +101,7 @@ pub fn lin_solve_complex<T: Real, Y: State<T>>(
     bi: &mut Y,
     ip: &[usize],
 ) {
-    let n = ar.nrows();
-    debug_assert_eq!(br.len(), n, "RHS length must match matrix size");
-    debug_assert_eq!(bi.len(), n, "RHS length must match matrix size");
-    let mut br_values = vec![T::zero(); n];
-    let mut bi_values = vec![T::zero(); n];
-    br.copy_to_flat_slice(&mut br_values);
-    bi.copy_to_flat_slice(&mut bi_values);
-
-    // Handle trivial case with complex division
-    if n == 1 {
-        // Complex division: (br + i*bi) / (ar + i*ai)
-        let den = ar[(0, 0)] * ar[(0, 0)] + ai[(0, 0)] * ai[(0, 0)];
-        let temp_r = (br_values[0] * ar[(0, 0)] + bi_values[0] * ai[(0, 0)]) / den;
-        let temp_i = (bi_values[0] * ar[(0, 0)] - br_values[0] * ai[(0, 0)]) / den;
-        br_values[0] = temp_r;
-        bi_values[0] = temp_i;
-        br.copy_from_flat_slice(&br_values);
-        bi.copy_from_flat_slice(&bi_values);
-        return;
-    }
-
-    let nm1 = n - 1;
-
-    // Forward elimination with partial pivoting (complex version)
-    for k in 0..nm1 {
-        let kp1 = k + 1;
-        let m = ip[k]; // Pivot row index
-
-        // Apply row permutation to both real and imaginary parts
-        let tr = br_values[m];
-        let ti = bi_values[m];
-        br_values.swap(m, k);
-        bi_values.swap(m, k);
-
-        // Complex forward substitution: b[i] += L[i,k] * t
-        for i in kp1..n {
-            // Complex multiplication: (ar[i,k] + i*ai[i,k]) * (tr + i*ti)
-            let prod_r = ar[(i, k)] * tr - ai[(i, k)] * ti;
-            let prod_i = ai[(i, k)] * tr + ar[(i, k)] * ti;
-            br_values[i] += prod_r;
-            bi_values[i] += prod_i;
-        }
-    }
-
-    // Complex back substitution
-    for kb in 1..n {
-        let k = n - kb;
-
-        // Complex division: b[k] = b[k] / a[k,k]
-        let den = ar[(k, k)] * ar[(k, k)] + ai[(k, k)] * ai[(k, k)];
-        let temp_r = (br_values[k] * ar[(k, k)] + bi_values[k] * ai[(k, k)]) / den;
-        let temp_i = (bi_values[k] * ar[(k, k)] - br_values[k] * ai[(k, k)]) / den;
-        br_values[k] = temp_r;
-        bi_values[k] = temp_i;
-
-        // Prepare for back substitution: t = -b[k]
-        let tr = -br_values[k];
-        let ti = -bi_values[k];
-
-        // Complex back substitution step: b[i] += a[i,k] * t
-        for i in 0..k {
-            let prod_r = ar[(i, k)] * tr - ai[(i, k)] * ti;
-            let prod_i = ai[(i, k)] * tr + ar[(i, k)] * ti;
-            br_values[i] += prod_r;
-            bi_values[i] += prod_i;
-        }
-    }
-
-    // Final complex division for the first element
-    let den = ar[(0, 0)] * ar[(0, 0)] + ai[(0, 0)] * ai[(0, 0)];
-    let temp_r = (br_values[0] * ar[(0, 0)] + bi_values[0] * ai[(0, 0)]) / den;
-    let temp_i = (bi_values[0] * ar[(0, 0)] - br_values[0] * ai[(0, 0)]) / den;
-    br_values[0] = temp_r;
-    bi_values[0] = temp_i;
-    br.copy_from_flat_slice(&br_values);
-    bi.copy_from_flat_slice(&bi_values);
+    br.apply_complex_linear_solve(bi, &ar.data, &ai.data, ip);
 }
 
 #[cfg(all(test, feature = "nalgebra"))]

@@ -172,21 +172,15 @@ impl<
 
             // Convergence check (if iterating)
             if max_iter > 1 && iter_idx > 0 {
-                let mut dde_iteration_error = T::zero();
                 let n_dim = self.y.len();
-                let mut prev_values = vec![T::zero(); n_dim];
-                let mut next_values = vec![T::zero(); n_dim];
-                y_prev_candidate_iter.copy_to_flat_slice(&mut prev_values);
-                y_next.copy_to_flat_slice(&mut next_values);
+                let mut dde_iteration_error = T::zero();
                 for i_dim in 0..n_dim {
                     let scale = T::from_f64(1e-10).unwrap()
-                        + prev_values[i_dim].abs().max(next_values[i_dim].abs());
+                        + y_prev_candidate_iter.get_component(i_dim).abs().max(y_next.get_component(i_dim).abs());
                     if scale > T::zero() {
-                        let diff_val = next_values[i_dim] - prev_values[i_dim];
-                        dde_iteration_error += {
-                            let val = diff_val / scale;
-                            val * val
-                        };
+                        let diff_val = y_next.get_component(i_dim) - y_prev_candidate_iter.get_component(i_dim);
+                        let val = diff_val / scale;
+                        dde_iteration_error += val * val;
                     }
                 }
                 if n_dim > 0 {

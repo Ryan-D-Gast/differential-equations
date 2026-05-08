@@ -23,30 +23,6 @@ mod specialized_types;
 use differential_equations::traits::{Real, State as StateTrait};
 use differential_equations_derive::State;
 
-trait TestStateAccess<T: Real>: StateTrait<T> {
-    fn component(&self, index: usize) -> T {
-        assert!(index < self.len(), "Index out of bounds");
-        let mut values = vec![T::zero(); self.len()];
-        self.copy_to_flat_slice(&mut values);
-        values[index]
-    }
-
-    fn set_component(&mut self, index: usize, value: T) {
-        assert!(index < self.len(), "Index out of bounds");
-        let mut values = vec![T::zero(); self.len()];
-        self.copy_to_flat_slice(&mut values);
-        values[index] = value;
-        self.copy_from_flat_slice(&values);
-    }
-}
-
-impl<T, Y> TestStateAccess<T> for Y
-where
-    T: Real,
-    Y: StateTrait<T>,
-{
-}
-
 /// Quick smoke test to ensure the derive macro works at all
 #[test]
 fn smoke_test() {
@@ -60,11 +36,11 @@ fn smoke_test() {
 
     // Basic functionality
     assert_eq!(state.len(), 2);
-    assert_eq!(state.component(0), 1.0);
-    assert_eq!(state.component(1), 2.0);
+    assert_eq!(state.get_component(0), 1.0);
+    assert_eq!(state.get_component(1), 2.0);
 
     state.set_component(0, 10.0);
-    assert_eq!(state.component(0), 10.0);
+    assert_eq!(state.get_component(0), 10.0);
 
     // Arithmetic
     let other = SimpleState { x: 5.0, y: 3.0 };
@@ -119,15 +95,15 @@ fn real_world_usage_example() {
 
     // Simulate some dynamics: update position based on velocity
     for i in 0..3 {
-        let pos = physics_state.component(i);
-        let vel = physics_state.component(i + 3);
+        let pos = physics_state.get_component(i);
+        let vel = physics_state.get_component(i + 3);
         physics_state.set_component(i, pos + vel * 0.1); // dt = 0.1
     }
 
     // Verify the update worked
-    assert!((physics_state.component(0) - 1.01f64).abs() < 1e-10);
-    assert!((physics_state.component(1) - 2.02f64).abs() < 1e-10);
-    assert!((physics_state.component(2) - 3.03f64).abs() < 1e-10);
+    assert!((physics_state.get_component(0) - 1.01f64).abs() < 1e-10);
+    assert!((physics_state.get_component(1) - 2.02f64).abs() < 1e-10);
+    assert!((physics_state.get_component(2) - 3.03f64).abs() < 1e-10);
 }
 
 /// Performance test to ensure the generated code is reasonably efficient
@@ -153,7 +129,7 @@ fn performance_test() {
     // Perform many get/set operations
     for _ in 0..1000 {
         for i in 0..state.len() {
-            let val = state.component(i);
+            let val = state.get_component(i);
             state.set_component(i, val + 1.0);
         }
     }
@@ -162,6 +138,6 @@ fn performance_test() {
     println!("Performance test completed in: {:?}", duration);
 
     // Verify the operations worked
-    assert_eq!(state.component(0), 1000.0);
-    assert_eq!(state.component(174), 1000.0);
+    assert_eq!(state.get_component(0), 1000.0);
+    assert_eq!(state.get_component(174), 1000.0);
 }

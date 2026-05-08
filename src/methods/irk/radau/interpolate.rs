@@ -20,24 +20,12 @@ impl<E, T: Real, Y: State<T>> Interpolation<T, Y> for Radau5<E, T, Y> {
 
         // Collocation polynomial parameter s = (t - t_curr) / h_prev, so s in [-1, 0]
         let s = (t_interp - self.t) / self.h_prev;
-        let mut y = self.y_prev.zeros_like();
 
-        let dim = self.y_prev.len();
-        let mut cont0 = vec![T::zero(); dim];
-        let mut cont1 = vec![T::zero(); dim];
-        let mut cont2 = vec![T::zero(); dim];
-        let mut cont3 = vec![T::zero(); dim];
-        let mut values = vec![T::zero(); dim];
-        self.cont[0].copy_to_flat_slice(&mut cont0);
-        self.cont[1].copy_to_flat_slice(&mut cont1);
-        self.cont[2].copy_to_flat_slice(&mut cont2);
-        self.cont[3].copy_to_flat_slice(&mut cont3);
-        for i in 0..dim {
-            // CONT0 + S*(C1 + (S-C2M1)*(C2 + (S-C1M1)*C3))
-            values[i] = cont0[i]
-                + s * (cont1[i] + (s - self.c2m1) * (cont2[i] + (s - self.c1m1) * cont3[i]));
-        }
-        y.copy_from_flat_slice(&values);
+        // y = CONT0 + S*(C1 + (S-C2M1)*(C2 + (S-C1M1)*C3))
+        let term3 = self.cont[3].scaled(s - self.c1m1);
+        let term2 = self.cont[2].plus_scaled(T::one(), &term3).scaled(s - self.c2m1);
+        let term1 = self.cont[1].plus_scaled(T::one(), &term2).scaled(s);
+        let y = self.cont[0].plus_scaled(T::one(), &term1);
 
         Ok(y)
     }

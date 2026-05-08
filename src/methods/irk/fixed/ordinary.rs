@@ -120,9 +120,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 }
 
                 // Infinity norm and RHS
-                let mut residual_values = vec![T::zero(); dim];
-                residual.copy_to_flat_slice(&mut residual_values);
-                for (row_idx, res_val) in residual_values.iter().copied().enumerate() {
+                for row_idx in 0..dim {
+                    let res_val = residual.get_component(row_idx);
                     residual_norm = residual_norm.max(res_val.abs());
                     // Store residual in Newton RHS (negative for solving delta_z)
                     self.rhs_newton[i * dim + row_idx] = -res_val;
@@ -183,21 +182,18 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             // Solve (I - h*A⊗J) Δz = -F(z) using in-place LU on our matrix
             let mut rhs = self.rhs_newton.clone();
             self.newton_matrix.lin_solve_mut(&mut rhs[..])?;
-            self.delta_k_vec.copy_from_flat_slice(&rhs);
-            self.lu_decompositions += 1;
+            evals.solves += 1;
 
             // Update z_i and increment norm
             increment_norm = T::zero();
             for i in 0..self.stages {
-                let mut z_values = vec![T::zero(); dim];
-                self.z[i].copy_to_flat_slice(&mut z_values);
-                for (row_idx, z_value) in z_values.iter_mut().enumerate() {
-                    let delta_val = self.delta_k_vec[i * dim + row_idx];
-                    *z_value += delta_val;
+                for row_idx in 0..dim {
+                    let delta_val = rhs[i * dim + row_idx];
+                    let current_z = self.z[i].get_component(row_idx);
+                    self.z[i].set_component(row_idx, current_z + delta_val);
                     // Calculate infinity norm of increment
                     increment_norm = increment_norm.max(delta_val.abs());
                 }
-                self.z[i].copy_from_flat_slice(&z_values);
             }
 
             // Next loop will re-check

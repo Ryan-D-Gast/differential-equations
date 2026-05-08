@@ -209,10 +209,8 @@ where
         // Data rows
         for (t, y) in self.iter() {
             let mut row = format!("{:?}", t);
-            let mut y_values = vec![T::zero(); n];
-            y.copy_to_flat_slice(&mut y_values);
-            for value in y_values {
-                row.push_str(&format!(",{:?}", value));
+            for i in 0..n {
+                row.push_str(&format!(",{:?}", y.get_component(i)));
             }
             writeln!(writer, "{}", row)?;
         }
@@ -250,22 +248,13 @@ where
             .collect::<Vec<f64>>();
         let mut columns = vec![Column::new("t".into(), t)];
         let n = self.y[0].len();
-        let y_values = self
-            .y
-            .iter()
-            .map(|y| {
-                let mut values = vec![T::zero(); n];
-                y.copy_to_flat_slice(&mut values);
-                values
-            })
-            .collect::<Vec<_>>();
         for i in 0..n {
             let header = format!("y{}", i);
             columns.push(Column::new(
                 header.into(),
-                y_values
+                self.y
                     .iter()
-                    .map(|values| simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&values[i]))
+                    .map(|y| simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&y.get_component(i)))
                     .collect::<Vec<f64>>(),
             ));
         }
@@ -295,22 +284,13 @@ where
             .collect::<Vec<f64>>();
         let mut columns = vec![Column::new("t".into(), t)];
         let n = self.y[0].len();
-        let y_values = self
-            .y
-            .iter()
-            .map(|y| {
-                let mut values = vec![T::zero(); n];
-                y.copy_to_flat_slice(&mut values);
-                values
-            })
-            .collect::<Vec<_>>();
         for i in 0..n {
             let header = format!("y{}", i);
             columns.push(Column::new(
                 header.into(),
-                y_values
+                self.y
                     .iter()
-                    .map(|values| simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&values[i]))
+                    .map(|y| simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&y.get_component(i)))
                     .collect::<Vec<f64>>(),
             ));
         }
@@ -343,15 +323,6 @@ where
         let mut columns = vec![Column::new(t_name.into(), t)];
 
         let n = self.y[0].len();
-        let y_values = self
-            .y
-            .iter()
-            .map(|y| {
-                let mut values = vec![T::zero(); n];
-                y.copy_to_flat_slice(&mut values);
-                values
-            })
-            .collect::<Vec<_>>();
 
         // Validate that we have enough names for all state variables
         if y_names.len() != n {
@@ -368,9 +339,9 @@ where
         for (i, name) in y_names.iter().enumerate() {
             columns.push(Column::new(
                 (*name).into(),
-                y_values
+                self.y
                     .iter()
-                    .map(|values| simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&values[i]))
+                    .map(|y| simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&y.get_component(i)))
                     .collect::<Vec<f64>>(),
             ));
         }

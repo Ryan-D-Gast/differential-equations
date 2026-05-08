@@ -29,15 +29,13 @@ impl<T: Real> Matrix<T> {
         // 1) Densify A into a Vec<T> of size n*n (row-major)
         let mut a = self.to_dense_vec();
 
-        // 2) Copy b into a dense vector x and perform solve
-        let mut x = vec![T::zero(); n];
-        b.copy_to_flat_slice(&mut x);
+        // 2) Use b as the working state
+        let mut x = b.clone();
 
         // 3) LU factorization with partial pivoting and singularity checking
         let mut piv: Vec<usize> = (0..n).collect();
         let eps = T::from_f64(1e-14).unwrap(); // Singularity threshold
 
-        let mut swapper;
         for k in 0..n {
             // Find pivot row
             let mut pivot_row = k;
@@ -62,9 +60,10 @@ impl<T: Real> Matrix<T> {
                     a.swap(k * n + j, pivot_row * n + j);
                 }
                 // swap entries in x
-                swapper = x[k];
-                x[k] = x[pivot_row];
-                x[pivot_row] = swapper;
+                let tk = x.get_component(k);
+                let tm = x.get_component(pivot_row);
+                x.set_component(k, tm);
+                x.set_component(pivot_row, tk);
                 piv.swap(k, pivot_row);
             }
 
@@ -81,26 +80,23 @@ impl<T: Real> Matrix<T> {
 
         // Forward solve Ly = Pb (x currently holds permuted b)
         for i in 0..n {
-            let mut sum = x[i];
+            let mut sum = x.get_component(i);
             for k in 0..i {
-                sum -= a[i * n + k] * x[k];
+                sum -= a[i * n + k] * x.get_component(k);
             }
-            x[i] = sum; // since L has ones on diagonal
+            x.set_component(i, sum); // since L has ones on diagonal
         }
 
         // Backward solve Ux = y
         for i in (0..n).rev() {
-            let mut sum = x[i];
+            let mut sum = x.get_component(i);
             for k in (i + 1)..n {
-                sum -= a[i * n + k] * x[k];
+                sum -= a[i * n + k] * x.get_component(k);
             }
-            x[i] = sum / a[i * n + i];
+            x.set_component(i, sum / a[i * n + i]);
         }
 
-        // Build output State from x
-        let mut out = b.zeros_like();
-        out.copy_from_flat_slice(&x);
-        Ok(out)
+        Ok(x)
     }
 
     /// In-place solve: overwrites `b` with `x`.

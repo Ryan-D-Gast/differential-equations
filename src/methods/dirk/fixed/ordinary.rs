@@ -119,11 +119,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
                 // Max-norm and RHS
                 self.rhs_newton = residual.scaled(-T::one());
-                let mut residual_values = vec![T::zero(); dim];
-                residual.copy_to_flat_slice(&mut residual_values);
-                let residual_norm = residual_values
-                    .iter()
-                    .fold(T::zero(), |norm, value| norm.max(value.abs()));
+                let residual_norm = residual.max_norm();
 
                 // Converged by residual
                 if residual_norm < self.newton_tol {
@@ -152,15 +148,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
                 // Solve (I - h*a_ii J) Δz = -F(z) using in-place LU
                 self.delta_z = self.jacobian.lin_solve(self.rhs_newton.clone()).unwrap();
-                self.lu_decompositions += 1;
+                evals.solves += 1;
 
                 // Update z and increment norm
                 self.z.add_scaled(T::one(), &self.delta_z);
-                let mut delta_values = vec![T::zero(); dim];
-                self.delta_z.copy_to_flat_slice(&mut delta_values);
-                increment_norm = delta_values
-                    .iter()
-                    .fold(T::zero(), |norm, value| norm.max(value.abs()));
+                increment_norm = self.delta_z.max_norm();
             }
 
             // Newton failed for this stage

@@ -3,30 +3,6 @@ use differential_equations_derive::State;
 use nalgebra::{Matrix2, Vector2};
 use num_complex::Complex;
 
-trait TestStateAccess<T: Real>: StateTrait<T> {
-    fn component(&self, index: usize) -> T {
-        assert!(index < self.len(), "Index out of bounds");
-        let mut values = vec![T::zero(); self.len()];
-        self.copy_to_flat_slice(&mut values);
-        values[index]
-    }
-
-    fn set_component(&mut self, index: usize, value: T) {
-        assert!(index < self.len(), "Index out of bounds");
-        let mut values = vec![T::zero(); self.len()];
-        self.copy_to_flat_slice(&mut values);
-        values[index] = value;
-        self.copy_from_flat_slice(&values);
-    }
-}
-
-impl<T, Y> TestStateAccess<T> for Y
-where
-    T: Real,
-    Y: StateTrait<T>,
-{
-}
-
 #[test]
 fn test_edge_cases() {
     // Test single element array
@@ -37,10 +13,10 @@ fn test_edge_cases() {
 
     let mut state = SingleElementArray { single: [42.0] };
     assert_eq!(state.len(), 1);
-    assert_eq!(state.component(0), 42.0);
+    assert_eq!(state.get_component(0), 42.0);
 
     state.set_component(0, 100.0);
-    assert_eq!(state.component(0), 100.0);
+    assert_eq!(state.get_component(0), 100.0);
 
     // Test large array
     #[derive(State)]
@@ -52,9 +28,9 @@ fn test_edge_cases() {
     assert_eq!(large_state.len(), 10);
 
     for i in 0..10 {
-        assert_eq!(large_state.component(i), 1.0);
+        assert_eq!(large_state.get_component(i), 1.0);
         large_state.set_component(i, i as f64);
-        assert_eq!(large_state.component(i), i as f64);
+        assert_eq!(large_state.get_component(i), i as f64);
     }
 
     // Test unnamed fields (tuple struct)
@@ -63,9 +39,9 @@ fn test_edge_cases() {
 
     let tuple_state = TupleStruct(1.0, [2.0, 3.0], Vector2::new(4.0, 5.0));
     assert_eq!(tuple_state.len(), 5); // 1 + 2 + 2 = 5
-    assert_eq!(tuple_state.component(0), 1.0);
-    assert_eq!(tuple_state.component(1), 2.0);
-    assert_eq!(tuple_state.component(4), 5.0);
+    assert_eq!(tuple_state.get_component(0), 1.0);
+    assert_eq!(tuple_state.get_component(1), 2.0);
+    assert_eq!(tuple_state.get_component(4), 5.0);
 }
 
 #[test]
@@ -96,7 +72,7 @@ fn test_get_index_out_of_bounds() {
     }
 
     let state = SmallState { x: 1.0 };
-    state.component(1); // Should panic
+    state.get_component(1); // Should panic
 }
 
 #[test]
@@ -158,7 +134,7 @@ fn test_zeros_initialization() {
 
     // Test that all indexed elements are zero
     for i in 0..zero_state.len() {
-        assert_eq!(zero_state.component(i), 0.0);
+        assert_eq!(zero_state.get_component(i), 0.0);
     }
 }
 
@@ -176,8 +152,8 @@ fn test_different_numeric_types() {
         y: 2.0f32,
     };
     assert_eq!(state_f32.len(), 2);
-    assert_eq!(state_f32.component(0), 1.0f32);
-    assert_eq!(state_f32.component(1), 2.0f32);
+    assert_eq!(state_f32.get_component(0), 1.0f32);
+    assert_eq!(state_f32.get_component(1), 2.0f32);
 
     // Test zeros with f32
     let zero_f32 = F32State::<f32>::zeros();
@@ -200,11 +176,11 @@ fn test_empty_arrays() {
     };
 
     assert_eq!(state.len(), 2);
-    assert_eq!(state.component(0), 42.0); // tiny[0]
-    assert_eq!(state.component(1), 1.0); // scalar
+    assert_eq!(state.get_component(0), 42.0); // tiny[0]
+    assert_eq!(state.get_component(1), 1.0); // scalar
 
     state.set_component(0, 100.0);
-    assert_eq!(state.component(0), 100.0);
+    assert_eq!(state.get_component(0), 100.0);
 }
 
 #[test]
@@ -257,8 +233,8 @@ fn test_matrix_indexing_order() {
     // | a  b |
     // | c  d |
     // Our indexing should be row-major: (0,0), (0,1), (1,0), (1,1)
-    assert_eq!(state.component(0), 1.0); // (0,0)
-    assert_eq!(state.component(1), 2.0); // (0,1)
-    assert_eq!(state.component(2), 3.0); // (1,0)
-    assert_eq!(state.component(3), 4.0); // (1,1)
+    assert_eq!(state.get_component(0), 1.0); // (0,0)
+    assert_eq!(state.get_component(1), 2.0); // (0,1)
+    assert_eq!(state.get_component(2), 3.0); // (1,0)
+    assert_eq!(state.get_component(3), 4.0); // (1,1)
 }

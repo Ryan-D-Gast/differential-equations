@@ -144,18 +144,16 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
             });
         }
 
-        let mut scal_values = vec![T::zero(); n];
-        self.scal.copy_to_flat_slice(&mut scal_values);
-
         // Index-2 scaling: scal[i] /= hhfac for index-2 variables
         for &i in &self.index2 {
-            scal_values[i] /= self.hhfac;
+            let val = self.scal.get_component(i);
+            self.scal.set_component(i, val / self.hhfac);
         }
         // Index-3 scaling: scal[i] /= (hhfac * hhfac) for index-3 variables
         for &i in &self.index3 {
-            scal_values[i] /= self.hhfac * self.hhfac;
+            let val = self.scal.get_component(i);
+            self.scal.set_component(i, val / (self.hhfac * self.hhfac));
         }
-        self.scal.copy_from_flat_slice(&scal_values);
 
         // Starting values for Newton iteration
         if self.first {
@@ -250,38 +248,22 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
             let fac1 = self.u1 / self.h;
             let alphn = self.alph / self.h;
             let betan = self.beta / self.h;
-            let mut f0_values = vec![T::zero(); n];
-            let mut f1_values = vec![T::zero(); n];
-            let mut f2_values = vec![T::zero(); n];
-            let mut z0_values = vec![T::zero(); n];
-            let mut z1_values = vec![T::zero(); n];
-            let mut z2_values = vec![T::zero(); n];
-            self.f[0].copy_to_flat_slice(&mut f0_values);
-            self.f[1].copy_to_flat_slice(&mut f1_values);
-            self.f[2].copy_to_flat_slice(&mut f2_values);
-            self.z[0].copy_to_flat_slice(&mut z0_values);
-            self.z[1].copy_to_flat_slice(&mut z1_values);
-            self.z[2].copy_to_flat_slice(&mut z2_values);
 
             // Assemble RHS and solve for (Z1, Z2, Z3)
+            let mf0 = self.mass.mul_state::<Y>(&self.f[0]);
+            let mf1 = self.mass.mul_state::<Y>(&self.f[1]);
+            let mf2 = self.mass.mul_state::<Y>(&self.f[2]);
+
             for i in 0..n {
                 // S1 = -(M row i)·F1; S2 = -(M row i)·F2; S3 = -(M row i)·F3
-                let mut s1 = T::zero();
-                let mut s2 = T::zero();
-                let mut s3 = T::zero();
-                for j in 0..n {
-                    let mij = self.mass[(i, j)];
-                    s1 -= mij * f0_values[j];
-                    s2 -= mij * f1_values[j];
-                    s3 -= mij * f2_values[j];
-                }
-                z0_values[i] += s1 * fac1;
-                z1_values[i] += s2 * alphn - s3 * betan;
-                z2_values[i] += s3 * alphn + s2 * betan;
+                let s1 = -mf0.get_component(i);
+                let s2 = -mf1.get_component(i);
+                let s3 = -mf2.get_component(i);
+
+                self.z[0].set_component(i, self.z[0].get_component(i) + s1 * fac1);
+                self.z[1].set_component(i, self.z[1].get_component(i) + s2 * alphn - s3 * betan);
+                self.z[2].set_component(i, self.z[2].get_component(i) + s3 * alphn + s2 * betan);
             }
-            self.z[0].copy_from_flat_slice(&z0_values);
-            self.z[1].copy_from_flat_slice(&z1_values);
-            self.z[2].copy_from_flat_slice(&z2_values);
 
             // Solve E1 * Z1 = RHS1 (real system)
             lin_solve(&self.e1, &mut self.z[0], &self.ip1);
@@ -298,15 +280,11 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
 
             // Convergence control
             let mut dyno = T::zero();
-            self.scal.copy_to_flat_slice(&mut scal_values);
-            self.z[0].copy_to_flat_slice(&mut z0_values);
-            self.z[1].copy_to_flat_slice(&mut z1_values);
-            self.z[2].copy_to_flat_slice(&mut z2_values);
             for i in 0..n {
-                let sc = scal_values[i];
-                let v1 = z0_values[i] / sc;
-                let v2 = z1_values[i] / sc;
-                let v3 = z2_values[i] / sc;
+                let sc = self.scal.get_component(i);
+                let v1 = self.z[0].get_component(i) / sc;
+                let v2 = self.z[1].get_component(i) / sc;
+                let v3 = self.z[2].get_component(i) / sc;
                 dyno = dyno + v1 * v1 + v2 * v2 + v3 * v3;
             }
             dyno = (dyno / T::from_f64((3 * n) as f64).unwrap()).sqrt();
@@ -380,36 +358,13 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
             (&self.z[1], hee2),
             (&self.z[2], hee3),
         ]);
-        let mut f2 = Y::zeros();
-        let mut cont = Y::zeros();
-        let mut f1_values = vec![T::zero(); n];
-        let mut dydt_values = vec![T::zero(); n];
-        let mut f2_values = vec![T::zero(); n];
-        let mut cont_values = vec![T::zero(); n];
-        f1.copy_to_flat_slice(&mut f1_values);
-        self.dydt.copy_to_flat_slice(&mut dydt_values);
-        for i in 0..n {
-            let mut sum = T::zero();
-            for j in 0..n {
-                sum += self.mass[(i, j)] * f1_values[j];
-            }
-            f2_values[i] = sum;
-            cont_values[i] = sum + dydt_values[i];
-        }
-        f2.copy_from_flat_slice(&f2_values);
-        cont.copy_from_flat_slice(&cont_values);
+        let f2 = self.mass.mul_state::<Y>(&f1);
+        let mut cont = f2.plus_scaled(T::one(), &self.dydt);
         lin_solve(&self.e1, &mut cont, &self.ip1);
         evals.solves += 1;
 
         // Error estimate
-        let mut err = T::zero();
-        cont.copy_to_flat_slice(&mut cont_values);
-        self.scal.copy_to_flat_slice(&mut scal_values);
-        for i in 0..n {
-            let r = cont_values[i] / scal_values[i];
-            err += r * r;
-        }
-        let mut err = (err / T::from_usize(n).unwrap())
+        let mut err = (cont.component_div(&self.scal).norm_squared() / T::from_usize(n).unwrap())
             .sqrt()
             .max(T::from_f64(1e-10).unwrap());
 
@@ -425,14 +380,7 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
             evals.solves += 1;
 
             // Recompute error
-            err = T::zero();
-            cont.copy_to_flat_slice(&mut cont_values);
-            self.scal.copy_to_flat_slice(&mut scal_values);
-            for i in 0..n {
-                let r = cont_values[i] / scal_values[i];
-                err += r * r;
-            }
-            err = (err / T::from_usize(n).unwrap())
+            err = (cont.component_div(&self.scal).norm_squared() / T::from_usize(n).unwrap())
                 .sqrt()
                 .max(T::from_f64(1e-10).unwrap());
         }
@@ -493,13 +441,9 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
             self.cont[3] = self.cont[2].minus(&acont3);
 
             // Compute error scale
-            let mut y_values = vec![T::zero(); n];
-            self.y.copy_to_flat_slice(&mut y_values);
-            self.scal.copy_to_flat_slice(&mut scal_values);
-            for i in 0..n {
-                scal_values[i] = self.atol[i] + self.rtol[i] * y_values[i].abs();
-            }
-            self.scal.copy_from_flat_slice(&scal_values);
+            self.scal.map_components_mut(|i, s| {
+                *s = self.atol[i] + self.rtol[i] * self.y.get_component(i).abs();
+            });
 
             // Constrain new step size to [h_min, h_max]
             hnew = constrain_step_size(hnew, self.h_min, self.h_max);

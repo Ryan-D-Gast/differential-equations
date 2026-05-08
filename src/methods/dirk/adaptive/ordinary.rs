@@ -141,11 +141,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
                 // Max-norm and RHS
                 self.rhs_newton = residual.scaled(-T::one());
-                let mut residual_values = vec![T::zero(); dim];
-                residual.copy_to_flat_slice(&mut residual_values);
-                let residual_norm = residual_values
-                    .iter()
-                    .fold(T::zero(), |norm, value| norm.max(value.abs()));
+                let residual_norm = residual.max_norm();
 
                 // Converged by residual
                 if residual_norm < self.newton_tol {
@@ -174,15 +170,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
                 // Solve (I - h*a_ii J) Δz = -F(z) using in-place LU
                 self.delta_z = self.jacobian.lin_solve(self.rhs_newton.clone()).unwrap();
-                self.lu_decompositions += 1;
+                evals.solves += 1;
 
                 // Update z and increment norm
                 self.z.add_scaled(T::one(), &self.delta_z);
-                let mut delta_values = vec![T::zero(); dim];
-                self.delta_z.copy_to_flat_slice(&mut delta_values);
-                increment_norm = delta_values
-                    .iter()
-                    .fold(T::zero(), |norm, value| norm.max(value.abs()));
+                increment_norm = self.delta_z.max_norm();
             }
 
             // Newton failed for this stage
@@ -231,16 +223,10 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // Weighted max-norm
         let dim = self.y.len();
-        let mut y_values = vec![T::zero(); dim];
-        let mut y_new_values = vec![T::zero(); dim];
-        let mut y_low_values = vec![T::zero(); dim];
-        self.y.copy_to_flat_slice(&mut y_values);
-        y_new.copy_to_flat_slice(&mut y_new_values);
-        y_low.copy_to_flat_slice(&mut y_low_values);
         for i in 0..dim {
-            let scale = self.atol[i] + self.rtol[i] * y_values[i].abs().max(y_new_values[i].abs());
+            let scale = self.atol[i] + self.rtol[i] * self.y.get_component(i).abs().max(y_new.get_component(i).abs());
             if scale > T::zero() {
-                err_norm = err_norm.max(((y_new_values[i] - y_low_values[i]) / scale).abs());
+                err_norm = err_norm.max(((y_new.get_component(i) - y_low.get_component(i)) / scale).abs());
             }
         }
 

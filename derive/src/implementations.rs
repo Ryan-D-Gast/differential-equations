@@ -152,17 +152,26 @@ pub fn generate_state_impl(
                 #total_elements
             }
 
-            fn copy_to_flat_slice(&self, output: &mut [T]) {
-                assert_eq!(output.len(), self.len(), "Slice length mismatch");
-                for i in 0..self.len() {
-                    output[i] = self.__state_get(i);
-                }
+            fn get_component(&self, index: usize) -> T {
+                self.__state_get(index)
             }
 
-            fn copy_from_flat_slice(&mut self, input: &[T]) {
-                assert_eq!(input.len(), self.len(), "Slice length mismatch");
+            fn set_component(&mut self, index: usize, value: T) {
+                self.__state_set(index, value);
+            }
+
+            fn map_components_mut<F>(&mut self, mut f: F)
+            where
+                F: FnMut(usize, &mut T),
+            {
+                // This is a bit tricky for a struct with named fields if we don't have a way to get a &mut T by index.
+                // However, the macro generates __state_set which we can use with __state_get.
+                // For better performance, we'd need a way to get a &mut T.
+                // Let's assume for now that we can use get/set for the generic implementation.
                 for i in 0..self.len() {
-                    self.__state_set(i, input[i]);
+                    let mut val = self.__state_get(i);
+                    f(i, &mut val);
+                    self.__state_set(i, val);
                 }
             }
 

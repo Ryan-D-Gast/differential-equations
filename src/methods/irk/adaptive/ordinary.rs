@@ -141,9 +141,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 }
 
                 // Infinity norm and RHS
-                let mut residual_values = vec![T::zero(); dim];
-                residual.copy_to_flat_slice(&mut residual_values);
-                for (row_idx, res_val) in residual_values.iter().copied().enumerate() {
+                for row_idx in 0..dim {
+                    let res_val = residual.get_component(row_idx);
                     residual_norm = residual_norm.max(res_val.abs());
                     // Store residual in Newton RHS (negative for solving delta_z)
                     self.rhs_newton[i * dim + row_idx] = -res_val;
@@ -212,15 +211,13 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             // Update z_i and increment norm
             increment_norm = T::zero();
             for i in 0..self.stages {
-                let mut z_values = vec![T::zero(); dim];
-                self.z[i].copy_to_flat_slice(&mut z_values);
-                for (row_idx, z_value) in z_values.iter_mut().enumerate() {
+                for row_idx in 0..dim {
                     let delta_val = self.delta_k_vec[i * dim + row_idx];
-                    *z_value += delta_val;
+                    let current_z = self.z[i].get_component(row_idx);
+                    self.z[i].set_component(row_idx, current_z + delta_val);
                     // Calculate infinity norm of increment
                     increment_norm = increment_norm.max(delta_val.abs());
                 }
-                self.z[i].copy_from_flat_slice(&z_values);
             }
 
             // Next loop will re-check
@@ -272,16 +269,10 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // Weighted max-norm
         let dim = self.y.len();
-        let mut y_values = vec![T::zero(); dim];
-        let mut y_new_values = vec![T::zero(); dim];
-        let mut y_low_values = vec![T::zero(); dim];
-        self.y.copy_to_flat_slice(&mut y_values);
-        y_new.copy_to_flat_slice(&mut y_new_values);
-        y_low.copy_to_flat_slice(&mut y_low_values);
         for n in 0..dim {
-            let scale = self.atol[n] + self.rtol[n] * y_values[n].abs().max(y_new_values[n].abs());
+            let scale = self.atol[n] + self.rtol[n] * self.y.get_component(n).abs().max(y_new.get_component(n).abs());
             if scale > T::zero() {
-                err_norm = err_norm.max(((y_new_values[n] - y_low_values[n]) / scale).abs());
+                err_norm = err_norm.max(((y_new.get_component(n) - y_low.get_component(n)) / scale).abs());
             }
         }
 

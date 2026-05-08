@@ -71,12 +71,6 @@ where
 
         // Compute the unperturbed derivative
         self.diff(t, y, &mut f_origin);
-        let mut y_values = vec![T::zero(); dim];
-        let mut y_perturbed_values = vec![T::zero(); dim];
-        let mut f_origin_values = vec![T::zero(); dim];
-        let mut f_perturbed_values = vec![T::zero(); dim];
-        y.copy_to_flat_slice(&mut y_values);
-        f_origin.copy_to_flat_slice(&mut f_origin_values);
 
         // Use sqrt of machine epsilon for finite differences
         let eps = T::default_epsilon().sqrt();
@@ -84,28 +78,22 @@ where
         // For each column of the jacobian
         for j_col in 0..dim {
             // Get the original value
-            let y_original_j = y_values[j_col];
+            let y_original_j = y.get_component(j_col);
 
             // Calculate perturbation size (max of component magnitude or 1.0)
             let perturbation = eps * y_original_j.abs().max(T::one());
 
             // Perturb the component
-            y_perturbed.copy_to_flat_slice(&mut y_perturbed_values);
-            y_perturbed_values[j_col] = y_original_j + perturbation;
-            y_perturbed.copy_from_flat_slice(&y_perturbed_values);
+            y_perturbed.copy_from_state(y);
+            y_perturbed.set_component(j_col, y_original_j + perturbation);
 
             // Evaluate function with perturbed value
             self.diff(t, &y_perturbed, &mut f_perturbed);
-            f_perturbed.copy_to_flat_slice(&mut f_perturbed_values);
-
-            // Restore original value
-            y_perturbed_values[j_col] = y_original_j;
-            y_perturbed.copy_from_flat_slice(&y_perturbed_values);
 
             // Compute finite difference approximation for this column
             for i_row in 0..dim {
                 j[(i_row, j_col)] =
-                    (f_perturbed_values[i_row] - f_origin_values[i_row]) / perturbation;
+                    (f_perturbed.get_component(i_row) - f_origin.get_component(i_row)) / perturbation;
             }
         }
     }

@@ -51,14 +51,231 @@ pub trait State<T: Real>: Clone + Debug {
         self.len() == 0
     }
 
-    /// Copies this state into a flat slice using the state's canonical solver layout.
-    fn copy_to_flat_slice(&self, output: &mut [T]);
+    /// Retrieves a specific scalar component from the state using its flattened 1D index.
+    fn get_component(&self, index: usize) -> T;
 
-    /// Copies values from a flat slice using the state's canonical solver layout.
-    ///
-    /// This is the inverse of [`State::copy_to_flat_slice`] and is used to recover
-    /// backend-specific states from solver-owned flat buffers.
-    fn copy_from_flat_slice(&mut self, input: &[T]);
+    /// Modifies a specific scalar component in the state using its flattened 1D index.
+    fn set_component(&mut self, index: usize, value: T);
+
+    /// Computes the element-wise absolute value, returning a new state.
+    fn abs(&self) -> Self {
+        let mut out = self.clone();
+        out.map_components_mut(|_, val| *val = val.abs());
+        out
+    }
+
+    /// Computes the element-wise product of two states.
+    fn component_mul(&self, other: &Self) -> Self {
+        let mut out = self.clone();
+        out.map_components_mut(|i, val| *val *= other.get_component(i));
+        out
+    }
+
+    /// Computes the element-wise division of two states.
+    fn component_div(&self, other: &Self) -> Self {
+        let mut out = self.clone();
+        out.map_components_mut(|i, val| *val /= other.get_component(i));
+        out
+    }
+
+    /// Computes the inner (dot) product between two states.
+    fn dot(&self, other: &Self) -> T {
+        let mut sum = T::zero();
+        for i in 0..self.len() {
+            sum += self.get_component(i) * other.get_component(i);
+        }
+        sum
+    }
+
+    /// Computes the infinity norm (maximum absolute value) of the state.
+    fn max_norm(&self) -> T {
+        let mut max = T::zero();
+        for i in 0..self.len() {
+            max = max.max(self.get_component(i).abs());
+        }
+        max
+    }
+
+    /// Maps a closure over each component in the state alongside its flattened index.
+    fn map_components_mut<F>(&mut self, f: F)
+    where
+        F: FnMut(usize, &mut T);
+
+    /// In-place solution of a real linear system `LU * x = self`, where `LU` is a previously
+    /// factorized dense matrix (in row-major order) and `ip` are the pivot indices.
+    fn apply_linear_solve(&mut self, lu: &[T], ip: &[usize]) {
+        let n = self.len();
+        // Handle trivial case
+        if n == 1 {
+            self.set_component(0, self.get_component(0) / lu[0]);
+            return;
+        }
+
+        let nm1 = n - 1;
+
+        // Forward elimination with partial pivoting (solving Ly = Pb)
+        for k in 0..nm1 {
+            let kp1 = k + 1;
+            let m = ip[k]; // Pivot row index
+
+            // Apply row permutation to RHS
+            let tk = self.get_component(k);
+            let tm = self.get_component(m);
+            self.set_component(k, tm);
+            self.set_component(m, tk);
+
+            // Forward substitution step
+            let pivot_val = self.get_component(k);
+            for i in kp1..n {
+                let li_k = lu[i * n + k];
+                let current = self.get_component(i);
+                self.set_component(i, current + li_k * pivot_val);
+            }
+        }
+
+        // Back substitution (solving Ux = y)
+        for kb in 1..n {
+            let k = n - kb;
+            let diag = lu[k * n + k];
+            let xk = self.get_component(k) / diag;
+            self.set_component(k, xk);
+
+            let neg_xk = -xk;
+            for i in 0..k {
+                let ui_k = lu[i * n + k];
+                let current = self.get_component(i);
+                self.set_component(i, current + ui_k * neg_xk);
+            }
+        }
+
+        // Final division for the first element
+        self.set_component(0, self.get_component(0) / lu[0]);
+    }
+
+    /// In-place solution of a complex linear system `(AR + i*AI) * (xr + i*xi) = self_r + i*self_i`.
+    /// Updates both the real part (`self`) and the imaginary part (`imag_part`) in place.
+    fn apply_complex_linear_solve(
+        &mut self,
+        imag_part: &mut Self,
+        ar: &[T],
+        ai: &[T],
+        ip: &[usize],
+    ) {
+        let n = self.len();
+        assert_eq!(imag_part.len(), n, "Complex linear solve dimension mismatch");
+
+        // Handle trivial case
+        if n == 1 {
+            let br = self.get_component(0);
+            let bi = imag_part.get_component(0);
+            let ar_00 = ar[0];
+            let ai_00 = ai[0];
+
+            let denom = ar_00 * ar_00 + ai_00 * ai_00;
+            self.set_component(0, (br * ar_00 + bi * ai_00) / denom);
+            imag_part.set_component(0, (bi * ar_00 - br * ai_00) / denom);
+            return;
+        }
+
+        let nm1 = n - 1;
+
+        // Forward elimination with partial pivoting (solving complex Ly = Pb)
+        for k in 0..nm1 {
+            let kp1 = k + 1;
+            let m = ip[k]; // Pivot row index
+
+            // Apply row permutation to RHS
+            let br_k = self.get_component(k);
+            let bi_k = imag_part.get_component(k);
+            let br_m = self.get_component(m);
+            let bi_m = imag_part.get_component(m);
+
+            self.set_component(k, br_m);
+            imag_part.set_component(k, bi_m);
+            self.set_component(m, br_k);
+            imag_part.set_component(m, bi_k);
+
+            // Forward substitution step (complex)
+            let vr = self.get_component(k);
+            let vi = imag_part.get_component(k);
+
+            for i in kp1..n {
+                let lr = ar[i * n + k];
+                let li = ai[i * n + k];
+
+                let current_r = self.get_component(i);
+                let current_i = imag_part.get_component(i);
+
+                // rhs[i] += L[i,k] * rhs[k]
+                self.set_component(i, current_r + lr * vr - li * vi);
+                imag_part.set_component(i, current_i + lr * vi + li * vr);
+            }
+        }
+
+        // Back substitution (solving complex Ux = y)
+        for kb in 1..n {
+            let k = n - kb;
+
+            // Complex division: rhs[k] /= U[k,k]
+            let ur = ar[k * n + k];
+            let ui = ai[k * n + k];
+            let vr = self.get_component(k);
+            let vi = imag_part.get_component(k);
+
+            let denom = ur * ur + ui * ui;
+            let xr = (vr * ur + vi * ui) / denom;
+            let xi = (vi * ur - vr * ui) / denom;
+
+            self.set_component(k, xr);
+            imag_part.set_component(k, xi);
+
+            // rhs[i] -= U[i,k] * x[k]
+            let nxr = -xr;
+            let nxi = -xi;
+
+            for i in 0..k {
+                let ur_ik = ar[i * n + k];
+                let ui_ik = ai[i * n + k];
+
+                let current_r = self.get_component(i);
+                let current_i = imag_part.get_component(i);
+
+                self.set_component(i, current_r + ur_ik * nxr - ui_ik * nxi);
+                imag_part.set_component(i, current_i + ur_ik * nxi + ui_ik * nxr);
+            }
+        }
+
+        // Final division for the first element (complex)
+        let ur = ar[0];
+        let ui = ai[0];
+        let vr = self.get_component(0);
+        let vi = imag_part.get_component(0);
+
+        let denom = ur * ur + ui * ui;
+        self.set_component(0, (vr * ur + vi * ui) / denom);
+        imag_part.set_component(0, (vi * ur - vr * ui) / denom);
+    }
+
+    /// Multiplies the state by a dense matrix (in row-major order), returning a new state `y = A * x`.
+    fn mul_by_dense_matrix(&self, matrix: &[T], n: usize, m: usize) -> Self {
+        assert_eq!(self.len(), m, "Matrix-vector dimension mismatch");
+        let mut out = self.zeros_like(); // Note: this assumes out should have same shape as self if it were square, but really it should have length n.
+                                         // For ODEs n == m usually. If n != m, this might need a different constructor.
+        if out.len() != n {
+            // If the output state type is different (e.g. Vec), we might need to handle resizing.
+            // For now assume n == m for simplicity as that is the common case in this library.
+            assert_eq!(n, m, "mul_by_dense_matrix currently only supports square operations for generic States");
+        }
+
+        for i in 0..n {
+            let mut sum = T::zero();
+            for j in 0..m {
+                sum += matrix[i * m + j] * self.get_component(j);
+            }
+            out.set_component(i, sum);
+        }
+        out
+    }
 
     /// Constructs a zero-valued state with the same shape as `self`.
     fn zeros_like(&self) -> Self;
@@ -77,43 +294,39 @@ pub trait State<T: Real>: Clone + Debug {
 
     /// Fill with a constant value
     fn fill(&mut self, value: T) {
-        let mut buf = vec![T::zero(); self.len()];
-        for x in buf.iter_mut() {
-            *x = value;
-        }
-        self.copy_from_flat_slice(&buf);
+        self.map_components_mut(|_, val| *val = value);
     }
 
     /// Copy values from another state with the same flat solver layout.
     fn copy_from_state(&mut self, other: &Self) {
-        let mut buf = vec![T::zero(); other.len()];
-        other.copy_to_flat_slice(&mut buf);
-        self.copy_from_flat_slice(&buf);
+        assert_eq!(self.len(), other.len(), "State length mismatch");
+        self.map_components_mut(|i, val| *val = other.get_component(i));
     }
 
     /// In-place multiply and add with chaining: `self = self + alpha * other`.
     fn add_scaled(&mut self, alpha: T, other: &Self) -> &mut Self {
-        self.mul_add_assign(alpha, other);
+        assert_eq!(self.len(), other.len(), "State length mismatch");
+        self.map_components_mut(|i, val| *val += alpha * other.get_component(i));
         self
     }
 
     /// In-place scaling with chaining: `self = self * alpha`.
     fn scale_by(&mut self, alpha: T) -> &mut Self {
-        self.scale_mut(alpha);
+        self.map_components_mut(|_, val| *val *= alpha);
         self
     }
 
     /// Returns `self * alpha`.
     fn scaled(&self, alpha: T) -> Self {
         let mut out = self.clone();
-        out.scale_mut(alpha);
+        out.scale_by(alpha);
         out
     }
 
     /// Returns `self + alpha * other`.
     fn plus_scaled(&self, alpha: T, other: &Self) -> Self {
         let mut out = self.clone();
-        out.mul_add_assign(alpha, other);
+        out.add_scaled(alpha, other);
         out
     }
 
@@ -121,7 +334,7 @@ pub trait State<T: Real>: Clone + Debug {
     fn plus_linear_combination(&self, terms: &[(&Self, T)]) -> Self {
         let mut out = self.clone();
         for (state, alpha) in terms {
-            out.mul_add_assign(*alpha, state);
+            out.add_scaled(*alpha, state);
         }
         out
     }
@@ -135,7 +348,7 @@ pub trait State<T: Real>: Clone + Debug {
     fn set_linear_combination(&mut self, terms: &[(&Self, T)]) -> &mut Self {
         self.fill(T::zero());
         for (state, alpha) in terms {
-            self.mul_add_assign(*alpha, state);
+            self.add_scaled(*alpha, state);
         }
         self
     }
@@ -149,10 +362,9 @@ pub trait State<T: Real>: Clone + Debug {
 
     /// Compute ||self||^2
     fn norm_squared(&self) -> T {
-        let mut buf = vec![T::zero(); self.len()];
-        self.copy_to_flat_slice(&mut buf);
         let mut sum = T::zero();
-        for &x in &buf {
+        for i in 0..self.len() {
+            let x = self.get_component(i);
             sum += x * x;
         }
         sum
@@ -160,13 +372,10 @@ pub trait State<T: Real>: Clone + Debug {
 
     /// Compute ||self - other||^2
     fn diff_norm_squared(&self, other: &Self) -> T {
-        let mut buf_self = vec![T::zero(); self.len()];
-        let mut buf_other = vec![T::zero(); self.len()];
-        self.copy_to_flat_slice(&mut buf_self);
-        other.copy_to_flat_slice(&mut buf_other);
+        assert_eq!(self.len(), other.len(), "State length mismatch");
         let mut sum = T::zero();
-        for (a, b) in buf_self.iter().zip(buf_other.iter()) {
-            let diff = *a - *b;
+        for i in 0..self.len() {
+            let diff = self.get_component(i) - other.get_component(i);
             sum += diff * diff;
         }
         sum
@@ -180,17 +389,13 @@ pub trait State<T: Real>: Clone + Debug {
         atol: &Tolerance<T>,
         rtol: &Tolerance<T>,
     ) -> T {
-        let mut buf_y = vec![T::zero(); self.len()];
-        let mut buf_y_new = vec![T::zero(); self.len()];
-        let mut buf_err = vec![T::zero(); self.len()];
-        self.copy_to_flat_slice(&mut buf_y);
-        y_new.copy_to_flat_slice(&mut buf_y_new);
-        err.copy_to_flat_slice(&mut buf_err);
+        assert_eq!(self.len(), y_new.len(), "State length mismatch");
+        assert_eq!(self.len(), err.len(), "State length mismatch");
 
         let mut sum = T::zero();
         for i in 0..self.len() {
-            let sk = atol[i] + rtol[i] * buf_y[i].abs().max(buf_y_new[i].abs());
-            let e = buf_err[i] / sk;
+            let sk = atol[i] + rtol[i] * self.get_component(i).abs().max(y_new.get_component(i).abs());
+            let e = err.get_component(i) / sk;
             sum += e * e;
         }
         sum
@@ -204,17 +409,13 @@ pub trait State<T: Real>: Clone + Debug {
         atol: &Tolerance<T>,
         rtol: &Tolerance<T>,
     ) -> T {
-        let mut buf_y = vec![T::zero(); self.len()];
-        let mut buf_y_new = vec![T::zero(); self.len()];
-        let mut buf_err = vec![T::zero(); self.len()];
-        self.copy_to_flat_slice(&mut buf_y);
-        y_new.copy_to_flat_slice(&mut buf_y_new);
-        err.copy_to_flat_slice(&mut buf_err);
+        assert_eq!(self.len(), y_new.len(), "State length mismatch");
+        assert_eq!(self.len(), err.len(), "State length mismatch");
 
         let mut max = T::zero();
         for i in 0..self.len() {
-            let sk = atol[i] + rtol[i] * buf_y[i].abs().max(buf_y_new[i].abs());
-            max = max.max((buf_err[i] / sk).abs());
+            let sk = atol[i] + rtol[i] * self.get_component(i).abs().max(y_new.get_component(i).abs());
+            max = max.max((err.get_component(i) / sk).abs());
         }
         max
     }
@@ -228,31 +429,50 @@ where
         N
     }
 
-    fn copy_to_flat_slice(&self, output: &mut [T]) {
-        output.copy_from_slice(self);
+    fn get_component(&self, index: usize) -> T {
+        self[index]
     }
 
-    fn copy_from_flat_slice(&mut self, input: &[T]) {
-        self.as_mut_slice().copy_from_slice(input);
+    fn set_component(&mut self, index: usize, value: T) {
+        self[index] = value;
     }
 
-    fn zeros_like(&self) -> Self {
-        [T::zero(); N]
-    }
-
-    fn zeros() -> Self {
-        [T::zero(); N]
-    }
-
-    fn mul_add_assign(&mut self, alpha: T, other: &Self) {
-        for (s, o) in self.iter_mut().zip(other.iter()) {
-            *s += alpha * *o;
+    fn abs(&self) -> Self {
+        let mut out = *self;
+        for val in out.iter_mut() {
+            *val = val.abs();
         }
+        out
     }
 
-    fn scale_mut(&mut self, alpha: T) {
-        for s in self.iter_mut() {
-            *s *= alpha;
+    fn component_mul(&self, other: &Self) -> Self {
+        let mut out = *self;
+        for (v, o) in out.iter_mut().zip(other.iter()) {
+            *v *= *o;
+        }
+        out
+    }
+
+    fn component_div(&self, other: &Self) -> Self {
+        let mut out = *self;
+        for (v, o) in out.iter_mut().zip(other.iter()) {
+            *v /= *o;
+        }
+        out
+    }
+
+    fn dot(&self, other: &Self) -> T {
+        self.iter()
+            .zip(other.iter())
+            .fold(T::zero(), |sum, (a, b)| sum + *a * *b)
+    }
+
+    fn map_components_mut<F>(&mut self, mut f: F)
+    where
+        F: FnMut(usize, &mut T),
+    {
+        for (i, val) in self.iter_mut().enumerate() {
+            f(i, val);
         }
     }
 
@@ -307,6 +527,26 @@ where
         }
         max
     }
+
+    fn zeros_like(&self) -> Self {
+        [T::zero(); N]
+    }
+
+    fn zeros() -> Self {
+        [T::zero(); N]
+    }
+
+    fn mul_add_assign(&mut self, alpha: T, other: &Self) {
+        for (s, o) in self.iter_mut().zip(other.iter()) {
+            *s += alpha * *o;
+        }
+    }
+
+    fn scale_mut(&mut self, alpha: T) {
+        for s in self.iter_mut() {
+            *s *= alpha;
+        }
+    }
 }
 
 #[cfg(feature = "nalgebra")]
@@ -321,22 +561,85 @@ where
         self.nrows() * self.ncols()
     }
 
-    fn copy_to_flat_slice(&self, output: &mut [T]) {
-        assert_eq!(output.len(), self.len(), "Slice length mismatch");
-        for r in 0..self.nrows() {
-            for c in 0..self.ncols() {
-                output[r * self.ncols() + c] = self[(r, c)];
-            }
+    fn get_component(&self, index: usize) -> T {
+        let c = index % self.ncols();
+        let r = index / self.ncols();
+        self[(r, c)]
+    }
+
+    fn set_component(&mut self, index: usize, value: T) {
+        let c = index % self.ncols();
+        let r = index / self.ncols();
+        self[(r, c)] = value;
+    }
+
+    fn abs(&self) -> Self {
+        self.abs()
+    }
+
+    fn component_mul(&self, other: &Self) -> Self {
+        self.component_mul(other)
+    }
+
+    fn component_div(&self, other: &Self) -> Self {
+        self.component_div(other)
+    }
+
+    fn dot(&self, other: &Self) -> T {
+        self.dot(other)
+    }
+
+    fn map_components_mut<F>(&mut self, mut f: F)
+    where
+        F: FnMut(usize, &mut T),
+    {
+        for i in 0..self.len() {
+            let c = i % self.ncols();
+            let r = i / self.ncols();
+            f(i, &mut self[(r, c)]);
         }
     }
 
-    fn copy_from_flat_slice(&mut self, input: &[T]) {
-        assert_eq!(input.len(), self.len(), "Slice length mismatch");
-        for r in 0..self.nrows() {
-            for c in 0..self.ncols() {
-                self[(r, c)] = input[r * self.ncols() + c];
+    fn apply_linear_solve(&mut self, lu: &[T], ip: &[usize]) {
+        // Use default implementation for now as nalgebra integration of row-major LU is non-trivial.
+        // In the future, we can add specialized paths.
+        let n = self.len();
+        if n == 1 {
+            self.set_component(0, self.get_component(0) / lu[0]);
+            return;
+        }
+
+        let nm1 = n - 1;
+        for k in 0..nm1 {
+            let m = ip[k];
+            let tk = self.get_component(k);
+            let tm = self.get_component(m);
+            self.set_component(k, tm);
+            self.set_component(m, tk);
+
+            let pivot_val = self.get_component(k);
+            for i in k + 1..n {
+                let li_k = lu[i * n + k];
+                let current = self.get_component(i);
+                self.set_component(i, current + li_k * pivot_val);
             }
         }
+
+        for kb in 1..n {
+            let k = n - kb;
+            let diag = lu[k * n + k];
+            let xk = self.get_component(k) / diag;
+            self.set_component(k, xk);
+
+            let neg_xk = -xk;
+            for i in 0..k {
+                let ui_k = lu[i * n + k];
+                let current = self.get_component(i);
+                self.set_component(i, current + ui_k * neg_xk);
+            }
+        }
+
+        self.set_component(0, self.get_component(0) / lu[0]);
     }
 
     fn zeros_like(&self) -> Self {
@@ -351,63 +654,27 @@ where
     }
 
     fn mul_add_assign(&mut self, alpha: T, other: &Self) {
-        assert_eq!(self.nrows(), other.nrows(), "State row count mismatch");
-        assert_eq!(self.ncols(), other.ncols(), "State column count mismatch");
-        for i in 0..self.len() {
-            let c = i % self.ncols();
-            let r = i / self.ncols();
-            self[(r, c)] += alpha * other[(r, c)];
-        }
+        *self += other * alpha;
     }
 
     fn scale_mut(&mut self, alpha: T) {
-        for i in 0..self.len() {
-            let c = i % self.ncols();
-            let r = i / self.ncols();
-            self[(r, c)] *= alpha;
-        }
+        *self *= alpha;
     }
 
     fn fill(&mut self, value: T) {
-        for i in 0..self.len() {
-            let c = i % self.ncols();
-            let r = i / self.ncols();
-            self[(r, c)] = value;
-        }
+        self.fill(value);
     }
 
     fn copy_from_state(&mut self, other: &Self) {
-        assert_eq!(self.nrows(), other.nrows(), "State row count mismatch");
-        assert_eq!(self.ncols(), other.ncols(), "State column count mismatch");
-        for i in 0..self.len() {
-            let c = i % self.ncols();
-            let r = i / self.ncols();
-            self[(r, c)] = other[(r, c)];
-        }
+        self.copy_from(other);
     }
 
     fn norm_squared(&self) -> T {
-        let mut sum = T::zero();
-        for i in 0..self.len() {
-            let c = i % self.ncols();
-            let r = i / self.ncols();
-            let value = self[(r, c)];
-            sum += value * value;
-        }
-        sum
+        self.norm_squared()
     }
 
     fn diff_norm_squared(&self, other: &Self) -> T {
-        assert_eq!(self.nrows(), other.nrows(), "State row count mismatch");
-        assert_eq!(self.ncols(), other.ncols(), "State column count mismatch");
-        let mut sum = T::zero();
-        for i in 0..self.len() {
-            let c = i % self.ncols();
-            let r = i / self.ncols();
-            let diff = self[(r, c)] - other[(r, c)];
-            sum += diff * diff;
-        }
-        sum
+        (self - other).norm_squared()
     }
 
     fn error_norm(
@@ -462,16 +729,28 @@ where
         2
     }
 
-    fn copy_to_flat_slice(&self, output: &mut [T]) {
-        assert_eq!(output.len(), 2, "Slice length mismatch");
-        output[0] = self.re;
-        output[1] = self.im;
+    fn get_component(&self, index: usize) -> T {
+        match index {
+            0 => self.re,
+            1 => self.im,
+            _ => panic!("Index out of bounds for Complex state"),
+        }
     }
 
-    fn copy_from_flat_slice(&mut self, input: &[T]) {
-        assert_eq!(input.len(), 2, "Slice length mismatch");
-        self.re = input[0];
-        self.im = input[1];
+    fn set_component(&mut self, index: usize, value: T) {
+        match index {
+            0 => self.re = value,
+            1 => self.im = value,
+            _ => panic!("Index out of bounds for Complex state"),
+        }
+    }
+
+    fn map_components_mut<F>(&mut self, mut f: F)
+    where
+        F: FnMut(usize, &mut T),
+    {
+        f(0, &mut self.re);
+        f(1, &mut self.im);
     }
 
     fn zeros_like(&self) -> Self {
@@ -547,13 +826,27 @@ where
         self.len()
     }
 
-    fn copy_to_flat_slice(&self, output: &mut [T]) {
-        output.copy_from_slice(self);
+    fn get_component(&self, index: usize) -> T {
+        self[index]
     }
 
-    fn copy_from_flat_slice(&mut self, input: &[T]) {
-        self.clear();
-        self.extend_from_slice(input);
+    fn set_component(&mut self, index: usize, value: T) {
+        self[index] = value;
+    }
+
+    fn dot(&self, other: &Self) -> T {
+        self.iter()
+            .zip(other.iter())
+            .fold(T::zero(), |sum, (a, b)| sum + *a * *b)
+    }
+
+    fn map_components_mut<F>(&mut self, mut f: F)
+    where
+        F: FnMut(usize, &mut T),
+    {
+        for (i, val) in self.iter_mut().enumerate() {
+            f(i, val);
+        }
     }
 
     fn zeros_like(&self) -> Self {
@@ -565,6 +858,7 @@ where
     }
 
     fn mul_add_assign(&mut self, alpha: T, other: &Self) {
+        assert_eq!(self.len(), other.len(), "State length mismatch");
         for (s, o) in self.iter_mut().zip(other.iter()) {
             *s += alpha * *o;
         }
@@ -644,17 +938,27 @@ where
         self.len()
     }
 
-    fn copy_to_flat_slice(&self, output: &mut [T]) {
-        assert_eq!(output.len(), self.len(), "Slice length mismatch");
-        for (dst, src) in output.iter_mut().zip(self.iter()) {
-            *dst = *src;
-        }
+    fn get_component(&self, index: usize) -> T {
+        // ndarray::Array usually has a 1D iterator even for higher dimensional arrays
+        *self.iter().nth(index).unwrap()
     }
 
-    fn copy_from_flat_slice(&mut self, input: &[T]) {
-        assert_eq!(input.len(), self.len(), "Slice length mismatch");
-        for (dst, src) in self.iter_mut().zip(input.iter()) {
-            *dst = *src;
+    fn set_component(&mut self, index: usize, value: T) {
+        *self.iter_mut().nth(index).unwrap() = value;
+    }
+
+    fn dot(&self, other: &Self) -> T {
+        self.iter()
+            .zip(other.iter())
+            .fold(T::zero(), |sum, (a, b)| sum + *a * *b)
+    }
+
+    fn map_components_mut<F>(&mut self, mut f: F)
+    where
+        F: FnMut(usize, &mut T),
+    {
+        for (i, val) in self.iter_mut().enumerate() {
+            f(i, val);
         }
     }
 
@@ -751,21 +1055,26 @@ where
         self.nrows() * self.ncols()
     }
 
-    fn copy_to_flat_slice(&self, output: &mut [T]) {
-        assert_eq!(output.len(), self.len(), "Slice length mismatch");
-        for r in 0..self.nrows() {
-            for c in 0..self.ncols() {
-                output[r * self.ncols() + c] = *self.get(r, c);
-            }
-        }
+    fn get_component(&self, index: usize) -> T {
+        let c = index % self.ncols();
+        let r = index / self.ncols();
+        *self.get(r, c)
     }
 
-    fn copy_from_flat_slice(&mut self, input: &[T]) {
-        assert_eq!(input.len(), self.len(), "Slice length mismatch");
-        for r in 0..self.nrows() {
-            for c in 0..self.ncols() {
-                *self.get_mut(r, c) = input[r * self.ncols() + c];
-            }
+    fn set_component(&mut self, index: usize, value: T) {
+        let c = index % self.ncols();
+        let r = index / self.ncols();
+        *self.get_mut(r, c) = value;
+    }
+
+    fn map_components_mut<F>(&mut self, mut f: F)
+    where
+        F: FnMut(usize, &mut T),
+    {
+        for i in 0..self.len() {
+            let c = i % self.ncols();
+            let r = i / self.ncols();
+            f(i, self.get_mut(r, c));
         }
     }
 
@@ -889,87 +1198,45 @@ mod tests {
     use num_complex::Complex;
 
     #[test]
-    fn test_array_flat_slice_round_trip() {
-        let state = [1.0, 2.0, 3.0];
-        let mut buffer = [0.0; 3];
-
-        state.copy_to_flat_slice(&mut buffer);
-        assert_eq!(buffer, [1.0, 2.0, 3.0]);
-
-        let mut recovered = <[f64; 3] as State<f64>>::zeros();
-        recovered.copy_from_flat_slice(&buffer);
-        assert_eq!(recovered, state);
+    fn test_array_get_set() {
+        let mut state = [1.0, 2.0, 3.0];
+        assert_eq!(state.get_component(0), 1.0);
+        state.set_component(1, 42.0);
+        assert_eq!(state[1], 42.0);
     }
 
     #[cfg(feature = "nalgebra")]
     #[test]
-    fn test_nalgebra_matrix_flat_slice_round_trip_uses_row_major_layout() {
-        let state = nalgebra::SMatrix::<f64, 2, 2>::new(1.0, 2.0, 3.0, 4.0);
-        let mut buffer = [0.0; 4];
-
-        state.copy_to_flat_slice(&mut buffer);
-        assert_eq!(buffer, [1.0, 2.0, 3.0, 4.0]);
-
-        let mut recovered = nalgebra::SMatrix::<f64, 2, 2>::zeros();
-        recovered.copy_from_flat_slice(&buffer);
-        assert_eq!(recovered, state);
-    }
-
-    #[cfg(feature = "nalgebra")]
-    #[test]
-    fn test_nalgebra_dynamic_matrix_flat_slice_round_trip() {
-        let state = nalgebra::DMatrix::<f64>::from_row_slice(2, 2, &[1.0, 2.0, 3.0, 4.0]);
-        let mut buffer = [0.0; 4];
-
-        state.copy_to_flat_slice(&mut buffer);
-        assert_eq!(buffer, [1.0, 2.0, 3.0, 4.0]);
-
-        let mut recovered = state.zeros_like();
-        recovered.copy_from_flat_slice(&buffer);
-        assert_eq!(recovered, state);
+    fn test_nalgebra_matrix_get_set() {
+        let mut state = nalgebra::SMatrix::<f64, 2, 2>::new(1.0, 2.0, 3.0, 4.0);
+        assert_eq!(state.get_component(1), 2.0); // Row-major index 1 is (0, 1)
+        state.set_component(2, 42.0); // Row-major index 2 is (1, 0)
+        assert_eq!(state[(1, 0)], 42.0);
     }
 
     #[test]
-    fn test_complex_flat_slice_round_trip() {
-        let state = Complex::new(1.0, 2.0);
-        let mut buffer = [0.0; 2];
-
-        state.copy_to_flat_slice(&mut buffer);
-        assert_eq!(buffer, [1.0, 2.0]);
-
-        let mut recovered = Complex::new(0.0, 0.0);
-        recovered.copy_from_flat_slice(&buffer);
-        assert_eq!(recovered, state);
+    fn test_complex_get_set() {
+        let mut state = Complex::new(1.0, 2.0);
+        assert_eq!(state.get_component(0), 1.0);
+        state.set_component(1, 42.0);
+        assert_eq!(state.im, 42.0);
     }
 
     #[cfg(feature = "ndarray")]
     #[test]
-    fn test_ndarray_flat_slice_round_trip() {
-        let state = ndarray::array![[1.0, 2.0], [3.0, 4.0]];
-        let mut buffer = [0.0; 4];
-
-        state.copy_to_flat_slice(&mut buffer);
-        assert_eq!(buffer, [1.0, 2.0, 3.0, 4.0]);
-
-        let mut recovered = state.zeros_like();
-        recovered.copy_from_flat_slice(&buffer);
-        assert_eq!(recovered, state);
+    fn test_ndarray_get_set() {
+        let mut state = ndarray::array![[1.0, 2.0], [3.0, 4.0]];
+        assert_eq!(state.get_component(1), 2.0);
+        state.set_component(2, 42.0);
+        assert_eq!(state[[1, 0]], 42.0);
     }
 
     #[cfg(feature = "faer")]
     #[test]
-    fn test_faer_flat_slice_round_trip() {
-        let state = faer::Mat::from_fn(2, 2, |r, c| (r * 2 + c + 1) as f64);
-        let mut buffer = [0.0; 4];
-
-        state.copy_to_flat_slice(&mut buffer);
-        assert_eq!(buffer, [1.0, 2.0, 3.0, 4.0]);
-
-        let mut recovered = state.zeros_like();
-        recovered.copy_from_flat_slice(&buffer);
-        assert_eq!(*recovered.get(0, 0), 1.0);
-        assert_eq!(*recovered.get(0, 1), 2.0);
-        assert_eq!(*recovered.get(1, 0), 3.0);
-        assert_eq!(*recovered.get(1, 1), 4.0);
+    fn test_faer_get_set() {
+        let mut state = faer::Mat::from_fn(2, 2, |r, c| (r * 2 + c + 1) as f64);
+        assert_eq!(state.get_component(1), 2.0);
+        state.set_component(2, 42.0);
+        assert_eq!(*state.get(1, 0), 42.0);
     }
 }

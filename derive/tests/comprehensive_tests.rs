@@ -3,30 +3,6 @@ use differential_equations_derive::State;
 use nalgebra::{Matrix2, SMatrix, Vector2, Vector3};
 use num_complex::Complex;
 
-trait TestStateAccess<T: Real>: StateTrait<T> {
-    fn component(&self, index: usize) -> T {
-        assert!(index < self.len(), "Index out of bounds");
-        let mut values = vec![T::zero(); self.len()];
-        self.copy_to_flat_slice(&mut values);
-        values[index]
-    }
-
-    fn set_component(&mut self, index: usize, value: T) {
-        assert!(index < self.len(), "Index out of bounds");
-        let mut values = vec![T::zero(); self.len()];
-        self.copy_to_flat_slice(&mut values);
-        values[index] = value;
-        self.copy_from_flat_slice(&values);
-    }
-}
-
-impl<T, Y> TestStateAccess<T> for Y
-where
-    T: Real,
-    Y: StateTrait<T>,
-{
-}
-
 #[test]
 fn test_comprehensive_mixed_state() {
     /// The most comprehensive test - uses all 4 supported field types
@@ -69,9 +45,9 @@ fn test_comprehensive_mixed_state() {
 
     // Test get/set for all elements
     for i in 0..27 {
-        let original = state.component(i);
+        let original = state.get_component(i);
         state.set_component(i, 42.0);
-        assert_eq!(state.component(i), 42.0);
+        assert_eq!(state.get_component(i), 42.0);
         state.set_component(i, original); // Restore
     }
 
@@ -180,9 +156,9 @@ fn test_various_nalgebra_types() {
 
     // Test get/set for all elements
     for i in 0..18 {
-        let original = state.component(i);
+        let original = state.get_component(i);
         state.set_component(i, 42.0);
-        assert_eq!(state.component(i), 42.0);
+        assert_eq!(state.get_component(i), 42.0);
         state.set_component(i, original); // Restore
     }
 }
