@@ -4,7 +4,6 @@ use crate::{
     dde::DDE,
     linalg::Matrix,
     ode::ODE,
-    state_ops,
     stats::Evals,
     tolerance::Tolerance,
     traits::{Real, State},
@@ -75,13 +74,17 @@ impl InitialStepSize<Ordinary> {
 
         let n_dim = y0.len();
         let mut sk_vec = Vec::with_capacity(n_dim);
+        let mut y0_values = vec![T::zero(); n_dim];
+        let mut f0_values = vec![T::zero(); n_dim];
+        y0.write_to_slice(&mut y0_values);
+        f0.write_to_slice(&mut f0_values);
 
         // Loop through all elements to compute weighted norms
         for n in 0..n_dim {
-            let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            let sk = atol[n] + rtol[n] * y0_values[n].abs();
             sk_vec.push(sk);
-            dnf += (f0.get(n) / sk).powi(2);
-            dny += (y0.get(n) / sk).powi(2);
+            dnf += (f0_values[n] / sk).powi(2);
+            dny += (y0_values[n] / sk).powi(2);
         }
 
         // Initial step size guess
@@ -97,16 +100,18 @@ impl InitialStepSize<Ordinary> {
         h *= posneg;
 
         // Perform an explicit Euler step
-        let y1 = state_ops::from_base_plus(y0, &[(&f0, h)]); // Evaluate derivative at new point
+        let y1 = y0.plus_scaled(h, &f0); // Evaluate derivative at new point
         ode.diff(t0 + h, &y1, &mut f1);
         evals.function += 1;
 
         // Estimate the second derivative
         let mut der2 = T::zero();
+        let mut f1_values = vec![T::zero(); n_dim];
+        f1.write_to_slice(&mut f1_values);
 
         for n in 0..n_dim {
             let sk = sk_vec[n];
-            der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
+            der2 += ((f1_values[n] - f0_values[n]) / sk).powi(2);
         }
         der2 = der2.sqrt() / h.abs();
 
@@ -187,14 +192,18 @@ impl InitialStepSize<Delay> {
         let mut dnf = T::zero();
         let mut dny = T::zero();
         let mut sk_vec = Vec::with_capacity(n_dim);
+        let mut y0_values = vec![T::zero(); n_dim];
+        let mut f0_values = vec![T::zero(); n_dim];
+        y0.write_to_slice(&mut y0_values);
+        f0.write_to_slice(&mut f0_values);
         for n in 0..n_dim {
-            let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            let sk = atol[n] + rtol[n] * y0_values[n].abs();
             sk_vec.push(sk);
             if sk <= T::zero() {
                 return h_min.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init;
             }
-            dnf += (f0.get(n) / sk).powi(2);
-            dny += (y0.get(n) / sk).powi(2);
+            dnf += (f0_values[n] / sk).powi(2);
+            dny += (y0_values[n] / sk).powi(2);
         }
         if n_dim > 0 {
             dnf = (dnf / T::from_usize(n_dim).unwrap()).sqrt();
@@ -214,7 +223,7 @@ impl InitialStepSize<Delay> {
         h = h.min(h_max.abs());
         h *= posneg_init;
 
-        let mut y1 = state_ops::from_base_plus(y0, &[(f0, h)]);
+        let mut y1 = y0.plus_scaled(h, f0);
         let mut t1 = t0 + h;
         let mut f1 = y0.zeros_like();
 
@@ -255,7 +264,7 @@ impl InitialStepSize<Delay> {
                         // Avoid zero step
                         return h_min.abs().max(T::from_f64(1e-6).unwrap()) * posneg_init;
                     }
-                    y1 = state_ops::from_base_plus(y0, &[(f0, h)]);
+                    y1 = y0.plus_scaled(h, f0);
                     t1 = t0 + h;
                     // Loop again with new h
                 } else {
@@ -274,13 +283,15 @@ impl InitialStepSize<Delay> {
         evals.function += 1;
 
         let mut der2 = T::zero();
+        let mut f1_values = vec![T::zero(); n_dim];
+        f1.write_to_slice(&mut f1_values);
         for n in 0..n_dim {
             let sk = sk_vec[n];
             if sk <= T::zero() {
                 der2 = T::infinity();
                 break;
             }
-            der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
+            der2 += ((f1_values[n] - f0_values[n]) / sk).powi(2);
         }
         if n_dim > 0 {
             der2 = (der2 / T::from_usize(n_dim).unwrap()).sqrt() / h.abs();
@@ -377,12 +388,16 @@ impl InitialStepSize<Algebraic> {
         let mut dnf = T::zero();
         let mut dny = T::zero();
         let mut sk_vec = Vec::with_capacity(dim);
+        let mut y0_values = vec![T::zero(); dim];
+        let mut f0_values = vec![T::zero(); dim];
+        y0.write_to_slice(&mut y0_values);
+        f0.write_to_slice(&mut f0_values);
         for n in 0..dim {
-            let sk = atol[n] + rtol[n] * y0.get(n).abs();
+            let sk = atol[n] + rtol[n] * y0_values[n].abs();
             sk_vec.push(sk);
-            dny += (y0.get(n) / sk).powi(2);
+            dny += (y0_values[n] / sk).powi(2);
             if is_diff[n] {
-                dnf += (f0.get(n) / sk).powi(2);
+                dnf += (f0_values[n] / sk).powi(2);
             }
         }
 
@@ -407,19 +422,21 @@ impl InitialStepSize<Algebraic> {
         h *= posneg;
 
         // One explicit Euler predictor (uses f0 directly; avoids M^{-1})
-        let y1 = state_ops::from_base_plus(y0, &[(&f0, h)]);
+        let y1 = y0.plus_scaled(h, &f0);
         let mut f1 = y0.zeros_like();
         dae.diff(t0 + h, &y1, &mut f1);
         evals.function += 1;
 
         // Second derivative estimate on differential components only
         let mut der2 = T::zero();
+        let mut f1_values = vec![T::zero(); dim];
+        f1.write_to_slice(&mut f1_values);
         for n in 0..dim {
             if !is_diff[n] {
                 continue;
             }
             let sk = sk_vec[n];
-            der2 += ((f1.get(n) - f0.get(n)) / sk).powi(2);
+            der2 += ((f1_values[n] - f0_values[n]) / sk).powi(2);
         }
         der2 = der2.sqrt() / h.abs().max(T::default_epsilon());
 

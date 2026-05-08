@@ -1,14 +1,25 @@
-use syn::{Type, TypeArray, Expr, TypePath, PathArguments, GenericArgument};
 use quote::quote;
+use syn::{Expr, GenericArgument, PathArguments, Type, TypeArray, TypePath};
 
 #[derive(Clone)]
 pub enum FieldTypeInfo {
     Single,
-    Array { array_size: usize },
-    SMatrix { rows: usize, cols: usize },
+    Array {
+        array_size: usize,
+    },
+    SMatrix {
+        rows: usize,
+        cols: usize,
+    },
     Complex,
-    ArrayOfSMatrix { array_size: usize, rows: usize, cols: usize },
-    ArrayOfComplex { array_size: usize },
+    ArrayOfSMatrix {
+        array_size: usize,
+        rows: usize,
+        cols: usize,
+    },
+    ArrayOfComplex {
+        array_size: usize,
+    },
 }
 
 impl FieldTypeInfo {
@@ -18,7 +29,11 @@ impl FieldTypeInfo {
             FieldTypeInfo::Array { array_size } => *array_size,
             FieldTypeInfo::SMatrix { rows, cols } => rows * cols,
             FieldTypeInfo::Complex => 2,
-            FieldTypeInfo::ArrayOfSMatrix { array_size, rows, cols } => array_size * rows * cols,
+            FieldTypeInfo::ArrayOfSMatrix {
+                array_size,
+                rows,
+                cols,
+            } => array_size * rows * cols,
             FieldTypeInfo::ArrayOfComplex { array_size } => array_size * 2,
         }
     }
@@ -29,35 +44,31 @@ pub fn analyze_field_type(ty: &Type) -> FieldTypeInfo {
         Type::Array(TypeArray { elem, len, .. }) => {
             // Try to extract the array size
             let array_size = match len {
-                Expr::Lit(lit) => {
-                    match &lit.lit {
-                        syn::Lit::Int(int_lit) => {
-                            int_lit.base10_parse::<usize>().unwrap_or_else(|_| {
-                                panic!("Array size must be a positive integer")
-                            })
-                        },
-                        _ => panic!("Array size must be an integer literal"),
-                    }
+                Expr::Lit(lit) => match &lit.lit {
+                    syn::Lit::Int(int_lit) => int_lit
+                        .base10_parse::<usize>()
+                        .unwrap_or_else(|_| panic!("Array size must be a positive integer")),
+                    _ => panic!("Array size must be an integer literal"),
                 },
                 _ => panic!("Array size must be a compile-time constant"),
             };
-            
+
             // Analyze the element type to see if it's a complex type
             match analyze_field_type(elem) {
-                FieldTypeInfo::SMatrix { rows, cols } => {
-                    FieldTypeInfo::ArrayOfSMatrix { array_size, rows, cols }
+                FieldTypeInfo::SMatrix { rows, cols } => FieldTypeInfo::ArrayOfSMatrix {
+                    array_size,
+                    rows,
+                    cols,
                 },
-                FieldTypeInfo::Complex => {
-                    FieldTypeInfo::ArrayOfComplex { array_size }
-                },
-                _ => FieldTypeInfo::Array { array_size }
+                FieldTypeInfo::Complex => FieldTypeInfo::ArrayOfComplex { array_size },
+                _ => FieldTypeInfo::Array { array_size },
             }
-        },
+        }
         Type::Path(TypePath { path, .. }) => {
             // Check if it's an SMatrix type
             if let Some(segment) = path.segments.last() {
                 let type_name = segment.ident.to_string();
-                
+
                 // Handle explicit SMatrix<T, R, C>
                 if type_name == "SMatrix" {
                     if let PathArguments::AngleBracketed(args) = &segment.arguments {
@@ -80,7 +91,7 @@ pub fn analyze_field_type(ty: &Type) -> FieldTypeInfo {
                 }
             }
             FieldTypeInfo::Single
-        },
+        }
         _ => FieldTypeInfo::Single,
     }
 }
@@ -150,20 +161,14 @@ pub fn generate_nalgebra_zeros(rows: usize, cols: usize) -> proc_macro2::TokenSt
 
 pub fn extract_const_generic(arg: &GenericArgument) -> usize {
     match arg {
-        GenericArgument::Const(expr) => {
-            match expr {
-                Expr::Lit(lit) => {
-                    match &lit.lit {
-                        syn::Lit::Int(int_lit) => {
-                            int_lit.base10_parse::<usize>().unwrap_or_else(|_| {
-                                panic!("Matrix dimension must be a positive integer")
-                            })
-                        },
-                        _ => panic!("Matrix dimension must be an integer literal"),
-                    }
-                },
-                _ => panic!("Matrix dimension must be a compile-time constant"),
-            }
+        GenericArgument::Const(expr) => match expr {
+            Expr::Lit(lit) => match &lit.lit {
+                syn::Lit::Int(int_lit) => int_lit
+                    .base10_parse::<usize>()
+                    .unwrap_or_else(|_| panic!("Matrix dimension must be a positive integer")),
+                _ => panic!("Matrix dimension must be an integer literal"),
+            },
+            _ => panic!("Matrix dimension must be a compile-time constant"),
         },
         _ => panic!("Expected const generic argument for matrix dimension"),
     }

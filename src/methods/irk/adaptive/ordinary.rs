@@ -6,7 +6,6 @@ use crate::{
     methods::h_init::InitialStepSize,
     methods::{Adaptive, ImplicitRungeKutta, Ordinary},
     ode::{ODE, OrdinaryNumericalMethod},
-    state_ops,
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -134,16 +133,17 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             let mut residual_norm = T::zero();
             for i in 0..self.stages {
                 // Start with z_i - y_n
-                let mut residual = state_ops::sub(&self.z[i], &self.y);
+                let mut residual = self.z[i].minus(&self.y);
 
                 // Subtract h*sum(a_ij * f_j)
                 for j in 0..self.stages {
-                    state_ops::axpy(&mut residual, -(self.a[i][j] * self.h), &self.k[j]);
+                    residual.add_scaled(-(self.a[i][j] * self.h), &self.k[j]);
                 }
 
                 // Infinity norm and RHS
-                for row_idx in 0..dim {
-                    let res_val = residual.get(row_idx);
+                let mut residual_values = vec![T::zero(); dim];
+                residual.write_to_slice(&mut residual_values);
+                for (row_idx, res_val) in residual_values.iter().copied().enumerate() {
                     residual_norm = residual_norm.max(res_val.abs());
                     // Store residual in Newton RHS (negative for solving delta_z)
                     self.rhs_newton[i * dim + row_idx] = -res_val;
@@ -212,13 +212,15 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             // Update z_i and increment norm
             increment_norm = T::zero();
             for i in 0..self.stages {
-                for row_idx in 0..dim {
+                let mut z_values = vec![T::zero(); dim];
+                self.z[i].write_to_slice(&mut z_values);
+                for (row_idx, z_value) in z_values.iter_mut().enumerate() {
                     let delta_val = self.delta_k_vec[i * dim + row_idx];
-                    let current_val = self.z[i].get(row_idx);
-                    self.z[i].set(row_idx, current_val + delta_val);
+                    *z_value += delta_val;
                     // Calculate infinity norm of increment
                     increment_norm = increment_norm.max(delta_val.abs());
                 }
+                self.z[i].read_from_slice(&z_values);
             }
 
             // Next loop will re-check
@@ -255,7 +257,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // y_{n+1} = y_n + h Σ b_i f_i
         let mut y_new = self.y.clone();
         for i in 0..self.stages {
-            state_ops::axpy(&mut y_new, self.b[i] * self.h, &self.k[i]);
+            y_new.add_scaled(self.b[i] * self.h, &self.k[i]);
         }
 
         // Embedded error estimate (bh)
@@ -265,14 +267,21 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // Lower-order solution
         let mut y_low = self.y.clone();
         for i in 0..self.stages {
-            state_ops::axpy(&mut y_low, bh[i] * self.h, &self.k[i]);
+            y_low.add_scaled(bh[i] * self.h, &self.k[i]);
         }
 
         // Weighted max-norm
-        for n in 0..self.y.len() {
-            let scale = self.atol[n] + self.rtol[n] * self.y.get(n).abs().max(y_new.get(n).abs());
+        let dim = self.y.len();
+        let mut y_values = vec![T::zero(); dim];
+        let mut y_new_values = vec![T::zero(); dim];
+        let mut y_low_values = vec![T::zero(); dim];
+        self.y.write_to_slice(&mut y_values);
+        y_new.write_to_slice(&mut y_new_values);
+        y_low.write_to_slice(&mut y_low_values);
+        for n in 0..dim {
+            let scale = self.atol[n] + self.rtol[n] * y_values[n].abs().max(y_new_values[n].abs());
             if scale > T::zero() {
-                err_norm = err_norm.max(((y_new.get(n) - y_low.get(n)) / scale).abs());
+                err_norm = err_norm.max(((y_new_values[n] - y_low_values[n]) / scale).abs());
             }
         }
 

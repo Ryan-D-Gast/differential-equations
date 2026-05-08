@@ -4,7 +4,6 @@ use crate::{
     interpolate::{Interpolation, cubic_hermite_interpolate},
     methods::{ExplicitRungeKutta, Fixed, Ordinary},
     ode::{ODE, OrdinaryNumericalMethod},
-    state_ops,
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -83,7 +82,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             let mut y_stage = self.y.clone();
 
             for j in 0..i {
-                state_ops::axpy(&mut y_stage, self.a[i][j] * self.h, &self.k[j]);
+                y_stage.add_scaled(self.a[i][j] * self.h, &self.k[j]);
             }
 
             ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
@@ -99,7 +98,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // Compute solution
         let mut y_next = self.y.clone();
         for i in 0..self.stages {
-            state_ops::axpy(&mut y_next, self.b[i] * self.h, &self.k[i]);
+            y_next.add_scaled(self.b[i] * self.h, &self.k[i]);
         }
 
         // If method has dense output stages, compute them
@@ -108,11 +107,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             for i in 0..(I - S) {
                 let mut y_stage = self.y.clone();
                 for j in 0..self.stages + i {
-                    state_ops::axpy(
-                        &mut y_stage,
-                        self.a[self.stages + i][j] * self.h,
-                        &self.k[j],
-                    );
+                    y_stage.add_scaled(self.a[self.stages + i][j] * self.h, &self.k[j]);
                 }
 
                 ode.diff(
@@ -204,7 +199,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
             // Compute the interpolated value
             let mut y_interp = self.y_prev.clone();
             for i in 0..I {
-                state_ops::axpy(&mut y_interp, cont[i] * self.h_prev, &self.k[i]);
+                y_interp.add_scaled(cont[i] * self.h_prev, &self.k[i]);
             }
 
             Ok(y_interp)

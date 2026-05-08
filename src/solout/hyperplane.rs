@@ -126,21 +126,14 @@ where
     ///
     pub fn new(point: Y1, mut normal: Y1, extractor: ExtractorFn<Y2, Y1>) -> Self {
         // Normalize the normal vector
-        let norm = |y: &Y1| {
-            let mut norm = T::zero();
-            for i in 0..y.len() {
-                norm += {
-                    let val = y.get(i);
-                    val * val
-                };
-            }
-            norm.sqrt()
-        };
-        let norm = norm(&normal);
+        let norm = normal.norm_squared().sqrt();
         if norm > T::default_epsilon() {
-            for i in 0..normal.len() {
-                normal.set(i, normal.get(i) / norm);
+            let mut normal_values = vec![T::zero(); normal.len()];
+            normal.write_to_slice(&mut normal_values);
+            for value in normal_values.iter_mut() {
+                *value /= norm;
             }
+            normal.read_from_slice(&normal_values);
         }
 
         HyperplaneCrossingSolout {
@@ -203,9 +196,20 @@ where
     /// * Signed distance (positive if on same side as normal vector)
     ///
     fn signed_distance(&self, pos: &Y1) -> T {
+        let mut pos_values = vec![T::zero(); pos.len()];
+        let mut point_values = vec![T::zero(); self.point.len()];
+        let mut normal_values = vec![T::zero(); self.normal.len()];
+        pos.write_to_slice(&mut pos_values);
+        self.point.write_to_slice(&mut point_values);
+        self.normal.write_to_slice(&mut normal_values);
+
         let mut distance = T::zero();
-        for i in 0..pos.len() {
-            distance += (pos.get(i) - self.point.get(i)) * self.normal.get(i);
+        for ((pos_i, point_i), normal_i) in pos_values
+            .iter()
+            .zip(point_values.iter())
+            .zip(normal_values.iter())
+        {
+            distance += (*pos_i - *point_i) * *normal_i;
         }
         distance
     }

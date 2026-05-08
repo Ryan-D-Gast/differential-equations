@@ -6,7 +6,6 @@ use crate::{
     linalg::component_multiply,
     methods::{ExplicitRungeKutta, Fixed, Stochastic},
     sde::{SDE, StochasticNumericalMethod},
-    state_ops,
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -97,7 +96,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             let mut y_stage = self.y.clone();
 
             for j in 0..i {
-                state_ops::axpy(&mut y_stage, self.a[i][j] * self.h, &self.k[j]);
+                y_stage.add_scaled(self.a[i][j] * self.h, &self.k[j]);
             }
 
             sde.drift(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
@@ -107,7 +106,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // Compute deterministic part using RK weights
         let mut drift_increment = self.y.zeros_like();
         for i in 0..self.stages {
-            state_ops::axpy(&mut drift_increment, self.b[i] * self.h, &self.k[i]);
+            drift_increment.add_scaled(self.b[i] * self.h, &self.k[i]);
         }
 
         // Compute diffusion term at current state
@@ -123,13 +122,10 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         let diffusion_increment = component_multiply(&diffusion, &dw);
 
         // Combine deterministic and stochastic parts
-        let y_next = state_ops::from_base_plus(
-            &self.y,
-            &[
-                (&drift_increment, T::one()),
-                (&diffusion_increment, T::one()),
-            ],
-        );
+        let y_next = self.y.plus_linear_combination(&[
+            (&drift_increment, T::one()),
+            (&diffusion_increment, T::one()),
+        ]);
 
         // Update state
         self.t += self.h;

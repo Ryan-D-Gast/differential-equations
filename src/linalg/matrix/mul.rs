@@ -82,20 +82,24 @@ impl<T: Real> Matrix<T> {
         let n = self.n;
         assert_eq!(vec.len(), self.m, "dimension mismatch in Matrix::mul_state");
 
-        let mut result = V::zeros();
+        let mut vec_values = vec![T::zero(); vec.len()];
+        let mut result_values = vec![T::zero(); n];
+        vec.write_to_slice(&mut vec_values);
         if let MatrixStorage::Sparse { ref coords, .. } = self.storage {
             for &(r, c, v) in coords {
-                result.set(r, result.get(r) + v * vec.get(c));
+                result_values[r] += v * vec_values[c];
             }
         } else {
             for i in 0..n {
                 let mut sum = T::zero();
                 for j in 0..self.m {
-                    sum += self[(i, j)] * vec.get(j);
+                    sum += self[(i, j)] * vec_values[j];
                 }
-                result.set(i, sum);
+                result_values[i] = sum;
             }
         }
+        let mut result = vec.zeros_like();
+        result.read_from_slice(&result_values);
         result
     }
 }

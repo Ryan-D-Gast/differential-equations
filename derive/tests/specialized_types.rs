@@ -1,7 +1,34 @@
+use differential_equations::traits::{Real, State as StateTrait};
 use differential_equations_derive::State;
-use differential_equations::traits::{State as StateTrait};
-use nalgebra::{Vector2, Vector3, Vector4, Vector5, Vector6, Matrix2, Matrix3, Matrix4, Matrix5, Matrix6, RowVector2, RowVector3, SMatrix};
+use nalgebra::{
+    Matrix2, Matrix3, Matrix4, Matrix5, Matrix6, RowVector2, RowVector3, SMatrix, Vector2, Vector3,
+    Vector4, Vector5, Vector6,
+};
 use num_complex::Complex;
+
+trait TestStateAccess<T: Real>: StateTrait<T> {
+    fn component(&self, index: usize) -> T {
+        assert!(index < self.len(), "Index out of bounds");
+        let mut values = vec![T::zero(); self.len()];
+        self.write_to_slice(&mut values);
+        values[index]
+    }
+
+    fn set_component(&mut self, index: usize, value: T) {
+        assert!(index < self.len(), "Index out of bounds");
+        let mut values = vec![T::zero(); self.len()];
+        self.write_to_slice(&mut values);
+        values[index] = value;
+        self.read_from_slice(&values);
+    }
+}
+
+impl<T, Y> TestStateAccess<T> for Y
+where
+    T: Real,
+    Y: StateTrait<T>,
+{
+}
 
 #[test]
 fn test_all_vector_types() {
@@ -21,23 +48,23 @@ fn test_all_vector_types() {
         v5: Vector5::new(10.0, 11.0, 12.0, 13.0, 14.0),
         v6: Vector6::new(15.0, 16.0, 17.0, 18.0, 19.0, 20.0),
     };
-    
+
     // Total elements: 2 + 3 + 4 + 5 + 6 = 20
     assert_eq!(state.len(), 20);
-    
+
     // Test first and last elements
-    assert_eq!(state.get(0), 1.0);   // v2[0]
-    assert_eq!(state.get(1), 2.0);   // v2[1]
-    assert_eq!(state.get(19), 20.0); // v6[5]
-    
+    assert_eq!(state.component(0), 1.0); // v2[0]
+    assert_eq!(state.component(1), 2.0); // v2[1]
+    assert_eq!(state.component(19), 20.0); // v6[5]
+
     // Test setting values
-    state.set(0, 100.0);
-    assert_eq!(state.get(0), 100.0);
-    
+    state.set_component(0, 100.0);
+    assert_eq!(state.component(0), 100.0);
+
     // Test zeros
     let zero_state = AllVectors::<f64>::zeros();
     for i in 0..20 {
-        assert_eq!(zero_state.get(i), 0.0);
+        assert_eq!(zero_state.component(i), 0.0);
     }
 }
 
@@ -59,20 +86,20 @@ fn test_all_matrix_types() {
         m5: Matrix5::from_diagonal(&Vector5::new(18.0, 19.0, 20.0, 21.0, 22.0)),
         m6: Matrix6::from_diagonal(&Vector6::new(23.0, 24.0, 25.0, 26.0, 27.0, 28.0)),
     };
-    
+
     // Total elements: 4 + 9 + 16 + 25 + 36 = 90
     assert_eq!(state.len(), 90);
-    
+
     // Test some specific elements
-    assert_eq!(state.get(0), 1.0);   // m2[(0,0)]
-    assert_eq!(state.get(1), 2.0);   // m2[(0,1)]
-    assert_eq!(state.get(2), 3.0);   // m2[(1,0)]
-    assert_eq!(state.get(3), 4.0);   // m2[(1,1)]
-    
+    assert_eq!(state.component(0), 1.0); // m2[(0,0)]
+    assert_eq!(state.component(1), 2.0); // m2[(0,1)]
+    assert_eq!(state.component(2), 3.0); // m2[(1,0)]
+    assert_eq!(state.component(3), 4.0); // m2[(1,1)]
+
     // Test zeros initialization
     let zero_state = AllMatrices::<f64>::zeros();
     for i in 0..90 {
-        assert_eq!(zero_state.get(i), 0.0);
+        assert_eq!(zero_state.component(i), 0.0);
     }
 }
 
@@ -88,15 +115,15 @@ fn test_row_vectors() {
         rv2: RowVector2::new(1.0, 2.0),
         rv3: RowVector3::new(3.0, 4.0, 5.0),
     };
-    
+
     // Total elements: 2 + 3 = 5
     assert_eq!(state.len(), 5);
-    
-    assert_eq!(state.get(0), 1.0); // rv2[0]
-    assert_eq!(state.get(1), 2.0); // rv2[1]
-    assert_eq!(state.get(2), 3.0); // rv3[0]
-    assert_eq!(state.get(3), 4.0); // rv3[1]
-    assert_eq!(state.get(4), 5.0); // rv3[2]
+
+    assert_eq!(state.component(0), 1.0); // rv2[0]
+    assert_eq!(state.component(1), 2.0); // rv2[1]
+    assert_eq!(state.component(2), 3.0); // rv3[0]
+    assert_eq!(state.component(3), 4.0); // rv3[1]
+    assert_eq!(state.component(4), 5.0); // rv3[2]
 }
 
 #[test]
@@ -115,14 +142,14 @@ fn test_explicit_smatrix_types() {
         sm_1x5: SMatrix::<f64, 1, 5>::from_row_slice(&[13.0, 14.0, 15.0, 16.0, 17.0]),
         sm_5x1: SMatrix::<f64, 5, 1>::from_row_slice(&[18.0, 19.0, 20.0, 21.0, 22.0]),
     };
-    
+
     // Total elements: 6 + 6 + 5 + 5 = 22
     assert_eq!(state.len(), 22);
-    
+
     // Test some specific elements
-    assert_eq!(state.get(0), 1.0);   // sm_2x3[(0,0)]
-    assert_eq!(state.get(5), 6.0);   // sm_2x3[(1,2)]
-    assert_eq!(state.get(21), 22.0); // sm_5x1[(4,0)]
+    assert_eq!(state.component(0), 1.0); // sm_2x3[(0,0)]
+    assert_eq!(state.component(5), 6.0); // sm_2x3[(1,2)]
+    assert_eq!(state.component(21), 22.0); // sm_5x1[(4,0)]
 }
 
 #[test]
@@ -139,12 +166,14 @@ fn test_mixed_nalgebra_comprehensive() {
         vec: Vector3::new(1.0, 2.0, 3.0),
         row: RowVector2::new(4.0, 5.0),
         mat: Matrix2::new(6.0, 7.0, 8.0, 9.0),
-        smat: SMatrix::<f64, 2, 4>::from_row_slice(&[10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0]),
+        smat: SMatrix::<f64, 2, 4>::from_row_slice(&[
+            10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0,
+        ]),
     };
-    
+
     // Total elements: 3 + 2 + 4 + 8 = 17
     assert_eq!(state.len(), 17);
-    
+
     // Test arithmetic operations work with mixed nalgebra types
     let other = MixedNalgebra {
         vec: Vector3::new(1.0, 1.0, 1.0),
@@ -152,12 +181,12 @@ fn test_mixed_nalgebra_comprehensive() {
         mat: Matrix2::new(1.0, 1.0, 1.0, 1.0),
         smat: SMatrix::<f64, 2, 4>::from_element(1.0),
     };
-    
+
     let sum = state + other;
     assert_eq!(sum.vec[0], 2.0);
     assert_eq!(sum.row[0], 5.0);
-    assert_eq!(sum.mat[(0,0)], 7.0);
-    assert_eq!(sum.smat[(0,0)], 11.0);
+    assert_eq!(sum.mat[(0, 0)], 7.0);
+    assert_eq!(sum.smat[(0, 0)], 11.0);
 }
 
 #[test]
@@ -178,19 +207,19 @@ fn test_complex_array_combinations() {
         mixed_array: [7.0, 8.0],
         single_complex: Complex::new(9.0, 10.0),
     };
-    
+
     // Total elements: 3*2 + 2 + 2 = 10 (3 complex numbers = 6 reals, 2 reals, 1 complex = 2 reals)
     assert_eq!(state.len(), 10);
-    
+
     // Test complex array element access
-    assert_eq!(state.get(0), 1.0); // complex_array[0].re
-    assert_eq!(state.get(1), 2.0); // complex_array[0].im
-    assert_eq!(state.get(2), 3.0); // complex_array[1].re
-    assert_eq!(state.get(3), 4.0); // complex_array[1].im
-    assert_eq!(state.get(4), 5.0); // complex_array[2].re
-    assert_eq!(state.get(5), 6.0); // complex_array[2].im
-    assert_eq!(state.get(6), 7.0); // mixed_array[0]
-    assert_eq!(state.get(7), 8.0); // mixed_array[1]
-    assert_eq!(state.get(8), 9.0); // single_complex.re
-    assert_eq!(state.get(9), 10.0); // single_complex.im
+    assert_eq!(state.component(0), 1.0); // complex_array[0].re
+    assert_eq!(state.component(1), 2.0); // complex_array[0].im
+    assert_eq!(state.component(2), 3.0); // complex_array[1].re
+    assert_eq!(state.component(3), 4.0); // complex_array[1].im
+    assert_eq!(state.component(4), 5.0); // complex_array[2].re
+    assert_eq!(state.component(5), 6.0); // complex_array[2].im
+    assert_eq!(state.component(6), 7.0); // mixed_array[0]
+    assert_eq!(state.component(7), 8.0); // mixed_array[1]
+    assert_eq!(state.component(8), 9.0); // single_complex.re
+    assert_eq!(state.component(9), 10.0); // single_complex.im
 }

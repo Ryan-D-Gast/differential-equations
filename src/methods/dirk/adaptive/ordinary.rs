@@ -6,7 +6,6 @@ use crate::{
     methods::h_init::InitialStepSize,
     methods::{Adaptive, DiagonallyImplicitRungeKutta, Ordinary},
     ode::{ODE, OrdinaryNumericalMethod},
-    state_ops,
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -112,7 +111,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             // rhs = y_n + h Σ_{j<stage} a[stage][j] k[j]
             let mut rhs = self.y.clone();
             for j in 0..stage {
-                state_ops::axpy(&mut rhs, self.a[stage][j] * self.h, &self.k[j]);
+                rhs.add_scaled(self.a[stage][j] * self.h, &self.k[j]);
             }
 
             // Initial stage guess
@@ -135,20 +134,18 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 evals.function += 1;
 
                 // Residual F(z)
-                let residual = state_ops::from_base_plus(
-                    &self.z,
-                    &[
-                        (&rhs, -T::one()),
-                        (&f_stage, -(self.a[stage][stage] * self.h)),
-                    ],
-                );
+                let residual = self.z.plus_linear_combination(&[
+                    (&rhs, -T::one()),
+                    (&f_stage, -(self.a[stage][stage] * self.h)),
+                ]);
 
                 // Max-norm and RHS
-                let mut residual_norm = T::zero();
-                state_ops::assign_scaled(&mut self.rhs_newton, &residual, -T::one());
-                for i in 0..dim {
-                    residual_norm = residual_norm.max(residual.get(i).abs());
-                }
+                self.rhs_newton = residual.scaled(-T::one());
+                let mut residual_values = vec![T::zero(); dim];
+                residual.write_to_slice(&mut residual_values);
+                let residual_norm = residual_values
+                    .iter()
+                    .fold(T::zero(), |norm, value| norm.max(value.abs()));
 
                 // Converged by residual
                 if residual_norm < self.newton_tol {
@@ -180,12 +177,12 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 self.lu_decompositions += 1;
 
                 // Update z and increment norm
-                increment_norm = T::zero();
-                state_ops::axpy(&mut self.z, T::one(), &self.delta_z);
-                for row_idx in 0..dim {
-                    // Calculate infinity norm of increment
-                    increment_norm = increment_norm.max(self.delta_z.get(row_idx).abs());
-                }
+                self.z.add_scaled(T::one(), &self.delta_z);
+                let mut delta_values = vec![T::zero(); dim];
+                self.delta_z.write_to_slice(&mut delta_values);
+                increment_norm = delta_values
+                    .iter()
+                    .fold(T::zero(), |norm, value| norm.max(value.abs()));
             }
 
             // Newton failed for this stage
@@ -219,7 +216,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // y_{n+1} = y_n + h Σ b_i k_i
         let mut y_new = self.y.clone();
         for i in 0..self.stages {
-            state_ops::axpy(&mut y_new, self.b[i] * self.h, &self.k[i]);
+            y_new.add_scaled(self.b[i] * self.h, &self.k[i]);
         }
 
         // Embedded error estimate (bh)
@@ -229,14 +226,21 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // Lower-order solution
         let mut y_low = self.y.clone();
         for i in 0..self.stages {
-            state_ops::axpy(&mut y_low, bh[i] * self.h, &self.k[i]);
+            y_low.add_scaled(bh[i] * self.h, &self.k[i]);
         }
 
         // Weighted max-norm
-        for i in 0..self.y.len() {
-            let scale = self.atol[i] + self.rtol[i] * self.y.get(i).abs().max(y_new.get(i).abs());
+        let dim = self.y.len();
+        let mut y_values = vec![T::zero(); dim];
+        let mut y_new_values = vec![T::zero(); dim];
+        let mut y_low_values = vec![T::zero(); dim];
+        self.y.write_to_slice(&mut y_values);
+        y_new.write_to_slice(&mut y_new_values);
+        y_low.write_to_slice(&mut y_low_values);
+        for i in 0..dim {
+            let scale = self.atol[i] + self.rtol[i] * y_values[i].abs().max(y_new_values[i].abs());
             if scale > T::zero() {
-                err_norm = err_norm.max(((y_new.get(i) - y_low.get(i)) / scale).abs());
+                err_norm = err_norm.max(((y_new_values[i] - y_low_values[i]) / scale).abs());
             }
         }
 

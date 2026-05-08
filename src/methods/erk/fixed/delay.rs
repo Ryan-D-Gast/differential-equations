@@ -6,7 +6,6 @@ use crate::{
     error::Error,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     methods::{Delay, ExplicitRungeKutta, Fixed},
-    state_ops,
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -118,7 +117,7 @@ impl<
         self.k[0] = self.dydt.clone();
         let mut min_delay_abs = T::infinity();
         // Predict y(t+h) to estimate delays at t+h
-        let y_pred_for_lags = state_ops::from_base_plus(&self.y, &[(&self.k[0], self.h)]);
+        let y_pred_for_lags = self.y.plus_scaled(self.h, &self.k[0]);
         dde.lags(self.t + self.h, &y_pred_for_lags, &mut delays);
         for i in 0..L {
             min_delay_abs = min_delay_abs.min(delays[i].abs());
@@ -146,7 +145,7 @@ impl<
             for i in 1..self.stages {
                 let mut y_stage = self.y.clone();
                 for j in 0..i {
-                    state_ops::axpy(&mut y_stage, self.a[i][j] * self.h, &self.k[j]);
+                    y_stage.add_scaled(self.a[i][j] * self.h, &self.k[j]);
                 }
                 // Delayed states for this stage
                 dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut delays);
@@ -168,21 +167,22 @@ impl<
             // Combine stages
             let mut y_next = self.y.clone();
             for i in 0..self.stages {
-                state_ops::axpy(&mut y_next, self.b[i] * self.h, &self.k[i]);
+                y_next.add_scaled(self.b[i] * self.h, &self.k[i]);
             }
 
             // Convergence check (if iterating)
             if max_iter > 1 && iter_idx > 0 {
                 let mut dde_iteration_error = T::zero();
                 let n_dim = self.y.len();
+                let mut prev_values = vec![T::zero(); n_dim];
+                let mut next_values = vec![T::zero(); n_dim];
+                y_prev_candidate_iter.write_to_slice(&mut prev_values);
+                y_next.write_to_slice(&mut next_values);
                 for i_dim in 0..n_dim {
                     let scale = T::from_f64(1e-10).unwrap()
-                        + y_prev_candidate_iter
-                            .get(i_dim)
-                            .abs()
-                            .max(y_next.get(i_dim).abs());
+                        + prev_values[i_dim].abs().max(next_values[i_dim].abs());
                     if scale > T::zero() {
-                        let diff_val = y_next.get(i_dim) - y_prev_candidate_iter.get(i_dim);
+                        let diff_val = next_values[i_dim] - prev_values[i_dim];
                         dde_iteration_error += {
                             let val = diff_val / scale;
                             val * val
@@ -259,11 +259,7 @@ impl<
             for i in 0..(I - S) {
                 let mut y_stage_dense = self.y_prev.clone();
                 for j in 0..self.stages + i {
-                    state_ops::axpy(
-                        &mut y_stage_dense,
-                        self.a[self.stages + i][j] * self.h,
-                        &self.k[j],
-                    );
+                    y_stage_dense.add_scaled(self.a[self.stages + i][j] * self.h, &self.k[j]);
                 }
                 let t_stage = self.t_prev + self.c[self.stages + i] * self.h;
                 dde.lags(t_stage, &y_stage_dense, &mut delays);
@@ -363,7 +359,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                     let mut y_interp = self.y_prev.clone();
                     for i in 0..I {
                         if i < self.k.len() && i < cont.len() {
-                            state_ops::axpy(&mut y_interp, cont[i] * self.h_prev, &self.k[i]);
+                            y_interp.add_scaled(cont[i] * self.h_prev, &self.k[i]);
                         }
                     }
                     y_delayed[i] = y_interp;
@@ -452,7 +448,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
 
             let mut y_interp = self.y_prev.clone();
             for i in 0..I {
-                state_ops::axpy(&mut y_interp, cont[i] * self.h_prev, &self.k[i]);
+                y_interp.add_scaled(cont[i] * self.h_prev, &self.k[i]);
             }
 
             Ok(y_interp)

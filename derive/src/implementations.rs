@@ -1,8 +1,8 @@
 //! Generated trait implementations for State derive macro
 
-use quote::quote;
-use syn::{Ident, Field, punctuated::Punctuated, token::Comma};
 use crate::field_analysis::FieldTypeInfo;
+use quote::quote;
+use syn::{Field, Ident, punctuated::Punctuated, token::Comma};
 
 /// Generate Add trait implementation
 pub fn generate_add_impl(
@@ -12,11 +12,11 @@ pub fn generate_add_impl(
 ) -> proc_macro2::TokenStream {
     let add_fields = generate_operation_fields(fields, field_info, OperationType::Add);
     let constructor = generate_constructor_syntax(&add_fields, fields);
-    
+
     quote! {
         impl<T: differential_equations::traits::Real> std::ops::Add for #name<T> {
             type Output = Self;
-            
+
             fn add(self, rhs: Self) -> Self::Output {
                 #constructor
             }
@@ -32,11 +32,11 @@ pub fn generate_sub_impl(
 ) -> proc_macro2::TokenStream {
     let sub_fields = generate_operation_fields(fields, field_info, OperationType::Sub);
     let constructor = generate_constructor_syntax(&sub_fields, fields);
-    
+
     quote! {
         impl<T: differential_equations::traits::Real> std::ops::Sub for #name<T> {
             type Output = Self;
-            
+
             fn sub(self, rhs: Self) -> Self::Output {
                 #constructor
             }
@@ -51,7 +51,7 @@ pub fn generate_add_assign_impl(
     field_info: &[FieldTypeInfo],
 ) -> proc_macro2::TokenStream {
     let add_assign_ops = generate_assign_operations(fields, field_info);
-    
+
     quote! {
         impl<T: differential_equations::traits::Real> std::ops::AddAssign for #name<T> {
             fn add_assign(&mut self, rhs: Self) {
@@ -69,11 +69,11 @@ pub fn generate_mul_impl(
 ) -> proc_macro2::TokenStream {
     let mul_fields = generate_operation_fields(fields, field_info, OperationType::Mul);
     let constructor = generate_constructor_syntax(&mul_fields, fields);
-    
+
     quote! {
         impl<T: differential_equations::traits::Real> std::ops::Mul<T> for #name<T> {
             type Output = Self;
-            
+
             fn mul(self, rhs: T) -> Self::Output {
                 #constructor
             }
@@ -89,11 +89,11 @@ pub fn generate_div_impl(
 ) -> proc_macro2::TokenStream {
     let div_fields = generate_operation_fields(fields, field_info, OperationType::Div);
     let constructor = generate_constructor_syntax(&div_fields, fields);
-    
+
     quote! {
         impl<T: differential_equations::traits::Real> std::ops::Div<T> for #name<T> {
             type Output = Self;
-            
+
             fn div(self, rhs: T) -> Self::Output {
                 #constructor
             }
@@ -145,41 +145,62 @@ pub fn generate_state_impl(
     fields: &Punctuated<Field, Comma>,
 ) -> proc_macro2::TokenStream {
     let zeros_constructor = generate_constructor_syntax(zeros_init, fields);
-    
+
     quote! {
         impl<T: differential_equations::traits::Real> differential_equations::traits::State<T> for #name<T> {
             fn len(&self) -> usize {
                 #total_elements
             }
-            
-            fn get(&self, i: usize) -> T {
-                assert!(i < self.len(), "Index out of bounds");
-                #(#field_get_branches)*
-                unreachable!()
-            }
-            
-            fn set(&mut self, i: usize, value: T) {
-                assert!(i < self.len(), "Index out of bounds");
-                #(#field_set_branches)*
-                unreachable!();
-            }
 
             fn write_to_slice(&self, output: &mut [T]) {
                 assert_eq!(output.len(), self.len(), "Slice length mismatch");
                 for i in 0..self.len() {
-                    output[i] = self.get(i);
+                    output[i] = self.__state_get(i);
                 }
             }
 
             fn read_from_slice(&mut self, input: &[T]) {
                 assert_eq!(input.len(), self.len(), "Slice length mismatch");
                 for i in 0..self.len() {
-                    self.set(i, input[i]);
+                    self.__state_set(i, input[i]);
                 }
             }
-            
+
+            fn zeros_like(&self) -> Self {
+                Self::zeros()
+            }
+
             fn zeros() -> Self {
                 #zeros_constructor
+            }
+
+            fn mul_add_assign(&mut self, alpha: T, other: &Self) {
+                assert_eq!(self.len(), other.len(), "State length mismatch");
+                for i in 0..self.len() {
+                    let value = self.__state_get(i) + alpha * other.__state_get(i);
+                    self.__state_set(i, value);
+                }
+            }
+
+            fn scale_mut(&mut self, alpha: T) {
+                for i in 0..self.len() {
+                    let value = self.__state_get(i) * alpha;
+                    self.__state_set(i, value);
+                }
+            }
+        }
+
+        impl<T: differential_equations::traits::Real> #name<T> {
+            fn __state_get(&self, i: usize) -> T {
+                assert!(i < #total_elements, "Index out of bounds");
+                #(#field_get_branches)*
+                unreachable!()
+            }
+
+            fn __state_set(&mut self, i: usize, value: T) {
+                assert!(i < #total_elements, "Index out of bounds");
+                #(#field_set_branches)*
+                unreachable!();
             }
         }
     }
@@ -218,40 +239,41 @@ fn generate_neg_fields(
     fields: &Punctuated<Field, Comma>,
     field_info: &[FieldTypeInfo],
 ) -> Vec<proc_macro2::TokenStream> {
-    fields.iter().enumerate().zip(field_info).map(|((field_idx, field), field_type)| {
-        match &field.ident {
-            Some(ident) => {
-                match field_type {
-                    FieldTypeInfo::Single => quote! { #ident: -self.#ident },
-                    FieldTypeInfo::Array { array_size } => {
-                        quote! { 
-                            #ident: {
-                                let mut result = [T::zero(); #array_size];
-                                for i in 0..#array_size { result[i] = -self.#ident[i]; }
-                                result
-                            }
+    fields
+        .iter()
+        .enumerate()
+        .zip(field_info)
+        .map(|((field_idx, field), field_type)| match &field.ident {
+            Some(ident) => match field_type {
+                FieldTypeInfo::Single => quote! { #ident: -self.#ident },
+                FieldTypeInfo::Array { array_size } => {
+                    quote! {
+                        #ident: {
+                            let mut result = [T::zero(); #array_size];
+                            for i in 0..#array_size { result[i] = -self.#ident[i]; }
+                            result
                         }
-                    },
-                    FieldTypeInfo::SMatrix { .. } => quote! { #ident: -self.#ident },
-                    FieldTypeInfo::Complex => quote! { #ident: -self.#ident },
-                    FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
-                        quote! { 
-                            #ident: {
-                                let mut result = self.#ident;
-                                for i in 0..#array_size { result[i] = -self.#ident[i]; }
-                                result
-                            }
+                    }
+                }
+                FieldTypeInfo::SMatrix { .. } => quote! { #ident: -self.#ident },
+                FieldTypeInfo::Complex => quote! { #ident: -self.#ident },
+                FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
+                    quote! {
+                        #ident: {
+                            let mut result = self.#ident;
+                            for i in 0..#array_size { result[i] = -self.#ident[i]; }
+                            result
                         }
-                    },
-                    FieldTypeInfo::ArrayOfComplex { array_size } => {
-                        quote! { 
-                            #ident: {
-                                let mut result = self.#ident;
-                                for i in 0..#array_size { result[i] = -self.#ident[i]; }
-                                result
-                            }
+                    }
+                }
+                FieldTypeInfo::ArrayOfComplex { array_size } => {
+                    quote! {
+                        #ident: {
+                            let mut result = self.#ident;
+                            for i in 0..#array_size { result[i] = -self.#ident[i]; }
+                            result
                         }
-                    },
+                    }
                 }
             },
             None => {
@@ -259,38 +281,38 @@ fn generate_neg_fields(
                 match field_type {
                     FieldTypeInfo::Single => quote! { -self.#index },
                     FieldTypeInfo::Array { array_size } => {
-                        quote! { 
+                        quote! {
                             {
                                 let mut result = [T::zero(); #array_size];
                                 for i in 0..#array_size { result[i] = -self.#index[i]; }
                                 result
                             }
                         }
-                    },
+                    }
                     FieldTypeInfo::SMatrix { .. } => quote! { -self.#index },
                     FieldTypeInfo::Complex => quote! { -self.#index },
                     FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
-                        quote! { 
+                        quote! {
                             {
                                 let mut result = self.#index;
                                 for i in 0..#array_size { result[i] = -self.#index[i]; }
                                 result
                             }
                         }
-                    },
+                    }
                     FieldTypeInfo::ArrayOfComplex { array_size } => {
-                        quote! { 
+                        quote! {
                             {
                                 let mut result = self.#index;
                                 for i in 0..#array_size { result[i] = -self.#index[i]; }
                                 result
                             }
                         }
-                    },
+                    }
                 }
             }
-        }
-    }).collect()
+        })
+        .collect()
 }
 
 /// Helper function to determine if we're dealing with a tuple struct
@@ -326,144 +348,131 @@ fn generate_operation_fields(
     field_info: &[FieldTypeInfo],
     op_type: OperationType,
 ) -> Vec<proc_macro2::TokenStream> {
-    fields.iter().enumerate().zip(field_info).map(|((field_idx, field), field_type)| {
-        let (lhs, rhs, op_symbol) = match op_type {
-            OperationType::Add => (quote! { self }, quote! { rhs }, quote! { + }),
-            OperationType::Sub => (quote! { self }, quote! { rhs }, quote! { - }),
-            OperationType::Mul => (quote! { self }, quote! { rhs }, quote! { * }),
-            OperationType::Div => (quote! { self }, quote! { rhs }, quote! { / }),
-        };
-        
-        match &field.ident {
-            Some(ident) => {
-                match field_type {
-                    FieldTypeInfo::Single => {
-                        match op_type {
-                            OperationType::Add | OperationType::Sub => {
-                                quote! { #ident: #lhs.#ident #op_symbol #rhs.#ident }
-                            },
-                            OperationType::Mul | OperationType::Div => {
-                                quote! { #ident: #lhs.#ident #op_symbol #rhs }
-                            },
+    fields
+        .iter()
+        .enumerate()
+        .zip(field_info)
+        .map(|((field_idx, field), field_type)| {
+            let (lhs, rhs, op_symbol) = match op_type {
+                OperationType::Add => (quote! { self }, quote! { rhs }, quote! { + }),
+                OperationType::Sub => (quote! { self }, quote! { rhs }, quote! { - }),
+                OperationType::Mul => (quote! { self }, quote! { rhs }, quote! { * }),
+                OperationType::Div => (quote! { self }, quote! { rhs }, quote! { / }),
+            };
+
+            match &field.ident {
+                Some(ident) => match field_type {
+                    FieldTypeInfo::Single => match op_type {
+                        OperationType::Add | OperationType::Sub => {
+                            quote! { #ident: #lhs.#ident #op_symbol #rhs.#ident }
+                        }
+                        OperationType::Mul | OperationType::Div => {
+                            quote! { #ident: #lhs.#ident #op_symbol #rhs }
                         }
                     },
-                    FieldTypeInfo::Array { array_size } => {
-                        match op_type {
-                            OperationType::Add | OperationType::Sub => {
-                                quote! { 
-                                    #ident: {
-                                        let mut result = [T::zero(); #array_size];
-                                        for i in 0..#array_size {
-                                            result[i] = #lhs.#ident[i] #op_symbol #rhs.#ident[i];
-                                        }
-                                        result
+                    FieldTypeInfo::Array { array_size } => match op_type {
+                        OperationType::Add | OperationType::Sub => {
+                            quote! {
+                                #ident: {
+                                    let mut result = [T::zero(); #array_size];
+                                    for i in 0..#array_size {
+                                        result[i] = #lhs.#ident[i] #op_symbol #rhs.#ident[i];
                                     }
+                                    result
                                 }
-                            },
-                            OperationType::Mul | OperationType::Div => {
-                                quote! { 
-                                    #ident: {
-                                        let mut result = [T::zero(); #array_size];
-                                        for i in 0..#array_size {
-                                            result[i] = #lhs.#ident[i] #op_symbol #rhs;
-                                        }
-                                        result
+                            }
+                        }
+                        OperationType::Mul | OperationType::Div => {
+                            quote! {
+                                #ident: {
+                                    let mut result = [T::zero(); #array_size];
+                                    for i in 0..#array_size {
+                                        result[i] = #lhs.#ident[i] #op_symbol #rhs;
                                     }
+                                    result
                                 }
-                            },
+                            }
                         }
                     },
-                    FieldTypeInfo::SMatrix { .. } => {
-                        match op_type {
-                            OperationType::Add | OperationType::Sub => {
-                                quote! { #ident: #lhs.#ident #op_symbol #rhs.#ident }
-                            },
-                            OperationType::Mul | OperationType::Div => {
-                                quote! { #ident: #lhs.#ident #op_symbol #rhs }
-                            },
+                    FieldTypeInfo::SMatrix { .. } => match op_type {
+                        OperationType::Add | OperationType::Sub => {
+                            quote! { #ident: #lhs.#ident #op_symbol #rhs.#ident }
+                        }
+                        OperationType::Mul | OperationType::Div => {
+                            quote! { #ident: #lhs.#ident #op_symbol #rhs }
                         }
                     },
-                    FieldTypeInfo::Complex => {
-                        match op_type {
-                            OperationType::Add | OperationType::Sub => {
-                                quote! { #ident: #lhs.#ident #op_symbol #rhs.#ident }
-                            },
-                            OperationType::Mul | OperationType::Div => {
-                                quote! { #ident: #lhs.#ident #op_symbol #rhs }
-                            },
+                    FieldTypeInfo::Complex => match op_type {
+                        OperationType::Add | OperationType::Sub => {
+                            quote! { #ident: #lhs.#ident #op_symbol #rhs.#ident }
+                        }
+                        OperationType::Mul | OperationType::Div => {
+                            quote! { #ident: #lhs.#ident #op_symbol #rhs }
                         }
                     },
-                    FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
-                        match op_type {
-                            OperationType::Add | OperationType::Sub => {
-                                quote! { 
-                                    #ident: {
-                                        let mut result = #lhs.#ident;
-                                        for i in 0..#array_size {
-                                            result[i] = #lhs.#ident[i] #op_symbol #rhs.#ident[i];
-                                        }
-                                        result
+                    FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => match op_type {
+                        OperationType::Add | OperationType::Sub => {
+                            quote! {
+                                #ident: {
+                                    let mut result = #lhs.#ident;
+                                    for i in 0..#array_size {
+                                        result[i] = #lhs.#ident[i] #op_symbol #rhs.#ident[i];
                                     }
+                                    result
                                 }
-                            },
-                            OperationType::Mul | OperationType::Div => {
-                                quote! { 
-                                    #ident: {
-                                        let mut result = #lhs.#ident;
-                                        for i in 0..#array_size {
-                                            result[i] = #lhs.#ident[i] #op_symbol #rhs;
-                                        }
-                                        result
+                            }
+                        }
+                        OperationType::Mul | OperationType::Div => {
+                            quote! {
+                                #ident: {
+                                    let mut result = #lhs.#ident;
+                                    for i in 0..#array_size {
+                                        result[i] = #lhs.#ident[i] #op_symbol #rhs;
                                     }
+                                    result
                                 }
-                            },
+                            }
                         }
                     },
-                    FieldTypeInfo::ArrayOfComplex { array_size } => {
-                        match op_type {
-                            OperationType::Add | OperationType::Sub => {
-                                quote! { 
-                                    #ident: {
-                                        let mut result = #lhs.#ident;
-                                        for i in 0..#array_size {
-                                            result[i] = #lhs.#ident[i] #op_symbol #rhs.#ident[i];
-                                        }
-                                        result
+                    FieldTypeInfo::ArrayOfComplex { array_size } => match op_type {
+                        OperationType::Add | OperationType::Sub => {
+                            quote! {
+                                #ident: {
+                                    let mut result = #lhs.#ident;
+                                    for i in 0..#array_size {
+                                        result[i] = #lhs.#ident[i] #op_symbol #rhs.#ident[i];
                                     }
+                                    result
                                 }
-                            },
-                            OperationType::Mul | OperationType::Div => {
-                                quote! { 
-                                    #ident: {
-                                        let mut result = #lhs.#ident;
-                                        for i in 0..#array_size {
-                                            result[i] = #lhs.#ident[i] #op_symbol #rhs;
-                                        }
-                                        result
+                            }
+                        }
+                        OperationType::Mul | OperationType::Div => {
+                            quote! {
+                                #ident: {
+                                    let mut result = #lhs.#ident;
+                                    for i in 0..#array_size {
+                                        result[i] = #lhs.#ident[i] #op_symbol #rhs;
                                     }
+                                    result
                                 }
-                            },
+                            }
                         }
                     },
-                }
-            },
-            None => {
-                let index = syn::Index::from(field_idx);
-                match field_type {
-                    FieldTypeInfo::Single => {
-                        match op_type {
+                },
+                None => {
+                    let index = syn::Index::from(field_idx);
+                    match field_type {
+                        FieldTypeInfo::Single => match op_type {
                             OperationType::Add | OperationType::Sub => {
                                 quote! { #lhs.#index #op_symbol #rhs.#index }
-                            },
+                            }
                             OperationType::Mul | OperationType::Div => {
                                 quote! { #lhs.#index #op_symbol #rhs }
-                            },
-                        }
-                    },
-                    FieldTypeInfo::Array { array_size } => {
-                        match op_type {
+                            }
+                        },
+                        FieldTypeInfo::Array { array_size } => match op_type {
                             OperationType::Add | OperationType::Sub => {
-                                quote! { 
+                                quote! {
                                     {
                                         let mut result = [T::zero(); #array_size];
                                         for i in 0..#array_size {
@@ -472,9 +481,9 @@ fn generate_operation_fields(
                                         result
                                     }
                                 }
-                            },
+                            }
                             OperationType::Mul | OperationType::Div => {
-                                quote! { 
+                                quote! {
                                     {
                                         let mut result = [T::zero(); #array_size];
                                         for i in 0..#array_size {
@@ -483,33 +492,27 @@ fn generate_operation_fields(
                                         result
                                     }
                                 }
-                            },
-                        }
-                    },
-                    FieldTypeInfo::SMatrix { .. } => {
-                        match op_type {
+                            }
+                        },
+                        FieldTypeInfo::SMatrix { .. } => match op_type {
                             OperationType::Add | OperationType::Sub => {
                                 quote! { #lhs.#index #op_symbol #rhs.#index }
-                            },
+                            }
                             OperationType::Mul | OperationType::Div => {
                                 quote! { #lhs.#index #op_symbol #rhs }
-                            },
-                        }
-                    },
-                    FieldTypeInfo::Complex => {
-                        match op_type {
+                            }
+                        },
+                        FieldTypeInfo::Complex => match op_type {
                             OperationType::Add | OperationType::Sub => {
                                 quote! { #lhs.#index #op_symbol #rhs.#index }
-                            },
+                            }
                             OperationType::Mul | OperationType::Div => {
                                 quote! { #lhs.#index #op_symbol #rhs }
-                            },
-                        }
-                    },
-                    FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
-                        match op_type {
+                            }
+                        },
+                        FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => match op_type {
                             OperationType::Add | OperationType::Sub => {
-                                quote! { 
+                                quote! {
                                     {
                                         let mut result = #lhs.#index;
                                         for i in 0..#array_size {
@@ -518,9 +521,9 @@ fn generate_operation_fields(
                                         result
                                     }
                                 }
-                            },
+                            }
                             OperationType::Mul | OperationType::Div => {
-                                quote! { 
+                                quote! {
                                     {
                                         let mut result = #lhs.#index;
                                         for i in 0..#array_size {
@@ -529,13 +532,11 @@ fn generate_operation_fields(
                                         result
                                     }
                                 }
-                            },
-                        }
-                    },
-                    FieldTypeInfo::ArrayOfComplex { array_size } => {
-                        match op_type {
+                            }
+                        },
+                        FieldTypeInfo::ArrayOfComplex { array_size } => match op_type {
                             OperationType::Add | OperationType::Sub => {
-                                quote! { 
+                                quote! {
                                     {
                                         let mut result = #lhs.#index;
                                         for i in 0..#array_size {
@@ -544,9 +545,9 @@ fn generate_operation_fields(
                                         result
                                     }
                                 }
-                            },
+                            }
                             OperationType::Mul | OperationType::Div => {
-                                quote! { 
+                                quote! {
                                     {
                                         let mut result = #lhs.#index;
                                         for i in 0..#array_size {
@@ -555,13 +556,13 @@ fn generate_operation_fields(
                                         result
                                     }
                                 }
-                            },
-                        }
-                    },
+                            }
+                        },
+                    }
                 }
             }
-        }
-    }).collect()
+        })
+        .collect()
 }
 
 /// Generate AddAssign operations
@@ -569,34 +570,35 @@ fn generate_assign_operations(
     fields: &Punctuated<Field, Comma>,
     field_info: &[FieldTypeInfo],
 ) -> Vec<proc_macro2::TokenStream> {
-    fields.iter().enumerate().zip(field_info).map(|((field_idx, field), field_type)| {
-        match &field.ident {
-            Some(ident) => {
-                match field_type {
-                    FieldTypeInfo::Single => quote! { self.#ident += rhs.#ident; },
-                    FieldTypeInfo::Array { array_size } => {
-                        quote! { 
-                            for i in 0..#array_size {
-                                self.#ident[i] += rhs.#ident[i];
-                            }
+    fields
+        .iter()
+        .enumerate()
+        .zip(field_info)
+        .map(|((field_idx, field), field_type)| match &field.ident {
+            Some(ident) => match field_type {
+                FieldTypeInfo::Single => quote! { self.#ident += rhs.#ident; },
+                FieldTypeInfo::Array { array_size } => {
+                    quote! {
+                        for i in 0..#array_size {
+                            self.#ident[i] += rhs.#ident[i];
                         }
-                    },
-                    FieldTypeInfo::SMatrix { .. } => quote! { self.#ident += rhs.#ident; },
-                    FieldTypeInfo::Complex => quote! { self.#ident += rhs.#ident; },
-                    FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
-                        quote! { 
-                            for i in 0..#array_size {
-                                self.#ident[i] += rhs.#ident[i];
-                            }
+                    }
+                }
+                FieldTypeInfo::SMatrix { .. } => quote! { self.#ident += rhs.#ident; },
+                FieldTypeInfo::Complex => quote! { self.#ident += rhs.#ident; },
+                FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
+                    quote! {
+                        for i in 0..#array_size {
+                            self.#ident[i] += rhs.#ident[i];
                         }
-                    },
-                    FieldTypeInfo::ArrayOfComplex { array_size } => {
-                        quote! { 
-                            for i in 0..#array_size {
-                                self.#ident[i] += rhs.#ident[i];
-                            }
+                    }
+                }
+                FieldTypeInfo::ArrayOfComplex { array_size } => {
+                    quote! {
+                        for i in 0..#array_size {
+                            self.#ident[i] += rhs.#ident[i];
                         }
-                    },
+                    }
                 }
             },
             None => {
@@ -604,30 +606,30 @@ fn generate_assign_operations(
                 match field_type {
                     FieldTypeInfo::Single => quote! { self.#index += rhs.#index; },
                     FieldTypeInfo::Array { array_size } => {
-                        quote! { 
+                        quote! {
                             for i in 0..#array_size {
                                 self.#index[i] += rhs.#index[i];
                             }
                         }
-                    },
+                    }
                     FieldTypeInfo::SMatrix { .. } => quote! { self.#index += rhs.#index; },
                     FieldTypeInfo::Complex => quote! { self.#index += rhs.#index; },
                     FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
-                        quote! { 
+                        quote! {
                             for i in 0..#array_size {
                                 self.#index[i] += rhs.#index[i];
                             }
                         }
-                    },
+                    }
                     FieldTypeInfo::ArrayOfComplex { array_size } => {
-                        quote! { 
+                        quote! {
                             for i in 0..#array_size {
                                 self.#index[i] += rhs.#index[i];
                             }
                         }
-                    },
+                    }
                 }
             }
-        }
-    }).collect()
+        })
+        .collect()
 }

@@ -1,8 +1,8 @@
 //! Code generation utilities for State and accessor methods
 
+use crate::field_analysis::{FieldTypeInfo, generate_nalgebra_zeros};
 use quote::quote;
 use syn::{Field, punctuated::Punctuated, token::Comma};
-use crate::field_analysis::{FieldTypeInfo, generate_nalgebra_zeros};
 
 /// Generate get method branches for field access
 pub fn generate_get_branches(
@@ -11,10 +11,10 @@ pub fn generate_get_branches(
 ) -> Vec<proc_macro2::TokenStream> {
     let mut current_index = 0usize;
     let mut field_get_branches = Vec::new();
-    
+
     for (field_idx, (field, field_type)) in fields.iter().zip(field_info).enumerate() {
         let field_name = get_field_accessor(field, field_idx);
-        
+
         match field_type {
             FieldTypeInfo::Single => {
                 field_get_branches.push(quote! {
@@ -23,7 +23,7 @@ pub fn generate_get_branches(
                     }
                 });
                 current_index += 1;
-            },
+            }
             FieldTypeInfo::Array { array_size } => {
                 let end_index = current_index + array_size;
                 field_get_branches.push(quote! {
@@ -32,7 +32,7 @@ pub fn generate_get_branches(
                     }
                 });
                 current_index = end_index;
-            },
+            }
             FieldTypeInfo::SMatrix { rows, cols } => {
                 let total_elements = rows * cols;
                 let end_index = current_index + total_elements;
@@ -45,7 +45,7 @@ pub fn generate_get_branches(
                     }
                 });
                 current_index = end_index;
-            },
+            }
             FieldTypeInfo::Complex => {
                 let end_index = current_index + 2;
                 field_get_branches.push(quote! {
@@ -55,8 +55,12 @@ pub fn generate_get_branches(
                     }
                 });
                 current_index = end_index;
-            },
-            FieldTypeInfo::ArrayOfSMatrix { array_size, rows, cols } => {
+            }
+            FieldTypeInfo::ArrayOfSMatrix {
+                array_size,
+                rows,
+                cols,
+            } => {
                 let total_elements = array_size * rows * cols;
                 let elements_per_matrix = rows * cols;
                 let end_index = current_index + total_elements;
@@ -71,7 +75,7 @@ pub fn generate_get_branches(
                     }
                 });
                 current_index = end_index;
-            },
+            }
             FieldTypeInfo::ArrayOfComplex { array_size } => {
                 let total_elements = array_size * 2;
                 let end_index = current_index + total_elements;
@@ -87,7 +91,7 @@ pub fn generate_get_branches(
             }
         }
     }
-    
+
     field_get_branches
 }
 
@@ -98,7 +102,7 @@ pub fn generate_set_branches(
 ) -> Vec<proc_macro2::TokenStream> {
     let mut current_index = 0usize;
     let mut field_set_branches = Vec::new();
-    
+
     for (field_idx, (field, field_type)) in fields.iter().zip(field_info).enumerate() {
         match field_type {
             FieldTypeInfo::Single => {
@@ -110,7 +114,7 @@ pub fn generate_set_branches(
                     }
                 });
                 current_index += 1;
-            },
+            }
             FieldTypeInfo::Array { array_size } => {
                 let end_index = current_index + array_size;
                 let array_setter = match &field.ident {
@@ -127,24 +131,24 @@ pub fn generate_set_branches(
                     }
                 });
                 current_index = end_index;
-            },
+            }
             FieldTypeInfo::SMatrix { rows, cols } => {
                 let total_elements = rows * cols;
                 let end_index = current_index + total_elements;
                 let matrix_setter = match &field.ident {
-                    Some(ident) => quote! { 
+                    Some(ident) => quote! {
                         let offset = i - #current_index;
                         let row = offset / #cols;
                         let col = offset % #cols;
-                        self.#ident[(row, col)] = value; 
+                        self.#ident[(row, col)] = value;
                     },
                     None => {
                         let index = syn::Index::from(field_idx);
-                        quote! { 
+                        quote! {
                             let offset = i - #current_index;
                             let row = offset / #cols;
                             let col = offset % #cols;
-                            self.#index[(row, col)] = value; 
+                            self.#index[(row, col)] = value;
                         }
                     }
                 };
@@ -155,11 +159,11 @@ pub fn generate_set_branches(
                     }
                 });
                 current_index = end_index;
-            },
+            }
             FieldTypeInfo::Complex => {
                 let end_index = current_index + 2;
                 let complex_setter = match &field.ident {
-                    Some(ident) => quote! { 
+                    Some(ident) => quote! {
                         let offset = i - #current_index;
                         if offset == 0 {
                             self.#ident.re = value;
@@ -169,7 +173,7 @@ pub fn generate_set_branches(
                     },
                     None => {
                         let index = syn::Index::from(field_idx);
-                        quote! { 
+                        quote! {
                             let offset = i - #current_index;
                             if offset == 0 {
                                 self.#index.re = value;
@@ -186,29 +190,33 @@ pub fn generate_set_branches(
                     }
                 });
                 current_index = end_index;
-            },
-            FieldTypeInfo::ArrayOfSMatrix { array_size, rows, cols } => {
+            }
+            FieldTypeInfo::ArrayOfSMatrix {
+                array_size,
+                rows,
+                cols,
+            } => {
                 let total_elements = array_size * rows * cols;
                 let elements_per_matrix = rows * cols;
                 let end_index = current_index + total_elements;
                 let array_matrix_setter = match &field.ident {
-                    Some(ident) => quote! { 
+                    Some(ident) => quote! {
                         let offset = i - #current_index;
                         let matrix_idx = offset / #elements_per_matrix;
                         let matrix_offset = offset % #elements_per_matrix;
                         let row = matrix_offset / #cols;
                         let col = matrix_offset % #cols;
-                        self.#ident[matrix_idx][(row, col)] = value; 
+                        self.#ident[matrix_idx][(row, col)] = value;
                     },
                     None => {
                         let index = syn::Index::from(field_idx);
-                        quote! { 
+                        quote! {
                             let offset = i - #current_index;
                             let matrix_idx = offset / #elements_per_matrix;
                             let matrix_offset = offset % #elements_per_matrix;
                             let row = matrix_offset / #cols;
                             let col = matrix_offset % #cols;
-                            self.#index[matrix_idx][(row, col)] = value; 
+                            self.#index[matrix_idx][(row, col)] = value;
                         }
                     }
                 };
@@ -219,12 +227,12 @@ pub fn generate_set_branches(
                     }
                 });
                 current_index = end_index;
-            },
+            }
             FieldTypeInfo::ArrayOfComplex { array_size } => {
                 let total_elements = array_size * 2;
                 let end_index = current_index + total_elements;
                 let array_complex_setter = match &field.ident {
-                    Some(ident) => quote! { 
+                    Some(ident) => quote! {
                         let offset = i - #current_index;
                         let complex_idx = offset / 2;
                         let component = offset % 2;
@@ -236,7 +244,7 @@ pub fn generate_set_branches(
                     },
                     None => {
                         let index = syn::Index::from(field_idx);
-                        quote! { 
+                        quote! {
                             let offset = i - #current_index;
                             let complex_idx = offset / 2;
                             let component = offset % 2;
@@ -258,7 +266,7 @@ pub fn generate_set_branches(
             }
         }
     }
-    
+
     field_set_branches
 }
 
@@ -311,19 +319,21 @@ pub fn generate_zeros_init(
 
 /// Generate debug field implementations
 pub fn generate_debug_fields(fields: &Punctuated<Field, Comma>) -> Vec<proc_macro2::TokenStream> {
-    fields.iter().enumerate().map(|(i, f)| {
-        match &f.ident {
+    fields
+        .iter()
+        .enumerate()
+        .map(|(i, f)| match &f.ident {
             Some(ident) => {
                 let ident_str = ident.to_string();
                 quote! { .field(#ident_str, &self.#ident) }
-            },
+            }
             None => {
                 let index = syn::Index::from(i);
                 let index_str = i.to_string();
                 quote! { .field(#index_str, &self.#index) }
             }
-        }
-    }).collect()
+        })
+        .collect()
 }
 
 /// Helper function to get field accessor expression
@@ -338,7 +348,11 @@ fn get_field_accessor(field: &Field, field_idx: usize) -> proc_macro2::TokenStre
 }
 
 /// Helper function to generate field setter expression
-fn get_field_setter(field: &Field, field_idx: usize, value_expr: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+fn get_field_setter(
+    field: &Field,
+    field_idx: usize,
+    value_expr: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
     match &field.ident {
         Some(ident) => quote! { self.#ident = #value_expr; },
         None => {

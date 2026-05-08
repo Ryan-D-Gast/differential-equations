@@ -98,7 +98,6 @@ pub mod tolerance;
 // Shared Traits & Utilities
 pub mod interpolate;
 pub mod linalg;
-pub mod state_ops;
 pub mod traits;
 pub mod utils;
 

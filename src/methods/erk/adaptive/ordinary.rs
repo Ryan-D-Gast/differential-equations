@@ -4,7 +4,6 @@ use crate::{
     interpolate::{Interpolation, cubic_hermite_interpolate},
     methods::{Adaptive, ExplicitRungeKutta, Ordinary, h_init::InitialStepSize},
     ode::{ODE, OrdinaryNumericalMethod},
-    state_ops,
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -100,7 +99,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             let mut y_stage = self.y.clone();
 
             for j in 0..i {
-                state_ops::axpy(&mut y_stage, self.a[i][j] * self.h, &self.k[j]);
+                y_stage.add_scaled(self.a[i][j] * self.h, &self.k[j]);
             }
 
             ode.diff(self.t + self.c[i] * self.h, &y_stage, &mut self.k[i]);
@@ -111,23 +110,30 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // Compute higher order solution
         let mut y_high = self.y.clone();
         for i in 0..self.stages {
-            state_ops::axpy(&mut y_high, self.b[i] * self.h, &self.k[i]);
+            y_high.add_scaled(self.b[i] * self.h, &self.k[i]);
         }
 
         // Compute lower order solution for error estimation
         let mut y_low = self.y.clone();
         let bh = &self.bh.unwrap();
         for i in 0..self.stages {
-            state_ops::axpy(&mut y_low, bh[i] * self.h, &self.k[i]);
+            y_low.add_scaled(bh[i] * self.h, &self.k[i]);
         }
 
         // Calculate error norm
         let mut err_norm: T = T::zero();
+        let dim = self.y.len();
+        let mut y_values = vec![T::zero(); dim];
+        let mut y_high_values = vec![T::zero(); dim];
+        let mut y_low_values = vec![T::zero(); dim];
+        self.y.write_to_slice(&mut y_values);
+        y_high.write_to_slice(&mut y_high_values);
+        y_low.write_to_slice(&mut y_low_values);
 
         // Iterate through state elements
-        for n in 0..self.y.len() {
-            let tol = self.atol[n] + self.rtol[n] * self.y.get(n).abs().max(y_high.get(n).abs());
-            err_norm = err_norm.max(((y_high.get(n) - y_low.get(n)) / tol).abs());
+        for n in 0..dim {
+            let tol = self.atol[n] + self.rtol[n] * y_values[n].abs().max(y_high_values[n].abs());
+            err_norm = err_norm.max(((y_high_values[n] - y_low_values[n]) / tol).abs());
         }
 
         // Step size scale factor
@@ -160,11 +166,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 for i in 0..(I - S) {
                     let mut y_stage = self.y.clone();
                     for j in 0..self.stages + i {
-                        state_ops::axpy(
-                            &mut y_stage,
-                            self.a[self.stages + i][j] * self.h,
-                            &self.k[j],
-                        );
+                        y_stage.add_scaled(self.a[self.stages + i][j] * self.h, &self.k[j]);
                     }
 
                     ode.diff(
@@ -281,7 +283,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
             // Compute the interpolated value
             let mut y_interp = self.y_prev.clone();
             for i in 0..I {
-                state_ops::axpy(&mut y_interp, cont[i] * self.h_prev, &self.k[i]);
+                y_interp.add_scaled(cont[i] * self.h_prev, &self.k[i]);
             }
 
             Ok(y_interp)

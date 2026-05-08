@@ -2,9 +2,9 @@ use crate::error::Error;
 use crate::linalg::Matrix;
 use crate::methods::irk::radau::Radau5;
 use crate::status::Status;
-use crate::traits::{Real, StateAlgebra};
+use crate::traits::{Real, State};
 
-impl<E, T: Real, Y: StateAlgebra<T>> Radau5<E, T, Y> {
+impl<E, T: Real, Y: State<T>> Radau5<E, T, Y> {
     /// Initialize Radau5: combines `set_parameters` and common workspace setup.
     pub fn initialize(&mut self, t0: T, tf: T, y0: &Y) -> Result<(), Error<T, Y>> {
         // Dimension of system
@@ -143,28 +143,31 @@ impl<E, T: Real, Y: StateAlgebra<T>> Radau5<E, T, Y> {
         // Initialize state
         self.t = t0;
         self.tf = tf;
-        self.y = *y0;
+        self.y = y0.clone();
 
         // Size the mass matrix as identity (DE/DAE specific code should overwrite)
         self.mass = Matrix::identity(n);
 
         // Do not call diff here; leave dydt zeroed
-        self.dydt = Y::zeros();
+        self.dydt = y0.zeros_like();
 
         // Previous state
         self.t_prev = self.t;
-        self.y_prev = self.y;
-        self.dydt_prev = self.dydt;
+        self.y_prev = self.y.clone();
+        self.dydt_prev = self.dydt.clone();
         self.h_prev = self.h;
 
         // Step size factor
         self.hhfac = self.h;
 
         // Calculate tolerance
+        let mut y_values = vec![T::zero(); n];
+        let mut scal_values = vec![T::zero(); n];
+        self.y.write_to_slice(&mut y_values);
         for i in 0..n {
-            self.scal
-                .set(i, self.atol[i] + self.rtol[i] * self.y.get(i).abs());
+            scal_values[i] = self.atol[i] + self.rtol[i] * y_values[i].abs();
         }
+        self.scal.read_from_slice(&scal_values);
 
         // Workspace
         self.z = core::array::from_fn(|_| y0.zeros_like());

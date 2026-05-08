@@ -54,11 +54,13 @@ use crate::{
 pub fn lin_solve<T: Real, Y: State<T>>(a: &Matrix<T>, b: &mut Y, ip: &[usize]) {
     let n = a.nrows();
     debug_assert_eq!(b.len(), n, "RHS length must match matrix size");
+    let mut values = vec![T::zero(); n];
+    b.write_to_slice(&mut values);
 
     // Handle trivial case
     if n == 1 {
-        let x = b.get(0) / a[(0, 0)];
-        b.set(0, x);
+        values[0] /= a[(0, 0)];
+        b.read_from_slice(&values);
         return;
     }
 
@@ -70,15 +72,12 @@ pub fn lin_solve<T: Real, Y: State<T>>(a: &Matrix<T>, b: &mut Y, ip: &[usize]) {
         let m = ip[k]; // Pivot row index
 
         // Apply row permutation (swap b[m] and b[k])
-        let t = b.get(m);
-        let bk = b.get(k);
-        b.set(m, bk);
-        b.set(k, t);
+        let t = values[m];
+        values.swap(m, k);
 
         // Forward substitution step: b[i] += L[i,k] * b[k]
         for i in kp1..n {
-            let bi = b.get(i) + a[(i, k)] * t;
-            b.set(i, bi);
+            values[i] += a[(i, k)] * t;
         }
     }
 
@@ -87,20 +86,19 @@ pub fn lin_solve<T: Real, Y: State<T>>(a: &Matrix<T>, b: &mut Y, ip: &[usize]) {
         let k = n - kb;
 
         // Divide by diagonal element
-        let xk = b.get(k) / a[(k, k)];
-        b.set(k, xk);
+        let xk = values[k] / a[(k, k)];
+        values[k] = xk;
         let t = -xk;
 
         // Back substitution step: b[i] += U[i,k] * (-b[k])
         for i in 0..k {
-            let bi = b.get(i) + a[(i, k)] * t;
-            b.set(i, bi);
+            values[i] += a[(i, k)] * t;
         }
     }
 
     // Final division for the first element
-    let x0 = b.get(0) / a[(0, 0)];
-    b.set(0, x0);
+    values[0] /= a[(0, 0)];
+    b.read_from_slice(&values);
 }
 
 /// Solves a complex linear system (AR + i*AI)*X = (BR + i*BI) using LU decomposition.
@@ -152,15 +150,21 @@ pub fn lin_solve_complex<T: Real, Y: State<T>>(
     let n = ar.nrows();
     debug_assert_eq!(br.len(), n, "RHS length must match matrix size");
     debug_assert_eq!(bi.len(), n, "RHS length must match matrix size");
+    let mut br_values = vec![T::zero(); n];
+    let mut bi_values = vec![T::zero(); n];
+    br.write_to_slice(&mut br_values);
+    bi.write_to_slice(&mut bi_values);
 
     // Handle trivial case with complex division
     if n == 1 {
         // Complex division: (br + i*bi) / (ar + i*ai)
         let den = ar[(0, 0)] * ar[(0, 0)] + ai[(0, 0)] * ai[(0, 0)];
-        let temp_r = (br.get(0) * ar[(0, 0)] + bi.get(0) * ai[(0, 0)]) / den;
-        let temp_i = (bi.get(0) * ar[(0, 0)] - br.get(0) * ai[(0, 0)]) / den;
-        br.set(0, temp_r);
-        bi.set(0, temp_i);
+        let temp_r = (br_values[0] * ar[(0, 0)] + bi_values[0] * ai[(0, 0)]) / den;
+        let temp_i = (bi_values[0] * ar[(0, 0)] - br_values[0] * ai[(0, 0)]) / den;
+        br_values[0] = temp_r;
+        bi_values[0] = temp_i;
+        br.read_from_slice(&br_values);
+        bi.read_from_slice(&bi_values);
         return;
     }
 
@@ -172,24 +176,18 @@ pub fn lin_solve_complex<T: Real, Y: State<T>>(
         let m = ip[k]; // Pivot row index
 
         // Apply row permutation to both real and imaginary parts
-        let tr = br.get(m);
-        let ti = bi.get(m);
-        let brk = br.get(k);
-        let bik = bi.get(k);
-        br.set(m, brk);
-        bi.set(m, bik);
-        br.set(k, tr);
-        bi.set(k, ti);
+        let tr = br_values[m];
+        let ti = bi_values[m];
+        br_values.swap(m, k);
+        bi_values.swap(m, k);
 
         // Complex forward substitution: b[i] += L[i,k] * t
         for i in kp1..n {
             // Complex multiplication: (ar[i,k] + i*ai[i,k]) * (tr + i*ti)
             let prod_r = ar[(i, k)] * tr - ai[(i, k)] * ti;
             let prod_i = ai[(i, k)] * tr + ar[(i, k)] * ti;
-            let bir = br.get(i) + prod_r;
-            let bii = bi.get(i) + prod_i;
-            br.set(i, bir);
-            bi.set(i, bii);
+            br_values[i] += prod_r;
+            bi_values[i] += prod_i;
         }
     }
 
@@ -199,32 +197,32 @@ pub fn lin_solve_complex<T: Real, Y: State<T>>(
 
         // Complex division: b[k] = b[k] / a[k,k]
         let den = ar[(k, k)] * ar[(k, k)] + ai[(k, k)] * ai[(k, k)];
-        let temp_r = (br.get(k) * ar[(k, k)] + bi.get(k) * ai[(k, k)]) / den;
-        let temp_i = (bi.get(k) * ar[(k, k)] - br.get(k) * ai[(k, k)]) / den;
-        br.set(k, temp_r);
-        bi.set(k, temp_i);
+        let temp_r = (br_values[k] * ar[(k, k)] + bi_values[k] * ai[(k, k)]) / den;
+        let temp_i = (bi_values[k] * ar[(k, k)] - br_values[k] * ai[(k, k)]) / den;
+        br_values[k] = temp_r;
+        bi_values[k] = temp_i;
 
         // Prepare for back substitution: t = -b[k]
-        let tr = -br.get(k);
-        let ti = -bi.get(k);
+        let tr = -br_values[k];
+        let ti = -bi_values[k];
 
         // Complex back substitution step: b[i] += a[i,k] * t
         for i in 0..k {
             let prod_r = ar[(i, k)] * tr - ai[(i, k)] * ti;
             let prod_i = ai[(i, k)] * tr + ar[(i, k)] * ti;
-            let bir = br.get(i) + prod_r;
-            let bii = bi.get(i) + prod_i;
-            br.set(i, bir);
-            bi.set(i, bii);
+            br_values[i] += prod_r;
+            bi_values[i] += prod_i;
         }
     }
 
     // Final complex division for the first element
     let den = ar[(0, 0)] * ar[(0, 0)] + ai[(0, 0)] * ai[(0, 0)];
-    let temp_r = (br.get(0) * ar[(0, 0)] + bi.get(0) * ai[(0, 0)]) / den;
-    let temp_i = (bi.get(0) * ar[(0, 0)] - br.get(0) * ai[(0, 0)]) / den;
-    br.set(0, temp_r);
-    bi.set(0, temp_i);
+    let temp_r = (br_values[0] * ar[(0, 0)] + bi_values[0] * ai[(0, 0)]) / den;
+    let temp_i = (bi_values[0] * ar[(0, 0)] - br_values[0] * ai[(0, 0)]) / den;
+    br_values[0] = temp_r;
+    bi_values[0] = temp_i;
+    br.read_from_slice(&br_values);
+    bi.read_from_slice(&bi_values);
 }
 
 #[cfg(test)]

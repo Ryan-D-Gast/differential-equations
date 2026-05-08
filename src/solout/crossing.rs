@@ -197,7 +197,9 @@ where
         I: Interpolation<T, Y>,
     {
         // Calculate the offset from threshold (to detect zero-crossing)
-        let current_value = y_curr.get(self.component_idx);
+        let mut y_curr_values = vec![T::zero(); y_curr.len()];
+        y_curr.write_to_slice(&mut y_curr_values);
+        let current_value = y_curr_values[self.component_idx];
         let offset_value = current_value - self.threshold;
 
         // If we have a previous value, check for crossing
@@ -277,7 +279,9 @@ impl<T: Real> CrossingSolout<T> {
             let y_t = interpolator.interpolate(t).unwrap();
 
             // Calculate offset from threshold at this time point
-            offset = y_t.get(self.component_idx) - self.threshold;
+            let mut y_t_values = vec![T::zero(); y_t.len()];
+            y_t.write_to_slice(&mut y_t_values);
+            offset = y_t_values[self.component_idx] - self.threshold;
 
             // Check if we're close enough to the crossing
             if offset.abs() < tolerance {
@@ -288,7 +292,9 @@ impl<T: Real> CrossingSolout<T> {
             let delta_t = (t_upper - t_lower) * T::from_f64(1e-6).unwrap();
             let t_plus = t + delta_t;
             let y_plus = interpolator.interpolate(t_plus).unwrap();
-            let offset_plus = y_plus.get(self.component_idx) - self.threshold;
+            let mut y_plus_values = vec![T::zero(); y_plus.len()];
+            y_plus.write_to_slice(&mut y_plus_values);
+            let offset_plus = y_plus_values[self.component_idx] - self.threshold;
 
             let derivative = (offset_plus - offset) / delta_t;
 
@@ -318,7 +324,9 @@ impl<T: Real> CrossingSolout<T> {
 
         // Final check: Get interpolated value and see if we're close enough
         let y_t = interpolator.interpolate(t).unwrap();
-        offset = y_t.get(self.component_idx) - self.threshold;
+        let mut y_t_values = vec![T::zero(); y_t.len()];
+        y_t.write_to_slice(&mut y_t_values);
+        offset = y_t_values[self.component_idx] - self.threshold;
 
         if offset.abs() < tolerance * T::from_f64(10.0).unwrap() {
             Some(t)

@@ -6,7 +6,6 @@ use crate::{
     linalg::Matrix,
     methods::{DiagonallyImplicitRungeKutta, Fixed, Ordinary},
     ode::{ODE, OrdinaryNumericalMethod},
-    state_ops,
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -90,7 +89,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             // rhs = y_n + h Σ_{j<stage} a[stage][j] k[j]
             let mut rhs = self.y.clone();
             for j in 0..stage {
-                state_ops::axpy(&mut rhs, self.a[stage][j] * self.h, &self.k[j]);
+                rhs.add_scaled(self.a[stage][j] * self.h, &self.k[j]);
             }
 
             // Initial stage guess
@@ -113,20 +112,18 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 evals.function += 1;
 
                 // Residual F(z)
-                let residual = state_ops::from_base_plus(
-                    &self.z,
-                    &[
-                        (&rhs, -T::one()),
-                        (&f_stage, -(self.a[stage][stage] * self.h)),
-                    ],
-                );
+                let residual = self.z.plus_linear_combination(&[
+                    (&rhs, -T::one()),
+                    (&f_stage, -(self.a[stage][stage] * self.h)),
+                ]);
 
                 // Max-norm and RHS
-                let mut residual_norm = T::zero();
-                state_ops::assign_scaled(&mut self.rhs_newton, &residual, -T::one());
-                for i in 0..dim {
-                    residual_norm = residual_norm.max(residual.get(i).abs());
-                }
+                self.rhs_newton = residual.scaled(-T::one());
+                let mut residual_values = vec![T::zero(); dim];
+                residual.write_to_slice(&mut residual_values);
+                let residual_norm = residual_values
+                    .iter()
+                    .fold(T::zero(), |norm, value| norm.max(value.abs()));
 
                 // Converged by residual
                 if residual_norm < self.newton_tol {
@@ -158,12 +155,12 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 self.lu_decompositions += 1;
 
                 // Update z and increment norm
-                increment_norm = T::zero();
-                state_ops::axpy(&mut self.z, T::one(), &self.delta_z);
-                for row_idx in 0..dim {
-                    // Calculate infinity norm of increment
-                    increment_norm = increment_norm.max(self.delta_z.get(row_idx).abs());
-                }
+                self.z.add_scaled(T::one(), &self.delta_z);
+                let mut delta_values = vec![T::zero(); dim];
+                self.delta_z.write_to_slice(&mut delta_values);
+                increment_norm = delta_values
+                    .iter()
+                    .fold(T::zero(), |norm, value| norm.max(value.abs()));
             }
 
             // Newton failed for this stage
@@ -187,7 +184,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // y_{n+1} = y_n + h Σ b_i k_i
         let mut y_new = self.y.clone();
         for i in 0..self.stages {
-            state_ops::axpy(&mut y_new, self.b[i] * self.h, &self.k[i]);
+            y_new.add_scaled(self.b[i] * self.h, &self.k[i]);
         }
 
         // Fixed step: always accept

@@ -5,7 +5,6 @@ use crate::{
     interpolate::{Interpolation, cubic_hermite_interpolate},
     methods::{Adaptive, Ordinary, h_init::InitialStepSize},
     ode::{ODE, OrdinaryNumericalMethod},
-    state_ops,
     stats::Evals,
     status::Status,
     tolerance::Tolerance,
@@ -72,26 +71,14 @@ impl<T: Real, Y: State<T>> AdamsPredictorCorrector<Ordinary, Adaptive, T, Y, 4> 
         let six = T::from_f64(6.0).unwrap();
 
         ode.diff(*t, y, &mut k[0]);
-        ode.diff(
-            *t + h / two,
-            &state_ops::from_base_plus(y, &[(&k[0], h / two)]),
-            &mut k[1],
-        );
-        ode.diff(
-            *t + h / two,
-            &state_ops::from_base_plus(y, &[(&k[1], h / two)]),
-            &mut k[2],
-        );
-        ode.diff(
-            *t + h,
-            &state_ops::from_base_plus(y, &[(&k[2], h)]),
-            &mut k[3],
-        );
+        ode.diff(*t + h / two, &y.plus_scaled(h / two, &k[0]), &mut k[1]);
+        ode.diff(*t + h / two, &y.plus_scaled(h / two, &k[1]), &mut k[2]);
+        ode.diff(*t + h, &y.plus_scaled(h, &k[2]), &mut k[3]);
 
-        state_ops::axpy(y, h / six, &k[0]);
-        state_ops::axpy(y, two * h / six, &k[1]);
-        state_ops::axpy(y, two * h / six, &k[2]);
-        state_ops::axpy(y, h / six, &k[3]);
+        y.add_scaled(h / six, &k[0]);
+        y.add_scaled(two * h / six, &k[1]);
+        y.add_scaled(two * h / six, &k[2]);
+        y.add_scaled(h / six, &k[3]);
         *t += h;
         4
     }
@@ -187,55 +174,48 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
         ode.diff(self.t_prev[1], &self.y_prev[1], &mut self.k[2]);
         ode.diff(self.t_prev[0], &self.y_prev[0], &mut self.k[3]);
 
-        let predictor = state_ops::from_base_plus(
-            &self.y_prev[3],
-            &[
-                (
-                    &self.k[0],
-                    self.h * T::from_f64(55.0).unwrap() / T::from_f64(24.0).unwrap(),
-                ),
-                (
-                    &self.k[1],
-                    -self.h * T::from_f64(59.0).unwrap() / T::from_f64(24.0).unwrap(),
-                ),
-                (
-                    &self.k[2],
-                    self.h * T::from_f64(37.0).unwrap() / T::from_f64(24.0).unwrap(),
-                ),
-                (
-                    &self.k[3],
-                    -self.h * T::from_f64(9.0).unwrap() / T::from_f64(24.0).unwrap(),
-                ),
-            ],
-        );
+        let predictor = self.y_prev[3].plus_linear_combination(&[
+            (
+                &self.k[0],
+                self.h * T::from_f64(55.0).unwrap() / T::from_f64(24.0).unwrap(),
+            ),
+            (
+                &self.k[1],
+                -self.h * T::from_f64(59.0).unwrap() / T::from_f64(24.0).unwrap(),
+            ),
+            (
+                &self.k[2],
+                self.h * T::from_f64(37.0).unwrap() / T::from_f64(24.0).unwrap(),
+            ),
+            (
+                &self.k[3],
+                -self.h * T::from_f64(9.0).unwrap() / T::from_f64(24.0).unwrap(),
+            ),
+        ]);
 
         // Corrector step:
         ode.diff(self.t + self.h, &predictor, &mut self.k[3]);
-        let corrector = state_ops::from_base_plus(
-            &self.y_prev[3],
-            &[
-                (
-                    &self.k[3],
-                    self.h * T::from_f64(9.0).unwrap() / T::from_f64(24.0).unwrap(),
-                ),
-                (
-                    &self.k[0],
-                    self.h * T::from_f64(19.0).unwrap() / T::from_f64(24.0).unwrap(),
-                ),
-                (
-                    &self.k[1],
-                    -self.h * T::from_f64(5.0).unwrap() / T::from_f64(24.0).unwrap(),
-                ),
-                (&self.k[2], self.h / T::from_f64(24.0).unwrap()),
-            ],
-        );
+        let corrector = self.y_prev[3].plus_linear_combination(&[
+            (
+                &self.k[3],
+                self.h * T::from_f64(9.0).unwrap() / T::from_f64(24.0).unwrap(),
+            ),
+            (
+                &self.k[0],
+                self.h * T::from_f64(19.0).unwrap() / T::from_f64(24.0).unwrap(),
+            ),
+            (
+                &self.k[1],
+                -self.h * T::from_f64(5.0).unwrap() / T::from_f64(24.0).unwrap(),
+            ),
+            (&self.k[2], self.h / T::from_f64(24.0).unwrap()),
+        ]);
 
         // Track number of evaluations
         evals.function += 5;
 
         // Calculate sigma for step size adjustment
-        let sigma = T::from_f64(19.0).unwrap()
-            * state_ops::diff_norm_squared(&corrector, &predictor).sqrt()
+        let sigma = T::from_f64(19.0).unwrap() * corrector.diff_norm_squared(&predictor).sqrt()
             / (T::from_f64(270.0).unwrap() * self.h.abs());
 
         // Check if Step meets tolerance

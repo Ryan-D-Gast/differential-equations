@@ -2,7 +2,6 @@
 
 use crate::{
     error::Error,
-    state_ops,
     traits::{Real, State},
 };
 
@@ -57,7 +56,7 @@ pub fn cubic_hermite_interpolate<T: Real, Y: State<T>>(
     let h10 = s3 - two * s2 + s;
     let h01 = -two * s3 + three * s2;
     let h11 = s3 - s2;
-    state_ops::linear_combination(y0, &[(y0, h00), (k0, h10 * h), (y1, h01), (k1, h11 * h)])
+    y0.linear_combination(&[(y0, h00), (k0, h10 * h), (y1, h01), (k1, h11 * h)])
 }
 
 /// Linear interpolation over `[t0, t1]`.
@@ -71,7 +70,7 @@ pub fn cubic_hermite_interpolate<T: Real, Y: State<T>>(
 /// - Output: interpolated state at `t`
 pub fn linear_interpolate<T: Real, Y: State<T>>(t0: T, t1: T, y0: &Y, y1: &Y, t: T) -> Y {
     let s = (t - t0) / (t1 - t0);
-    state_ops::linear_combination(y0, &[(y0, T::one() - s), (y1, s)])
+    y0.linear_combination(&[(y0, T::one() - s), (y1, s)])
 }
 
 #[cfg(test)]

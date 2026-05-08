@@ -29,7 +29,8 @@ impl<T: Real> Matrix<T> {
         let mut a = self.to_dense_vec();
 
         // 2) Copy b into a dense vector x and perform solve
-        let mut x = b;
+        let mut x = vec![T::zero(); n];
+        b.write_to_slice(&mut x);
 
         // 3) LU factorization with partial pivoting and singularity checking
         let mut piv: Vec<usize> = (0..n).collect();
@@ -60,9 +61,9 @@ impl<T: Real> Matrix<T> {
                     a.swap(k * n + j, pivot_row * n + j);
                 }
                 // swap entries in x
-                swapper = x.get(k);
-                x.set(k, x.get(pivot_row));
-                x.set(pivot_row, swapper);
+                swapper = x[k];
+                x[k] = x[pivot_row];
+                x[pivot_row] = swapper;
                 piv.swap(k, pivot_row);
             }
 
@@ -79,27 +80,25 @@ impl<T: Real> Matrix<T> {
 
         // Forward solve Ly = Pb (x currently holds permuted b)
         for i in 0..n {
-            let mut sum = x.get(i);
+            let mut sum = x[i];
             for k in 0..i {
-                sum -= a[i * n + k] * x.get(k);
+                sum -= a[i * n + k] * x[k];
             }
-            x.set(i, sum); // since L has ones on diagonal
+            x[i] = sum; // since L has ones on diagonal
         }
 
         // Backward solve Ux = y
         for i in (0..n).rev() {
-            let mut sum = x.get(i);
+            let mut sum = x[i];
             for k in (i + 1)..n {
-                sum -= a[i * n + k] * x.get(k);
+                sum -= a[i * n + k] * x[k];
             }
-            x.set(i, sum / a[i * n + i]);
+            x[i] = sum / a[i * n + i];
         }
 
         // Build output State from x
-        let mut out = x.zeros_like();
-        for i in 0..n {
-            out.set(i, x.get(i));
-        }
+        let mut out = b.zeros_like();
+        out.read_from_slice(&x);
         Ok(out)
     }
 

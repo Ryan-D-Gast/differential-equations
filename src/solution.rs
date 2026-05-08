@@ -209,8 +209,10 @@ where
         // Data rows
         for (t, y) in self.iter() {
             let mut row = format!("{:?}", t);
-            for i in 0..n {
-                row.push_str(&format!(",{:?}", y.get(i)));
+            let mut y_values = vec![T::zero(); n];
+            y.write_to_slice(&mut y_values);
+            for value in y_values {
+                row.push_str(&format!(",{:?}", value));
             }
             writeln!(writer, "{}", row)?;
         }
@@ -244,13 +246,22 @@ where
         let t = self.t.iter().map(|x| x.to_f64()).collect::<Vec<f64>>();
         let mut columns = vec![Column::new("t".into(), t)];
         let n = self.y[0].len();
+        let y_values = self
+            .y
+            .iter()
+            .map(|y| {
+                let mut values = vec![T::zero(); n];
+                y.write_to_slice(&mut values);
+                values
+            })
+            .collect::<Vec<_>>();
         for i in 0..n {
             let header = format!("y{}", i);
             columns.push(Column::new(
                 header.into(),
-                self.y
+                y_values
                     .iter()
-                    .map(|x| x.get(i).to_f64())
+                    .map(|values| values[i].to_f64())
                     .collect::<Vec<f64>>(),
             ));
         }
@@ -276,13 +287,22 @@ where
         let t = self.t.iter().map(|x| x.to_f64()).collect::<Vec<f64>>();
         let mut columns = vec![Column::new("t".into(), t)];
         let n = self.y[0].len();
+        let y_values = self
+            .y
+            .iter()
+            .map(|y| {
+                let mut values = vec![T::zero(); n];
+                y.write_to_slice(&mut values);
+                values
+            })
+            .collect::<Vec<_>>();
         for i in 0..n {
             let header = format!("y{}", i);
             columns.push(Column::new(
                 header.into(),
-                self.y
+                y_values
                     .iter()
-                    .map(|x| x.get(i).to_f64())
+                    .map(|values| values[i].to_f64())
                     .collect::<Vec<f64>>(),
             ));
         }
@@ -311,6 +331,15 @@ where
         let mut columns = vec![Column::new(t_name.into(), t)];
 
         let n = self.y[0].len();
+        let y_values = self
+            .y
+            .iter()
+            .map(|y| {
+                let mut values = vec![T::zero(); n];
+                y.write_to_slice(&mut values);
+                values
+            })
+            .collect::<Vec<_>>();
 
         // Validate that we have enough names for all state variables
         if y_names.len() != n {
@@ -327,9 +356,9 @@ where
         for (i, name) in y_names.iter().enumerate() {
             columns.push(Column::new(
                 (*name).into(),
-                self.y
+                y_values
                     .iter()
-                    .map(|x| x.get(i).to_f64())
+                    .map(|values| values[i].to_f64())
                     .collect::<Vec<f64>>(),
             ));
         }

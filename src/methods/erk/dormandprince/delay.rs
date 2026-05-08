@@ -6,7 +6,6 @@ use crate::{
     error::Error,
     interpolate::{Interpolation, cubic_hermite_interpolate},
     methods::{Delay, DormandPrince, ExplicitRungeKutta, h_init::InitialStepSize},
-    state_ops,
     stats::Evals,
     status::Status,
     traits::{Real, State},
@@ -132,7 +131,7 @@ impl<
         // Decide if delay iteration is needed
         let mut min_delay_abs = T::infinity();
         // Predict y(t+h) to estimate delays at t+h
-        let y_pred_for_lags = state_ops::from_base_plus(&self.y, &[(&self.k[0], self.h)]);
+        let y_pred_for_lags = self.y.plus_scaled(self.h, &self.k[0]);
         dde.lags(self.t + self.h, &y_pred_for_lags, &mut delays);
         for i in 0..L {
             min_delay_abs = min_delay_abs.min(delays[i].abs());
@@ -161,7 +160,7 @@ impl<
             for i in 1..self.stages {
                 y_stage = self.y.clone();
                 for j in 0..i {
-                    state_ops::axpy(&mut y_stage, self.a[i][j] * self.h, &self.k[j]);
+                    y_stage.add_scaled(self.a[i][j] * self.h, &self.k[j]);
                 }
 
                 // Delayed states for this stage
@@ -187,25 +186,36 @@ impl<
             // RK combination
             let mut yseg = self.y.zeros_like();
             for i in 0..self.stages {
-                state_ops::axpy(&mut yseg, self.b[i], &self.k[i]);
+                yseg.add_scaled(self.b[i], &self.k[i]);
             }
 
-            let y_new = state_ops::from_base_plus(&self.y, &[(&yseg, self.h)]);
+            let y_new = self.y.plus_scaled(self.h, &yseg);
 
             // Dormand–Prince error estimation
             let er = self.er.unwrap();
             let n = self.y.len();
             let mut err_val = T::zero();
             let mut err2 = T::zero();
-            let mut erri;
+            let mut y_values = vec![T::zero(); n];
+            let mut y_new_values = vec![T::zero(); n];
+            let mut yseg_values = vec![T::zero(); n];
+            let mut k_values = (0..self.stages)
+                .map(|_| vec![T::zero(); n])
+                .collect::<Vec<_>>();
+            self.y.write_to_slice(&mut y_values);
+            y_new.write_to_slice(&mut y_new_values);
+            yseg.write_to_slice(&mut yseg_values);
+            for (k, values) in self.k.iter().zip(k_values.iter_mut()) {
+                k.write_to_slice(values);
+            }
             for i in 0..n {
                 // Calculate the error scale
-                let sk = self.atol[i] + self.rtol[i] * self.y.get(i).abs().max(y_new.get(i).abs());
+                let sk = self.atol[i] + self.rtol[i] * y_values[i].abs().max(y_new_values[i].abs());
 
                 // Primary error term
-                erri = T::zero();
+                let mut erri = T::zero();
                 for j in 0..self.stages {
-                    erri += er[j] * self.k[j].get(i);
+                    erri += er[j] * k_values[j][i];
                 }
                 err_val += {
                     let val = erri / sk;
@@ -214,9 +224,9 @@ impl<
 
                 // Optional secondary error term
                 if let Some(bh) = &self.bh {
-                    erri = yseg.get(i);
+                    erri = yseg_values[i];
                     for j in 0..self.stages {
-                        erri -= bh[j] * self.k[j].get(i);
+                        erri -= bh[j] * k_values[j][i];
                     }
                     err2 += {
                         let val = erri / sk;
@@ -235,12 +245,16 @@ impl<
             if max_iter > 1 && it > 0 {
                 let mut dde_iteration_error = T::zero();
                 let n_dim = self.y.len();
+                let mut y_prev_values = vec![T::zero(); n_dim];
+                let mut y_new_values = vec![T::zero(); n_dim];
+                y_next_est_prev.write_to_slice(&mut y_prev_values);
+                y_new.write_to_slice(&mut y_new_values);
                 for i_dim in 0..n_dim {
                     let scale = self.atol[i_dim]
                         + self.rtol[i_dim]
-                            * y_next_est_prev.get(i_dim).abs().max(y_new.get(i_dim).abs());
+                            * y_prev_values[i_dim].abs().max(y_new_values[i_dim].abs());
                     if scale > T::zero() {
-                        let diff_val = y_new.get(i_dim) - y_next_est_prev.get(i_dim);
+                        let diff_val = y_new_values[i_dim] - y_prev_values[i_dim];
                         dde_iteration_error += {
                             let val = diff_val / scale;
                             val * val
@@ -305,10 +319,10 @@ impl<
             if self.steps.is_multiple_of(n_stiff_threshold) {
                 let mut yseg = self.y.zeros_like();
                 for i in 0..self.stages {
-                    state_ops::axpy(&mut yseg, self.b[i], &self.k[i]);
+                    yseg.add_scaled(self.b[i], &self.k[i]);
                 }
-                let stdnum = state_ops::diff_norm_squared(&yseg, &self.k[S - 1]);
-                let stden = state_ops::diff_norm_squared(&self.dydt, &y_last_stage);
+                let stdnum = yseg.diff_norm_squared(&self.k[S - 1]);
+                let stden = self.dydt.diff_norm_squared(&y_last_stage);
 
                 if stden > T::zero() {
                     let h_lamb = self.h * (stdnum / stden).sqrt();
@@ -336,15 +350,15 @@ impl<
 
             // Prepare dense output / interpolation
             self.cont[0] = self.y.clone();
-            let ydiff = state_ops::sub(&y_new, &self.y);
+            let ydiff = y_new.minus(&self.y);
             self.cont[1] = ydiff.clone();
             let mut bspl = ydiff.zeros_like();
-            state_ops::axpy(&mut bspl, self.h, &self.k[0]);
-            state_ops::axpy(&mut bspl, -T::one(), &ydiff);
+            bspl.add_scaled(self.h, &self.k[0]);
+            bspl.add_scaled(-T::one(), &ydiff);
             self.cont[2] = bspl.clone();
             let mut cont3 = ydiff;
-            state_ops::axpy(&mut cont3, -self.h, &self.dydt);
-            state_ops::axpy(&mut cont3, -T::one(), &bspl);
+            cont3.add_scaled(-self.h, &self.dydt);
+            cont3.add_scaled(-T::one(), &bspl);
             self.cont[3] = cont3;
 
             // Dense output stages
@@ -354,7 +368,7 @@ impl<
                     for i in S + 1..I {
                         let mut y_stage = self.y.clone();
                         for j in 0..i {
-                            state_ops::axpy(&mut y_stage, self.a[i][j] * self.h, &self.k[j]);
+                            y_stage.add_scaled(self.a[i][j] * self.h, &self.k[j]);
                         }
 
                         let t_stage = self.t + self.c[i] * self.h;
@@ -370,14 +384,12 @@ impl<
 
                 // Dense output coefficients
                 for i in 4..self.order {
-                    state_ops::fill(&mut self.cont[i], T::zero());
+                    self.cont[i].fill(T::zero());
                     for j in 0..self.dense_stages {
                         let bi = self.bi.as_ref().expect("dense output coefficients checked");
-                        state_ops::axpy(&mut self.cont[i], bi[i][j], &self.k[j]);
+                        self.cont[i].add_scaled(bi[i][j], &self.k[j]);
                     }
-                    for n in 0..self.cont[i].len() {
-                        self.cont[i].set(n, self.cont[i].get(n) * self.h);
-                    }
+                    self.cont[i].scale_by(self.h);
                 }
             }
 
@@ -491,14 +503,13 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                             } else {
                                 theta
                             };
-                            for n in 0..acc.len() {
-                                acc.set(n, acc.get(n) * factor + self.cont[i].get(n));
-                            }
+                            acc.scale_by(factor);
+                            acc.add_scaled(T::one(), &self.cont[i]);
                             acc
                         });
 
                     // Final multiplication by theta for the outermost level
-                    let y_interp = state_ops::from_base_plus(&self.cont[0], &[(&poly, theta)]);
+                    let y_interp = self.cont[0].plus_scaled(theta, &poly);
                     yd[i] = y_interp;
                 } else {
                     yd[i] = cubic_hermite_interpolate(
@@ -589,14 +600,13 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
                 } else {
                     theta
                 };
-                for n in 0..acc.len() {
-                    acc.set(n, acc.get(n) * factor + self.cont[i].get(n));
-                }
+                acc.scale_by(factor);
+                acc.add_scaled(T::one(), &self.cont[i]);
                 acc
             });
 
         // Final multiplication by theta for the outermost level
-        let y_interp = state_ops::from_base_plus(&self.cont[0], &[(&poly, theta)]);
+        let y_interp = self.cont[0].plus_scaled(theta, &poly);
 
         Ok(y_interp)
     }

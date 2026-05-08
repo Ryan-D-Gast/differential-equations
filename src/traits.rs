@@ -2,10 +2,7 @@
 
 use nalgebra::{RealField, SMatrix};
 use num_complex::Complex;
-use std::{
-    fmt::Debug,
-    ops::{Add, AddAssign, Div, Mul, Neg, Sub},
-};
+use std::fmt::Debug;
 
 /// Real Number Trait
 ///
@@ -44,63 +41,152 @@ pub trait State<T: Real>: Clone + Debug {
         self.len() == 0
     }
 
-    fn get(&self, i: usize) -> T;
-
-    fn set(&mut self, i: usize, value: T);
-
     /// Writes this state into a flat slice using the state's canonical solver layout.
     ///
     /// Backends with contiguous storage can override this to use `copy_from_slice`.
-    fn write_to_slice(&self, output: &mut [T]) {
-        assert_eq!(output.len(), self.len(), "Slice length mismatch");
-        for (i, out) in output.iter_mut().enumerate() {
-            *out = self.get(i);
-        }
-    }
+    fn write_to_slice(&self, output: &mut [T]);
 
     /// Updates this state from a flat slice using the state's canonical solver layout.
     ///
     /// This is the inverse of [`State::write_to_slice`] and is used to recover
     /// backend-specific states from solver-owned flat buffers.
-    fn read_from_slice(&mut self, input: &[T]) {
-        assert_eq!(input.len(), self.len(), "Slice length mismatch");
-        for (i, value) in input.iter().copied().enumerate() {
-            self.set(i, value);
-        }
-    }
+    fn read_from_slice(&mut self, input: &[T]);
 
     /// Constructs a zero-valued state with the same shape as `self`.
-    fn zeros_like(&self) -> Self {
-        Self::zeros()
+    fn zeros_like(&self) -> Self;
+
+    /// Constructs a default zero-valued state.
+    ///
+    /// Dynamically sized backends should return an empty state here and use
+    /// [`State::zeros_like`] once an initial condition provides the runtime shape.
+    fn zeros() -> Self;
+
+    /// In-place multiply and add: `self = self + alpha * other`
+    fn mul_add_assign(&mut self, alpha: T, other: &Self);
+
+    /// In-place scaling: `self = self * alpha`
+    fn scale_mut(&mut self, alpha: T);
+
+    /// Fill with a constant value
+    fn fill(&mut self, value: T) {
+        let mut buf = vec![T::zero(); self.len()];
+        for x in buf.iter_mut() {
+            *x = value;
+        }
+        self.read_from_slice(&buf);
     }
 
-    fn zeros() -> Self;
-}
+    /// Copy values from another state with the same flat solver layout.
+    fn copy_from_state(&mut self, other: &Self) {
+        let mut buf = vec![T::zero(); other.len()];
+        other.write_to_slice(&mut buf);
+        self.read_from_slice(&buf);
+    }
 
-pub trait StateAlgebra<T: Real>:
-    State<T>
-    + Copy
-    + Add<Output = Self>
-    + Sub<Output = Self>
-    + AddAssign
-    + Mul<T, Output = Self>
-    + Div<T, Output = Self>
-    + Neg<Output = Self>
-{
-}
+    /// In-place multiply and add with chaining: `self = self + alpha * other`.
+    fn add_scaled(&mut self, alpha: T, other: &Self) -> &mut Self {
+        self.mul_add_assign(alpha, other);
+        self
+    }
 
-impl<T, Y> StateAlgebra<T> for Y
-where
-    T: Real,
-    Y: State<T>
-        + Copy
-        + Add<Output = Y>
-        + Sub<Output = Y>
-        + AddAssign
-        + Mul<T, Output = Y>
-        + Div<T, Output = Y>
-        + Neg<Output = Y>,
-{
+    /// In-place scaling with chaining: `self = self * alpha`.
+    fn scale_by(&mut self, alpha: T) -> &mut Self {
+        self.scale_mut(alpha);
+        self
+    }
+
+    /// Returns `self * alpha`.
+    fn scaled(&self, alpha: T) -> Self {
+        let mut out = self.clone();
+        out.scale_mut(alpha);
+        out
+    }
+
+    /// Returns `self + alpha * other`.
+    fn plus_scaled(&self, alpha: T, other: &Self) -> Self {
+        let mut out = self.clone();
+        out.mul_add_assign(alpha, other);
+        out
+    }
+
+    /// Returns `self` plus a linear combination of states.
+    fn plus_linear_combination(&self, terms: &[(&Self, T)]) -> Self {
+        let mut out = self.clone();
+        for (state, alpha) in terms {
+            out.mul_add_assign(*alpha, state);
+        }
+        out
+    }
+
+    /// Returns `self - other`.
+    fn minus(&self, other: &Self) -> Self {
+        self.plus_scaled(-T::one(), other)
+    }
+
+    /// Sets `self` to a linear combination of states.
+    fn set_linear_combination(&mut self, terms: &[(&Self, T)]) -> &mut Self {
+        self.fill(T::zero());
+        for (state, alpha) in terms {
+            self.mul_add_assign(*alpha, state);
+        }
+        self
+    }
+
+    /// Returns a linear combination with the same shape as `self`.
+    fn linear_combination(&self, terms: &[(&Self, T)]) -> Self {
+        let mut out = self.zeros_like();
+        out.set_linear_combination(terms);
+        out
+    }
+
+    /// Compute ||self||^2
+    fn norm_squared(&self) -> T {
+        let mut buf = vec![T::zero(); self.len()];
+        self.write_to_slice(&mut buf);
+        let mut sum = T::zero();
+        for &x in &buf {
+            sum += x * x;
+        }
+        sum
+    }
+
+    /// Compute ||self - other||^2
+    fn diff_norm_squared(&self, other: &Self) -> T {
+        let mut buf_self = vec![T::zero(); self.len()];
+        let mut buf_other = vec![T::zero(); self.len()];
+        self.write_to_slice(&mut buf_self);
+        other.write_to_slice(&mut buf_other);
+        let mut sum = T::zero();
+        for (a, b) in buf_self.iter().zip(buf_other.iter()) {
+            let diff = *a - *b;
+            sum += diff * diff;
+        }
+        sum
+    }
+
+    /// Calculates the weighted error norm used for adaptive step sizing.
+    fn error_norm(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &crate::tolerance::Tolerance<T>,
+        rtol: &crate::tolerance::Tolerance<T>,
+    ) -> T {
+        let mut buf_y = vec![T::zero(); self.len()];
+        let mut buf_y_new = vec![T::zero(); self.len()];
+        let mut buf_err = vec![T::zero(); self.len()];
+        self.write_to_slice(&mut buf_y);
+        y_new.write_to_slice(&mut buf_y_new);
+        err.write_to_slice(&mut buf_err);
+
+        let mut sum = T::zero();
+        for i in 0..self.len() {
+            let sk = atol[i] + rtol[i] * buf_y[i].abs().max(buf_y_new[i].abs());
+            let e = buf_err[i] / sk;
+            sum += e * e;
+        }
+        sum
+    }
 }
 
 impl<T, const R: usize, const C: usize> State<T> for SMatrix<T, R, C>
@@ -109,14 +195,6 @@ where
 {
     fn len(&self) -> usize {
         R * C
-    }
-
-    fn get(&self, i: usize) -> T {
-        self[(i / C, i % C)]
-    }
-
-    fn set(&mut self, i: usize, value: T) {
-        self[(i / C, i % C)] = value;
     }
 
     fn write_to_slice(&self, output: &mut [T]) {
@@ -137,8 +215,24 @@ where
         }
     }
 
+    fn zeros_like(&self) -> Self {
+        SMatrix::<T, R, C>::zeros()
+    }
+
     fn zeros() -> Self {
         SMatrix::<T, R, C>::zeros()
+    }
+
+    fn mul_add_assign(&mut self, alpha: T, other: &Self) {
+        for i in 0..self.len() {
+            self[(i / C, i % C)] += alpha * other[(i / C, i % C)];
+        }
+    }
+
+    fn scale_mut(&mut self, alpha: T) {
+        for i in 0..self.len() {
+            self[(i / C, i % C)] *= alpha;
+        }
     }
 }
 
@@ -150,22 +244,34 @@ where
         2
     }
 
-    fn get(&self, i: usize) -> T {
-        assert!(i < 2, "Index out of bounds");
-        if i == 0 { self.re } else { self.im }
+    fn write_to_slice(&self, output: &mut [T]) {
+        assert_eq!(output.len(), 2, "Slice length mismatch");
+        output[0] = self.re;
+        output[1] = self.im;
     }
 
-    fn set(&mut self, i: usize, value: T) {
-        assert!(i < 2, "Index out of bounds");
-        if i == 0 {
-            self.re = value;
-        } else {
-            self.im = value;
-        }
+    fn read_from_slice(&mut self, input: &[T]) {
+        assert_eq!(input.len(), 2, "Slice length mismatch");
+        self.re = input[0];
+        self.im = input[1];
+    }
+
+    fn zeros_like(&self) -> Self {
+        Complex::new(T::zero(), T::zero())
     }
 
     fn zeros() -> Self {
         Complex::new(T::zero(), T::zero())
+    }
+
+    fn mul_add_assign(&mut self, alpha: T, other: &Self) {
+        self.re += alpha * other.re;
+        self.im += alpha * other.im;
+    }
+
+    fn scale_mut(&mut self, alpha: T) {
+        self.re *= alpha;
+        self.im *= alpha;
     }
 }
 
@@ -175,14 +281,6 @@ where
 {
     fn len(&self) -> usize {
         self.len()
-    }
-
-    fn get(&self, i: usize) -> T {
-        self[i]
-    }
-
-    fn set(&mut self, i: usize, value: T) {
-        self[i] = value;
     }
 
     fn write_to_slice(&self, output: &mut [T]) {
@@ -201,26 +299,124 @@ where
     fn zeros() -> Self {
         Vec::new()
     }
+
+    fn mul_add_assign(&mut self, alpha: T, other: &Self) {
+        for (s, o) in self.iter_mut().zip(other.iter()) {
+            *s += alpha * *o;
+        }
+    }
+
+    fn scale_mut(&mut self, alpha: T) {
+        for s in self.iter_mut() {
+            *s *= alpha;
+        }
+    }
+}
+
+#[cfg(feature = "ndarray")]
+impl<T, D> State<T> for ndarray::Array<T, D>
+where
+    T: Real,
+    D: ndarray::Dimension,
+{
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn write_to_slice(&self, output: &mut [T]) {
+        assert_eq!(output.len(), self.len(), "Slice length mismatch");
+        for (dst, src) in output.iter_mut().zip(self.iter()) {
+            *dst = *src;
+        }
+    }
+
+    fn read_from_slice(&mut self, input: &[T]) {
+        assert_eq!(input.len(), self.len(), "Slice length mismatch");
+        for (dst, src) in self.iter_mut().zip(input.iter()) {
+            *dst = *src;
+        }
+    }
+
+    fn zeros_like(&self) -> Self {
+        ndarray::Array::zeros(self.raw_dim())
+    }
+
+    fn zeros() -> Self {
+        ndarray::Array::zeros(D::default())
+    }
+
+    fn mul_add_assign(&mut self, alpha: T, other: &Self) {
+        assert_eq!(self.len(), other.len(), "State length mismatch");
+        for (dst, src) in self.iter_mut().zip(other.iter()) {
+            *dst += alpha * *src;
+        }
+    }
+
+    fn scale_mut(&mut self, alpha: T) {
+        for dst in self.iter_mut() {
+            *dst *= alpha;
+        }
+    }
+}
+
+#[cfg(feature = "faer")]
+impl<T> State<T> for faer::Mat<T>
+where
+    T: Real,
+{
+    fn len(&self) -> usize {
+        self.nrows() * self.ncols()
+    }
+
+    fn write_to_slice(&self, output: &mut [T]) {
+        assert_eq!(output.len(), self.len(), "Slice length mismatch");
+        for r in 0..self.nrows() {
+            for c in 0..self.ncols() {
+                output[r * self.ncols() + c] = *self.get(r, c);
+            }
+        }
+    }
+
+    fn read_from_slice(&mut self, input: &[T]) {
+        assert_eq!(input.len(), self.len(), "Slice length mismatch");
+        for r in 0..self.nrows() {
+            for c in 0..self.ncols() {
+                *self.get_mut(r, c) = input[r * self.ncols() + c];
+            }
+        }
+    }
+
+    fn zeros_like(&self) -> Self {
+        faer::Mat::from_fn(self.nrows(), self.ncols(), |_, _| T::zero())
+    }
+
+    fn zeros() -> Self {
+        faer::Mat::from_fn(0, 0, |_, _| T::zero())
+    }
+
+    fn mul_add_assign(&mut self, alpha: T, other: &Self) {
+        assert_eq!(self.nrows(), other.nrows(), "State row count mismatch");
+        assert_eq!(self.ncols(), other.ncols(), "State column count mismatch");
+        for r in 0..self.nrows() {
+            for c in 0..self.ncols() {
+                *self.get_mut(r, c) += alpha * *other.get(r, c);
+            }
+        }
+    }
+
+    fn scale_mut(&mut self, alpha: T) {
+        for r in 0..self.nrows() {
+            for c in 0..self.ncols() {
+                *self.get_mut(r, c) *= alpha;
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use num_complex::Complex;
-
-    #[test]
-    #[should_panic(expected = "Index out of bounds")]
-    fn test_state_complex_get_out_of_bounds() {
-        let state = Complex::new(1.0, 2.0);
-        let _ = state.get(2);
-    }
-
-    #[test]
-    #[should_panic(expected = "Index out of bounds")]
-    fn test_state_complex_set_out_of_bounds() {
-        let mut state = Complex::new(1.0, 2.0);
-        state.set(2, 3.0);
-    }
 
     #[test]
     fn test_smatrix_flat_slice_round_trip_uses_row_major_layout() {
@@ -246,5 +442,36 @@ mod tests {
         let mut recovered = Complex::new(0.0, 0.0);
         recovered.read_from_slice(&buffer);
         assert_eq!(recovered, state);
+    }
+
+    #[cfg(feature = "ndarray")]
+    #[test]
+    fn test_ndarray_flat_slice_round_trip() {
+        let state = ndarray::array![[1.0, 2.0], [3.0, 4.0]];
+        let mut buffer = [0.0; 4];
+
+        state.write_to_slice(&mut buffer);
+        assert_eq!(buffer, [1.0, 2.0, 3.0, 4.0]);
+
+        let mut recovered = state.zeros_like();
+        recovered.read_from_slice(&buffer);
+        assert_eq!(recovered, state);
+    }
+
+    #[cfg(feature = "faer")]
+    #[test]
+    fn test_faer_flat_slice_round_trip() {
+        let state = faer::Mat::from_fn(2, 2, |r, c| (r * 2 + c + 1) as f64);
+        let mut buffer = [0.0; 4];
+
+        state.write_to_slice(&mut buffer);
+        assert_eq!(buffer, [1.0, 2.0, 3.0, 4.0]);
+
+        let mut recovered = state.zeros_like();
+        recovered.read_from_slice(&buffer);
+        assert_eq!(*recovered.get(0, 0), 1.0);
+        assert_eq!(*recovered.get(0, 1), 2.0);
+        assert_eq!(*recovered.get(1, 0), 3.0);
+        assert_eq!(*recovered.get(1, 1), 4.0);
     }
 }
