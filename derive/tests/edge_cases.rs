@@ -1,4 +1,4 @@
-use differential_equations::traits::{Real, State as StateTrait};
+use differential_equations::traits::State as StateTrait;
 use differential_equations_derive::State;
 use nalgebra::{Matrix2, Vector2};
 use num_complex::Complex;

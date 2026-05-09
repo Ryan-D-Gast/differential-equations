@@ -254,7 +254,9 @@ where
                 header.into(),
                 self.y
                     .iter()
-                    .map(|y| simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&y.get_component(i)))
+                    .map(|y| {
+                        simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&y.get_component(i))
+                    })
                     .collect::<Vec<f64>>(),
             ));
         }
@@ -290,7 +292,9 @@ where
                 header.into(),
                 self.y
                     .iter()
-                    .map(|y| simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&y.get_component(i)))
+                    .map(|y| {
+                        simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&y.get_component(i))
+                    })
                     .collect::<Vec<f64>>(),
             ));
         }
@@ -341,7 +345,9 @@ where
                 (*name).into(),
                 self.y
                     .iter()
-                    .map(|y| simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&y.get_component(i)))
+                    .map(|y| {
+                        simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&y.get_component(i))
+                    })
                     .collect::<Vec<f64>>(),
             ));
         }

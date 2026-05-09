@@ -266,5 +266,6 @@ impl ODE<f64, Vector3<f64>> for VectorModel {
 }
 ```
 
-The `ndarray` feature enables `ndarray::Array<T, D>`, and the `faer` feature
-enables `faer::Mat<T>`.
+The `num-complex` feature enables `num_complex::Complex<T>`, the `ndarray`
+feature enables `ndarray::Array<T, D>`, and the `faer` feature enables
+`faer::Mat<T>`.

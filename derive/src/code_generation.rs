@@ -27,7 +27,7 @@ pub fn generate_get_branches(
             FieldTypeInfo::Array { array_size } => {
                 let end_index = current_index + array_size;
                 field_get_branches.push(quote! {
-                    if i >= #current_index && i < #end_index {
+                    if (#current_index..#end_index).contains(&i) {
                         return #field_name[i - #current_index];
                     }
                 });
@@ -36,11 +36,11 @@ pub fn generate_get_branches(
             FieldTypeInfo::SMatrix { rows, cols } => {
                 let total_elements = rows * cols;
                 let end_index = current_index + total_elements;
+                let matrix_indices = generate_matrix_indices(quote! { offset }, *cols);
                 field_get_branches.push(quote! {
-                    if i >= #current_index && i < #end_index {
+                    if (#current_index..#end_index).contains(&i) {
                         let offset = i - #current_index;
-                        let row = offset / #cols;
-                        let col = offset % #cols;
+                        #matrix_indices
                         return #field_name[(row, col)];
                     }
                 });
@@ -49,7 +49,7 @@ pub fn generate_get_branches(
             FieldTypeInfo::Complex => {
                 let end_index = current_index + 2;
                 field_get_branches.push(quote! {
-                    if i >= #current_index && i < #end_index {
+                    if (#current_index..#end_index).contains(&i) {
                         let offset = i - #current_index;
                         return if offset == 0 { #field_name.re } else { #field_name.im };
                     }
@@ -64,13 +64,14 @@ pub fn generate_get_branches(
                 let total_elements = array_size * rows * cols;
                 let elements_per_matrix = rows * cols;
                 let end_index = current_index + total_elements;
+                let matrix_offset = generate_matrix_offset(quote! { offset }, elements_per_matrix);
+                let matrix_indices = generate_matrix_indices(quote! { matrix_offset }, *cols);
                 field_get_branches.push(quote! {
-                    if i >= #current_index && i < #end_index {
+                    if (#current_index..#end_index).contains(&i) {
                         let offset = i - #current_index;
                         let matrix_idx = offset / #elements_per_matrix;
-                        let matrix_offset = offset % #elements_per_matrix;
-                        let row = matrix_offset / #cols;
-                        let col = matrix_offset % #cols;
+                        #matrix_offset
+                        #matrix_indices
                         return #field_name[matrix_idx][(row, col)];
                     }
                 });
@@ -80,7 +81,7 @@ pub fn generate_get_branches(
                 let total_elements = array_size * 2;
                 let end_index = current_index + total_elements;
                 field_get_branches.push(quote! {
-                    if i >= #current_index && i < #end_index {
+                    if (#current_index..#end_index).contains(&i) {
                         let offset = i - #current_index;
                         let complex_idx = offset / 2;
                         let component = offset % 2;
@@ -125,7 +126,7 @@ pub fn generate_set_branches(
                     }
                 };
                 field_set_branches.push(quote! {
-                    if i >= #current_index && i < #end_index {
+                    if (#current_index..#end_index).contains(&i) {
                         #array_setter
                         return;
                     }
@@ -135,25 +136,24 @@ pub fn generate_set_branches(
             FieldTypeInfo::SMatrix { rows, cols } => {
                 let total_elements = rows * cols;
                 let end_index = current_index + total_elements;
+                let matrix_indices = generate_matrix_indices(quote! { offset }, *cols);
                 let matrix_setter = match &field.ident {
                     Some(ident) => quote! {
                         let offset = i - #current_index;
-                        let row = offset / #cols;
-                        let col = offset % #cols;
+                        #matrix_indices
                         self.#ident[(row, col)] = value;
                     },
                     None => {
                         let index = syn::Index::from(field_idx);
                         quote! {
                             let offset = i - #current_index;
-                            let row = offset / #cols;
-                            let col = offset % #cols;
+                            #matrix_indices
                             self.#index[(row, col)] = value;
                         }
                     }
                 };
                 field_set_branches.push(quote! {
-                    if i >= #current_index && i < #end_index {
+                    if (#current_index..#end_index).contains(&i) {
                         #matrix_setter
                         return;
                     }
@@ -184,7 +184,7 @@ pub fn generate_set_branches(
                     }
                 };
                 field_set_branches.push(quote! {
-                    if i >= #current_index && i < #end_index {
+                    if (#current_index..#end_index).contains(&i) {
                         #complex_setter
                         return;
                     }
@@ -199,13 +199,14 @@ pub fn generate_set_branches(
                 let total_elements = array_size * rows * cols;
                 let elements_per_matrix = rows * cols;
                 let end_index = current_index + total_elements;
+                let matrix_offset = generate_matrix_offset(quote! { offset }, elements_per_matrix);
+                let matrix_indices = generate_matrix_indices(quote! { matrix_offset }, *cols);
                 let array_matrix_setter = match &field.ident {
                     Some(ident) => quote! {
                         let offset = i - #current_index;
                         let matrix_idx = offset / #elements_per_matrix;
-                        let matrix_offset = offset % #elements_per_matrix;
-                        let row = matrix_offset / #cols;
-                        let col = matrix_offset % #cols;
+                        #matrix_offset
+                        #matrix_indices
                         self.#ident[matrix_idx][(row, col)] = value;
                     },
                     None => {
@@ -213,15 +214,14 @@ pub fn generate_set_branches(
                         quote! {
                             let offset = i - #current_index;
                             let matrix_idx = offset / #elements_per_matrix;
-                            let matrix_offset = offset % #elements_per_matrix;
-                            let row = matrix_offset / #cols;
-                            let col = matrix_offset % #cols;
+                            #matrix_offset
+                            #matrix_indices
                             self.#index[matrix_idx][(row, col)] = value;
                         }
                     }
                 };
                 field_set_branches.push(quote! {
-                    if i >= #current_index && i < #end_index {
+                    if (#current_index..#end_index).contains(&i) {
                         #array_matrix_setter
                         return;
                     }
@@ -257,7 +257,7 @@ pub fn generate_set_branches(
                     }
                 };
                 field_set_branches.push(quote! {
-                    if i >= #current_index && i < #end_index {
+                    if (#current_index..#end_index).contains(&i) {
                         #array_complex_setter
                         return;
                     }
@@ -300,8 +300,7 @@ pub fn generate_zeros_init(
                     FieldTypeInfo::Single => quote! { T::zero() },
                     FieldTypeInfo::Array { array_size } => quote! { [T::zero(); #array_size] },
                     FieldTypeInfo::SMatrix { rows, cols } => {
-                        let zeros_expr = generate_nalgebra_zeros(*rows, *cols);
-                        zeros_expr
+                        generate_nalgebra_zeros(*rows, *cols)
                     },
                     FieldTypeInfo::Complex => quote! { num_complex::Complex::new(T::zero(), T::zero()) },
                     FieldTypeInfo::ArrayOfSMatrix { array_size, rows, cols } => {
@@ -358,6 +357,38 @@ fn get_field_setter(
         None => {
             let index = syn::Index::from(field_idx);
             quote! { self.#index = #value_expr; }
+        }
+    }
+}
+
+fn generate_matrix_indices(
+    offset_expr: proc_macro2::TokenStream,
+    cols: usize,
+) -> proc_macro2::TokenStream {
+    if cols == 1 {
+        quote! {
+            let row = #offset_expr;
+            let col = 0usize;
+        }
+    } else {
+        quote! {
+            let row = #offset_expr / #cols;
+            let col = #offset_expr % #cols;
+        }
+    }
+}
+
+fn generate_matrix_offset(
+    offset_expr: proc_macro2::TokenStream,
+    elements_per_matrix: usize,
+) -> proc_macro2::TokenStream {
+    if elements_per_matrix == 1 {
+        quote! {
+            let matrix_offset = 0usize;
+        }
+    } else {
+        quote! {
+            let matrix_offset = #offset_expr % #elements_per_matrix;
         }
     }
 }

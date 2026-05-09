@@ -71,13 +71,13 @@ pub fn analyze_field_type(ty: &Type) -> FieldTypeInfo {
 
                 // Handle explicit SMatrix<T, R, C>
                 if type_name == "SMatrix" {
-                    if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                        if args.args.len() >= 3 {
-                            // Extract R and C generic arguments (skip T which is first)
-                            let rows = extract_const_generic(&args.args[1]);
-                            let cols = extract_const_generic(&args.args[2]);
-                            return FieldTypeInfo::SMatrix { rows, cols };
-                        }
+                    if let PathArguments::AngleBracketed(args) = &segment.arguments
+                        && args.args.len() >= 3
+                    {
+                        // Extract R and C generic arguments (skip T which is first)
+                        let rows = extract_const_generic(&args.args[1]);
+                        let cols = extract_const_generic(&args.args[2]);
+                        return FieldTypeInfo::SMatrix { rows, cols };
                     }
                     panic!("SMatrix must have type parameters SMatrix<T, R, C>");
                 }

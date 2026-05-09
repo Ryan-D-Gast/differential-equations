@@ -270,9 +270,16 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // Weighted max-norm
         let dim = self.y.len();
         for n in 0..dim {
-            let scale = self.atol[n] + self.rtol[n] * self.y.get_component(n).abs().max(y_new.get_component(n).abs());
+            let scale = self.atol[n]
+                + self.rtol[n]
+                    * self
+                        .y
+                        .get_component(n)
+                        .abs()
+                        .max(y_new.get_component(n).abs());
             if scale > T::zero() {
-                err_norm = err_norm.max(((y_new.get_component(n) - y_low.get_component(n)) / scale).abs());
+                err_norm =
+                    err_norm.max(((y_new.get_component(n) - y_low.get_component(n)) / scale).abs());
             }
         }
 

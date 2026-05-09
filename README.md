@@ -52,6 +52,7 @@ A high-performance library for solving differential equations in Rust, including
 ## Feature Flags
 
 - `nalgebra`: Enables nalgebra matrix and vector states, including fixed-size and dynamic matrices.
+- `num-complex`: Enables complex number states.
 - `ndarray`: Enables ndarray array states.
 - `faer`: Enables faer matrix states.
 - `polars`: Enables converting solutions to Polars data frames.

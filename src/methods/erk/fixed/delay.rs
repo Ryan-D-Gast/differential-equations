@@ -176,9 +176,13 @@ impl<
                 let mut dde_iteration_error = T::zero();
                 for i_dim in 0..n_dim {
                     let scale = T::from_f64(1e-10).unwrap()
-                        + y_prev_candidate_iter.get_component(i_dim).abs().max(y_next.get_component(i_dim).abs());
+                        + y_prev_candidate_iter
+                            .get_component(i_dim)
+                            .abs()
+                            .max(y_next.get_component(i_dim).abs());
                     if scale > T::zero() {
-                        let diff_val = y_next.get_component(i_dim) - y_prev_candidate_iter.get_component(i_dim);
+                        let diff_val = y_next.get_component(i_dim)
+                            - y_prev_candidate_iter.get_component(i_dim);
                         let val = diff_val / scale;
                         dde_iteration_error += val * val;
                     }

@@ -1,4 +1,4 @@
-use differential_equations::traits::{Real, State as StateTrait};
+use differential_equations::traits::State as StateTrait;
 use differential_equations_derive::State;
 use nalgebra::{Matrix2, Vector2, Vector3};
 use num_complex::Complex;
@@ -11,9 +11,9 @@ fn test_state_basics<S: StateTrait<f64>>(state: &mut S, expected_len: usize) {
     // Test get/set for all elements
     for i in 0..expected_len {
         let original = state.get_component(i);
-        state.set_get_component(i, 42.0);
+        state.set_component(i, 42.0);
         assert_eq!(state.get_component(i), 42.0);
-        state.set_get_component(i, original); // Restore
+        state.set_component(i, original); // Restore
     }
 
     // Test bulk map update

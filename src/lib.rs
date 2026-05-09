@@ -16,7 +16,12 @@
 //!
 //! ## Feature Flags
 //!
+//! - `nalgebra`: Enable nalgebra matrix and vector states
+//! - `num-complex`: Enable complex number states
+//! - `ndarray`: Enable ndarray array states
+//! - `faer`: Enable faer matrix states
 //! - `polars`: Enable converting `Solution` to a Polars DataFrame with `Solution::to_polars()`
+//! - `serde`: Enable solution serialization and deserialization
 //!
 //! ## Example (ODE)
 //!

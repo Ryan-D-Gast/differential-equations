@@ -1,4 +1,4 @@
-use differential_equations::traits::{Real, State as StateTrait};
+use differential_equations::traits::State as StateTrait;
 use differential_equations_derive::State;
 use nalgebra::{
     Matrix2, Matrix3, Matrix4, Matrix5, Matrix6, RowVector2, RowVector3, SMatrix, Vector2, Vector3,

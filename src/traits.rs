@@ -2,6 +2,7 @@
 
 #[cfg(feature = "nalgebra")]
 use nalgebra::{DefaultAllocator, Dim, OMatrix, allocator::Allocator};
+#[cfg(feature = "num-complex")]
 use num_complex::Complex;
 use simba::scalar::{RealField, SupersetOf};
 use std::fmt::Debug;
@@ -38,7 +39,7 @@ pub type DefaultState<T> = [T; 1];
 /// Implements for the following types:
 /// * `[T; N]` - Fixed-size array state
 /// * `OMatrix` - Matrix type from nalgebra, enabled with the `nalgebra` feature
-/// * `Complex` - Complex number type from num-complex
+/// * `Complex` - Complex number type from num-complex, enabled with the `num-complex` feature
 /// * `Vec<T>` - Dynamically sized vector state
 /// * `ndarray::Array<T, D>` - Array state, enabled with the `ndarray` feature
 /// * `faer::Mat<T>` - Matrix state, enabled with the `faer` feature
@@ -162,7 +163,11 @@ pub trait State<T: Real>: Clone + Debug {
         ip: &[usize],
     ) {
         let n = self.len();
-        assert_eq!(imag_part.len(), n, "Complex linear solve dimension mismatch");
+        assert_eq!(
+            imag_part.len(),
+            n,
+            "Complex linear solve dimension mismatch"
+        );
 
         // Handle trivial case
         if n == 1 {
@@ -260,11 +265,14 @@ pub trait State<T: Real>: Clone + Debug {
     fn mul_by_dense_matrix(&self, matrix: &[T], n: usize, m: usize) -> Self {
         assert_eq!(self.len(), m, "Matrix-vector dimension mismatch");
         let mut out = self.zeros_like(); // Note: this assumes out should have same shape as self if it were square, but really it should have length n.
-                                         // For ODEs n == m usually. If n != m, this might need a different constructor.
+        // For ODEs n == m usually. If n != m, this might need a different constructor.
         if out.len() != n {
             // If the output state type is different (e.g. Vec), we might need to handle resizing.
             // For now assume n == m for simplicity as that is the common case in this library.
-            assert_eq!(n, m, "mul_by_dense_matrix currently only supports square operations for generic States");
+            assert_eq!(
+                n, m,
+                "mul_by_dense_matrix currently only supports square operations for generic States"
+            );
         }
 
         for i in 0..n {
@@ -382,19 +390,18 @@ pub trait State<T: Real>: Clone + Debug {
     }
 
     /// Calculates the weighted error norm used for adaptive step sizing.
-    fn error_norm(
-        &self,
-        y_new: &Self,
-        err: &Self,
-        atol: &Tolerance<T>,
-        rtol: &Tolerance<T>,
-    ) -> T {
+    fn error_norm(&self, y_new: &Self, err: &Self, atol: &Tolerance<T>, rtol: &Tolerance<T>) -> T {
         assert_eq!(self.len(), y_new.len(), "State length mismatch");
         assert_eq!(self.len(), err.len(), "State length mismatch");
 
         let mut sum = T::zero();
         for i in 0..self.len() {
-            let sk = atol[i] + rtol[i] * self.get_component(i).abs().max(y_new.get_component(i).abs());
+            let sk = atol[i]
+                + rtol[i]
+                    * self
+                        .get_component(i)
+                        .abs()
+                        .max(y_new.get_component(i).abs());
             let e = err.get_component(i) / sk;
             sum += e * e;
         }
@@ -414,7 +421,12 @@ pub trait State<T: Real>: Clone + Debug {
 
         let mut max = T::zero();
         for i in 0..self.len() {
-            let sk = atol[i] + rtol[i] * self.get_component(i).abs().max(y_new.get_component(i).abs());
+            let sk = atol[i]
+                + rtol[i]
+                    * self
+                        .get_component(i)
+                        .abs()
+                        .max(y_new.get_component(i).abs());
             max = max.max((err.get_component(i) / sk).abs());
         }
         max
@@ -497,13 +509,7 @@ where
             })
     }
 
-    fn error_norm(
-        &self,
-        y_new: &Self,
-        err: &Self,
-        atol: &Tolerance<T>,
-        rtol: &Tolerance<T>,
-    ) -> T {
+    fn error_norm(&self, y_new: &Self, err: &Self, atol: &Tolerance<T>, rtol: &Tolerance<T>) -> T {
         let mut sum = T::zero();
         for i in 0..N {
             let sk = atol[i] + rtol[i] * self[i].abs().max(y_new[i].abs());
@@ -677,13 +683,7 @@ where
         (self - other).norm_squared()
     }
 
-    fn error_norm(
-        &self,
-        y_new: &Self,
-        err: &Self,
-        atol: &Tolerance<T>,
-        rtol: &Tolerance<T>,
-    ) -> T {
+    fn error_norm(&self, y_new: &Self, err: &Self, atol: &Tolerance<T>, rtol: &Tolerance<T>) -> T {
         assert_eq!(self.nrows(), y_new.nrows(), "State row count mismatch");
         assert_eq!(self.ncols(), y_new.ncols(), "State column count mismatch");
         assert_eq!(self.nrows(), err.nrows(), "State row count mismatch");
@@ -721,6 +721,7 @@ where
     }
 }
 
+#[cfg(feature = "num-complex")]
 impl<T> State<T> for Complex<T>
 where
     T: Real,
@@ -791,13 +792,7 @@ where
         re * re + im * im
     }
 
-    fn error_norm(
-        &self,
-        y_new: &Self,
-        err: &Self,
-        atol: &Tolerance<T>,
-        rtol: &Tolerance<T>,
-    ) -> T {
+    fn error_norm(&self, y_new: &Self, err: &Self, atol: &Tolerance<T>, rtol: &Tolerance<T>) -> T {
         let sk_re = atol[0] + rtol[0] * self.re.abs().max(y_new.re.abs());
         let sk_im = atol[1] + rtol[1] * self.im.abs().max(y_new.im.abs());
         let e_re = err.re / sk_re;
@@ -892,13 +887,7 @@ where
             })
     }
 
-    fn error_norm(
-        &self,
-        y_new: &Self,
-        err: &Self,
-        atol: &Tolerance<T>,
-        rtol: &Tolerance<T>,
-    ) -> T {
+    fn error_norm(&self, y_new: &Self, err: &Self, atol: &Tolerance<T>, rtol: &Tolerance<T>) -> T {
         assert_eq!(self.len(), y_new.len(), "State length mismatch");
         assert_eq!(self.len(), err.len(), "State length mismatch");
         let mut sum = T::zero();
@@ -1010,13 +999,7 @@ where
             })
     }
 
-    fn error_norm(
-        &self,
-        y_new: &Self,
-        err: &Self,
-        atol: &Tolerance<T>,
-        rtol: &Tolerance<T>,
-    ) -> T {
+    fn error_norm(&self, y_new: &Self, err: &Self, atol: &Tolerance<T>, rtol: &Tolerance<T>) -> T {
         assert_eq!(self.shape(), y_new.shape(), "State shape mismatch");
         assert_eq!(self.shape(), err.shape(), "State shape mismatch");
         let mut sum = T::zero();
@@ -1146,13 +1129,7 @@ where
         sum
     }
 
-    fn error_norm(
-        &self,
-        y_new: &Self,
-        err: &Self,
-        atol: &Tolerance<T>,
-        rtol: &Tolerance<T>,
-    ) -> T {
+    fn error_norm(&self, y_new: &Self, err: &Self, atol: &Tolerance<T>, rtol: &Tolerance<T>) -> T {
         assert_eq!(self.nrows(), y_new.nrows(), "State row count mismatch");
         assert_eq!(self.ncols(), y_new.ncols(), "State column count mismatch");
         assert_eq!(self.nrows(), err.nrows(), "State row count mismatch");
@@ -1195,6 +1172,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "num-complex")]
     use num_complex::Complex;
 
     #[test]
@@ -1215,6 +1193,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "num-complex")]
     fn test_complex_get_set() {
         let mut state = Complex::new(1.0, 2.0);
         assert_eq!(state.get_component(0), 1.0);

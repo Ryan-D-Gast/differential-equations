@@ -20,7 +20,7 @@ mod comprehensive_tests;
 mod edge_cases;
 mod specialized_types;
 
-use differential_equations::traits::{Real, State as StateTrait};
+use differential_equations::traits::State as StateTrait;
 use differential_equations_derive::State;
 
 /// Quick smoke test to ensure the derive macro works at all

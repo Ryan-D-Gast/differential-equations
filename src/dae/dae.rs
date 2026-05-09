@@ -109,8 +109,9 @@ where
 
             // Compute finite difference approximation for this column
             for i_row in 0..dim {
-                j[(i_row, j_col)] =
-                    (f_perturbed.get_component(i_row) - f_origin.get_component(i_row)) / perturbation;
+                j[(i_row, j_col)] = (f_perturbed.get_component(i_row)
+                    - f_origin.get_component(i_row))
+                    / perturbation;
             }
         }
     }
