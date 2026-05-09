@@ -42,36 +42,31 @@ impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
     }
 
     fn weighted_rms_norm(&self, value: &Y, scale: &Y) -> T {
-        let mut sum = T::zero();
-        for i in 0..value.len() {
-            let scaled = value.get(i) / scale.get(i);
-            sum += scaled * scaled;
-        }
-        (sum / Self::order_scalar(value.len())).sqrt()
+        (value.component_div(scale).norm_squared() / Self::order_scalar(value.len())).sqrt()
     }
 
     fn scale_from(&self, y: &Y) -> Y {
-        let mut scale = Y::zeros();
-        for i in 0..y.len() {
-            scale.set(i, self.atol[i] + self.rtol[i] * y.get(i).abs());
-        }
+        let mut scale = y.zeros_like();
+        scale.map_components_mut(|i, s| {
+            *s = self.atol[i] + self.rtol[i] * y.get_component(i).abs();
+        });
         scale
     }
 
     fn predict(&self, order: usize) -> Y {
-        let mut y_predict = Y::zeros();
+        let mut y_predict = self.y.zeros_like();
         for i in 0..=order {
-            y_predict += self.d[i];
+            y_predict.add_scaled(T::one(), &self.d[i]);
         }
         y_predict
     }
 
     fn compute_psi(&self, order: usize) -> Y {
-        let mut psi = Y::zeros();
+        let mut psi = self.y.zeros_like();
         for i in 1..=order {
-            psi += self.d[i] * self.gamma[i];
+            psi.add_scaled(self.gamma[i], &self.d[i]);
         }
-        psi / self.alpha[order]
+        psi.scaled(T::one() / self.alpha[order])
     }
 
     fn compute_r(order: usize, factor: T) -> [[T; BDF_ROWS]; BDF_ROWS] {
@@ -115,11 +110,11 @@ impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
             }
         }
 
-        let old = self.d;
+        let old = self.d.clone();
         for i in 0..=order {
-            let mut transformed = Y::zeros();
+            let mut transformed = self.y.zeros_like();
             for j in 0..=order {
-                transformed += old[j] * ru[j][i];
+                transformed.add_scaled(ru[j][i], &old[j]);
             }
             self.d[i] = transformed;
         }
@@ -153,7 +148,7 @@ impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
     where
         F: ODE<T, Y>,
     {
-        let mut d = Y::zeros();
+        let mut d = self.y.zeros_like();
         let mut y = y_predict;
         let mut dy_norm_old: Option<T> = None;
 
@@ -161,7 +156,9 @@ impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
             ode.diff(t_new, &y, &mut self.dydt);
             evals.function += 1;
 
-            let mut dy = self.dydt * c - psi - d;
+            let mut dy = self.dydt.scaled(c);
+            dy.add_scaled(-T::one(), &psi);
+            dy.add_scaled(-T::one(), &d);
             lin_solve(&self.newton_matrix, &mut dy, &self.ip);
             let dy_norm = self.weighted_rms_norm(&dy, &scale);
 
@@ -176,8 +173,8 @@ impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
                 }
             }
 
-            y += dy;
-            d += dy;
+            y.add_scaled(T::one(), &dy);
+            d.add_scaled(T::one(), &dy);
 
             if dy_norm == T::zero()
                 || rate.is_some_and(|rate| rate / (T::one() - rate) * dy_norm < self.newton_tol)
@@ -230,9 +227,9 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
         }
 
         self.t = t0;
-        self.y = *y0;
+        self.y = y0.clone();
         self.t_prev = t0;
-        self.y_prev = *y0;
+        self.y_prev = y0.clone();
         self.h_prev = self.h;
         self.order = 1;
         self.n_equal_steps = 0;
@@ -243,9 +240,9 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
         evals.function += 1;
 
         let dim = y0.len();
-        self.d = [Y::zeros(); BDF_ROWS];
-        self.d[0] = *y0;
-        self.d[1] = self.dydt * self.h;
+        self.d = core::array::from_fn(|_| y0.zeros_like());
+        self.d[0] = y0.clone();
+        self.d[1] = self.dydt.scaled(self.h);
         self.jacobian = Matrix::zeros(dim, dim);
         self.newton_matrix = Matrix::zeros(dim, dim);
         self.ip = vec![0; dim];
@@ -266,7 +263,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
         if self.step_too_small() {
             let e = Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             };
             self.status = Status::Error(e.clone());
             return Err(e);
@@ -275,7 +272,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
         if self.steps >= self.max_steps {
             let e = Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             };
             self.status = Status::Error(e.clone());
             return Err(e);
@@ -283,8 +280,8 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
 
         let mut order = self.order;
         let mut step_accepted = false;
-        let mut accepted_y = self.y;
-        let mut accepted_d = Y::zeros();
+        let mut accepted_y = self.y.clone();
+        let mut accepted_d = self.y.zeros_like();
         let mut accepted_error_norm = T::zero();
         let mut accepted_safety = T::one();
 
@@ -292,7 +289,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
             if self.step_too_small() {
                 let e = Error::StepSize {
                     t: self.t,
-                    y: self.y,
+                    y: self.y.clone(),
                 };
                 self.status = Status::Error(e.clone());
                 return Err(e);
@@ -306,8 +303,8 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
 
             let mut converged = false;
             let mut n_iter = self.max_newton_iter;
-            let mut y_new = y_predict;
-            let mut d = Y::zeros();
+            let mut y_new = y_predict.clone();
+            let mut d = self.y.zeros_like();
             let mut jacobian_current = false;
 
             while !converged {
@@ -319,8 +316,15 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
                     self.lu_valid = true;
                 }
 
-                (converged, n_iter, y_new, d) =
-                    self.solve_bdf_system(ode, t_new, y_predict, c, psi, scale_predict, &mut evals);
+                (converged, n_iter, y_new, d) = self.solve_bdf_system(
+                    ode,
+                    t_new,
+                    y_predict.clone(),
+                    c,
+                    psi.clone(),
+                    scale_predict.clone(),
+                    &mut evals,
+                );
 
                 if !converged {
                     if jacobian_current {
@@ -341,7 +345,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
             let safety = Self::scalar(0.9) * Self::order_scalar(2 * self.max_newton_iter + 1)
                 / Self::order_scalar(2 * self.max_newton_iter + n_iter);
             let scale = self.scale_from(&y_new);
-            let error = d * self.error_const[order];
+            let error = d.scaled(self.error_const[order]);
             let error_norm = self.weighted_rms_norm(&error, &scale);
 
             if error_norm > T::one() {
@@ -359,28 +363,32 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
         }
 
         self.t_prev = self.t;
-        self.y_prev = self.y;
+        self.y_prev = self.y.clone();
         self.h_prev = self.h;
         self.t += self.h;
         self.y = accepted_y;
         self.steps += 1;
         self.n_equal_steps += 1;
 
-        self.d[order + 2] = accepted_d - self.d[order + 1];
-        self.d[order + 1] = accepted_d;
+        self.d[order + 2] = accepted_d.minus(&self.d[order + 1]);
+        self.d[order + 1] = accepted_d.clone();
         for i in (0..=order).rev() {
-            self.d[i] += self.d[i + 1];
+            let next = self.d[i + 1].clone();
+            self.d[i].add_scaled(T::one(), &next);
         }
 
         if self.n_equal_steps > order {
             let scale = self.scale_from(&self.y);
             let error_m_norm = if order > 1 {
-                self.weighted_rms_norm(&(self.d[order] * self.error_const[order - 1]), &scale)
+                self.weighted_rms_norm(&self.d[order].scaled(self.error_const[order - 1]), &scale)
             } else {
                 T::infinity()
             };
             let error_p_norm = if order < self.max_order {
-                self.weighted_rms_norm(&(self.d[order + 2] * self.error_const[order + 1]), &scale)
+                self.weighted_rms_norm(
+                    &self.d[order + 2].scaled(self.error_const[order + 1]),
+                    &scale,
+                )
             } else {
                 T::infinity()
             };
@@ -463,23 +471,23 @@ impl<T: Real, Y: State<T>> Interpolation<T, Y> for BDF<Ordinary, T, Y> {
         }
 
         if self.h_prev == T::zero() {
-            return Ok(self.y);
+            return Ok(self.y.clone());
         }
 
-        let mut y_interp = self.d[0];
+        let mut y_interp = self.d[0].clone();
         let mut product = T::one();
         for j in 1..=self.order {
             let shift = self.t - self.h_prev * Self::order_scalar(j - 1);
             let denom = self.h_prev * Self::order_scalar(j);
             product = product * (t_interp - shift) / denom;
-            y_interp += self.d[j] * product;
+            y_interp.add_scaled(product, &self.d[j]);
         }
 
         Ok(y_interp)
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nalgebra"))]
 mod tests {
     use super::*;
     use crate::prelude::*;

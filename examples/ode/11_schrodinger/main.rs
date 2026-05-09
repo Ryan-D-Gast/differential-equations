@@ -23,7 +23,6 @@
 //! - Phase evolution in quantum systems
 //! - Verifying numerical accuracy against analytical predictions
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use num_complex::Complex;
 

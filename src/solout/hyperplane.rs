@@ -4,7 +4,7 @@
 //! crosses a hyperplane in the state space.
 
 use super::*;
-use crate::linalg::dot;
+use crate::traits::State;
 
 /// Function type for extracting position components from state vector
 pub type ExtractorFn<Y, P> = fn(&Y) -> P;
@@ -28,15 +28,14 @@ pub type ExtractorFn<Y, P> = fn(&Y) -> P;
 ///
 /// # Example
 ///
-/// ```
+/// ```rust
 /// use differential_equations::prelude::*;
-/// use nalgebra::{Vector3, Vector6, vector};
 ///
 /// // CR3BP system (simplified representation)
 /// struct CR3BP { mu: f64 }
 ///
-/// impl ODE<f64, Vector6<f64>> for CR3BP {
-///     fn diff(&self, _t: f64, y: &Vector6<f64>, dydt: &mut Vector6<f64>) {
+/// impl ODE<f64, [f64; 6]> for CR3BP {
+///     fn diff(&self, _t: f64, y: &[f64; 6], dydt: &mut [f64; 6]) {
 ///     // Mass ratio
 ///     let mu = self.mu;
 ///
@@ -62,20 +61,20 @@ pub type ExtractorFn<Y, P> = fn(&Y) -> P;
 /// let system = CR3BP { mu: 0.012155 }; // Earth-Moon system
 /// let t0 = 0.0;
 /// let tf = 10.0;
-/// let y0 = vector![ // 9:2 L2 Southern NRHO orbit
+/// let y0 = [ // 9:2 L2 Southern NRHO orbit
 ///     1.021881345465263, 0.0, -0.182000000000000, // Position
 ///     0.0, -0.102950816739606, 0.0 // Velocity
 /// ];
 /// let solver = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
 ///
 /// // Function to extract position from state vector
-/// fn extract_position(state: &Vector6<f64>) -> Vector3<f64> {
-///     vector![state[3], state[4], state[5]]
+/// fn extract_position(state: &[f64; 6]) -> [f64; 3] {
+///     [state[3], state[4], state[5]]
 /// }
 ///
 /// // Detect z=0 plane crossings (equatorial plane)
-/// let plane_point = vector![1.0, 0.0, 0.0]; // Point on the plane
-/// let plane_normal = vector![0.0, 1.0, 1.0]; // Normal vector (z-axis)
+/// let plane_point = [1.0, 0.0, 0.0]; // Point on the plane
+/// let plane_normal = [0.0, 1.0, 1.0]; // Normal vector (z-axis)
 ///
 /// // Solve and get only the plane crossing points
 /// let solution = IVP::ode(&system, t0, tf, y0)
@@ -126,19 +125,9 @@ where
     ///
     pub fn new(point: Y1, mut normal: Y1, extractor: ExtractorFn<Y2, Y1>) -> Self {
         // Normalize the normal vector
-        let norm = |y: Y1| {
-            let mut norm = T::zero();
-            for i in 0..y.len() {
-                norm += {
-                    let val = y.get(i);
-                    val * val
-                };
-            }
-            norm.sqrt()
-        };
-        let norm = norm(normal);
+        let norm = normal.norm_squared().sqrt();
         if norm > T::default_epsilon() {
-            normal = normal * T::one() / norm;
+            normal.scale_by(T::one() / norm);
         }
 
         HyperplaneCrossingSolout {
@@ -201,11 +190,7 @@ where
     /// * Signed distance (positive if on same side as normal vector)
     ///
     fn signed_distance(&self, pos: &Y1) -> T {
-        // Calculate displacement vector from plane point to position
-        let displacement = *pos - self.point;
-
-        // Dot product with normal gives signed distance
-        dot(&displacement, &self.normal)
+        pos.minus(&self.point).dot(&self.normal)
     }
 }
 

@@ -20,16 +20,15 @@ use super::*;
 ///
 /// # Example
 ///
-/// ```
+/// ```rust
 /// use differential_equations::prelude::*;
 /// use differential_equations::solout::EvenSolout;
-/// use nalgebra::{Vector2, vector};
 ///
 /// // Simple harmonic oscillator
 /// struct HarmonicOscillator;
 ///
-/// impl ODE<f64, Vector2<f64>> for HarmonicOscillator {
-///     fn diff(&self, _t: f64, y: &Vector2<f64>, dydt: &mut Vector2<f64>) {
+/// impl ODE<f64, [f64; 2]> for HarmonicOscillator {
+///     fn diff(&self, _t: f64, y: &[f64; 2], dydt: &mut [f64; 2]) {
 ///         // y[0] = position, y[1] = velocity
 ///         dydt[0] = y[1];
 ///         dydt[1] = -y[0];
@@ -40,7 +39,7 @@ use super::*;
 /// let system = HarmonicOscillator;
 /// let t0 = 0.0;
 /// let tf = 10.0;
-/// let y0 = vector![1.0, 0.0];
+/// let y0 = [1.0, 0.0];
 /// let solver = ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8);
 ///
 /// // Generate output points with a fixed interval of 0.1
@@ -111,7 +110,7 @@ where
             None => {
                 // First time through, we need to include t0
                 if (t_prev - self.t0).abs() < T::default_epsilon() {
-                    solution.push(self.t0, *y_prev);
+                    solution.push(self.t0, y_prev.clone());
                     self.last_output_t = Some(self.t0);
                     self.t0 + self.dt * self.direction
                 } else {
@@ -172,15 +171,15 @@ where
                     if (t_last - self.tf).abs() <= tol {
                         // Replace the near-duplicate last point with the exact final time
                         let _ = solution.pop();
-                        solution.push(self.tf, *y_curr);
+                        solution.push(self.tf, y_curr.clone());
                         self.last_output_t = Some(self.tf);
                     } else if t_last != self.tf {
-                        solution.push(self.tf, *y_curr);
+                        solution.push(self.tf, y_curr.clone());
                         self.last_output_t = Some(self.tf);
                     }
                 }
                 None => {
-                    solution.push(self.tf, *y_curr);
+                    solution.push(self.tf, y_curr.clone());
                     self.last_output_t = Some(self.tf);
                 }
             }

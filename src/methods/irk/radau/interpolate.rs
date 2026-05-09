@@ -20,17 +20,14 @@ impl<E, T: Real, Y: State<T>> Interpolation<T, Y> for Radau5<E, T, Y> {
 
         // Collocation polynomial parameter s = (t - t_curr) / h_prev, so s in [-1, 0]
         let s = (t_interp - self.t) / self.h_prev;
-        let mut y = Y::zeros();
 
-        let dim = self.y_prev.len();
-        for i in 0..dim {
-            // CONT0 + S*(C1 + (S-C2M1)*(C2 + (S-C1M1)*C3))
-            let cont_val = self.cont[0].get(i)
-                + s * (self.cont[1].get(i)
-                    + (s - self.c2m1)
-                        * (self.cont[2].get(i) + (s - self.c1m1) * self.cont[3].get(i)));
-            y.set(i, cont_val);
-        }
+        // y = CONT0 + S*(C1 + (S-C2M1)*(C2 + (S-C1M1)*C3))
+        let term3 = self.cont[3].scaled(s - self.c1m1);
+        let term2 = self.cont[2]
+            .plus_scaled(T::one(), &term3)
+            .scaled(s - self.c2m1);
+        let term1 = self.cont[1].plus_scaled(T::one(), &term2).scaled(s);
+        let y = self.cont[0].plus_scaled(T::one(), &term1);
 
         Ok(y)
     }

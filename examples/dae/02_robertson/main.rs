@@ -22,9 +22,7 @@
 //! The system is highly stiff with widely separated time scales, making it
 //! an excellent test case for implicit DAE solvers.
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::{SVector, vector};
 use quill::prelude::*;
 
 /// Robertson Chemical Kinetics DAE Model
@@ -41,8 +39,8 @@ impl RobertsonModel {
 }
 
 // State vector: [y1, y2, y3] representing concentrations of species A, B, C
-impl DAE<f64, SVector<f64, 3>> for RobertsonModel {
-    fn diff(&self, _t: f64, y: &SVector<f64, 3>, f: &mut SVector<f64, 3>) {
+impl DAE<f64, [f64; 3]> for RobertsonModel {
+    fn diff(&self, _t: f64, y: &[f64; 3], f: &mut [f64; 3]) {
         let y1 = y[0]; // Concentration of A
         let y2 = y[1]; // Concentration of B
         let y3 = y[2]; // Concentration of C
@@ -60,7 +58,7 @@ impl DAE<f64, SVector<f64, 3>> for RobertsonModel {
         m[(2, 2)] = 0.0; // Conservation constraint (algebraic)
     }
 
-    fn jacobian(&self, _t: f64, y: &SVector<f64, 3>, j: &mut Matrix<f64>) {
+    fn jacobian(&self, _t: f64, y: &[f64; 3], j: &mut Matrix<f64>) {
         let y2 = y[1];
         let y3 = y[2];
 
@@ -90,7 +88,7 @@ fn main() {
     let model = RobertsonModel::new(k1, k2, k3);
 
     // Initial conditions: all A, no B or C
-    let y0 = vector![
+    let y0 = [
         1.0, // y1 = A concentration
         0.0, // y2 = B concentration
         0.0, // y3 = C concentration

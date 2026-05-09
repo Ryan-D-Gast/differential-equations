@@ -16,20 +16,18 @@
 //!
 //! This example demonstrates:
 //! - Solving a system of first-order ODEs (written as a vector ODE)
-//! - Using the nalgebra library for vector state representation
+//! - Using `Vec<f64>` for dynamically sized state representation
 //! - Compact solution approach with minimal code
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::{SVector, vector};
 use quill::prelude::*;
 
 struct HarmonicOscillator {
     k: f64,
 }
 
-impl ODE<f64, SVector<f64, 2>> for HarmonicOscillator {
-    fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
+impl ODE<f64, Vec<f64>> for HarmonicOscillator {
+    fn diff(&self, _t: f64, y: &Vec<f64>, dydt: &mut Vec<f64>) {
         dydt[0] = y[1];
         dydt[1] = -self.k * y[0];
     }
@@ -39,7 +37,7 @@ fn main() {
     // Note how unlike 01_exponential_growth/main.rs, no intermediate variables are used
     // and the IVP is setup and solved in one step.
     let solution: Solution<f64, _> =
-        match IVP::ode(&HarmonicOscillator { k: 1.0 }, 0.0, 10.0, vector![1.0, 0.0])
+        match IVP::ode(&HarmonicOscillator { k: 1.0 }, 0.0, 10.0, vec![1.0, 0.0])
             .method(ExplicitRungeKutta::rk4(0.01_f64))
             .solve()
         {

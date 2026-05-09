@@ -3,7 +3,7 @@
 //! Includes a stochastic differential equation and optional event function to interupt solver
 //! given a condition or event.
 
-use crate::traits::{Real, State};
+use crate::traits::{DefaultState, Real, State};
 
 /// SDE Trait for Stochastic Differential Equations
 ///
@@ -19,7 +19,7 @@ use crate::traits::{Real, State};
 /// * `event`     - Event function to interupt solver when condition is met or event occurs.
 ///
 /// Note that the event function is optional and can be left out when implementing.
-pub trait SDE<T = f64, Y = f64>
+pub trait SDE<T = f64, Y = DefaultState<T>>
 where
     T: Real,
     Y: State<T>,

@@ -14,9 +14,7 @@
 //! J = [[0, 1],
 //!      [(-2*y0*y1 - 1)/mu,  (1 - y0^2)/mu]]
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::Vector2;
 
 struct VanderPol {
     mu: f64,
@@ -28,13 +26,13 @@ impl VanderPol {
     }
 }
 
-impl ODE<f64, Vector2<f64>> for VanderPol {
-    fn diff(&self, _t: f64, y: &Vector2<f64>, dydt: &mut Vector2<f64>) {
+impl ODE<f64, [f64; 2]> for VanderPol {
+    fn diff(&self, _t: f64, y: &[f64; 2], dydt: &mut [f64; 2]) {
         dydt[0] = y[1];
         dydt[1] = ((1.0 - y[0] * y[0]) * y[1] - y[0]) / self.mu;
     }
 
-    fn jacobian(&self, _t: f64, y: &Vector2<f64>, j: &mut Matrix<f64>) {
+    fn jacobian(&self, _t: f64, y: &[f64; 2], j: &mut Matrix<f64>) {
         j[(0, 0)] = 0.0;
         j[(0, 1)] = 1.0;
         j[(1, 0)] = (-2.0 * y[0] * y[1] - 1.0) / self.mu;
@@ -44,7 +42,7 @@ impl ODE<f64, Vector2<f64>> for VanderPol {
 
 fn main() {
     // --- Problem Configuration ---
-    let y0 = Vector2::new(2.0, -0.66);
+    let y0 = [2.0, -0.66];
     let t0 = 0.0;
     let tf = 2.0;
     let mu = 1.0e-6; // small parameter -> stiff

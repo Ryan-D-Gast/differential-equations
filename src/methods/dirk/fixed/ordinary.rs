@@ -35,19 +35,26 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // State
         self.t = t0;
-        self.y = *y0;
+        self.y = y0.clone();
+        self.dydt = y0.zeros_like();
+        self.y_prev = y0.clone();
+        self.dydt_prev = y0.zeros_like();
+        self.k = core::array::from_fn(|_| y0.zeros_like());
+        self.z = y0.clone();
+        self.rhs_newton = y0.zeros_like();
+        self.delta_z = y0.zeros_like();
         ode.diff(self.t, &self.y, &mut self.dydt);
         evals.function += 1;
 
         // Previous state
         self.t_prev = self.t;
-        self.y_prev = self.y;
-        self.dydt_prev = self.dydt;
+        self.y_prev = self.y.clone();
+        self.dydt_prev = self.dydt.clone();
 
         // Newton workspace
         let dim = y0.len();
         self.jacobian = Matrix::zeros(dim, dim);
-        self.z = *y0;
+        self.z = y0.clone();
         self.jacobian_age = 0;
 
         // Status
@@ -66,11 +73,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
         self.steps += 1;
@@ -80,13 +87,13 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // DIRK stage loop (sequential)
         for stage in 0..self.stages {
             // rhs = y_n + h Σ_{j<stage} a[stage][j] k[j]
-            let mut rhs = self.y;
+            let mut rhs = self.y.clone();
             for j in 0..stage {
-                rhs += self.k[j] * (self.a[stage][j] * self.h);
+                rhs.add_scaled(self.a[stage][j] * self.h, &self.k[j]);
             }
 
             // Initial stage guess
-            self.z = self.y;
+            self.z = self.y.clone();
 
             // Newton: solve z - rhs - h*a_ii f(t_i, z) = 0
             let mut newton_converged = false;
@@ -100,19 +107,19 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
                 // Evaluate f at stage guess
                 let t_stage = self.t + self.c[stage] * self.h;
-                let mut f_stage = Y::zeros();
+                let mut f_stage = self.y.zeros_like();
                 ode.diff(t_stage, &self.z, &mut f_stage);
                 evals.function += 1;
 
                 // Residual F(z)
-                let residual = self.z - rhs - f_stage * (self.a[stage][stage] * self.h);
+                let residual = self.z.plus_linear_combination(&[
+                    (&rhs, -T::one()),
+                    (&f_stage, -(self.a[stage][stage] * self.h)),
+                ]);
 
                 // Max-norm and RHS
-                let mut residual_norm = T::zero();
-                self.rhs_newton = -residual;
-                for i in 0..dim {
-                    residual_norm = residual_norm.max(residual.get(i).abs());
-                }
+                self.rhs_newton = residual.scaled(-T::one());
+                let residual_norm = residual.max_norm();
 
                 // Converged by residual
                 if residual_norm < self.newton_tol {
@@ -140,27 +147,23 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 self.jacobian_age += 1;
 
                 // Solve (I - h*a_ii J) Δz = -F(z) using in-place LU
-                self.delta_z = self.jacobian.lin_solve(self.rhs_newton).unwrap();
-                self.lu_decompositions += 1;
+                self.delta_z = self.jacobian.lin_solve(self.rhs_newton.clone()).unwrap();
+                evals.solves += 1;
 
                 // Update z and increment norm
-                increment_norm = T::zero();
-                self.z += self.delta_z;
-                for row_idx in 0..dim {
-                    // Calculate infinity norm of increment
-                    increment_norm = increment_norm.max(self.delta_z.get(row_idx).abs());
-                }
+                self.z.add_scaled(T::one(), &self.delta_z);
+                increment_norm = self.delta_z.max_norm();
             }
 
             // Newton failed for this stage
             if !newton_converged {
                 self.status = Status::Error(Error::Stiffness {
                     t: self.t,
-                    y: self.y,
+                    y: self.y.clone(),
                 });
                 return Err(Error::Stiffness {
                     t: self.t,
-                    y: self.y,
+                    y: self.y.clone(),
                 });
             }
 
@@ -171,9 +174,9 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         }
 
         // y_{n+1} = y_n + h Σ b_i k_i
-        let mut y_new = self.y;
+        let mut y_new = self.y.clone();
         for i in 0..self.stages {
-            y_new += self.k[i] * (self.b[i] * self.h);
+            y_new.add_scaled(self.b[i] * self.h, &self.k[i]);
         }
 
         // Fixed step: always accept
@@ -181,8 +184,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // Advance state
         self.t_prev = self.t;
-        self.y_prev = self.y;
-        self.dydt_prev = self.dydt;
+        self.y_prev = self.y.clone();
+        self.dydt_prev = self.dydt.clone();
         self.h_prev = self.h;
 
         self.t += self.h;

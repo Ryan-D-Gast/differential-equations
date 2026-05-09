@@ -14,7 +14,6 @@
 //! - clamp, quantize, or otherwise normalize step sizes for reproducibility
 //!   or custom time-stepping rules
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use differential_equations::{ode::ODE, traits::Real};
 use nalgebra::{Dim, Matrix3, Matrix6, SVector, Vector6, stack};
@@ -88,6 +87,7 @@ fn main() {
     });
 
     // Augment the state with the initial STM.
+    #[allow(clippy::toplevel_ref_arg)]
     let y0_aug = stack![y0; SVector::<f64, 36>::from_iterator(stm0.iter().copied())];
 
     // Solve the system with dual numbers.
@@ -127,7 +127,7 @@ fn main() {
     let check = sol_flt
         .t
         .iter()
-        .flat_map(|t| get_derivative::<6>(t))
+        .flat_map(get_derivative::<6>)
         .map(|e| e.abs())
         .sum::<f64>();
     assert_eq!(check, 0.0);
@@ -135,7 +135,7 @@ fn main() {
     // Extract the state and STM at the penultimate step.
     let t1 = sol.t.last_chunk::<2>().unwrap()[0];
     let y1_dual = sol.y.last_chunk::<2>().unwrap()[0];
-    let y1_eps: Vec<[f64; 6]> = y1_dual.iter().map(|d| get_derivative::<6>(d)).collect();
+    let y1_eps: Vec<[f64; 6]> = y1_dual.iter().map(get_derivative::<6>).collect();
 
     let y1 = Vector6::<f64>::from_fn(|i, _| y1_dual[i].re());
     let stm1 = Matrix6::<f64>::from_fn(|r, c| y1_eps[r][c]);
@@ -143,7 +143,7 @@ fn main() {
     let t1_flt = sol_flt.t.last_chunk::<2>().unwrap()[0];
     assert_eq!(t1_flt.re(), t1.re());
     let y1_dual_flt = sol_flt.y.last_chunk::<2>().unwrap()[0];
-    let y1_eps_flt: Vec<[f64; 6]> = y1_dual_flt.iter().map(|d| get_derivative::<6>(d)).collect();
+    let y1_eps_flt: Vec<[f64; 6]> = y1_dual_flt.iter().map(get_derivative::<6>).collect();
 
     let y1_flt = Vector6::<f64>::from_fn(|i, _| y1_dual_flt[i].re());
     for (x, y) in zip(y1.as_slice(), y1_flt.as_slice()) {

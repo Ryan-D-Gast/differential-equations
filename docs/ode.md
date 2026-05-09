@@ -32,7 +32,6 @@ For event detection with precise zero-crossing detection, implement the separate
 // Includes required elements and common methods.
 // Less common methods are in the `methods` module
 use differential_equations::prelude::*; 
-use nalgebra::{SVector, vector};
 
 struct LogisticGrowth {
     k: f64,
@@ -40,8 +39,8 @@ struct LogisticGrowth {
 }
 
 impl ODE for LogisticGrowth {
-    fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
-        *dydt = self.k * y * (1.0 - y / self.m);
+    fn diff(&self, _t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
+        dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
     }
 }
 
@@ -51,15 +50,18 @@ impl Event for LogisticGrowth {
         EventConfig::new(CrossingDirection::Positive, Some(1)) // Terminate after first event
     }
 
-    fn event(&self, _t: f64, y: &f64) -> f64 {
+    fn event(&self, _t: f64, y: &[f64; 1]) -> f64 {
         // Event function g(t,y) = y - 0.9*m
         // Zero crossing occurs when y = 0.9*m
-        y - 0.9 * self.m
+        y[0] - 0.9 * self.m
     }
 }
 ```
 
-Note that for clarity, the `ODE` is defined with generics `<T, Y>` where `T` is the float type (e.g. `f64` or `f32`) and `Y` is the state vector of the system of ordinary differential equations. By default the generics are `f64, f64` and thus can be omitted if the system is a single ODE with a `f64` type and a single state variable `f64`. Here a `SVector` is used despite `f64` being usable here for clarity. For example a system with multiple ODEs of size N then `SVector<f64, N>` can be used.
+Note that the `ODE` is defined with generics `<T, Y>` where `T` is the float type
+(e.g. `f64` or `f32`) and `Y` is the state vector. Scalar `f64` and `f32` values
+are not state types; use `SVector<f64, 1>` or `Vector1<f64>` for a single state
+variable. A system with N variables can use `SVector<f64, N>`.
 
 ## Solving an Initial Value Problem
 
@@ -68,7 +70,7 @@ The `IVP::ode` builder is used to solve the system using the solver. The builder
 ```rust
 fn main() {
     let method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
-    let y0 = 1.0;
+    let y0 = SVector::<f64, 1>::new(1.0);
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };

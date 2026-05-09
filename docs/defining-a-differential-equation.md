@@ -215,9 +215,10 @@ impl ODE<f64, SIRState<f64>, PopulationMonitor> for SIRModel {
 }
 ```
 
-## Using Vector State Types
+## Using Built-In State Types
 
-If you prefer using vectors instead of custom state types, you can do so:
+The solvers accept several state representations. Fixed-size arrays are the default
+single-state choice:
 
 ```rust
 struct SimpleModel {
@@ -225,12 +226,31 @@ struct SimpleModel {
 }
 
 impl ODE for SimpleModel {
-    fn diff(&self, t: f64, y: &f64, dydt: &mut f64) {
-        *dydt = t * (*y) + self.parameter;
+    fn diff(&self, t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
+        dydt[0] = t * y[0] + self.parameter;
     }
 }
+```
 
-// Or with vectors
+Use `Vec<T>` when the state length is dynamic:
+
+```rust
+struct VectorModel {
+    parameter: f64,
+}
+
+impl ODE<f64, Vec<f64>> for VectorModel {
+    fn diff(&self, t: f64, y: &Vec<f64>, dydt: &mut Vec<f64>) {
+        dydt[0] = y[1];
+        dydt[1] = y[2];
+        dydt[2] = -y[0] - y[1] + self.parameter * t;
+    }
+}
+```
+
+Feature-backed state types are available when their features are enabled:
+
+```rust
 use nalgebra::Vector3;
 
 struct VectorModel {
@@ -245,3 +265,7 @@ impl ODE<f64, Vector3<f64>> for VectorModel {
     }
 }
 ```
+
+The `num-complex` feature enables `num_complex::Complex<T>`, the `ndarray`
+feature enables `ndarray::Array<T, D>`, and the `faer` feature enables
+`faer::Mat<T>`.

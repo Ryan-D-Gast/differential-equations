@@ -129,7 +129,7 @@ let system = MyODE;
 let solver = ExplicitRungeKutta::dopri5().rtol(1e-6).atol(1e-9);
 
 // Solve the problem
-let solution = IVP::ode(&system, 0.0, 10.0, 1.0)
+let solution = IVP::ode(&system, 0.0, 10.0, [1.0])
     .method(solver)
     .solve()
     .unwrap();

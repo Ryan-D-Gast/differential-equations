@@ -21,9 +21,7 @@
 //! - Event detection during solution output
 //! - Energy conservation monitoring with high-accuracy solvers
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::{SVector, vector};
 use std::f64::consts::PI;
 
 struct Pendulum {
@@ -31,8 +29,8 @@ struct Pendulum {
     l: f64,
 }
 
-impl ODE<f64, SVector<f64, 2>> for Pendulum {
-    fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
+impl ODE<f64, [f64; 2]> for Pendulum {
+    fn diff(&self, _t: f64, y: &[f64; 2], dydt: &mut [f64; 2]) {
         dydt[0] = y[1];
         dydt[1] = -self.g / self.l * y[0].sin();
     }
@@ -76,7 +74,7 @@ impl PendulumSolout {
     }
 
     // Calculate the total energy of the pendulum
-    fn calculate_energy(&self, y: &SVector<f64, 2>) -> f64 {
+    fn calculate_energy(&self, y: &[f64; 2]) -> f64 {
         let theta = y[0];
         let omega = y[1];
 
@@ -90,18 +88,18 @@ impl PendulumSolout {
     }
 }
 
-impl Solout<f64, SVector<f64, 2>> for PendulumSolout {
+impl Solout<f64, [f64; 2]> for PendulumSolout {
     fn solout<I>(
         &mut self,
         t_curr: f64,
         _t_prev: f64,
-        y_curr: &SVector<f64, 2>,
-        _y_prev: &SVector<f64, 2>,
+        y_curr: &[f64; 2],
+        _y_prev: &[f64; 2],
         _interpolator: &mut I,
-        solution: &mut Solution<f64, SVector<f64, 2>>,
-    ) -> ControlFlag<f64, SVector<f64, 2>>
+        solution: &mut Solution<f64, [f64; 2]>,
+    ) -> ControlFlag<f64, [f64; 2]>
     where
-        I: Interpolation<f64, SVector<f64, 2>>,
+        I: Interpolation<f64, [f64; 2]>,
     {
         let current_angle = y_curr[0];
         let dt = t_curr - self.last_output_time;
@@ -156,7 +154,7 @@ fn main() {
     let l = 1.0;
     let pendulum = Pendulum { g, l };
     let theta0 = 30.0 * PI / 180.0; // convert to radians
-    let y0 = vector![theta0, 0.0];
+    let y0 = [theta0, 0.0];
     let t0 = 0.0;
     let tf = 10.0;
     let energy = PendulumSolout::new(g, l, 0.1);

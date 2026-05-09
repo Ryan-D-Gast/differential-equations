@@ -49,6 +49,15 @@ A high-performance library for solving differential equations in Rust, including
 - **[Stochastic Differential Equations (SDEs)](./docs/sde.md)** - Fixed step explicit Runge-Kutta methods for stochastic differential equations.
     - **Customizable Noise** - User implements noise in SDE implementation
 
+## Feature Flags
+
+- `nalgebra`: Enables nalgebra matrix and vector states, including fixed-size and dynamic matrices.
+- `num-complex`: Enables complex number states.
+- `ndarray`: Enables ndarray array states.
+- `faer`: Enables faer matrix states.
+- `polars`: Enables converting solutions to Polars data frames.
+- `serde`: Enables solution serialization and deserialization.
+
 ## Contributing
 
 This library is looking for contributions to bring the future of scientific computing to Rust!

@@ -46,7 +46,7 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
         evals.function += 1;
 
         // Update previous saved derivative
-        self.dydt_prev = self.dydt;
+        self.dydt_prev = self.dydt.clone();
 
         Ok(evals)
     }
@@ -124,11 +124,11 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
 
@@ -136,23 +136,23 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
         if self.h.abs() < self.h_prev.abs() * self.uround {
             self.status = Status::Error(Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
 
         // Index-2 scaling: scal[i] /= hhfac for index-2 variables
         for &i in &self.index2 {
-            let val = self.scal.get(i) / self.hhfac;
-            self.scal.set(i, val);
+            let val = self.scal.get_component(i);
+            self.scal.set_component(i, val / self.hhfac);
         }
         // Index-3 scaling: scal[i] /= (hhfac * hhfac) for index-3 variables
         for &i in &self.index3 {
-            let val = self.scal.get(i) / (self.hhfac * self.hhfac);
-            self.scal.set(i, val);
+            let val = self.scal.get_component(i);
+            self.scal.set_component(i, val / (self.hhfac * self.hhfac));
         }
 
         // Starting values for Newton iteration
@@ -166,23 +166,41 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
             let c1q = self.c1 * c3q;
             let c2q = self.c2 * c3q;
 
-            let ak1 = self.cont[1];
-            let ak2 = self.cont[2];
-            let ak3 = self.cont[3];
+            let ak1 = self.cont[1].clone();
+            let ak2 = self.cont[2].clone();
+            let ak3 = self.cont[3].clone();
 
-            self.z[0] = (ak1 + (ak2 + ak3 * (c1q - self.c1m1)) * (c1q - self.c2m1)) * c1q;
-            self.z[1] = (ak1 + (ak2 + ak3 * (c2q - self.c1m1)) * (c2q - self.c2m1)) * c2q;
-            self.z[2] = (ak1 + (ak2 + ak3 * (c3q - self.c1m1)) * (c3q - self.c2m1)) * c3q;
+            self.z[0] = ak1.linear_combination(&[
+                (&ak1, c1q),
+                (&ak2, (c1q - self.c2m1) * c1q),
+                (&ak3, (c1q - self.c1m1) * (c1q - self.c2m1) * c1q),
+            ]);
+            self.z[1] = ak1.linear_combination(&[
+                (&ak1, c2q),
+                (&ak2, (c2q - self.c2m1) * c2q),
+                (&ak3, (c2q - self.c1m1) * (c2q - self.c2m1) * c2q),
+            ]);
+            self.z[2] = ak1.linear_combination(&[
+                (&ak1, c3q),
+                (&ak2, (c3q - self.c2m1) * c3q),
+                (&ak3, (c3q - self.c1m1) * (c3q - self.c2m1) * c3q),
+            ]);
 
-            self.f[0] = self.z[0] * self.tinv[(0, 0)]
-                + self.z[1] * self.tinv[(0, 1)]
-                + self.z[2] * self.tinv[(0, 2)];
-            self.f[1] = self.z[0] * self.tinv[(1, 0)]
-                + self.z[1] * self.tinv[(1, 1)]
-                + self.z[2] * self.tinv[(1, 2)];
-            self.f[2] = self.z[0] * self.tinv[(2, 0)]
-                + self.z[1] * self.tinv[(2, 1)]
-                + self.z[2] * self.tinv[(2, 2)];
+            self.f[0] = self.z[0].linear_combination(&[
+                (&self.z[0], self.tinv[(0, 0)]),
+                (&self.z[1], self.tinv[(0, 1)]),
+                (&self.z[2], self.tinv[(0, 2)]),
+            ]);
+            self.f[1] = self.z[0].linear_combination(&[
+                (&self.z[0], self.tinv[(1, 0)]),
+                (&self.z[1], self.tinv[(1, 1)]),
+                (&self.z[2], self.tinv[(1, 2)]),
+            ]);
+            self.f[2] = self.z[0].linear_combination(&[
+                (&self.z[0], self.tinv[(2, 0)]),
+                (&self.z[1], self.tinv[(2, 1)]),
+                (&self.z[2], self.tinv[(2, 2)]),
+            ]);
         }
 
         // Loop for simplified newton iteration
@@ -201,9 +219,9 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
             let t1 = self.t + self.c1 * self.h;
             let t2 = self.t + self.c2 * self.h;
             let t3 = self.t + self.h;
-            let y1 = self.y + self.z[0];
-            let y2 = self.y + self.z[1];
-            let y3 = self.y + self.z[2];
+            let y1 = self.y.plus_linear_combination(&[(&self.z[0], T::one())]);
+            let y2 = self.y.plus_linear_combination(&[(&self.z[1], T::one())]);
+            let y3 = self.y.plus_linear_combination(&[(&self.z[2], T::one())]);
 
             dae.diff(t1, &y1, &mut self.k[0]);
             dae.diff(t2, &y2, &mut self.k[1]);
@@ -211,35 +229,40 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
             evals.function += 3;
 
             // Solve the linear systems
-            self.z[0] = self.k[0] * self.tinv[(0, 0)]
-                + self.k[1] * self.tinv[(0, 1)]
-                + self.k[2] * self.tinv[(0, 2)];
-            self.z[1] = self.k[0] * self.tinv[(1, 0)]
-                + self.k[1] * self.tinv[(1, 1)]
-                + self.k[2] * self.tinv[(1, 2)];
-            self.z[2] = self.k[0] * self.tinv[(2, 0)]
-                + self.k[1] * self.tinv[(2, 1)]
-                + self.k[2] * self.tinv[(2, 2)];
+            self.z[0] = self.k[0].linear_combination(&[
+                (&self.k[0], self.tinv[(0, 0)]),
+                (&self.k[1], self.tinv[(0, 1)]),
+                (&self.k[2], self.tinv[(0, 2)]),
+            ]);
+            self.z[1] = self.k[0].linear_combination(&[
+                (&self.k[0], self.tinv[(1, 0)]),
+                (&self.k[1], self.tinv[(1, 1)]),
+                (&self.k[2], self.tinv[(1, 2)]),
+            ]);
+            self.z[2] = self.k[0].linear_combination(&[
+                (&self.k[0], self.tinv[(2, 0)]),
+                (&self.k[1], self.tinv[(2, 1)]),
+                (&self.k[2], self.tinv[(2, 2)]),
+            ]);
 
             let fac1 = self.u1 / self.h;
             let alphn = self.alph / self.h;
             let betan = self.beta / self.h;
 
             // Assemble RHS and solve for (Z1, Z2, Z3)
+            let mf0 = self.mass.mul_state::<Y>(&self.f[0]);
+            let mf1 = self.mass.mul_state::<Y>(&self.f[1]);
+            let mf2 = self.mass.mul_state::<Y>(&self.f[2]);
+
             for i in 0..n {
                 // S1 = -(M row i)·F1; S2 = -(M row i)·F2; S3 = -(M row i)·F3
-                let mut s1 = T::zero();
-                let mut s2 = T::zero();
-                let mut s3 = T::zero();
-                for j in 0..n {
-                    let mij = self.mass[(i, j)];
-                    s1 -= mij * self.f[0].get(j);
-                    s2 -= mij * self.f[1].get(j);
-                    s3 -= mij * self.f[2].get(j);
-                }
-                self.z[0].set(i, self.z[0].get(i) + s1 * fac1);
-                self.z[1].set(i, self.z[1].get(i) + s2 * alphn - s3 * betan);
-                self.z[2].set(i, self.z[2].get(i) + s3 * alphn + s2 * betan);
+                let s1 = -mf0.get_component(i);
+                let s2 = -mf1.get_component(i);
+                let s3 = -mf2.get_component(i);
+
+                self.z[0].set_component(i, self.z[0].get_component(i) + s1 * fac1);
+                self.z[1].set_component(i, self.z[1].get_component(i) + s2 * alphn - s3 * betan);
+                self.z[2].set_component(i, self.z[2].get_component(i) + s3 * alphn + s2 * betan);
             }
 
             // Solve E1 * Z1 = RHS1 (real system)
@@ -258,10 +281,10 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
             // Convergence control
             let mut dyno = T::zero();
             for i in 0..n {
-                let sc = self.scal.get(i);
-                let v1 = self.z[0].get(i) / sc;
-                let v2 = self.z[1].get(i) / sc;
-                let v3 = self.z[2].get(i) / sc;
+                let sc = self.scal.get_component(i);
+                let v1 = self.z[0].get_component(i) / sc;
+                let v2 = self.z[1].get_component(i) / sc;
+                let v3 = self.z[2].get_component(i) / sc;
                 dyno = dyno + v1 * v1 + v2 * v2 + v3 * v3;
             }
             dyno = (dyno / T::from_f64((3 * n) as f64).unwrap()).sqrt();
@@ -301,17 +324,22 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
             self.dynold = dyno.max(self.uround);
 
             // Compute new F and Z
-            self.f[0] += self.z[0];
-            self.f[1] += self.z[1];
-            self.f[2] += self.z[2];
+            self.f[0].add_scaled(T::one(), &self.z[0]);
+            self.f[1].add_scaled(T::one(), &self.z[1]);
+            self.f[2].add_scaled(T::one(), &self.z[2]);
 
-            self.z[0] = self.f[0] * self.tmat[(0, 0)]
-                + self.f[1] * self.tmat[(0, 1)]
-                + self.f[2] * self.tmat[(0, 2)];
-            self.z[1] = self.f[0] * self.tmat[(1, 0)]
-                + self.f[1] * self.tmat[(1, 1)]
-                + self.f[2] * self.tmat[(1, 2)];
-            self.z[2] = self.f[0] * self.tmat[(2, 0)] + self.f[1];
+            self.z[0] = self.f[0].linear_combination(&[
+                (&self.f[0], self.tmat[(0, 0)]),
+                (&self.f[1], self.tmat[(0, 1)]),
+                (&self.f[2], self.tmat[(0, 2)]),
+            ]);
+            self.z[1] = self.f[0].linear_combination(&[
+                (&self.f[0], self.tmat[(1, 0)]),
+                (&self.f[1], self.tmat[(1, 1)]),
+                (&self.f[2], self.tmat[(1, 2)]),
+            ]);
+            self.z[2] = self.f[0]
+                .linear_combination(&[(&self.f[0], self.tmat[(2, 0)]), (&self.f[1], T::one())]);
 
             // Check Newton tolerance
             if self.faccon * dyno > self.newton_tol {
@@ -325,48 +353,34 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
         let hee1 = self.dd1 / self.h;
         let hee2 = self.dd2 / self.h;
         let hee3 = self.dd3 / self.h;
-        let mut f1 = self.z[0] * hee1 + self.z[1] * hee2 + self.z[2] * hee3;
-        let mut f2 = Y::zeros();
-        let mut cont = Y::zeros();
-        for i in 0..n {
-            let mut sum = T::zero();
-            for j in 0..n {
-                sum += self.mass[(i, j)] * f1.get(j);
-            }
-            f2.set(i, sum);
-            cont.set(i, sum + self.dydt.get(i));
-        }
+        let mut f1 = self.z[0].linear_combination(&[
+            (&self.z[0], hee1),
+            (&self.z[1], hee2),
+            (&self.z[2], hee3),
+        ]);
+        let f2 = self.mass.mul_state::<Y>(&f1);
+        let mut cont = f2.plus_scaled(T::one(), &self.dydt);
         lin_solve(&self.e1, &mut cont, &self.ip1);
         evals.solves += 1;
 
         // Error estimate
-        let mut err = T::zero();
-        for i in 0..n {
-            let r = cont.get(i) / self.scal.get(i);
-            err += r * r;
-        }
-        let mut err = (err / T::from_usize(n).unwrap())
+        let mut err = (cont.component_div(&self.scal).norm_squared() / T::from_usize(n).unwrap())
             .sqrt()
             .max(T::from_f64(1e-10).unwrap());
 
         // Optional refinement: on first or rejected step and large error
         if err >= T::one() && (self.first || self.reject) {
-            cont = self.y + cont;
+            cont = self.y.plus_linear_combination(&[(&cont, T::one())]);
             dae.diff(self.t, &cont, &mut f1);
             evals.function += 1;
 
             // cont = f1 + F2; solve again
-            cont = f1 + f2;
+            cont = f1.plus_linear_combination(&[(&f2, T::one())]);
             lin_solve(&self.e1, &mut cont, &self.ip1);
             evals.solves += 1;
 
             // Recompute error
-            err = T::zero();
-            for i in 0..n {
-                let r = cont.get(i) / self.scal.get(i);
-                err += r * r;
-            }
-            err = (err / T::from_usize(n).unwrap())
+            err = (cont.component_div(&self.scal).norm_squared() / T::from_usize(n).unwrap())
                 .sqrt()
                 .max(T::from_f64(1e-10).unwrap());
         }
@@ -404,12 +418,12 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
 
             // Store previous values for interpolation
             self.t_prev = self.t;
-            self.y_prev = self.y;
-            self.dydt_prev = self.dydt;
+            self.y_prev = self.y.clone();
+            self.dydt_prev = self.dydt.clone();
             self.h_prev = self.h;
 
             // y_{n+1} = y_n + z₃; t_{n+1} = t_n + h
-            self.y += self.z[2];
+            self.y.add_scaled(T::one(), &self.z[2]);
             self.t += self.h;
 
             // New derivative at (y_{n+1}, t_{n+1})
@@ -417,18 +431,19 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
             evals.function += 1;
 
             // Dense output coefficients
-            self.cont[0] = self.y;
-            self.cont[1] = (self.z[1] - self.z[2]) / self.c2m1;
-            let ak = (self.z[0] - self.z[1]) / self.c1mc2;
-            let acont3 = (ak - (self.z[0] / self.c1)) / self.c2;
-            self.cont[2] = (ak - self.cont[1]) / self.c1m1;
-            self.cont[3] = self.cont[2] - acont3;
+            self.cont[0] = self.y.clone();
+            self.cont[1] = self.z[1].minus(&self.z[2]).scaled(T::one() / self.c2m1);
+            let ak = self.z[0].minus(&self.z[1]).scaled(T::one() / self.c1mc2);
+            let acont3 = ak
+                .minus(&self.z[0].scaled(T::one() / self.c1))
+                .scaled(T::one() / self.c2);
+            self.cont[2] = ak.minus(&self.cont[1]).scaled(T::one() / self.c1m1);
+            self.cont[3] = self.cont[2].minus(&acont3);
 
             // Compute error scale
-            for i in 0..n {
-                self.scal
-                    .set(i, self.atol[i] + self.rtol[i] * self.y.get(i).abs());
-            }
+            self.scal.map_components_mut(|i, s| {
+                *s = self.atol[i] + self.rtol[i] * self.y.get_component(i).abs();
+            });
 
             // Constrain new step size to [h_min, h_max]
             hnew = constrain_step_size(hnew, self.h_min, self.h_max);

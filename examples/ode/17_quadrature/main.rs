@@ -35,9 +35,7 @@
 //!   not force additional step rejections while still riding along at full accuracy
 //! - Verifying quadrature accuracy against a conservation-of-energy check
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::{SVector, vector};
 use quill::prelude::*;
 
 struct DampedOscillator {
@@ -46,8 +44,8 @@ struct DampedOscillator {
     c: f64,
 }
 
-impl ODE<f64, SVector<f64, 3>> for DampedOscillator {
-    fn diff(&self, _t: f64, y: &SVector<f64, 3>, dydt: &mut SVector<f64, 3>) {
+impl ODE<f64, [f64; 3]> for DampedOscillator {
+    fn diff(&self, _t: f64, y: &[f64; 3], dydt: &mut [f64; 3]) {
         let x = y[0];
         let v = y[1];
         dydt[0] = v;
@@ -64,7 +62,7 @@ fn main() {
 
     let t0 = 0.0;
     let tf = 20.0;
-    let y0: SVector<f64, 3> = vector![1.0, 0.0, 0.0];
+    let y0: [f64; 3] = [1.0, 0.0, 0.0];
 
     let e0 = 0.5 * k * y0[0] * y0[0] + 0.5 * m * y0[1] * y0[1];
 

@@ -36,9 +36,14 @@ impl<
         // Initialize solver state
         self.t0 = t0;
         self.t = t0;
-        self.y = *y0;
+        self.y = y0.clone();
+        self.dydt = y0.zeros_like();
+        self.y_prev = y0.clone();
+        self.dydt_prev = y0.zeros_like();
+        self.k = core::array::from_fn(|_| y0.zeros_like());
+        self.cont = core::array::from_fn(|_| y0.zeros_like());
         self.t_prev = self.t;
-        self.y_prev = self.y;
+        self.y_prev = self.y.clone();
         self.status = Status::Initialized;
         self.steps = 0;
         self.stiffness_counter = 0;
@@ -47,7 +52,7 @@ impl<
 
         // Delay buffers
         let mut delays = [T::zero(); L];
-        let mut y_delayed = [Y::zeros(); L];
+        let mut y_delayed = core::array::from_fn(|_| y0.zeros_like());
 
         // Evaluate initial delays and history
         dde.lags(self.t, &self.y, &mut delays);
@@ -64,12 +69,13 @@ impl<
 
         // Initial derivative
         dde.diff(self.t, &self.y, &y_delayed, &mut self.k[0]);
-        self.dydt = self.k[0];
+        self.dydt = self.k[0].clone();
         evals.function += 1;
-        self.dydt_prev = self.dydt;
+        self.dydt_prev = self.dydt.clone();
 
         // Seed history
-        self.history.push_back((self.t, self.y, self.dydt));
+        self.history
+            .push_back((self.t, self.y.clone(), self.dydt.clone()));
 
         // Initial step size
         if self.h0 == T::zero() {
@@ -97,11 +103,11 @@ impl<
         if self.h.abs() < self.h_prev.abs() * T::from_f64(1e-14).unwrap() {
             self.status = Status::Error(Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
 
@@ -109,23 +115,23 @@ impl<
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
         self.steps += 1;
 
         // Step buffers
         let mut delays = [T::zero(); L];
-        let mut y_delayed = [Y::zeros(); L];
+        let mut y_delayed = core::array::from_fn(|_| self.y.zeros_like());
 
         // Decide if delay iteration is needed
         let mut min_delay_abs = T::infinity();
         // Predict y(t+h) to estimate delays at t+h
-        let y_pred_for_lags = self.y + self.k[0] * self.h;
+        let y_pred_for_lags = self.y.plus_scaled(self.h, &self.k[0]);
         dde.lags(self.t + self.h, &y_pred_for_lags, &mut delays);
         for i in 0..L {
             min_delay_abs = min_delay_abs.min(delays[i].abs());
@@ -137,26 +143,25 @@ impl<
         } else {
             1
         };
-        let mut y_next_est = self.y;
-        let mut y_next_est_prev = self.y;
+        let mut y_next_est = self.y.clone();
+        let mut y_next_est_prev = self.y.clone();
         let mut dde_iter_failed = false;
         let mut err_norm: T = T::zero();
-        let mut y_last_stage = Y::zeros();
+        let mut y_last_stage = self.y.zeros_like();
 
         // DDE iteration loop
         for it in 0..max_iter {
             if it > 0 {
-                y_next_est_prev = y_next_est;
+                y_next_est_prev = y_next_est.clone();
             }
 
             // Compute stages
-            let mut y_stage = Y::zeros();
+            let mut y_stage = self.y.zeros_like();
             for i in 1..self.stages {
-                y_stage = Y::zeros();
+                y_stage = self.y.clone();
                 for j in 0..i {
-                    y_stage += self.k[j] * self.a[i][j];
+                    y_stage.add_scaled(self.a[i][j] * self.h, &self.k[j]);
                 }
-                y_stage = self.y + y_stage * self.h;
 
                 // Delayed states for this stage
                 dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut delays);
@@ -176,47 +181,36 @@ impl<
             evals.function += self.stages - 1;
 
             // Keep last stage for stiffness detection
-            y_last_stage = y_stage;
+            y_last_stage = y_stage.clone();
 
             // RK combination
-            let mut yseg = Y::zeros();
+            let mut yseg = self.y.zeros_like();
             for i in 0..self.stages {
-                yseg += self.k[i] * self.b[i];
+                yseg.add_scaled(self.b[i], &self.k[i]);
             }
 
-            let y_new = self.y + yseg * self.h;
+            let y_new = self.y.plus_scaled(self.h, &yseg);
 
             // Dormand–Prince error estimation
             let er = self.er.unwrap();
             let n = self.y.len();
-            let mut err_val = T::zero();
             let mut err2 = T::zero();
-            let mut erri;
-            for i in 0..n {
-                // Calculate the error scale
-                let sk = self.atol[i] + self.rtol[i] * self.y.get(i).abs().max(y_new.get(i).abs());
+            let mut err_state = self.y.zeros_like();
+            for (j, coefficient) in er.iter().enumerate().take(self.stages) {
+                err_state.add_scaled(*coefficient, &self.k[j]);
+            }
+            let err_val = self
+                .y
+                .error_norm(&y_new, &err_state, &self.atol, &self.rtol);
 
-                // Primary error term
-                erri = T::zero();
-                for j in 0..self.stages {
-                    erri += er[j] * self.k[j].get(i);
+            if let Some(bh) = &self.bh {
+                let mut err2_state = yseg.clone();
+                for (j, coefficient) in bh.iter().enumerate().take(self.stages) {
+                    err2_state.add_scaled(-*coefficient, &self.k[j]);
                 }
-                err_val += {
-                    let val = erri / sk;
-                    val * val
-                };
-
-                // Optional secondary error term
-                if let Some(bh) = &self.bh {
-                    erri = yseg.get(i);
-                    for j in 0..self.stages {
-                        erri -= bh[j] * self.k[j].get(i);
-                    }
-                    err2 += {
-                        let val = erri / sk;
-                        val * val
-                    };
-                }
+                err2 = self
+                    .y
+                    .error_norm(&y_new, &err2_state, &self.atol, &self.rtol);
             }
             let mut deno = err_val + T::from_f64(0.01).unwrap() * err2;
             if deno <= T::zero() {
@@ -227,20 +221,10 @@ impl<
 
             // Convergence check (if iterating)
             if max_iter > 1 && it > 0 {
-                let mut dde_iteration_error = T::zero();
                 let n_dim = self.y.len();
-                for i_dim in 0..n_dim {
-                    let scale = self.atol[i_dim]
-                        + self.rtol[i_dim]
-                            * y_next_est_prev.get(i_dim).abs().max(y_new.get(i_dim).abs());
-                    if scale > T::zero() {
-                        let diff_val = y_new.get(i_dim) - y_next_est_prev.get(i_dim);
-                        dde_iteration_error += {
-                            let val = diff_val / scale;
-                            val * val
-                        };
-                    }
-                }
+                let iter_diff = y_new.minus(&y_next_est_prev);
+                let mut dde_iteration_error =
+                    y_next_est_prev.error_norm(&y_new, &iter_diff, &self.atol, &self.rtol);
                 if n_dim > 0 {
                     dde_iteration_error =
                         (dde_iteration_error / T::from_usize(n_dim).unwrap()).sqrt();
@@ -254,7 +238,7 @@ impl<
                         dde_iteration_error > self.rtol.average() * T::from_f64(0.1).unwrap();
                 }
             }
-            y_next_est = y_new;
+            y_next_est = y_new.clone();
         }
 
         // Iteration failed: reduce h and retry
@@ -283,7 +267,7 @@ impl<
 
         // Accept/reject
         if err_norm <= T::one() {
-            let y_new = y_next_est;
+            let y_new = y_next_est.clone();
             let t_new = self.t + self.h;
 
             // Derivative at new point
@@ -297,28 +281,12 @@ impl<
             // Stiffness detection (every 100 steps)
             let n_stiff_threshold = 100;
             if self.steps.is_multiple_of(n_stiff_threshold) {
-                let mut stdnum = T::zero();
-                let mut stden = T::zero();
-                let sqr = {
-                    let mut yseg = Y::zeros();
-                    for i in 0..self.stages {
-                        yseg += self.k[i] * self.b[i];
-                    }
-                    yseg - self.k[S - 1]
-                };
-                for i in 0..sqr.len() {
-                    stdnum += {
-                        let val = sqr.get(i);
-                        val * val
-                    };
+                let mut yseg = self.y.zeros_like();
+                for i in 0..self.stages {
+                    yseg.add_scaled(self.b[i], &self.k[i]);
                 }
-                let sqr = self.dydt - y_last_stage;
-                for i in 0..sqr.len() {
-                    stden += {
-                        let val = sqr.get(i);
-                        val * val
-                    };
-                }
+                let stdnum = yseg.diff_norm_squared(&self.k[S - 1]);
+                let stden = self.dydt.diff_norm_squared(&y_last_stage);
 
                 if stden > T::zero() {
                     let h_lamb = self.h * (stdnum / stden).sqrt();
@@ -328,11 +296,11 @@ impl<
                         if self.stiffness_counter == 15 {
                             self.status = Status::Error(Error::Stiffness {
                                 t: self.t,
-                                y: self.y,
+                                y: self.y.clone(),
                             });
                             return Err(Error::Stiffness {
                                 t: self.t,
-                                y: self.y,
+                                y: self.y.clone(),
                             });
                         }
                     }
@@ -345,132 +313,64 @@ impl<
             }
 
             // Prepare dense output / interpolation
-            self.cont[0] = self.y;
-            let ydiff = y_new - self.y;
-            self.cont[1] = ydiff;
-            let bspl = self.k[0] * self.h - ydiff;
-            self.cont[2] = bspl;
-            self.cont[3] = ydiff - self.dydt * self.h - bspl;
+            self.cont[0] = self.y.clone();
+            let ydiff = y_new.minus(&self.y);
+            self.cont[1] = ydiff.clone();
+            let mut bspl = ydiff.zeros_like();
+            bspl.add_scaled(self.h, &self.k[0]);
+            bspl.add_scaled(-T::one(), &ydiff);
+            self.cont[2] = bspl.clone();
+            let mut cont3 = ydiff;
+            cont3.add_scaled(-self.h, &self.dydt);
+            cont3.add_scaled(-T::one(), &bspl);
+            self.cont[3] = cont3;
 
             // Dense output stages
-            if let Some(bi) = &self.bi {
+            if self.bi.is_some() {
                 if I > S {
-                    self.k[self.stages] = self.dydt;
+                    self.k[self.stages] = self.dydt.clone();
                     for i in S + 1..I {
-                        let mut y_stage = Y::zeros();
+                        let mut y_stage = self.y.clone();
                         for j in 0..i {
-                            y_stage += self.k[j] * self.a[i][j];
+                            y_stage.add_scaled(self.a[i][j] * self.h, &self.k[j]);
                         }
-                        y_stage = self.y + y_stage * self.h;
 
-                        dde.lags(self.t + self.c[i] * self.h, &y_stage, &mut delays);
-                        for lag_idx in 0..L {
-                            let t_delayed = (self.t + self.c[i] * self.h) - delays[lag_idx];
-
-                            if (t_delayed - self.t0) * self.h.signum() <= T::default_epsilon() {
-                                y_delayed[lag_idx] = phi(t_delayed);
-                            } else if (t_delayed - self.t_prev) * self.h.signum()
-                                > T::default_epsilon()
-                            {
-                                if self.bi.is_some() {
-                                    let theta = (t_delayed - self.t_prev) / self.h_prev;
-                                    let one_minus_theta = T::one() - theta;
-                                    let ilast = self.cont.len() - 1;
-                                    let poly =
-                                        (1..ilast).rev().fold(self.cont[ilast], |acc, cont_i| {
-                                            let factor = if cont_i >= 4 {
-                                                if (ilast - cont_i) % 2 == 1 {
-                                                    one_minus_theta
-                                                } else {
-                                                    theta
-                                                }
-                                            } else if cont_i % 2 == 1 {
-                                                one_minus_theta
-                                            } else {
-                                                theta
-                                            };
-                                            acc * factor + self.cont[cont_i]
-                                        });
-                                    y_delayed[lag_idx] = self.cont[0] + poly * theta;
-                                } else {
-                                    y_delayed[lag_idx] = cubic_hermite_interpolate(
-                                        self.t_prev,
-                                        self.t,
-                                        &self.y_prev,
-                                        &self.y,
-                                        &self.dydt_prev,
-                                        &self.dydt,
-                                        t_delayed,
-                                    );
-                                }
-                            } else {
-                                let mut found_interpolation = false;
-                                let buffer = &self.history;
-                                let mut buffer_iter = buffer.iter();
-                                if let Some(mut prev_entry) = buffer_iter.next() {
-                                    for curr_entry in buffer_iter {
-                                        let (t_left, y_left, dydt_left) = prev_entry;
-                                        let (t_right, y_right, dydt_right) = curr_entry;
-
-                                        let is_between = if self.h.signum() > T::zero() {
-                                            *t_left <= t_delayed && t_delayed <= *t_right
-                                        } else {
-                                            *t_right <= t_delayed && t_delayed <= *t_left
-                                        };
-
-                                        if is_between {
-                                            y_delayed[lag_idx] = cubic_hermite_interpolate(
-                                                *t_left, *t_right, y_left, y_right, dydt_left,
-                                                dydt_right, t_delayed,
-                                            );
-                                            found_interpolation = true;
-                                            break;
-                                        }
-                                        prev_entry = curr_entry;
-                                    }
-                                }
-                                if !found_interpolation {
-                                    return Err(Error::InsufficientHistory {
-                                        t_delayed,
-                                        t_prev: self.t_prev,
-                                        t_curr: self.t,
-                                    });
-                                }
-                            }
+                        let t_stage = self.t + self.c[i] * self.h;
+                        dde.lags(t_stage, &y_stage, &mut delays);
+                        if let Err(e) = self.lagvals(t_stage, &delays, &mut y_delayed, phi) {
+                            self.status = Status::Error(e.clone());
+                            return Err(e);
                         }
-                        dde.diff(
-                            self.t + self.c[i] * self.h,
-                            &y_stage,
-                            &y_delayed,
-                            &mut self.k[i],
-                        );
+                        dde.diff(t_stage, &y_stage, &y_delayed, &mut self.k[i]);
                         evals.function += 1;
                     }
                 }
 
                 // Dense output coefficients
                 for i in 4..self.order {
-                    self.cont[i] = Y::zeros();
+                    self.cont[i].fill(T::zero());
                     for j in 0..self.dense_stages {
-                        self.cont[i] += self.k[j] * bi[i][j];
+                        let bi = self.bi.as_ref().expect("dense output coefficients checked");
+                        self.cont[i].add_scaled(bi[i][j], &self.k[j]);
                     }
-                    self.cont[i] = self.cont[i] * self.h;
+                    self.cont[i].scale_by(self.h);
                 }
             }
 
             // For interpolation
             self.t_prev = self.t;
-            self.y_prev = self.y;
-            self.dydt_prev = self.k[0];
+            self.y_prev = self.y.clone();
+            self.dydt_prev = self.k[0].clone();
             self.h_prev = self.h;
 
             // Advance state
             self.t = t_new;
             self.y = y_new;
-            self.k[0] = self.dydt;
+            self.k[0] = self.dydt.clone();
 
             // Append to history and prune
-            self.history.push_back((self.t, self.y, self.dydt));
+            self.history
+                .push_back((self.t, self.y.clone(), self.dydt.clone()));
             if let Some(max_delay) = self.max_delay {
                 let cutoff_time = self.t - max_delay;
                 while let Some((t_front, _, _)) = self.history.get(1) {
@@ -553,23 +453,27 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
                     // Functional implementation of: cont[0] + (cont[1] + (cont[2] + (cont[3] + conpar*s1)*s)*s1)*s
                     let ilast = self.cont.len() - 1;
-                    let poly = (1..ilast).rev().fold(self.cont[ilast], |acc, i| {
-                        let factor = if i >= 4 {
-                            if (ilast - i) % 2 == 1 {
+                    let poly = (1..ilast)
+                        .rev()
+                        .fold(self.cont[ilast].clone(), |mut acc, i| {
+                            let factor = if i >= 4 {
+                                if (ilast - i) % 2 == 1 {
+                                    one_minus_theta
+                                } else {
+                                    theta
+                                }
+                            } else if i % 2 == 1 {
                                 one_minus_theta
                             } else {
                                 theta
-                            }
-                        } else if i % 2 == 1 {
-                            one_minus_theta
-                        } else {
-                            theta
-                        };
-                        acc * factor + self.cont[i]
-                    });
+                            };
+                            acc.scale_by(factor);
+                            acc.add_scaled(T::one(), &self.cont[i]);
+                            acc
+                        });
 
                     // Final multiplication by theta for the outermost level
-                    let y_interp = self.cont[0] + poly * theta;
+                    let y_interp = self.cont[0].plus_scaled(theta, &poly);
                     yd[i] = y_interp;
                 } else {
                     yd[i] = cubic_hermite_interpolate(
@@ -646,23 +550,27 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize> Inter
 
         // Functional implementation of: cont[0] + (cont[1] + (cont[2] + (cont[3] + conpar*s1)*s)*s1)*s
         let ilast = self.cont.len() - 1;
-        let poly = (1..ilast).rev().fold(self.cont[ilast], |acc, i| {
-            let factor = if i >= 4 {
-                if (ilast - i) % 2 == 1 {
+        let poly = (1..ilast)
+            .rev()
+            .fold(self.cont[ilast].clone(), |mut acc, i| {
+                let factor = if i >= 4 {
+                    if (ilast - i) % 2 == 1 {
+                        one_minus_theta
+                    } else {
+                        theta
+                    }
+                } else if i % 2 == 1 {
                     one_minus_theta
                 } else {
                     theta
-                }
-            } else if i % 2 == 1 {
-                one_minus_theta
-            } else {
-                theta
-            };
-            acc * factor + self.cont[i]
-        });
+                };
+                acc.scale_by(factor);
+                acc.add_scaled(T::one(), &self.cont[i]);
+                acc
+            });
 
         // Final multiplication by theta for the outermost level
-        let y_interp = self.cont[0] + poly * theta;
+        let y_interp = self.cont[0].plus_scaled(theta, &poly);
 
         Ok(y_interp)
     }

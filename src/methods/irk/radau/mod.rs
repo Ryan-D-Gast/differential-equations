@@ -341,9 +341,9 @@ impl<E, T: Real, Y: State<T>> Default for Radau5<E, T, Y> {
             tinv,
 
             // Workspace
-            z: [Y::zeros(); 3],
-            k: [Y::zeros(); 3],
-            f: [Y::zeros(); 3],
+            z: core::array::from_fn(|_| Y::zeros()),
+            k: core::array::from_fn(|_| Y::zeros()),
+            f: core::array::from_fn(|_| Y::zeros()),
             jacobian: Matrix::zeros(0, 0),
             jacobian_age: 0,
             a: Matrix::zeros(0, 0),
@@ -378,7 +378,7 @@ impl<E, T: Real, Y: State<T>> Default for Radau5<E, T, Y> {
             index3: Vec::new(),
 
             // Dense output coefficients
-            cont: [Y::zeros(); 4],
+            cont: core::array::from_fn(|_| Y::zeros()),
 
             // Error recovery
             singular_count: 0,

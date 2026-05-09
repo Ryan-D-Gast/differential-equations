@@ -1,19 +1,27 @@
+use differential_equations::traits::State as StateTrait;
 use differential_equations_derive::State;
-use differential_equations::traits::{State as StateTrait};
-use nalgebra::{Vector2, Vector3, Matrix2};
+use nalgebra::{Matrix2, Vector2, Vector3};
 use num_complex::Complex;
 
 // Test helper function to verify basic State trait functionality
 fn test_state_basics<S: StateTrait<f64>>(state: &mut S, expected_len: usize) {
     // Test length
     assert_eq!(state.len(), expected_len);
-    
+
     // Test get/set for all elements
     for i in 0..expected_len {
-        let original = state.get(i);
-        state.set(i, 42.0);
-        assert_eq!(state.get(i), 42.0);
-        state.set(i, original); // Restore
+        let original = state.get_component(i);
+        state.set_component(i, 42.0);
+        assert_eq!(state.get_component(i), 42.0);
+        state.set_component(i, original); // Restore
+    }
+
+    // Test bulk map update
+    state.map_components_mut(|i, val| {
+        *val = i as f64 + 1.0;
+    });
+    for i in 0..expected_len {
+        assert_eq!(state.get_component(i), i as f64 + 1.0);
     }
 }
 
@@ -26,21 +34,21 @@ fn test_single_field_only() {
 
     let mut state = SingleField { x: 1.0 };
     test_state_basics(&mut state, 1);
-    
+
     // Test arithmetic operations
     let other = SingleField { x: 2.0 };
     let sum = state + other;
     assert_eq!(sum.x, 3.0);
-    
+
     let difference = sum - SingleField { x: 1.0 };
     assert_eq!(difference.x, 2.0);
-    
+
     let scaled = difference * 3.0;
     assert_eq!(scaled.x, 6.0);
-    
+
     let divided = scaled / 2.0;
     assert_eq!(divided.x, 3.0);
-    
+
     // Test zeros
     let zero = SingleField::<f64>::zeros();
     assert_eq!(zero.x, 0.0);
@@ -55,16 +63,24 @@ fn test_multiple_single_fields() {
         z: T,
     }
 
-    let mut state = MultipleFields { x: 1.0, y: 2.0, z: 3.0 };
+    let mut state = MultipleFields {
+        x: 1.0,
+        y: 2.0,
+        z: 3.0,
+    };
     test_state_basics(&mut state, 3);
-    
+
     // Test specific indexing
-    assert_eq!(state.get(0), 1.0);
-    assert_eq!(state.get(1), 2.0);
-    assert_eq!(state.get(2), 3.0);
-    
+    assert_eq!(state.get_component(0), 1.0);
+    assert_eq!(state.get_component(1), 2.0);
+    assert_eq!(state.get_component(2), 3.0);
+
     // Test arithmetic
-    let other = MultipleFields { x: 1.0, y: 1.0, z: 1.0 };
+    let other = MultipleFields {
+        x: 1.0,
+        y: 1.0,
+        z: 1.0,
+    };
     let sum = state + other;
     assert_eq!(sum.x, 2.0);
     assert_eq!(sum.y, 3.0);
@@ -84,13 +100,13 @@ fn test_array_fields_only() {
         large_array: [3.0, 4.0, 5.0, 6.0, 7.0],
     };
     test_state_basics(&mut state, 7); // 2 + 5 = 7 elements
-    
+
     // Test array element access
-    assert_eq!(state.get(0), 1.0); // small_array[0]
-    assert_eq!(state.get(1), 2.0); // small_array[1]
-    assert_eq!(state.get(2), 3.0); // large_array[0]
-    assert_eq!(state.get(6), 7.0); // large_array[4]
-    
+    assert_eq!(state.get_component(0), 1.0); // small_array[0]
+    assert_eq!(state.get_component(1), 2.0); // small_array[1]
+    assert_eq!(state.get_component(2), 3.0); // large_array[0]
+    assert_eq!(state.get_component(6), 7.0); // large_array[4]
+
     // Test arithmetic with arrays
     let other = ArrayFields {
         small_array: [0.5, 0.5],
@@ -116,16 +132,16 @@ fn test_nalgebra_fields_only() {
         mat2: Matrix2::new(6.0, 7.0, 8.0, 9.0),
     };
     test_state_basics(&mut state, 9); // 2 + 3 + 4 = 9 elements
-    
+
     // Test matrix element access (row-major order)
-    assert_eq!(state.get(0), 1.0); // vec2[0]
-    assert_eq!(state.get(1), 2.0); // vec2[1]
-    assert_eq!(state.get(2), 3.0); // vec3[0]
-    assert_eq!(state.get(4), 5.0); // vec3[2]
-    assert_eq!(state.get(5), 6.0); // mat2[(0,0)]
-    assert_eq!(state.get(6), 7.0); // mat2[(0,1)]
-    assert_eq!(state.get(7), 8.0); // mat2[(1,0)]
-    assert_eq!(state.get(8), 9.0); // mat2[(1,1)]
+    assert_eq!(state.get_component(0), 1.0); // vec2[0]
+    assert_eq!(state.get_component(1), 2.0); // vec2[1]
+    assert_eq!(state.get_component(2), 3.0); // vec3[0]
+    assert_eq!(state.get_component(4), 5.0); // vec3[2]
+    assert_eq!(state.get_component(5), 6.0); // mat2[(0,0)]
+    assert_eq!(state.get_component(6), 7.0); // mat2[(0,1)]
+    assert_eq!(state.get_component(7), 8.0); // mat2[(1,0)]
+    assert_eq!(state.get_component(8), 9.0); // mat2[(1,1)]
 }
 
 #[test]
@@ -141,13 +157,13 @@ fn test_complex_fields_only() {
         z2: Complex::new(3.0, 4.0),
     };
     test_state_basics(&mut state, 4); // 2 complex = 4 real elements
-    
+
     // Test complex element access
-    assert_eq!(state.get(0), 1.0); // z1.re
-    assert_eq!(state.get(1), 2.0); // z1.im
-    assert_eq!(state.get(2), 3.0); // z2.re
-    assert_eq!(state.get(3), 4.0); // z2.im
-    
+    assert_eq!(state.get_component(0), 1.0); // z1.re
+    assert_eq!(state.get_component(1), 2.0); // z1.im
+    assert_eq!(state.get_component(2), 3.0); // z2.re
+    assert_eq!(state.get_component(3), 4.0); // z2.im
+
     // Test complex arithmetic
     let other = ComplexFields {
         z1: Complex::new(0.5, 0.5),
@@ -177,13 +193,13 @@ fn test_mixed_field_types() {
         complex: Complex::new(7.0, 8.0),
     };
     test_state_basics(&mut state, 8); // 1 + 3 + 2 + 2 = 8 elements
-    
+
     // Test mixed element access
-    assert_eq!(state.get(0), 1.0); // scalar
-    assert_eq!(state.get(1), 2.0); // array[0]
-    assert_eq!(state.get(3), 4.0); // array[2]
-    assert_eq!(state.get(4), 5.0); // vector[0]
-    assert_eq!(state.get(5), 6.0); // vector[1]
-    assert_eq!(state.get(6), 7.0); // complex.re
-    assert_eq!(state.get(7), 8.0); // complex.im
+    assert_eq!(state.get_component(0), 1.0); // scalar
+    assert_eq!(state.get_component(1), 2.0); // array[0]
+    assert_eq!(state.get_component(3), 4.0); // array[2]
+    assert_eq!(state.get_component(4), 5.0); // vector[0]
+    assert_eq!(state.get_component(5), 6.0); // vector[1]
+    assert_eq!(state.get_component(6), 7.0); // complex.re
+    assert_eq!(state.get_component(7), 8.0); // complex.im
 }

@@ -11,7 +11,6 @@
 //! moves randomly due to collisions with molecules. It has many applications
 //! in science, finance, and mathematics.
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use quill::prelude::*;
 use rand::SeedableRng;
@@ -35,19 +34,19 @@ impl BrownianMotion {
 /// Implementation of the SDE trait for Brownian motion
 impl SDE for BrownianMotion {
     /// Drift term for Brownian motion (0 for standard Brownian motion)
-    fn drift(&self, _t: f64, _y: &f64, dydt: &mut f64) {
-        *dydt = 0.0; // No drift for standard Brownian motion
+    fn drift(&self, _t: f64, _y: &[f64; 1], dydt: &mut [f64; 1]) {
+        dydt[0] = 0.0; // No drift for standard Brownian motion
     }
 
     /// Diffusion term for Brownian motion (σ)
-    fn diffusion(&self, _t: f64, _y: &f64, dydw: &mut f64) {
-        *dydw = self.sigma;
+    fn diffusion(&self, _t: f64, _y: &[f64; 1], dydw: &mut [f64; 1]) {
+        dydw[0] = self.sigma;
     }
 
     /// Generate noise for Brownian motion
-    fn noise(&mut self, dt: f64, dw: &mut f64) {
+    fn noise(&mut self, dt: f64, dw: &mut [f64; 1]) {
         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
-        *dw = normal.sample(&mut self.rng);
+        dw[0] = normal.sample(&mut self.rng);
     }
 }
 
@@ -55,7 +54,7 @@ fn main() {
     // --- Problem Configuration ---
     let t0 = 0.0;
     let tf = 5.0;
-    let y0 = 1.0;
+    let y0 = [1.0];
     let sigma = 0.5;
     let seed = 42;
     let mut sde = BrownianMotion::new(sigma, seed);
@@ -69,11 +68,11 @@ fn main() {
 
     println!("Simulating Brownian motion with σ = {}", sigma);
     println!("Time interval: [{}, {}], Step size: {}", t0, tf, dt);
-    println!("Initial position: {}", y0);
+    println!("Initial position: {:?}", y0);
     println!("Random seed: {}", seed);
     println!("Simulation completed:");
     println!("  Number of time steps: {}", solution.t.len());
-    println!("  Final position: {}", solution.y.last().unwrap());
+    println!("  Final position: {:?}", solution.y.last().unwrap());
     println!("  Function evaluations: {}", solution.evals.function);
     println!("  Total steps: {}", solution.steps.total());
     println!("  Solution time: {:.6} seconds", solution.timer.elapsed());
@@ -87,7 +86,7 @@ fn main() {
         .data([Series::builder()
             .name("Brownian Path")
             .color("Blue")
-            .data(solution.iter().map(|(t, y)| (*t, *y)).collect::<Vec<_>>())
+            .data(solution.iter().map(|(t, y)| (*t, y[0])).collect::<Vec<_>>())
             .build()])
         .build()
         .to_svg("examples/sde/01_brownian_motion/brownian_motion.svg")

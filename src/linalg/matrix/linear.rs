@@ -2,6 +2,7 @@
 
 use crate::{
     error::Error,
+    linalg::LinalgError,
     traits::{Real, State},
 };
 
@@ -28,14 +29,13 @@ impl<T: Real> Matrix<T> {
         // 1) Densify A into a Vec<T> of size n*n (row-major)
         let mut a = self.to_dense_vec();
 
-        // 2) Copy b into a dense vector x and perform solve
-        let mut x = b;
+        // 2) Use b as the working state
+        let mut x = b.clone();
 
         // 3) LU factorization with partial pivoting and singularity checking
         let mut piv: Vec<usize> = (0..n).collect();
         let eps = T::from_f64(1e-14).unwrap(); // Singularity threshold
 
-        let mut swapper;
         for k in 0..n {
             // Find pivot row
             let mut pivot_row = k;
@@ -51,7 +51,7 @@ impl<T: Real> Matrix<T> {
             // Check for singularity
             if pivot_val <= eps {
                 // Note the t, y are not known here and should be updated by caller before returning to user
-                return Err(crate::linalg::LinalgError::Singular { step: k + 1 }.into());
+                return Err(LinalgError::Singular { step: k + 1 }.into());
             }
 
             if pivot_row != k {
@@ -60,9 +60,10 @@ impl<T: Real> Matrix<T> {
                     a.swap(k * n + j, pivot_row * n + j);
                 }
                 // swap entries in x
-                swapper = x.get(k);
-                x.set(k, x.get(pivot_row));
-                x.set(pivot_row, swapper);
+                let tk = x.get_component(k);
+                let tm = x.get_component(pivot_row);
+                x.set_component(k, tm);
+                x.set_component(pivot_row, tk);
                 piv.swap(k, pivot_row);
             }
 
@@ -79,32 +80,27 @@ impl<T: Real> Matrix<T> {
 
         // Forward solve Ly = Pb (x currently holds permuted b)
         for i in 0..n {
-            let mut sum = x.get(i);
+            let mut sum = x.get_component(i);
             for k in 0..i {
-                sum -= a[i * n + k] * x.get(k);
+                sum -= a[i * n + k] * x.get_component(k);
             }
-            x.set(i, sum); // since L has ones on diagonal
+            x.set_component(i, sum); // since L has ones on diagonal
         }
 
         // Backward solve Ux = y
         for i in (0..n).rev() {
-            let mut sum = x.get(i);
+            let mut sum = x.get_component(i);
             for k in (i + 1)..n {
-                sum -= a[i * n + k] * x.get(k);
+                sum -= a[i * n + k] * x.get_component(k);
             }
-            x.set(i, sum / a[i * n + i]);
+            x.set_component(i, sum / a[i * n + i]);
         }
 
-        // Build output State from x
-        let mut out = Y::zeros();
-        for i in 0..n {
-            out.set(i, x.get(i));
-        }
-        Ok(out)
+        Ok(x)
     }
 
     /// In-place solve: overwrites `b` with `x`.
-    pub fn lin_solve_mut(&self, b: &mut [T]) -> Result<(), crate::linalg::LinalgError> {
+    pub fn lin_solve_mut(&self, b: &mut [T]) -> Result<(), LinalgError> {
         let n = self.n;
         assert_eq!(
             self.m, n,
@@ -136,7 +132,7 @@ impl<T: Real> Matrix<T> {
                 }
             }
             if pivot_val == T::zero() {
-                return Err(crate::linalg::LinalgError::Singular { step: k + 1 });
+                return Err(LinalgError::Singular { step: k + 1 });
             }
             if pivot_row != k {
                 for j in 0..n {
@@ -175,7 +171,7 @@ impl<T: Real> Matrix<T> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nalgebra"))]
 mod tests {
     use crate::linalg::matrix::Matrix;
     use nalgebra::Vector2;

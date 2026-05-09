@@ -16,15 +16,15 @@
 //! - Different output options: dense, even, and t-eval
 //! - Error assessment in numerical integration
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
+use faer::Mat;
 
 #[derive(Clone)]
 struct IntegrationODE;
 
-impl ODE for IntegrationODE {
-    fn diff(&self, t: f64, _y: &f64, dydt: &mut f64) {
-        *dydt = t;
+impl ODE<f64, Mat<f64>> for IntegrationODE {
+    fn diff(&self, t: f64, _y: &Mat<f64>, dydt: &mut Mat<f64>) {
+        *dydt.get_mut(0, 0) = t;
     }
 }
 
@@ -33,10 +33,10 @@ fn main() {
     let ode = IntegrationODE;
     let t0 = 0.0;
     let tf: f64 = 5.0;
-    let y0 = 0.0;
+    let y0 = Mat::from_fn(1, 1, |_, _| 0.0);
 
     // --- Solve the ODE ---
-    let solution = IVP::ode(&ode, t0, tf, y0)
+    let solution = IVP::ode(&ode, t0, tf, y0.clone())
         .method(ExplicitRungeKutta::rkf45())
         .solve()
         .unwrap();
@@ -47,12 +47,12 @@ fn main() {
     println!("t\t\ty");
 
     for (t, y) in solution.iter() {
-        println!("{:.6}\t{:.6}", t, y);
+        println!("{:.6}\t{:.6}", t, *y.get(0, 0));
     }
 
     // Verify the result. The analytical solution of y' = t with y(0) = 0 is y = t^2 / 2.
     let analytical_solution = tf.powi(2) / 2.0;
-    let numerical_solution = solution.y.last().unwrap();
+    let numerical_solution = *solution.y.last().unwrap().get(0, 0);
     let error = (analytical_solution - numerical_solution).abs();
 
     println!("-----------------------------");
@@ -63,7 +63,7 @@ fn main() {
     // Example with dense output
     println!("-----------------------------");
     println!("Dense Output Example:");
-    let solution_dense = IVP::ode(&ode, t0, tf, y0)
+    let solution_dense = IVP::ode(&ode, t0, tf, y0.clone())
         .dense(2) // 5 interpolation points between each step
         .method(ExplicitRungeKutta::rkf45())
         .solve()
@@ -71,13 +71,13 @@ fn main() {
 
     println!("t\t\ty");
     for (t, y) in solution_dense.iter() {
-        println!("{:.6}\t{:.6}", t, y);
+        println!("{:.6}\t{:.6}", t, *y.get(0, 0));
     }
 
     // Example with even t-out
     println!("-----------------------------");
     println!("Even t-out Example:");
-    let solution_even = IVP::ode(&ode, t0, tf, y0)
+    let solution_even = IVP::ode(&ode, t0, tf, y0.clone())
         .even(1.0) // t-out at interval dt: 1.0
         .method(ExplicitRungeKutta::rkf45())
         .solve()
@@ -85,7 +85,7 @@ fn main() {
 
     println!("t\t\ty");
     for (t, y) in solution_even.iter() {
-        println!("{:.6}\t{:.6}", t, y);
+        println!("{:.6}\t{:.6}", t, *y.get(0, 0));
     }
 
     // Example with t-out points
@@ -100,6 +100,6 @@ fn main() {
 
     println!("t\t\ty");
     for (t, y) in solution_t_out.iter() {
-        println!("{:.6}\t{:.6}", t, y);
+        println!("{:.6}\t{:.6}", t, *y.get(0, 0));
     }
 }

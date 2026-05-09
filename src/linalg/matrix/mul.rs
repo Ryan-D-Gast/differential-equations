@@ -82,25 +82,35 @@ impl<T: Real> Matrix<T> {
         let n = self.n;
         assert_eq!(vec.len(), self.m, "dimension mismatch in Matrix::mul_state");
 
-        let mut result = V::zeros();
-        if let MatrixStorage::Sparse { ref coords, .. } = self.storage {
-            for &(r, c, v) in coords {
-                result.set(r, result.get(r) + v * vec.get(c));
-            }
-        } else {
-            for i in 0..n {
-                let mut sum = T::zero();
-                for j in 0..self.m {
-                    sum += self[(i, j)] * vec.get(j);
+        match self.storage {
+            MatrixStorage::Identity => vec.clone(),
+            MatrixStorage::Sparse { ref coords, .. } => {
+                let mut result = vec.zeros_like();
+                for &(r, c, v) in coords {
+                    let current = result.get_component(r);
+                    result.set_component(r, current + v * vec.get_component(c));
                 }
-                result.set(i, sum);
+                result
             }
+            MatrixStorage::Banded { ml, mu, .. } => {
+                let mut result = vec.zeros_like();
+                for i in 0..self.n {
+                    let start = i.saturating_sub(ml);
+                    let end = (i + mu + 1).min(self.m);
+                    let mut sum = T::zero();
+                    for j in start..end {
+                        sum += self[(i, j)] * vec.get_component(j);
+                    }
+                    result.set_component(i, sum);
+                }
+                result
+            }
+            MatrixStorage::Full => vec.mul_by_dense_matrix(&self.data, n, self.m),
         }
-        result
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nalgebra"))]
 mod tests {
     use super::Matrix;
     use nalgebra::Vector2;

@@ -5,7 +5,7 @@
 
 use crate::{
     linalg::Matrix,
-    traits::{Real, State},
+    traits::{DefaultState, Real, State},
 };
 
 /// ODE Trait for Differential Equations
@@ -21,7 +21,7 @@ use crate::{
 /// * `jacobian` - Jacobian matrix J = df/dy for the system of equations.
 ///
 /// Note that the event and jacobian functions are optional and can be left out when implementing.
-pub trait ODE<T = f64, Y = f64>
+pub trait ODE<T = f64, Y = DefaultState<T>>
 where
     T: Real,
     Y: State<T>,
@@ -65,9 +65,9 @@ where
     fn jacobian(&self, t: T, y: &Y, j: &mut Matrix<T>) {
         // Default implementation using forward finite differences
         let dim = y.len();
-        let mut y_perturbed = *y;
-        let mut f_perturbed = Y::zeros();
-        let mut f_origin = Y::zeros();
+        let mut y_perturbed = y.clone();
+        let mut f_perturbed = y.zeros_like();
+        let mut f_origin = y.zeros_like();
 
         // Compute the unperturbed derivative
         self.diff(t, y, &mut f_origin);
@@ -78,23 +78,23 @@ where
         // For each column of the jacobian
         for j_col in 0..dim {
             // Get the original value
-            let y_original_j = y.get(j_col);
+            let y_original_j = y.get_component(j_col);
 
             // Calculate perturbation size (max of component magnitude or 1.0)
             let perturbation = eps * y_original_j.abs().max(T::one());
 
             // Perturb the component
-            y_perturbed.set(j_col, y_original_j + perturbation);
+            y_perturbed.copy_from_state(y);
+            y_perturbed.set_component(j_col, y_original_j + perturbation);
 
             // Evaluate function with perturbed value
             self.diff(t, &y_perturbed, &mut f_perturbed);
 
-            // Restore original value
-            y_perturbed.set(j_col, y_original_j);
-
             // Compute finite difference approximation for this column
             for i_row in 0..dim {
-                j[(i_row, j_col)] = (f_perturbed.get(i_row) - f_origin.get(i_row)) / perturbation;
+                j[(i_row, j_col)] = (f_perturbed.get_component(i_row)
+                    - f_origin.get_component(i_row))
+                    / perturbation;
             }
         }
     }

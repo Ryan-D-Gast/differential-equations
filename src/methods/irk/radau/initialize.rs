@@ -143,33 +143,32 @@ impl<E, T: Real, Y: State<T>> Radau5<E, T, Y> {
         // Initialize state
         self.t = t0;
         self.tf = tf;
-        self.y = *y0;
+        self.y = y0.clone();
 
         // Size the mass matrix as identity (DE/DAE specific code should overwrite)
         self.mass = Matrix::identity(n);
 
         // Do not call diff here; leave dydt zeroed
-        self.dydt = Y::zeros();
+        self.dydt = y0.zeros_like();
 
         // Previous state
         self.t_prev = self.t;
-        self.y_prev = self.y;
-        self.dydt_prev = self.dydt;
+        self.y_prev = self.y.clone();
+        self.dydt_prev = self.dydt.clone();
         self.h_prev = self.h;
 
         // Step size factor
         self.hhfac = self.h;
 
         // Calculate tolerance
-        for i in 0..n {
-            self.scal
-                .set(i, self.atol[i] + self.rtol[i] * self.y.get(i).abs());
-        }
+        self.scal.map_components_mut(|i, s| {
+            *s = self.atol[i] + self.rtol[i] * self.y.get_component(i).abs();
+        });
 
         // Workspace
-        self.z = [Y::zeros(), Y::zeros(), Y::zeros()];
-        self.k = [Y::zeros(), Y::zeros(), Y::zeros()];
-        self.f = [Y::zeros(), Y::zeros(), Y::zeros()];
+        self.z = core::array::from_fn(|_| y0.zeros_like());
+        self.k = core::array::from_fn(|_| y0.zeros_like());
+        self.f = core::array::from_fn(|_| y0.zeros_like());
         self.jacobian = Matrix::zeros(n, n);
         self.e1 = Matrix::zeros(n, n);
         self.e2r = Matrix::zeros(n, n);
@@ -180,7 +179,7 @@ impl<E, T: Real, Y: State<T>> Radau5<E, T, Y> {
         self.b = vec![T::zero(); 2 * n];
 
         // Dense output coefficients
-        self.cont = [Y::zeros(); 4];
+        self.cont = core::array::from_fn(|_| y0.zeros_like());
 
         // Flags
         self.first = true;

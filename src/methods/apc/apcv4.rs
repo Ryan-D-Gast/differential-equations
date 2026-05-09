@@ -3,7 +3,6 @@
 use crate::{
     error::Error,
     interpolate::{Interpolation, cubic_hermite_interpolate},
-    linalg::norm,
     methods::{Adaptive, Ordinary, h_init::InitialStepSize},
     ode::{ODE, OrdinaryNumericalMethod},
     stats::Evals,
@@ -30,16 +29,15 @@ impl<T: Real, Y: State<T>> AdamsPredictorCorrector<Ordinary, Adaptive, T, Y, 4> 
     ///
     /// # Example
     ///
-    /// ```
+    /// ```rust
     /// use differential_equations::prelude::*;
-    /// use nalgebra::{SVector, vector};
     ///
     /// struct HarmonicOscillator {
     ///     k: f64,
     /// }
     ///
-    /// impl ODE<f64, SVector<f64, 2>> for HarmonicOscillator {
-    ///     fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
+    /// impl ODE<f64, [f64; 2]> for HarmonicOscillator {
+    ///     fn diff(&self, _t: f64, y: &[f64; 2], dydt: &mut [f64; 2]) {
     ///         dydt[0] = y[1];
     ///         dydt[1] = -self.k * y[0];
     ///     }
@@ -47,10 +45,10 @@ impl<T: Real, Y: State<T>> AdamsPredictorCorrector<Ordinary, Adaptive, T, Y, 4> 
     /// let apcv4 = AdamsPredictorCorrector::v4();
     /// let t0 = 0.0;
     /// let tf = 10.0;
-    /// let y0 = vector![1.0, 0.0];
+    /// let y0 = [1.0, 0.0];
     /// let system = HarmonicOscillator { k: 1.0 };
     /// let results = IVP::ode(&system, t0, tf, y0).method(apcv4).solve().unwrap();
-    /// let expected = vector![-0.83907153, 0.54402111];
+    /// let expected = [-0.83907153, 0.54402111];
     /// assert!((results.y.last().unwrap()[0] - expected[0]).abs() < 1e-6);
     /// assert!((results.y.last().unwrap()[1] - expected[1]).abs() < 1e-6);
     /// ```
@@ -62,6 +60,26 @@ impl<T: Real, Y: State<T>> AdamsPredictorCorrector<Ordinary, Adaptive, T, Y, 4> 
     /// extremely small step sizes and long computation times.```
     pub fn v4() -> Self {
         Self::default()
+    }
+
+    fn rk4_step<F>(ode: &F, t: &mut T, y: &mut Y, h: T, k: &mut [Y; 4]) -> usize
+    where
+        F: ODE<T, Y>,
+    {
+        let two = T::from_f64(2.0).unwrap();
+        let six = T::from_f64(6.0).unwrap();
+
+        ode.diff(*t, y, &mut k[0]);
+        ode.diff(*t + h / two, &y.plus_scaled(h / two, &k[0]), &mut k[1]);
+        ode.diff(*t + h / two, &y.plus_scaled(h / two, &k[1]), &mut k[2]);
+        ode.diff(*t + h, &y.plus_scaled(h, &k[2]), &mut k[3]);
+
+        y.add_scaled(h / six, &k[0]);
+        y.add_scaled(two * h / six, &k[1]);
+        y.add_scaled(two * h / six, &k[2]);
+        y.add_scaled(h / six, &k[3]);
+        *t += h;
+        4
     }
 }
 
@@ -95,46 +113,28 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
 
         // Initialize state
         self.t = t0;
-        self.y = *y0;
+        self.y = y0.clone();
+        self.dydt = y0.zeros_like();
+        self.dydt_old = y0.zeros_like();
+        self.y_old = y0.clone();
+        self.y_prev = core::array::from_fn(|_| y0.zeros_like());
+        self.k = core::array::from_fn(|_| y0.zeros_like());
         self.t_prev[0] = t0;
-        self.y_prev[0] = *y0;
+        self.y_prev[0] = y0.clone();
 
         // Previous saved steps
         self.t_old = t0;
-        self.y_old = *y0;
+        self.y_old = y0.clone();
 
         // Perform the first 3 steps using Runge-Kutta 4 method
-        let two = T::from_f64(2.0).unwrap();
-        let six = T::from_f64(6.0).unwrap();
         for i in 1..=3 {
-            // Compute k1, k2, k3, k4 of Runge-Kutta 4
-            ode.diff(self.t, &self.y, &mut self.k[0]);
-            ode.diff(
-                self.t + self.h / two,
-                &(self.y + self.k[0] * (self.h / two)),
-                &mut self.k[1],
-            );
-            ode.diff(
-                self.t + self.h / two,
-                &(self.y + self.k[1] * (self.h / two)),
-                &mut self.k[2],
-            );
-            ode.diff(
-                self.t + self.h,
-                &(self.y + self.k[2] * self.h),
-                &mut self.k[3],
-            );
-
-            // Update State
-            self.y += (self.k[0] + self.k[1] * two + self.k[2] * two + self.k[3]) * (self.h / six);
-            self.t += self.h;
+            evals.function += Self::rk4_step(ode, &mut self.t, &mut self.y, self.h, &mut self.k);
             self.t_prev[i] = self.t;
-            self.y_prev[i] = self.y;
-            evals.function += 4; // 4 evaluations per Runge-Kutta step
+            self.y_prev[i] = self.y.clone();
 
             if i == 1 {
-                self.dydt = self.k[0];
-                self.dydt_old = self.k[0];
+                self.dydt = self.k[0].clone();
+                self.dydt_old = self.k[0].clone();
             }
         }
 
@@ -152,42 +152,18 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
         self.steps += 1;
 
         // If Step size changed and it takes us to the final time perform a Runge-Kutta 4 step to finish
         if self.h != self.t_prev[0] - self.t_prev[1] && self.t + self.h == self.tf {
-            let two = T::from_f64(2.0).unwrap();
-            let six = T::from_f64(6.0).unwrap();
-
-            // Perform a Runge-Kutta 4 step to finish.
-            ode.diff(self.t, &self.y, &mut self.k[0]);
-            ode.diff(
-                self.t + self.h / two,
-                &(self.y + self.k[0] * (self.h / two)),
-                &mut self.k[1],
-            );
-            ode.diff(
-                self.t + self.h / two,
-                &(self.y + self.k[1] * (self.h / two)),
-                &mut self.k[2],
-            );
-            ode.diff(
-                self.t + self.h,
-                &(self.y + self.k[2] * self.h),
-                &mut self.k[3],
-            );
-            evals.function += 4; // 4 evaluations per Runge-Kutta step
-
-            // Update State
-            self.y += (self.k[0] + self.k[1] * two + self.k[2] * two + self.k[3]) * (self.h / six);
-            self.t += self.h;
+            evals.function += Self::rk4_step(ode, &mut self.t, &mut self.y, self.h, &mut self.k);
             return Ok(evals);
         }
 
@@ -197,35 +173,56 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
         ode.diff(self.t_prev[1], &self.y_prev[1], &mut self.k[2]);
         ode.diff(self.t_prev[0], &self.y_prev[0], &mut self.k[3]);
 
-        let predictor = self.y_prev[3]
-            + (self.k[0] * T::from_f64(55.0).unwrap() - self.k[1] * T::from_f64(59.0).unwrap()
-                + self.k[2] * T::from_f64(37.0).unwrap()
-                - self.k[3] * T::from_f64(9.0).unwrap())
-                * self.h
-                / T::from_f64(24.0).unwrap();
+        let predictor = self.y_prev[3].plus_linear_combination(&[
+            (
+                &self.k[0],
+                self.h * T::from_f64(55.0).unwrap() / T::from_f64(24.0).unwrap(),
+            ),
+            (
+                &self.k[1],
+                -self.h * T::from_f64(59.0).unwrap() / T::from_f64(24.0).unwrap(),
+            ),
+            (
+                &self.k[2],
+                self.h * T::from_f64(37.0).unwrap() / T::from_f64(24.0).unwrap(),
+            ),
+            (
+                &self.k[3],
+                -self.h * T::from_f64(9.0).unwrap() / T::from_f64(24.0).unwrap(),
+            ),
+        ]);
 
         // Corrector step:
         ode.diff(self.t + self.h, &predictor, &mut self.k[3]);
-        let corrector = self.y_prev[3]
-            + (self.k[3] * T::from_f64(9.0).unwrap() + self.k[0] * T::from_f64(19.0).unwrap()
-                - self.k[1] * T::from_f64(5.0).unwrap()
-                + self.k[2] * T::from_f64(1.0).unwrap())
-                * self.h
-                / T::from_f64(24.0).unwrap();
+        let corrector = self.y_prev[3].plus_linear_combination(&[
+            (
+                &self.k[3],
+                self.h * T::from_f64(9.0).unwrap() / T::from_f64(24.0).unwrap(),
+            ),
+            (
+                &self.k[0],
+                self.h * T::from_f64(19.0).unwrap() / T::from_f64(24.0).unwrap(),
+            ),
+            (
+                &self.k[1],
+                -self.h * T::from_f64(5.0).unwrap() / T::from_f64(24.0).unwrap(),
+            ),
+            (&self.k[2], self.h / T::from_f64(24.0).unwrap()),
+        ]);
 
         // Track number of evaluations
         evals.function += 5;
 
         // Calculate sigma for step size adjustment
-        let sigma = T::from_f64(19.0).unwrap() * norm(corrector - predictor)
+        let sigma = T::from_f64(19.0).unwrap() * corrector.diff_norm_squared(&predictor).sqrt()
             / (T::from_f64(270.0).unwrap() * self.h.abs());
 
         // Check if Step meets tolerance
         if sigma <= self.tol {
             // Update Previous step states
             self.t_old = self.t;
-            self.y_old = self.y;
-            self.dydt_old = self.dydt;
+            self.y_old = self.y.clone();
+            self.dydt_old = self.dydt.clone();
 
             // Update state
             self.t += self.h;
@@ -256,38 +253,14 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
 
             // Calculate Previous Steps with new step size
             self.t_prev[0] = self.t;
-            self.y_prev[0] = self.y;
-            let two = T::from_f64(2.0).unwrap();
-            let six = T::from_f64(6.0).unwrap();
+            self.y_prev[0] = self.y.clone();
             for i in 1..=3 {
-                // Compute k1, k2, k3, k4 of Runge-Kutta 4
-                ode.diff(self.t, &self.y, &mut self.k[0]);
-                ode.diff(
-                    self.t + self.h / two,
-                    &(self.y + self.k[0] * (self.h / two)),
-                    &mut self.k[1],
-                );
-                ode.diff(
-                    self.t + self.h / two,
-                    &(self.y + self.k[1] * (self.h / two)),
-                    &mut self.k[2],
-                );
-                ode.diff(
-                    self.t + self.h,
-                    &(self.y + self.k[2] * self.h),
-                    &mut self.k[3],
-                );
-
-                // Update State
-                self.y +=
-                    (self.k[0] + self.k[1] * two + self.k[2] * two + self.k[3]) * (self.h / six);
-                self.t += self.h;
+                self.evals += Self::rk4_step(ode, &mut self.t, &mut self.y, self.h, &mut self.k);
                 self.t_prev[i] = self.t;
-                self.y_prev[i] = self.y;
-                self.evals += 4; // 4 evaluations per Runge-Kutta step
+                self.y_prev[i] = self.y.clone();
 
                 if i == 1 {
-                    self.dydt = self.k[0];
+                    self.dydt = self.k[0].clone();
                 }
             }
         } else {
@@ -307,35 +280,11 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
 
             // Calculate Previous Steps with new step size
             self.t_prev[0] = self.t;
-            self.y_prev[0] = self.y;
-            let two = T::from_f64(2.0).unwrap();
-            let six = T::from_f64(6.0).unwrap();
+            self.y_prev[0] = self.y.clone();
             for i in 1..=3 {
-                // Compute k1, k2, k3, k4 of Runge-Kutta 4
-                ode.diff(self.t, &self.y, &mut self.k[0]);
-                ode.diff(
-                    self.t + self.h / two,
-                    &(self.y + self.k[0] * (self.h / two)),
-                    &mut self.k[1],
-                );
-                ode.diff(
-                    self.t + self.h / two,
-                    &(self.y + self.k[1] * (self.h / two)),
-                    &mut self.k[2],
-                );
-                ode.diff(
-                    self.t + self.h,
-                    &(self.y + self.k[2] * self.h),
-                    &mut self.k[3],
-                );
-
-                // Update State
-                self.y +=
-                    (self.k[0] + self.k[1] * two + self.k[2] * two + self.k[3]) * (self.h / six);
-                self.t += self.h;
+                self.evals += Self::rk4_step(ode, &mut self.t, &mut self.y, self.h, &mut self.k);
                 self.t_prev[i] = self.t;
-                self.y_prev[i] = self.y;
-                self.evals += 4; // 4 evaluations per Runge-Kutta step
+                self.y_prev[i] = self.y.clone();
             }
         }
         Ok(evals)

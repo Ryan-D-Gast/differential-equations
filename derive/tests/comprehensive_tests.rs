@@ -1,6 +1,6 @@
+use differential_equations::traits::State as StateTrait;
 use differential_equations_derive::State;
-use differential_equations::traits::{State as StateTrait};
-use nalgebra::{Vector2, Vector3, Matrix2, SMatrix};
+use nalgebra::{Matrix2, SMatrix, Vector2, Vector3};
 use num_complex::Complex;
 
 #[test]
@@ -11,17 +11,17 @@ fn test_comprehensive_mixed_state() {
         // Single fields
         scalar1: T,
         scalar2: T,
-        
+
         // Array fields of different sizes
         small_array: [T; 2],
         medium_array: [T; 4],
-        
+
         // Various nalgebra types
         vec2: Vector2<T>,
         vec3: Vector3<T>,
         mat2: Matrix2<T>,
         smatrix: SMatrix<T, 2, 3>, // Explicit SMatrix
-        
+
         // Complex fields
         complex1: Complex<T>,
         complex2: Complex<T>,
@@ -39,18 +39,18 @@ fn test_comprehensive_mixed_state() {
         complex1: Complex::new(24.0, 25.0),
         complex2: Complex::new(26.0, 27.0),
     };
-    
+
     // Total elements: 2 + 2 + 4 + 2 + 3 + 4 + 6 + 2 + 2 = 27
     assert_eq!(state.len(), 27);
-    
+
     // Test get/set for all elements
     for i in 0..27 {
-        let original = state.get(i);
-        state.set(i, 42.0);
-        assert_eq!(state.get(i), 42.0);
-        state.set(i, original); // Restore
+        let original = state.get_component(i);
+        state.set_component(i, 42.0);
+        assert_eq!(state.get_component(i), 42.0);
+        state.set_component(i, original); // Restore
     }
-    
+
     // Test that zeros work for comprehensive state
     let zero_state = ComprehensiveState::<f64>::zeros();
     assert_eq!(zero_state.scalar1, 0.0);
@@ -150,15 +150,15 @@ fn test_various_nalgebra_types() {
         smat23: SMatrix::<f64, 2, 3>::new(10.0, 11.0, 12.0, 13.0, 14.0, 15.0),
         smat31: SMatrix::<f64, 3, 1>::new(16.0, 17.0, 18.0),
     };
-    
+
     // Total: 2 + 3 + 4 + 6 + 3 = 18 elements
     assert_eq!(state.len(), 18);
-    
+
     // Test get/set for all elements
     for i in 0..18 {
-        let original = state.get(i);
-        state.set(i, 42.0);
-        assert_eq!(state.get(i), 42.0);
-        state.set(i, original); // Restore
+        let original = state.get_component(i);
+        state.set_component(i, 42.0);
+        assert_eq!(state.get_component(i), 42.0);
+        state.set_component(i, original); // Restore
     }
 }

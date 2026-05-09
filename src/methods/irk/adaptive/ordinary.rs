@@ -44,14 +44,19 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // State
         self.t = t0;
-        self.y = *y0;
+        self.y = y0.clone();
+        self.dydt = y0.zeros_like();
+        self.y_prev = y0.clone();
+        self.dydt_prev = y0.zeros_like();
+        self.k = core::array::from_fn(|_| y0.zeros_like());
+        self.z = core::array::from_fn(|_| y0.zeros_like());
         ode.diff(self.t, &self.y, &mut self.dydt);
         evals.function += 1;
 
         // Previous state
         self.t_prev = self.t;
-        self.y_prev = self.y;
-        self.dydt_prev = self.dydt;
+        self.y_prev = self.y.clone();
+        self.dydt_prev = self.dydt.clone();
 
         // Linear algebra workspace
         let dim = y0.len();
@@ -79,11 +84,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         if self.h.abs() < self.h_prev.abs() * T::from_f64(1e-14).unwrap() {
             self.status = Status::Error(Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::StepSize {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
 
@@ -91,11 +96,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         if self.steps >= self.max_steps {
             self.status = Status::Error(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
             return Err(Error::MaxSteps {
                 t: self.t,
-                y: self.y,
+                y: self.y.clone(),
             });
         }
         self.steps += 1;
@@ -103,7 +108,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         // Initial stage guesses: copy current state
         let dim = self.y.len();
         for i in 0..self.stages {
-            self.z[i] = self.y;
+            self.z[i] = self.y.clone();
         }
 
         // Newton solve for F(z) = z - y_n - h*A*f(z) = 0
@@ -128,16 +133,16 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             let mut residual_norm = T::zero();
             for i in 0..self.stages {
                 // Start with z_i - y_n
-                let mut residual = self.z[i] - self.y;
+                let mut residual = self.z[i].minus(&self.y);
 
                 // Subtract h*sum(a_ij * f_j)
                 for j in 0..self.stages {
-                    residual = residual - self.k[j] * (self.a[i][j] * self.h);
+                    residual.add_scaled(-(self.a[i][j] * self.h), &self.k[j]);
                 }
 
                 // Infinity norm and RHS
                 for row_idx in 0..dim {
-                    let res_val = residual.get(row_idx);
+                    let res_val = residual.get_component(row_idx);
                     residual_norm = residual_norm.max(res_val.abs());
                     // Store residual in Newton RHS (negative for solving delta_z)
                     self.rhs_newton[i * dim + row_idx] = -res_val;
@@ -208,8 +213,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             for i in 0..self.stages {
                 for row_idx in 0..dim {
                     let delta_val = self.delta_k_vec[i * dim + row_idx];
-                    let current_val = self.z[i].get(row_idx);
-                    self.z[i].set(row_idx, current_val + delta_val);
+                    let current_z = self.z[i].get_component(row_idx);
+                    self.z[i].set_component(row_idx, current_z + delta_val);
                     // Calculate infinity norm of increment
                     increment_norm = increment_norm.max(delta_val.abs());
                 }
@@ -230,11 +235,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             if self.stiffness_counter >= self.max_rejects {
                 self.status = Status::Error(Error::Stiffness {
                     t: self.t,
-                    y: self.y,
+                    y: self.y.clone(),
                 });
                 return Err(Error::Stiffness {
                     t: self.t,
-                    y: self.y,
+                    y: self.y.clone(),
                 });
             }
             return Ok(evals);
@@ -247,9 +252,9 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         evals.function += self.stages;
 
         // y_{n+1} = y_n + h Σ b_i f_i
-        let mut y_new = self.y;
+        let mut y_new = self.y.clone();
         for i in 0..self.stages {
-            y_new += self.k[i] * (self.b[i] * self.h);
+            y_new.add_scaled(self.b[i] * self.h, &self.k[i]);
         }
 
         // Embedded error estimate (bh)
@@ -257,19 +262,24 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         let bh = &self.bh.unwrap();
 
         // Lower-order solution
-        let mut y_low = self.y;
+        let mut y_low = self.y.clone();
         for i in 0..self.stages {
-            y_low += self.k[i] * (bh[i] * self.h);
+            y_low.add_scaled(bh[i] * self.h, &self.k[i]);
         }
 
-        // err = y_high - y_low
-        let err = y_new - y_low;
-
         // Weighted max-norm
-        for n in 0..self.y.len() {
-            let scale = self.atol[n] + self.rtol[n] * self.y.get(n).abs().max(y_new.get(n).abs());
+        let dim = self.y.len();
+        for n in 0..dim {
+            let scale = self.atol[n]
+                + self.rtol[n]
+                    * self
+                        .y
+                        .get_component(n)
+                        .abs()
+                        .max(y_new.get_component(n).abs());
             if scale > T::zero() {
-                err_norm = err_norm.max((err.get(n) / scale).abs());
+                err_norm =
+                    err_norm.max(((y_new.get_component(n) - y_low.get_component(n)) / scale).abs());
             }
         }
 
@@ -291,8 +301,8 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
             // Log previous
             self.t_prev = self.t;
-            self.y_prev = self.y;
-            self.dydt_prev = self.dydt;
+            self.y_prev = self.y.clone();
+            self.dydt_prev = self.dydt.clone();
             self.h_prev = self.h;
 
             // Advance state
@@ -319,11 +329,11 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             if self.stiffness_counter >= self.max_rejects {
                 self.status = Status::Error(Error::Stiffness {
                     t: self.t,
-                    y: self.y,
+                    y: self.y.clone(),
                 });
                 return Err(Error::Stiffness {
                     t: self.t,
-                    y: self.y,
+                    y: self.y.clone(),
                 });
             }
         }

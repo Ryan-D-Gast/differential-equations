@@ -210,7 +210,7 @@ where
         for (t, y) in self.iter() {
             let mut row = format!("{:?}", t);
             for i in 0..n {
-                row.push_str(&format!(",{:?}", y.get(i)));
+                row.push_str(&format!(",{:?}", y.get_component(i)));
             }
             writeln!(writer, "{}", row)?;
         }
@@ -234,14 +234,18 @@ where
     pub fn to_csv(&self, filename: &str) -> Result<(), Box<dyn std::error::Error>> {
         // Create file and path if it does not exist
         let path = std::path::Path::new(filename);
-        if let Some(parent) = path.parent() {
-            if !parent.exists() {
-                std::fs::create_dir_all(parent)?;
-            }
+        if let Some(parent) = path.parent()
+            && !parent.exists()
+        {
+            std::fs::create_dir_all(parent)?;
         }
         let mut file = std::fs::File::create(filename)?;
 
-        let t = self.t.iter().map(|x| x.to_f64()).collect::<Vec<f64>>();
+        let t = self
+            .t
+            .iter()
+            .map(simba::scalar::SupersetOf::<f64>::to_subset_unchecked)
+            .collect::<Vec<f64>>();
         let mut columns = vec![Column::new("t".into(), t)];
         let n = self.y[0].len();
         for i in 0..n {
@@ -250,11 +254,13 @@ where
                 header.into(),
                 self.y
                     .iter()
-                    .map(|x| x.get(i).to_f64())
+                    .map(|y| {
+                        simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&y.get_component(i))
+                    })
                     .collect::<Vec<f64>>(),
             ));
         }
-        let mut df = DataFrame::new(columns)?;
+        let mut df = DataFrame::new(self.t.len(), columns)?;
 
         // Write the DataFrame to CSV
         CsvWriter::new(&mut file).finish(&mut df)?;
@@ -273,7 +279,11 @@ where
     ///
     #[cfg(feature = "polars")]
     pub fn to_polars(&self) -> Result<DataFrame, PolarsError> {
-        let t = self.t.iter().map(|x| x.to_f64()).collect::<Vec<f64>>();
+        let t = self
+            .t
+            .iter()
+            .map(simba::scalar::SupersetOf::<f64>::to_subset_unchecked)
+            .collect::<Vec<f64>>();
         let mut columns = vec![Column::new("t".into(), t)];
         let n = self.y[0].len();
         for i in 0..n {
@@ -282,12 +292,14 @@ where
                 header.into(),
                 self.y
                     .iter()
-                    .map(|x| x.get(i).to_f64())
+                    .map(|y| {
+                        simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&y.get_component(i))
+                    })
                     .collect::<Vec<f64>>(),
             ));
         }
 
-        DataFrame::new(columns)
+        DataFrame::new(self.t.len(), columns)
     }
 
     /// Convert the solution to a Polars `DataFrame` with custom column names.
@@ -307,7 +319,11 @@ where
         t_name: &str,
         y_names: Vec<&str>,
     ) -> Result<DataFrame, PolarsError> {
-        let t = self.t.iter().map(|x| x.to_f64()).collect::<Vec<f64>>();
+        let t = self
+            .t
+            .iter()
+            .map(simba::scalar::SupersetOf::<f64>::to_subset_unchecked)
+            .collect::<Vec<f64>>();
         let mut columns = vec![Column::new(t_name.into(), t)];
 
         let n = self.y[0].len();
@@ -329,11 +345,13 @@ where
                 (*name).into(),
                 self.y
                     .iter()
-                    .map(|x| x.get(i).to_f64())
+                    .map(|y| {
+                        simba::scalar::SupersetOf::<f64>::to_subset_unchecked(&y.get_component(i))
+                    })
                     .collect::<Vec<f64>>(),
             ));
         }
 
-        DataFrame::new(columns)
+        DataFrame::new(self.t.len(), columns)
     }
 }

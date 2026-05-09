@@ -7,7 +7,7 @@ Event handling in this library has been redesigned to provide robust, SciPy-like
 The core of the new event system is the `Event` trait:
 
 ```rust
-pub trait Event<T: Real = f64, Y: State<T> = f64> {
+pub trait Event<T: Real = f64, Y: State<T> = DefaultState<T>> {
     /// Configure the event detection parameters (called once at initialization).
     fn config(&self) -> EventConfig {
         EventConfig::default()
@@ -58,10 +58,10 @@ impl Event for PopulationThreshold {
         EventConfig::new(CrossingDirection::Positive, Some(1)) // Terminate after first event
     }
 
-    fn event(&self, _t: f64, y: &f64) -> f64 {
+    fn event(&self, _t: f64, y: &[f64; 1]) -> f64 {
         // Event function: g(t,y) = y - threshold
         // Zero crossing occurs when y = threshold
-        y - self.threshold
+        y[0] - self.threshold
     }
 }
 ```
@@ -140,8 +140,8 @@ impl Event for MultipleThresholds {
         EventConfig::new(CrossingDirection::Both, Some(5)) // Detect 5 events
     }
 
-    fn event(&self, _t: f64, y: &f64) -> f64 {
-        y - self.threshold
+    fn event(&self, _t: f64, y: &Vector1<f64>) -> f64 {
+        y[0] - self.threshold
     }
 }
 ```
@@ -156,8 +156,8 @@ impl Event for ContinuousMonitor {
         EventConfig::new(CrossingDirection::Both, None) // No termination
     }
 
-    fn event(&self, _t: f64, y: &f64) -> f64 {
-        y - self.threshold
+    fn event(&self, _t: f64, y: &Vector1<f64>) -> f64 {
+        y[0] - self.threshold
     }
 }
 ```
@@ -229,7 +229,7 @@ impl Event for PeriodicEvent {
         EventConfig::new(CrossingDirection::Positive, None)
     }
 
-    fn event(&self, t: f64, _y: &f64) -> f64 {
+    fn event(&self, t: f64, _y: &Vector1<f64>) -> f64 {
         // Event at regular time intervals
         (t - self.phase).sin() * self.period
     }
@@ -267,8 +267,8 @@ struct LogisticGrowth {
 }
 
 impl ODE for LogisticGrowth {
-    fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
-        *dydt = self.k * y * (1.0 - y / self.m);
+    fn diff(&self, _t: f64, y: &Vector1<f64>, dydt: &mut Vector1<f64>) {
+        dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
     }
 }
 
@@ -277,15 +277,15 @@ impl Event for LogisticGrowth {
         EventConfig::new(CrossingDirection::Positive, Some(1))
     }
 
-    fn event(&self, _t: f64, y: &f64) -> f64 {
+    fn event(&self, _t: f64, y: &Vector1<f64>) -> f64 {
         // Detect when population reaches 90% of carrying capacity
-        y - 0.9 * self.m
+        y[0] - 0.9 * self.m
     }
 }
 
 fn main() {
     let method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
-    let y0 = 1.0;
+    let y0 = Vector1::new(1.0);
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };
