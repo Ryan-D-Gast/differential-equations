@@ -5,6 +5,7 @@
 
 mod numerical_method;
 mod ode;
+pub mod sensitivity;
 mod solve;
 
 pub use numerical_method::OrdinaryNumericalMethod;
