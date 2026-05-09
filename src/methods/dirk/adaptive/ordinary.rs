@@ -63,7 +63,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
         // Newton workspace
         let dim = y0.len();
-        self.jacobian = Matrix::zeros(dim, dim);
+        self.jacobian = Matrix::sparse(dim, dim);
         self.z = y0.clone();
         self.jacobian_age = 0;
 

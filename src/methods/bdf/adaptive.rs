@@ -243,8 +243,8 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
         self.d = core::array::from_fn(|_| y0.zeros_like());
         self.d[0] = y0.clone();
         self.d[1] = self.dydt.scaled(self.h);
-        self.jacobian = Matrix::zeros(dim, dim);
-        self.newton_matrix = Matrix::zeros(dim, dim);
+        self.jacobian = Matrix::sparse(dim, dim);
+        self.newton_matrix = Matrix::sparse(dim, dim);
         self.ip = vec![0; dim];
 
         ode.jacobian(t0, y0, &mut self.jacobian);

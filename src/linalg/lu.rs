@@ -64,6 +64,8 @@ use crate::{
 ///
 /// # Errors
 /// Returns [`LinalgError`] if the matrix is not square, pivot slice has wrong size, or matrix is singular.
+use crate::linalg::MatrixStorage;
+
 pub fn lu_decomp<T: Real>(a: &mut Matrix<T>, ip: &mut [usize]) -> Result<(), LinalgError> {
     let n = a.nrows();
     if n != a.ncols() {
@@ -77,6 +79,109 @@ pub fn lu_decomp<T: Real>(a: &mut Matrix<T>, ip: &mut [usize]) -> Result<(), Lin
             expected: n,
             actual: ip.len(),
         });
+    }
+
+    if let MatrixStorage::Sparse { ref mut coords, .. } = a.storage {
+        // Native Sparse Gaussian Elimination / LU Decomposition using coordinate lists
+        // Note: Performance could be optimized using CSR or Vec<Vec<(usize, T)>> for O(1) row access
+
+        let mut rows: Vec<Vec<(usize, T)>> = vec![Vec::new(); n];
+        for &(r, c, v) in coords.iter() {
+            rows[r].push((c, v));
+        }
+
+        if n == 1 {
+            let diag = rows[0]
+                .iter()
+                .find(|(c, _)| *c == 0)
+                .map(|&(_, v)| v)
+                .unwrap_or(T::zero());
+            if diag == T::zero() {
+                return Err(LinalgError::Singular { step: 1 });
+            }
+            ip[0] = 0;
+            return Ok(());
+        }
+
+        let nm1 = n - 1;
+        for k in 0..nm1 {
+            let kp1 = k + 1;
+
+            let mut m = k;
+            let mut max_val = rows[k]
+                .iter()
+                .find(|(c, _)| *c == k)
+                .map(|&(_, v)| v.abs())
+                .unwrap_or(T::zero());
+
+            for i in kp1..n {
+                let val = rows[i]
+                    .iter()
+                    .find(|(c, _)| *c == k)
+                    .map(|&(_, v)| v.abs())
+                    .unwrap_or(T::zero());
+                if val > max_val {
+                    max_val = val;
+                    m = i;
+                }
+            }
+
+            ip[k] = m;
+            let pivot = rows[m]
+                .iter()
+                .find(|(c, _)| *c == k)
+                .map(|&(_, v)| v)
+                .unwrap_or(T::zero());
+
+            if pivot == T::zero() {
+                return Err(LinalgError::Singular { step: k + 1 });
+            }
+
+            if m != k {
+                rows.swap(k, m);
+            }
+
+            let pivot_inv = T::one() / pivot;
+            let k_row = rows[k].clone();
+
+            for i in kp1..n {
+                let mut factor = T::zero();
+                if let Some(pos) = rows[i].iter().position(|(c, _)| *c == k) {
+                    factor = rows[i][pos].1 * pivot_inv;
+                    rows[i][pos].1 = factor; // L component
+                }
+
+                if factor != T::zero() {
+                    for &(c, v) in k_row.iter() {
+                        if c > k {
+                            if let Some(pos) = rows[i].iter().position(|(col, _)| *col == c) {
+                                rows[i][pos].1 -= factor * v;
+                            } else {
+                                rows[i].push((c, -factor * v));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let diag = rows[n - 1]
+            .iter()
+            .find(|(c, _)| *c == n - 1)
+            .map(|&(_, v)| v)
+            .unwrap_or(T::zero());
+        if diag == T::zero() {
+            return Err(LinalgError::Singular { step: n });
+        }
+
+        coords.clear();
+        for (r, row) in rows.into_iter().enumerate() {
+            for (c, v) in row {
+                coords.push((r, c, v));
+            }
+        }
+
+        return Ok(());
     }
 
     if n == 1 {
