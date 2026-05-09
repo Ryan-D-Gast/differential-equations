@@ -1,6 +1,6 @@
 //! Core matrix type, storage enum, and constructors.
 
-use crate::traits::Real;
+use crate::{linalg::LinalgError, traits::Real};
 
 fn coalesce_triplets<T: Real>(
     n: usize,
@@ -72,10 +72,10 @@ impl<T: Real> Matrix<T> {
     /// Creates a dense row-major matrix from a vector.
     ///
     /// # Errors
-    /// Returns [`crate::linalg::LinalgError::BadInput`] when `data.len() != n * m`.
-    pub fn from_vec(n: usize, m: usize, data: Vec<T>) -> Result<Self, crate::linalg::LinalgError> {
+    /// Returns [`LinalgError::BadInput`] when `data.len() != n * m`.
+    pub fn from_vec(n: usize, m: usize, data: Vec<T>) -> Result<Self, LinalgError> {
         if data.len() != n * m {
-            return Err(crate::linalg::LinalgError::BadInput {
+            return Err(LinalgError::BadInput {
                 message: format!(
                     "Incompatible data length: expected {}, got {}",
                     n * m,
@@ -364,7 +364,7 @@ impl<T: Real> Matrix<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Matrix, MatrixStorage};
+    use super::{LinalgError, Matrix, MatrixStorage};
 
     #[test]
     fn diagonal_constructor_sets_diagonal() {
@@ -392,7 +392,7 @@ mod tests {
 
         assert_eq!(
             result,
-            Err(crate::linalg::LinalgError::BadInput {
+            Err(LinalgError::BadInput {
                 message: "Incompatible data length: expected 6, got 4".to_string(),
             })
         );
