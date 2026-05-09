@@ -128,20 +128,19 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nalgebra::SVector;
     #[cfg(feature = "num-dual")]
     use num_dual::Dual64;
 
     struct TestODE;
 
-    impl<T: Real> ODE<T, SVector<T, 2>> for TestODE {
-        fn diff(&self, _t: T, y: &SVector<T, 2>, dydt: &mut SVector<T, 2>) {
+    impl<T: Real> ODE<T, [T; 2]> for TestODE {
+        fn diff(&self, _t: T, y: &[T; 2], dydt: &mut [T; 2]) {
             dydt[0] = -y[0] + y[0] * y[1];
             dydt[1] = y[0] - y[1] * y[1];
         }
 
         #[cfg(feature = "num-dual")]
-        fn jacobian_ad(&self, _t: T, _y: &SVector<T, 2>, _j: &mut Matrix<T>) -> bool {
+        fn jacobian_ad(&self, _t: T, _y: &[T; 2], _j: &mut Matrix<T>) -> bool {
             // Check if T is f64, then we can do AD over Dual64.
             // Since we can't specialize cleanly here for T=f64 without specialization feature,
             // we typically let specific wrapper implementations handle AD. But for testing
@@ -153,7 +152,7 @@ mod tests {
     #[test]
     fn test_jacobian_fallback() {
         let ode = TestODE;
-        let y = SVector::from([1.0, 2.0]);
+        let y = [1.0, 2.0];
         let mut j = Matrix::zeros(2, 2);
         ode.jacobian(0.0, &y, &mut j);
 
@@ -174,15 +173,15 @@ mod tests {
         // Implement a specific AD wrapper to test the mechanism
         struct AdTestODE;
 
-        impl ODE<f64, SVector<f64, 2>> for AdTestODE {
-            fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
+        impl ODE<f64, [f64; 2]> for AdTestODE {
+            fn diff(&self, _t: f64, y: &[f64; 2], dydt: &mut [f64; 2]) {
                 dydt[0] = -y[0] + y[0] * y[1];
                 dydt[1] = y[0] - y[1] * y[1];
             }
 
-            fn jacobian_ad(&self, _t: f64, y: &SVector<f64, 2>, j: &mut Matrix<f64>) -> bool {
-                let diff_dual = |dual_y: &SVector<Dual64, 2>| {
-                    let mut dydt = SVector::<Dual64, 2>::zeros();
+            fn jacobian_ad(&self, _t: f64, y: &[f64; 2], j: &mut Matrix<f64>) -> bool {
+                let diff_dual = |dual_y: &[Dual64; 2]| {
+                    let mut dydt = [Dual64::from(0.0); 2];
                     dydt[0] = -dual_y[0] + dual_y[0] * dual_y[1];
                     dydt[1] = dual_y[0] - dual_y[1] * dual_y[1];
                     dydt
@@ -204,7 +203,7 @@ mod tests {
         }
 
         let ode = AdTestODE;
-        let y = SVector::from([1.0, 2.0]);
+        let y = [1.0, 2.0];
         let mut j = Matrix::zeros(2, 2);
 
         // This will call jacobian_ad, which returns true and populates j exactly
