@@ -12,12 +12,14 @@ mod bdf;
 mod dirk;
 mod erk;
 mod irk;
+mod symplectic;
 
 pub use apc::AdamsPredictorCorrector;
 pub use bdf::BDF;
 pub use dirk::DiagonallyImplicitRungeKutta;
 pub use erk::ExplicitRungeKutta;
 pub use irk::ImplicitRungeKutta;
+pub use symplectic::SymplecticIntegrator;
 
 // Typestate categories for differential equation types.
 pub struct Ordinary;
