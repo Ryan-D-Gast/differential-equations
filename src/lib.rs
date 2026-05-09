@@ -56,6 +56,23 @@
 //! }
 //! ```
 //!
+//! Alternatively, for simple problems you can use a closure:
+//!
+//! ```rust
+//! use differential_equations::prelude::*;
+//!
+//! fn main() {
+//!     let t0 = 0.0;
+//!     let tf = 1.0;
+//!     let y0 = 1.0;
+//!
+//!     let solution = IVP::ode_from_fn(|t, y, dydt| *dydt = t * y, t0, tf, y0)
+//!         .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-6))
+//!         .solve()
+//!         .unwrap();
+//! }
+//! ```
+//!
 //! ## License
 //!
 //! ```text
