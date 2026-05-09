@@ -12,12 +12,14 @@ mod bdf;
 mod dirk;
 mod erk;
 mod irk;
+mod milstein;
 
 pub use apc::AdamsPredictorCorrector;
 pub use bdf::BackwardDifferentiationFormula;
 pub use dirk::DiagonallyImplicitRungeKutta;
 pub use erk::ExplicitRungeKutta;
 pub use irk::ImplicitRungeKutta;
+pub use milstein::Milstein;
 
 // Typestate categories for differential equation types.
 pub struct Ordinary;
