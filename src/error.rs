@@ -37,7 +37,7 @@ where
     InsufficientHistory { t_delayed: T, t_prev: T, t_curr: T },
 
     /// General linear algebra error
-    LinearAlgebra { msg: String },
+    LinearAlgebra { t: T, y: Y, msg: String },
 }
 
 impl<T, Y> Display for Error<T, Y>
@@ -95,7 +95,11 @@ where
                     t_delayed, t_prev, t_curr
                 )
             }
-            Self::LinearAlgebra { msg } => write!(f, "Linear algebra error: {}", msg),
+            Self::LinearAlgebra { t, y, msg } => write!(
+                f,
+                "Linear algebra error at (t, y) = ({}, {}): {}",
+                t, y, msg
+            ),
         }
     }
 }
@@ -159,7 +163,11 @@ where
                     t_delayed, t_prev, t_curr
                 )
             }
-            Self::LinearAlgebra { msg } => write!(f, "Linear algebra error: {}", msg),
+            Self::LinearAlgebra { t, y, msg } => write!(
+                f,
+                "Linear algebra error at (t, y) = ({:?}, {:?}): {}",
+                t, y, msg
+            ),
         }
     }
 }

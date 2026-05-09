@@ -1,10 +1,5 @@
 //! Linear algebra error types.
 
-use crate::{
-    error,
-    traits::{Real, State},
-};
-
 /// Errors that can occur during linear algebra operations.
 #[derive(Debug, Clone, PartialEq)]
 pub enum LinalgError {
@@ -35,17 +30,3 @@ impl std::fmt::Display for LinalgError {
 }
 
 impl std::error::Error for LinalgError {}
-
-// Allow using `?` to bubble LinalgError into the crate's generic Error<T, Y>.
-impl<T, Y> From<LinalgError> for error::Error<T, Y>
-where
-    T: Real,
-    Y: State<T>,
-{
-    fn from(err: LinalgError) -> Self {
-        // Map linear algebra errors into a user-facing message.
-        error::Error::LinearAlgebra {
-            msg: err.to_string(),
-        }
-    }
-}

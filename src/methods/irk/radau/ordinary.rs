@@ -82,9 +82,13 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
                 self.singular_count += 1;
                 if self.singular_count > 5 {
                     self.status = Status::Error(Error::LinearAlgebra {
+                        t: self.t,
+                        y: self.y.clone(),
                         msg: "Repeated singular matrix in step rejection; aborting.".to_string(),
                     });
                     return Err(Error::LinearAlgebra {
+                        t: self.t,
+                        y: self.y.clone(),
                         msg: "Repeated singular matrix in step rejection; aborting.".to_string(),
                     });
                 }
@@ -104,9 +108,13 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
                 self.singular_count += 1;
                 if self.singular_count > 5 {
                     self.status = Status::Error(Error::LinearAlgebra {
+                        t: self.t,
+                        y: self.y.clone(),
                         msg: "Repeated singular matrix in step rejection; aborting.".to_string(),
                     });
                     return Err(Error::LinearAlgebra {
+                        t: self.t,
+                        y: self.y.clone(),
                         msg: "Repeated singular matrix in step rejection; aborting.".to_string(),
                     });
                 }

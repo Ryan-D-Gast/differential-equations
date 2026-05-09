@@ -19,7 +19,7 @@ pub fn schur_complement<T: Real, V: State<T>>(
     d: &Matrix<T>,
     r: V,
     s: V,
-) -> (V, V) {
+) -> Result<(V, V), crate::linalg::LinalgError> {
     let n = a.n;
     assert_eq!(b.n, n, "block size mismatch: B");
     assert_eq!(c.n, n, "block size mismatch: C");
@@ -28,7 +28,7 @@ pub fn schur_complement<T: Real, V: State<T>>(
     assert_eq!(s.len(), n, "rhs s size mismatch");
 
     // Helper: solve with A and D using existing dense LU path
-    let solve_a = |rhs: V| a.lin_solve(rhs).unwrap();
+    let solve_a = |rhs: V| a.lin_solve(rhs);
 
     // Build dense Schur complement S = D - C A^{-1} B, as a dense Full matrix
     // We'll fill column-by-column using basis vectors e_j.
@@ -40,7 +40,7 @@ pub fn schur_complement<T: Real, V: State<T>>(
         // u = B e_j
         let u = b.mul_state::<V>(&e);
         // v = A^{-1} u
-        let v = solve_a(u);
+        let v = solve_a(u)?;
         // z = C v
         let z = c.mul_state::<V>(&v);
         // column j of S is (D e_j - z)
@@ -52,19 +52,19 @@ pub fn schur_complement<T: Real, V: State<T>>(
     }
 
     // Compute w = s - C A^{-1} r
-    let ar = solve_a(r.clone());
+    let ar = solve_a(r.clone())?;
     let car = c.mul_state::<V>(&ar);
     let w = s.minus(&car);
 
     // Solve S y = w
-    let y = s_dense.lin_solve(w).unwrap();
+    let y = s_dense.lin_solve(w)?;
 
     // Back-substitute for x: A x = r - B y
     let by = b.mul_state::<V>(&y);
     let rhs_x = r.minus(&by);
-    let x = solve_a(rhs_x);
+    let x = solve_a(rhs_x)?;
 
-    (x, y)
+    Ok((x, y))
 }
 
 #[cfg(all(test, feature = "nalgebra"))]
@@ -90,7 +90,7 @@ mod tests {
         let r = a.mul_state(&x_true);
         let s = d.mul_state(&y_true);
 
-        let (x, y) = schur_complement(&a, &b, &c, &d, r, s);
+        let (x, y) = schur_complement(&a, &b, &c, &d, r, s).unwrap();
         approx_eq(x.x, x_true.x);
         approx_eq(x.y, x_true.y);
         approx_eq(y.x, y_true.x);
@@ -120,7 +120,7 @@ mod tests {
             Vector2::new(cx.x + dy.x, cx.y + dy.y)
         };
 
-        let (x, y) = schur_complement(&a, &b, &c, &d, r, s);
+        let (x, y) = schur_complement(&a, &b, &c, &d, r, s).unwrap();
         approx_eq(x.x, x_true.x);
         approx_eq(x.y, x_true.y);
         approx_eq(y.x, y_true.x);

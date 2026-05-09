@@ -205,7 +205,12 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 self.delta_k_vec[i] = self.rhs_newton[i];
             }
             self.newton_matrix
-                .lin_solve_mut(&mut self.delta_k_vec[..])?;
+                .lin_solve_mut(&mut self.delta_k_vec[..])
+                .map_err(|e| crate::error::Error::LinearAlgebra {
+                    t: self.t,
+                    y: self.y.clone(),
+                    msg: e.to_string(),
+                })?;
             self.lu_decompositions += 1;
 
             // Update z_i and increment norm
