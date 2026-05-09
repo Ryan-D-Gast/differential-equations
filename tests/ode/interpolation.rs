@@ -3,7 +3,7 @@
 use super::systems;
 use differential_equations::{
     ivp::IVP,
-    methods::{AdamsPredictorCorrector, BDF, ExplicitRungeKutta, ImplicitRungeKutta},
+    methods::{AdamsPredictorCorrector, BackwardDifferentiationFormula, ExplicitRungeKutta, ImplicitRungeKutta},
     traits::State,
 };
 use systems::ExponentialGrowth;
@@ -72,7 +72,7 @@ fn interpolation() {
         solver_name: CrankNicolson, solver: ImplicitRungeKutta::crank_nicolson(0.01),
         solver_name: GaussLegendre6, solver: ImplicitRungeKutta::gauss_legendre_6(),
         solver_name: Radau5, solver: ImplicitRungeKutta::radau5(),
-        solver_name: BDF, solver: BDF::adaptive()
+        solver_name: BackwardDifferentiationFormula, solver: BackwardDifferentiationFormula::adaptive()
     }
 
     test_interpolation! {
@@ -84,11 +84,11 @@ fn interpolation() {
 }
 
 #[test]
-fn bdf_interpolation_all_eval_points() {
+fn backward_differentiation_formula_interpolation_all_eval_points() {
     let system = ExponentialGrowth { k: 1.0 };
     let results = IVP::ode(&system, 0.0, 2.0, 1.0)
         .t_eval(vec![0.5, 1.0, 1.69])
-        .method(BDF::adaptive())
+        .method(BackwardDifferentiationFormula::adaptive())
         .solve()
         .unwrap();
 
@@ -96,7 +96,7 @@ fn bdf_interpolation_all_eval_points() {
     for i in 0..expected_y.len() {
         assert!(
             (results.y[i] - expected_y[i]).abs() < 1e-3,
-            "BDF interpolation failed at t={}: Expected: {:?}, Got: {:?}",
+            "BackwardDifferentiationFormula interpolation failed at t={}: Expected: {:?}, Got: {:?}",
             results.t[i],
             expected_y[i],
             results.y[i]

@@ -1,12 +1,12 @@
-//! Adaptive variable-order Backward Differentiation Formula (BDF) solver.
+//! Adaptive variable-order Backward Differentiation Formula solver.
 //!
-//! Implements BDF orders 1 through 5 with automatic order selection and
+//! Implements Backward Differentiation Formula orders 1 through 5 with automatic order selection and
 //! adaptive step size control. The solver starts at order 1 and adjusts
 //! both order and step size to balance accuracy and efficiency.
 //!
 //! Based on the approach described in:
 //! - Hairer, E., & Wanner, G. (1996). Solving Ordinary Differential
-//!   Equations II, Section IV.2 (BDF methods).
+//!   Equations II, Section IV.2 (Backward Differentiation Formula methods).
 
 mod adaptive;
 
@@ -19,19 +19,19 @@ use crate::{
     traits::{Real, State},
 };
 
-/// Maximum BDF order (BDF5 is the highest practically useful order).
+/// Maximum Backward Differentiation Formula order (order 5 is the highest practically useful order).
 pub const MAX_ORDER: usize = 5;
-const BDF_ROWS: usize = MAX_ORDER + 3;
+const BACKWARD_DIFFERENTIATION_FORMULA_ROWS: usize = MAX_ORDER + 3;
 
 /// Adaptive variable-order Backward Differentiation Formula solver.
 ///
-/// Uses BDF orders 1-5 with automatic order and step size selection.
-/// Newton iteration resolves the implicit BDF equations. Dense output
+/// Uses Backward Differentiation Formula orders 1-5 with automatic order and step size selection.
+/// Newton iteration resolves the implicit Backward Differentiation Formula equations. Dense output
 /// via polynomial interpolation is supported.
 ///
 /// The solver starts at order 1 and considers increasing the order after
 /// enough successful steps. On step rejection, the order is decreased.
-pub struct BDF<E, T: Real, Y: State<T>> {
+pub struct BackwardDifferentiationFormula<E, T: Real, Y: State<T>> {
     pub h0: T,
     pub rtol: Tolerance<T>,
     pub atol: Tolerance<T>,
@@ -54,7 +54,7 @@ pub struct BDF<E, T: Real, Y: State<T>> {
     t_prev: T,
     y_prev: Y,
     h_prev: T,
-    d: [Y; BDF_ROWS],
+    d: [Y; BACKWARD_DIFFERENTIATION_FORMULA_ROWS],
 
     order: usize,
     n_equal_steps: usize,
@@ -74,7 +74,7 @@ pub struct BDF<E, T: Real, Y: State<T>> {
     _phantom: PhantomData<E>,
 }
 
-impl<E, T: Real, Y: State<T>> Default for BDF<E, T, Y> {
+impl<E, T: Real, Y: State<T>> Default for BackwardDifferentiationFormula<E, T, Y> {
     fn default() -> Self {
         Self {
             h0: T::zero(),
@@ -121,7 +121,7 @@ impl<E, T: Real, Y: State<T>> Default for BDF<E, T, Y> {
     }
 }
 
-impl<E, T: Real, Y: State<T>> BDF<E, T, Y> {
+impl<E, T: Real, Y: State<T>> BackwardDifferentiationFormula<E, T, Y> {
     pub fn adaptive() -> Self {
         Self::default()
     }

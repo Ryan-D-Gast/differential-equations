@@ -7,7 +7,7 @@ use super::systems::{
 use differential_equations::{
     ivp::IVP,
     methods::{
-        AdamsPredictorCorrector, BDF, DiagonallyImplicitRungeKutta, ExplicitRungeKutta,
+        AdamsPredictorCorrector, BackwardDifferentiationFormula, DiagonallyImplicitRungeKutta, ExplicitRungeKutta,
         ImplicitRungeKutta,
     },
     traits::State,
@@ -168,8 +168,8 @@ fn accuracy() {
         solver: ImplicitRungeKutta::radau5(),
         tolerance: 1e1,
 
-        solver_name: BDF,
-        solver: BDF::adaptive(),
+        solver_name: BackwardDifferentiationFormula,
+        solver: BackwardDifferentiationFormula::adaptive(),
         tolerance: 1e-1
     }
 
@@ -277,8 +277,8 @@ fn accuracy() {
         solver: ImplicitRungeKutta::radau5(),
         tolerance: 1e-3,
 
-        solver_name: BDF,
-        solver: BDF::adaptive(),
+        solver_name: BackwardDifferentiationFormula,
+        solver: BackwardDifferentiationFormula::adaptive(),
         tolerance: 1e-3
     }
 
@@ -386,8 +386,8 @@ fn accuracy() {
         solver: ImplicitRungeKutta::radau5(),
         tolerance: 1e1,
 
-        solver_name: BDF,
-        solver: BDF::adaptive(),
+        solver_name: BackwardDifferentiationFormula,
+        solver: BackwardDifferentiationFormula::adaptive(),
         tolerance: 1e-1
     }
 
@@ -495,8 +495,8 @@ fn accuracy() {
         solver: ImplicitRungeKutta::radau5(),
         tolerance: 1e-3,
 
-        solver_name: BDF,
-        solver: BDF::adaptive(),
+        solver_name: BackwardDifferentiationFormula,
+        solver: BackwardDifferentiationFormula::adaptive(),
         tolerance: 1e-3
     }
 
@@ -614,8 +614,8 @@ fn accuracy() {
         solver: DiagonallyImplicitRungeKutta::esdirk33(0.01),
         tolerance: 1e-3,
 
-        solver_name: BDF,
-        solver: BDF::adaptive(),
+        solver_name: BackwardDifferentiationFormula,
+        solver: BackwardDifferentiationFormula::adaptive(),
         tolerance: 1e-3
     }
 
@@ -670,8 +670,8 @@ fn accuracy() {
         solver: ExplicitRungeKutta::dopri5().rtol(1e-8).atol(1e-10),
         tolerance: 5e-1,
 
-        solver_name: BDF,
-        solver: BDF::adaptive().rtol(1e-6).atol(1e-8),
+        solver_name: BackwardDifferentiationFormula,
+        solver: BackwardDifferentiationFormula::adaptive().rtol(1e-6).atol(1e-8),
         tolerance: 1e-2
     }
 
@@ -705,8 +705,8 @@ fn accuracy() {
         solver: DiagonallyImplicitRungeKutta::kvaerno423().rtol(1e-4).atol(1e-6),
         tolerance: 1e-1,
 
-        solver_name: BDF,
-        solver: BDF::adaptive().rtol(1e-4).atol(1e-6),
+        solver_name: BackwardDifferentiationFormula,
+        solver: BackwardDifferentiationFormula::adaptive().rtol(1e-4).atol(1e-6),
         tolerance: 1e-1
     }
 }

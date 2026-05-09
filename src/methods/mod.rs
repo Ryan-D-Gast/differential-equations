@@ -14,7 +14,7 @@ mod erk;
 mod irk;
 
 pub use apc::AdamsPredictorCorrector;
-pub use bdf::BDF;
+pub use bdf::BackwardDifferentiationFormula;
 pub use dirk::DiagonallyImplicitRungeKutta;
 pub use erk::ExplicitRungeKutta;
 pub use irk::ImplicitRungeKutta;

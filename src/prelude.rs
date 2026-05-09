@@ -29,6 +29,7 @@
 //! | ExplicitRungeKutta            |  X  |  X  | (X) |     |
 //! | ImplicitRungeKutta            |  X  |     |     | {X} |
 //! | DiagonallyImplicitRungeKutta  |  X  |     |     |     |
+//! | BackwardDifferentiationFormula|  X  |     |     |     |
 //! | AdamsPredictorCorrector       |  X  |     |     |     |
 //!
 //! - `X` = Supported
@@ -40,8 +41,8 @@
 
 // Numerical Methods
 pub use crate::methods::{
-    AdamsPredictorCorrector, BDF, DiagonallyImplicitRungeKutta, ExplicitRungeKutta,
-    ImplicitRungeKutta,
+    AdamsPredictorCorrector, BackwardDifferentiationFormula, DiagonallyImplicitRungeKutta,
+    ExplicitRungeKutta, ImplicitRungeKutta,
 };
 
 // Initial Value Problems
