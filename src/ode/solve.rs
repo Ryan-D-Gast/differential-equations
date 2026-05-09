@@ -112,6 +112,10 @@ use crate::{
 /// * The `tf == t0` case is considered an error (no integration to perform).
 /// * The output points depend on the chosen `Solout` implementation.
 ///
+#[cfg_attr(
+    feature = "observability",
+    tracing::instrument(skip_all, name = "solve")
+)]
 pub fn solve_ode<T, Y, S, F, O>(
     solver: &mut S,
     ode: &F,

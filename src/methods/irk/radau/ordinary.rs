@@ -10,6 +10,8 @@ use crate::{
     traits::{Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
+#[cfg(feature = "observability")]
+use tracing::debug;
 
 impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T, Y> {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
@@ -312,11 +314,25 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
                         self.hhfac = T::from_f64(0.8).unwrap() * qnewt.powf(exponent);
                         self.h *= self.hhfac;
                         self.h = (self.filter)(self.h);
+                        #[cfg(feature = "observability")]
+                        debug!(
+                            t = ?self.t,
+                            h = ?self.h,
+                            theta = ?self.theta,
+                            "Radau5 step rejected due to slow Newton convergence"
+                        );
                         self.status = Status::RejectedStep;
                         self.reject = true;
                         return Ok(evals);
                     }
                 } else {
+                    #[cfg(feature = "observability")]
+                    debug!(
+                        t = ?self.t,
+                        h = ?self.h,
+                        theta = ?self.theta,
+                        "Radau5 step rejected due to Newton divergence"
+                    );
                     self.unexpected_step_rejection();
                     return Ok(evals);
                 }
@@ -482,6 +498,13 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
             self.call_decomp = true;
         } else {
             // Step rejected
+            #[cfg(feature = "observability")]
+            debug!(
+                t = ?self.t,
+                h = ?self.h,
+                err = ?err,
+                "Radau5 step rejected due to error estimate"
+            );
             self.reject = true;
             self.status = Status::RejectedStep;
 

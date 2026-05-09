@@ -131,6 +131,10 @@ use crate::{
 /// * The output points depend on the chosen `Solout` implementation.
 /// * Due to the stochastic nature, each run will produce different results unless a specific seed is used.
 ///
+#[cfg_attr(
+    feature = "observability",
+    tracing::instrument(skip_all, name = "solve")
+)]
 pub fn solve_sde<T, Y, S, F, O>(
     solver: &mut S,
     sde: &mut F,

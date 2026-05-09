@@ -179,6 +179,12 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
             // Newton failed for this stage
             if !newton_converged {
+                #[cfg(feature = "observability")]
+                tracing::debug!(
+                    t = ?self.t,
+                    h = ?self.h,
+                    "DIRK stage Newton failed to converge"
+                );
                 // Reduce h and retry later
                 self.h *= T::from_f64(0.25).unwrap();
                 self.h = constrain_step_size(self.h, self.h_min, self.h_max);
@@ -276,6 +282,13 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             }
         } else {
             // Rejected
+            #[cfg(feature = "observability")]
+            tracing::debug!(
+                t = ?self.t,
+                h = ?self.h,
+                err_norm = ?err_norm,
+                "DIRK adaptive step rejected due to error estimate"
+            );
             self.status = Status::RejectedStep;
             self.stiffness_counter += 1;
 

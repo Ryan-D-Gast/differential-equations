@@ -9,6 +9,8 @@ use crate::{
     traits::{Real, State},
     utils::{constrain_step_size, validate_step_size_parameters},
 };
+#[cfg(feature = "observability")]
+use tracing::debug;
 
 use super::{BDF, BDF_ROWS, MAX_ORDER};
 
@@ -338,6 +340,12 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
             }
 
             if !converged {
+                #[cfg(feature = "observability")]
+                debug!(
+                    t = ?self.t,
+                    h = ?self.h,
+                    "BDF Newton iterations failed to converge, reducing step size"
+                );
                 self.apply_step_factor(order, Self::scalar(0.5));
                 continue;
             }
@@ -349,6 +357,13 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
             let error_norm = self.weighted_rms_norm(&error, &scale);
 
             if error_norm > T::one() {
+                #[cfg(feature = "observability")]
+                debug!(
+                    t = ?self.t,
+                    order = ?order,
+                    error_norm = ?error_norm,
+                    "BDF step rejected due to high error norm"
+                );
                 let factor = self
                     .min_scale
                     .max(safety * error_norm.powf(-T::one() / Self::order_scalar(order + 1)));
@@ -407,6 +422,16 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
             if higher_factor > best_factor {
                 best_factor = higher_factor;
                 delta_order = 1;
+            }
+
+            if delta_order != 0 {
+                #[cfg(feature = "observability")]
+                debug!(
+                    t = ?self.t,
+                    old_order = ?order,
+                    new_order = ?((order as isize + delta_order) as usize),
+                    "BDF changing order"
+                );
             }
 
             order = (order as isize + delta_order) as usize;

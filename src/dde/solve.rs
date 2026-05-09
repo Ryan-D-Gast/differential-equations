@@ -61,6 +61,10 @@ use crate::{
 ///   (`Error::StepSizeTooSmall`), exceeding the maximum number of steps (`Error::MaxSteps`),
 ///   or potential stiffness detected by the solver (`Error::Stiffness`).
 ///
+#[cfg_attr(
+    feature = "observability",
+    tracing::instrument(skip_all, name = "solve")
+)]
 pub fn solve_dde<const L: usize, T, Y, S, F, H, O>(
     solver: &mut S,
     dde: &F,

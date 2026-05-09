@@ -181,6 +181,13 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
             }
         } else {
             // Step rejected
+            #[cfg(feature = "observability")]
+            tracing::debug!(
+                t = ?self.t,
+                h = ?self.h,
+                err_norm = ?err_norm,
+                "ERK adaptive step rejected due to error estimate"
+            );
             self.status = Status::RejectedStep;
             self.stiffness_counter += 1;
 
