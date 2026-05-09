@@ -36,6 +36,7 @@ polars = ["dep:polars"]
 serde = ["dep:serde"]
 ndarray = ["dep:ndarray"]
 faer = ["dep:faer"]
+num-dual = ["dep:num-dual"]
 
 [lints.clippy]
 module_inception = "allow"
@@ -51,6 +52,7 @@ polars = { version = "^0.53.0", optional = true } # DataFrame integration for th
 serde = { version = "1.0.228", features = ["derive"], optional = true } # solution serialization/deserialization
 ndarray = { version = "0.17.2", optional = true }
 faer = { version = "0.24.0", optional = true }
+num-dual = { version = "0.13.6", optional = true }
 
 [dev-dependencies]
 quill = "0.2.0" # Plotting for examples
