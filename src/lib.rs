@@ -99,6 +99,7 @@ pub mod methods;
 pub mod tableau;
 
 // Differential Equations
+pub mod bvp;
 pub mod dae;
 pub mod dde;
 pub mod ivp;
