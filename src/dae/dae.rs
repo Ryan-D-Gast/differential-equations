@@ -1,7 +1,6 @@
 //! Defines system of differential algebraic equations for numerical solvers.
 //! The NumericalMethods use this trait to take a input system from the user and solve
-//! Includes differential equations, mass matrix, and optional event function to interrupt solver
-//! given a condition or event.
+//! Includes differential equations and mass matrix. Event handling is provided via the separate `Event` trait.
 
 use crate::{
     linalg::Matrix,
@@ -13,16 +12,11 @@ use crate::{
 /// DAE trait defines the differential algebraic equation system m·y' = f(t, y) for the solver.
 /// Where m is the mass matrix, y is the solution vector, y' is the derivative vector, and
 /// f(t, y) is the right-hand side function. When m is the identity matrix, this reduces
-/// to the standard ODE form y' = f(t, y). The trait also includes an event function to
-/// interrupt the solver when a condition is met or event occurs.
+/// to the standard ODE form y' = f(t, y).
 ///
 /// # Impl
 /// * `diff`  - Right-hand side function f(t, y) in form f(t, &y, &mut f).
 /// * `mass`  - Mass matrix m that multiplies y' in the DAE system m·y' = f(t, y).
-/// * `event` - Event function to interrupt solver when condition is met or event occurs.
-///
-/// Note that the event function is optional and can be left out when implementing
-/// in which case it will be set to return Continue by default.
 pub trait DAE<T = f64, V = DefaultState<T>>
 where
     T: Real,

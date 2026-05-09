@@ -70,9 +70,10 @@ use crate::{
 ///
 /// # Event Handling
 ///
-/// The solver checks for events after each step using the `event` method of the system.
-/// If an event returns `ControlFlag::Terminate`, the integration stops and interpolates
-/// to find the precise point where the event occurred, using a modified regula falsi method.
+/// The solver supports event detection through the `Solout` interface via `EventWrappedSolout`.
+/// You can add an event handler using the `IVP::event()` builder method.
+/// If an event terminates the solver, the integration stops and interpolates
+/// to find the precise point where the event occurred using Brent-Dekker root finding.
 ///
 /// # Examples
 ///
