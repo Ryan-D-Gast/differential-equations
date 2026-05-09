@@ -3,8 +3,8 @@
 
 use super::systems::MackeyGlass;
 use differential_equations::ivp::IVP;
-use differential_equations::methods::ExplicitRungeKutta;
 use differential_equations::traits::State;
+use differential_equations::methods::ExplicitRungeKutta;
 use std::fs;
 
 macro_rules! test_dde {
