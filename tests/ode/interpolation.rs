@@ -92,7 +92,7 @@ fn bdf_interpolation_all_eval_points() {
         .solve()
         .unwrap();
 
-    let expected_y = vec![f64::exp(0.5), f64::exp(1.0), f64::exp(1.69)];
+    let expected_y = [f64::exp(0.5), f64::exp(1.0), f64::exp(1.69)];
     for i in 0..expected_y.len() {
         assert!(
             (results.y[i] - expected_y[i]).abs() < 1e-3,
