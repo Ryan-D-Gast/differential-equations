@@ -100,10 +100,10 @@ mod tests {
     #[test]
     fn schur_mixed_blocks_small_dense() {
         // Choose small invertible A and and simple B, C
-        let a: Matrix<f64> = Matrix::from_vec(2, 2, vec![3.0, 1.0, 2.0, 4.0]);
-        let d: Matrix<f64> = Matrix::from_vec(2, 2, vec![2.0, 0.5, 1.0, 3.0]);
-        let b: Matrix<f64> = Matrix::from_vec(2, 2, vec![1.0, 0.0, 0.0, 1.0]);
-        let c: Matrix<f64> = Matrix::from_vec(2, 2, vec![0.5, 0.0, 0.0, 0.5]);
+        let a: Matrix<f64> = Matrix::from_vec(2, 2, vec![3.0, 1.0, 2.0, 4.0]).unwrap();
+        let d: Matrix<f64> = Matrix::from_vec(2, 2, vec![2.0, 0.5, 1.0, 3.0]).unwrap();
+        let b: Matrix<f64> = Matrix::from_vec(2, 2, vec![1.0, 0.0, 0.0, 1.0]).unwrap();
+        let c: Matrix<f64> = Matrix::from_vec(2, 2, vec![0.5, 0.0, 0.0, 0.5]).unwrap();
 
         let x_true = Vector2::new(1.0, -2.0);
         let y_true = Vector2::new(3.0, 4.0);

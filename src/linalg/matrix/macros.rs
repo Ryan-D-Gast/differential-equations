@@ -24,7 +24,7 @@ macro_rules! matrix {
         assert!(rows_vec.iter().all(|r| r.len() == n), "matrix! requires a square n x n list of rows");
         let mut data = Vec::with_capacity(n*n);
         for r in rows_vec.into_iter() { data.extend(r.into_iter()); }
-        $crate::linalg::matrix::Matrix::from_vec(n, n, data)
+        $crate::linalg::matrix::Matrix::from_vec(n, n, data).expect("Incompatible data length in matrix! macro")
     }};
     ( $( [ $( $x:expr ),* $(,)? ] ),+ $(,)? ) => {{
         // Collect rows into a Vec<Vec<_>> first
@@ -34,7 +34,7 @@ macro_rules! matrix {
         assert!(rows_vec.iter().all(|r| r.len() == n), "matrix! requires a square n x n list of rows");
         let mut data = Vec::with_capacity(n*n);
         for r in rows_vec.into_iter() { data.extend(r.into_iter()); }
-        $crate::linalg::matrix::Matrix::full(n, data)
+        $crate::linalg::matrix::Matrix::from_vec(n, n, data).expect("Incompatible data length in matrix! macro")
     }};
 }
 
