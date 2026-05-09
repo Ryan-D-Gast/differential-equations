@@ -361,3 +361,59 @@ where
         )
     }
 }
+
+#[cfg(feature = "rayon")]
+use crate::parallel::Solver;
+
+#[cfg(feature = "rayon")]
+impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> Solver<T, Y>
+    for IVP<OdeEq<'a, F>, T, Y, Method, SoloutType>
+where
+    F: ODE<T, Y>,
+    Method: OrdinaryNumericalMethod<T, Y> + Interpolation<T, Y>,
+    SoloutType: Solout<T, Y>,
+{
+    fn solve_ivp(self) -> Result<Solution<T, Y>, Error<T, Y>> {
+        self.solve()
+    }
+}
+
+#[cfg(feature = "rayon")]
+impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> Solver<T, Y>
+    for IVP<DaeEq<'a, F>, T, Y, Method, SoloutType>
+where
+    F: DAE<T, Y>,
+    Method: AlgebraicNumericalMethod<T, Y> + Interpolation<T, Y>,
+    SoloutType: Solout<T, Y>,
+{
+    fn solve_ivp(self) -> Result<Solution<T, Y>, Error<T, Y>> {
+        self.solve()
+    }
+}
+
+#[cfg(feature = "rayon")]
+impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> Solver<T, Y>
+    for IVP<SdeEq<'a, F>, T, Y, Method, SoloutType>
+where
+    F: SDE<T, Y>,
+    Method: StochasticNumericalMethod<T, Y> + Interpolation<T, Y>,
+    SoloutType: Solout<T, Y>,
+{
+    fn solve_ivp(self) -> Result<Solution<T, Y>, Error<T, Y>> {
+        self.solve()
+    }
+}
+
+#[cfg(feature = "rayon")]
+impl<'a, const L: usize, F, H, T: Real, Y: State<T>, Method, SoloutType> Solver<T, Y>
+    for IVP<DdeEq<'a, L, F, H>, T, Y, Method, SoloutType>
+where
+    F: DDE<L, T, Y>,
+    H: Fn(T) -> Y + Clone,
+    Method: DelayNumericalMethod<L, T, Y, H> + Interpolation<T, Y>,
+    SoloutType: Solout<T, Y>,
+{
+    fn solve_ivp(self) -> Result<Solution<T, Y>, Error<T, Y>> {
+        self.solve()
+    }
+}

@@ -36,6 +36,7 @@ polars = ["dep:polars"]
 serde = ["dep:serde"]
 ndarray = ["dep:ndarray"]
 faer = ["dep:faer"]
+rayon = ["dep:rayon"]
 
 [lints.clippy]
 module_inception = "allow"
@@ -51,6 +52,7 @@ polars = { version = "^0.53.0", optional = true } # DataFrame integration for th
 serde = { version = "1.0.228", features = ["derive"], optional = true } # solution serialization/deserialization
 ndarray = { version = "0.17.2", optional = true }
 faer = { version = "0.24.0", optional = true }
+rayon = { version = "1.12.0", optional = true }
 
 [dev-dependencies]
 quill = "0.2.0" # Plotting for examples
@@ -187,3 +189,13 @@ name = "ode_solver_benchmarks"
 harness = false
 path = "benches/main.rs"
 required-features = ["nalgebra"]
+
+[[example]]
+name = "sde_04_monte_carlo"
+path = "examples/sde/04_monte_carlo/main.rs"
+required-features = ["rayon"]
+
+[[test]]
+name = "parallel"
+path = "tests/parallel.rs"
+required-features = ["rayon"]
