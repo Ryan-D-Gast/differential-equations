@@ -17,17 +17,15 @@
 //! This example showcases:
 //! - Zero-crossing detection with the crossing() method
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::{SVector, vector};
 
 struct DampedOscillator {
     damping: f64,
     spring_constant: f64,
 }
 
-impl ODE<f64, SVector<f64, 2>> for DampedOscillator {
-    fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
+impl ODE<f64, [f64; 2]> for DampedOscillator {
+    fn diff(&self, _t: f64, y: &[f64; 2], dydt: &mut [f64; 2]) {
         dydt[0] = y[1];
         dydt[1] = -self.damping * y[1] - self.spring_constant * y[0];
     }
@@ -41,7 +39,7 @@ fn main() {
         damping,
         spring_constant,
     };
-    let y0 = vector![1.0, 0.0];
+    let y0 = [1.0, 0.0];
     let t0 = 0.0;
     let tf = 20.0;
 

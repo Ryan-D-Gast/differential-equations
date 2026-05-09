@@ -21,9 +21,7 @@
 //! - Evaluation at specific time points (t_eval)
 //! - Status checking with simulation results
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::{SVector, vector};
 
 struct DampedPendulumModel {
     g: f64,
@@ -32,8 +30,8 @@ struct DampedPendulumModel {
     m: f64,
 }
 
-impl ODE<f64, SVector<f64, 2>> for DampedPendulumModel {
-    fn diff(&self, _t: f64, y: &SVector<f64, 2>, dydt: &mut SVector<f64, 2>) {
+impl ODE<f64, [f64; 2]> for DampedPendulumModel {
+    fn diff(&self, _t: f64, y: &[f64; 2], dydt: &mut [f64; 2]) {
         let theta = y[0];
         let omega = y[1];
 
@@ -42,13 +40,13 @@ impl ODE<f64, SVector<f64, 2>> for DampedPendulumModel {
     }
 }
 
-impl Event<f64, SVector<f64, 2>> for DampedPendulumModel {
+impl Event<f64, [f64; 2]> for DampedPendulumModel {
     fn config(&self) -> EventConfig {
         EventConfig::default().terminal() // Will terminate after the first event
     }
 
     /// Event function to detect when the pendulum is near equilibrium
-    fn event(&self, _t: f64, y: &SVector<f64, 2>) -> f64 {
+    fn event(&self, _t: f64, y: &[f64; 2]) -> f64 {
         let theta = y[0];
         let omega = y[1];
         // Event function g(t,y) = max(|theta|, |omega|) - 0.01
@@ -60,7 +58,7 @@ fn main() {
     // --- Problem Configuration ---
     let initial_angle = 1.0; // Initial angle (radians)
     let initial_velocity = 0.0; // Initial angular velocity (radians/s)
-    let y0 = vector![initial_angle, initial_velocity];
+    let y0 = [initial_angle, initial_velocity];
     let t0 = 0.0;
     let tf = 100.0;
 

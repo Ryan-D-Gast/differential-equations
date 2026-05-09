@@ -17,7 +17,6 @@
 //! - Handling events during the solution process
 //! - Accessing solution statistics like step counts and evaluations
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use ndarray::{Array1, array};
 use quill::prelude::*;

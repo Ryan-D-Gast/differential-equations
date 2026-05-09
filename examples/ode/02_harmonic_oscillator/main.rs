@@ -19,7 +19,6 @@
 //! - Using `Vec<f64>` for dynamically sized state representation
 //! - Compact solution approach with minimal code
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use quill::prelude::*;
 

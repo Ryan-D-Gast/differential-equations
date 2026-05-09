@@ -89,7 +89,6 @@ path = "examples/ode/04_sir_model/main.rs"
 [[example]]
 name = "ode_05_damped_pendulum"
 path = "examples/ode/05_damped_pendulum/main.rs"
-required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_06_integration"
@@ -104,7 +103,6 @@ required-features = ["nalgebra"]
 [[example]]
 name = "ode_08_damped_oscillator"
 path = "examples/ode/08_damped_oscillator/main.rs"
-required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_09_matrix_ode"
@@ -114,7 +112,6 @@ required-features = ["nalgebra"]
 [[example]]
 name = "ode_10_custom_solout"
 path = "examples/ode/10_custom_solout/main.rs"
-required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_11_schrodinger"
@@ -123,12 +120,10 @@ path = "examples/ode/11_schrodinger/main.rs"
 [[example]]
 name = "ode_12_brusselator"
 path = "examples/ode/12_brusselator/main.rs"
-required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_13_vanderpol"
 path = "examples/ode/13_vanderpol/main.rs"
-required-features = ["nalgebra"]
 
 [[example]]
 name = "ode_14_r2bp_stm"
@@ -148,23 +143,19 @@ required-features = ["nalgebra"]
 [[example]]
 name = "ode_17_quadrature"
 path = "examples/ode/17_quadrature/main.rs"
-required-features = ["nalgebra"]
 
 # Differential-Algebraic Equation (DAE) examples
 [[example]]
 name = "dae_01_amplifier"
 path = "examples/dae/01_amplifier/main.rs"
-required-features = ["nalgebra"]
 
 [[example]]
 name = "dae_02_robertson"
 path = "examples/dae/02_robertson/main.rs"
-required-features = ["nalgebra"]
 
 [[example]]
 name = "dae_03_pendulum"
 path = "examples/dae/03_pendulum/main.rs"
-required-features = ["nalgebra"]
 
 # Stochastic Differential Equation (SDE) examples
 [[example]]
@@ -178,7 +169,6 @@ path = "examples/sde/02_heston_model/main.rs"
 [[example]]
 name = "sde_03_ornstein_uhlenbeck"
 path = "examples/sde/03_ornstein_uhlenbeck/main.rs"
-required-features = ["nalgebra"]
 
 # Delay Differential Equation (DDE) examples
 [[example]]
@@ -188,7 +178,6 @@ path = "examples/dde/01_mackey_glass/main.rs"
 [[example]]
 name = "dde_02_breast_cancer_model"
 path = "examples/dde/02_breast_cancer_model/main.rs"
-required-features = ["nalgebra"]
 
 # Benchmarks
 [[bench]]

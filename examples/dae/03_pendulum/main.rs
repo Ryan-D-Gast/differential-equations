@@ -25,9 +25,7 @@
 //!       0, -lambda,0, 0, -y
 //!       2x, 2y, 0, 0, 0 ]
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::{SVector, vector};
 use quill::prelude::*;
 
 struct Pendulum {
@@ -42,8 +40,8 @@ impl Pendulum {
 }
 
 // State vector: [x, y, vx, vy, lambda]
-impl DAE<f64, SVector<f64, 5>> for Pendulum {
-    fn diff(&self, _t: f64, y: &SVector<f64, 5>, f: &mut SVector<f64, 5>) {
+impl DAE<f64, [f64; 5]> for Pendulum {
+    fn diff(&self, _t: f64, y: &[f64; 5], f: &mut [f64; 5]) {
         let x = y[0];
         let yy = y[1];
         let vx = y[2];
@@ -70,7 +68,7 @@ impl DAE<f64, SVector<f64, 5>> for Pendulum {
         m[(4, 4)] = 0.0;
     }
 
-    fn jacobian(&self, _t: f64, y: &SVector<f64, 5>, j: &mut Matrix<f64>) {
+    fn jacobian(&self, _t: f64, y: &[f64; 5], j: &mut Matrix<f64>) {
         let x = y[0];
         let yy = y[1];
         let lambda = y[4];
@@ -128,7 +126,7 @@ fn main() {
     // x*ax + y*ay + vx^2 + vy^2 = 0, with ax = -lambda*x, ay = -lambda*y - g
     // => -lambda*(x^2 + y^2) - y*g + vx^2 + vy^2 = 0  => lambda = -( - y*g + vx^2 + vy^2)/(l^2)
     let lambda0 = -(-y0 * g + vx0 * vx0 + vy0 * vy0) / (l * l);
-    let y0 = vector![x0, y0, vx0, vy0, lambda0];
+    let y0 = [x0, y0, vx0, vy0, lambda0];
     let t0 = 0.0;
     let tf = 10.0;
     match IVP::dae(&model, t0, tf, y0)

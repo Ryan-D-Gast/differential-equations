@@ -14,14 +14,12 @@
 //! J = [[-4 + 2*y0*y1,     y0^2],
 //!      [ 3 - 2*y0*y1,    -y0^2]]
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::Vector2;
 
 struct BrusselatorSystem;
 
-impl ODE<f64, Vector2<f64>> for BrusselatorSystem {
-    fn diff(&self, _t: f64, y: &Vector2<f64>, dydt: &mut Vector2<f64>) {
+impl ODE<f64, [f64; 2]> for BrusselatorSystem {
+    fn diff(&self, _t: f64, y: &[f64; 2], dydt: &mut [f64; 2]) {
         let y0 = y[0];
         let y1 = y[1];
 
@@ -29,7 +27,7 @@ impl ODE<f64, Vector2<f64>> for BrusselatorSystem {
         dydt[1] = 3.0 * y0 - y0 * y0 * y1;
     }
 
-    fn jacobian(&self, _t: f64, y: &Vector2<f64>, j: &mut Matrix<f64>) {
+    fn jacobian(&self, _t: f64, y: &[f64; 2], j: &mut Matrix<f64>) {
         let y0 = y[0];
         let y1 = y[1];
 
@@ -42,7 +40,7 @@ impl ODE<f64, Vector2<f64>> for BrusselatorSystem {
 
 fn main() {
     // --- Problem Configuration ---
-    let y0 = Vector2::new(1.5, 3.0);
+    let y0 = [1.5, 3.0];
     let t0 = 0.0;
     let tf = 20.0;
     let ode = BrusselatorSystem;

@@ -16,9 +16,7 @@
 //! - u₃(t-τ) is the value of the third component at a delayed time t - τ.
 //! - p₀, q₀, v₀, d₀, p₁, q₁, v₁, d₁, d₂, β₀, β₁, τ are model parameters.
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::Vector3;
 use quill::prelude::*;
 
 struct BreastCancerModel {
@@ -36,8 +34,8 @@ struct BreastCancerModel {
     tau: f64,
 }
 
-impl DDE<1, f64, Vector3<f64>> for BreastCancerModel {
-    fn diff(&self, _t: f64, u: &Vector3<f64>, ud: &[Vector3<f64>; 1], dudt: &mut Vector3<f64>) {
+impl DDE<1, f64, [f64; 3]> for BreastCancerModel {
+    fn diff(&self, _t: f64, u: &[f64; 3], ud: &[[f64; 3]; 1], dudt: &mut [f64; 3]) {
         let hist3 = ud[0][2];
 
         let term0_common = self.v0 / (1.0 + self.beta0 * hist3.powi(2));
@@ -50,7 +48,7 @@ impl DDE<1, f64, Vector3<f64>> for BreastCancerModel {
         dudt[2] = term1_common * (1.0 - self.p1 + self.q1) * u[1] - self.d2 * u[2];
     }
 
-    fn lags(&self, _t: f64, _y: &Vector3<f64>, lags: &mut [f64; 1]) {
+    fn lags(&self, _t: f64, _y: &[f64; 3], lags: &mut [f64; 1]) {
         lags[0] = self.tau;
     }
 }
@@ -74,8 +72,8 @@ fn main() {
     };
     let t0 = 0.0;
     let tf = 10.0;
-    let y0 = Vector3::new(1.0, 1.0, 1.0);
-    let phi = |_t: f64| -> Vector3<f64> { y0 };
+    let y0 = [1.0, 1.0, 1.0];
+    let phi = |_t: f64| -> [f64; 3] { y0 };
 
     // --- Solve the Problem ---
     println!(

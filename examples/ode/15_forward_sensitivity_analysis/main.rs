@@ -13,7 +13,6 @@
 //! The parameter is `k`. We want to know how the final state `y(t_f)` changes
 //! with respect to `k` (i.e., dy/dk).
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use differential_equations::traits::Real;
 use nalgebra::SVector;

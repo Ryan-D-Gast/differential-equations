@@ -14,7 +14,6 @@
 //!
 //! This equation was originally proposed as a model for the production of blood cells.
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use quill::prelude::*;
 

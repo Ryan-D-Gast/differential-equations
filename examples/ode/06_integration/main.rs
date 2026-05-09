@@ -16,7 +16,6 @@
 //! - Different output options: dense, even, and t-eval
 //! - Error assessment in numerical integration
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use faer::Mat;
 

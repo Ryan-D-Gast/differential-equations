@@ -22,7 +22,6 @@
 //! - Setting up even-interval output points
 //! - Working with solution status information
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use quill::prelude::*;
 

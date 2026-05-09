@@ -14,7 +14,6 @@
 //! - clamp, quantize, or otherwise normalize step sizes for reproducibility
 //!   or custom time-stepping rules
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
 use differential_equations::{ode::ODE, traits::Real};
 use nalgebra::{Dim, Matrix3, Matrix6, SVector, Vector6, stack};

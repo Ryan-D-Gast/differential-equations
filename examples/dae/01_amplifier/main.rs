@@ -24,9 +24,7 @@
 //! - Working with singular mass matrices (index-1 DAE)
 //! - Using implicit Runge-Kutta methods for stiff DAE problems
 
-use differential_equations::ivp::IVP;
 use differential_equations::prelude::*;
-use nalgebra::{SVector, vector};
 
 /// Amplifier DAE Model
 struct AmplifierModel {
@@ -82,8 +80,8 @@ impl AmplifierModel {
     }
 }
 
-impl DAE<f64, SVector<f64, 8>> for AmplifierModel {
-    fn diff(&self, t: f64, y: &SVector<f64, 8>, f: &mut SVector<f64, 8>) {
+impl DAE<f64, [f64; 8]> for AmplifierModel {
+    fn diff(&self, t: f64, y: &[f64; 8], f: &mut [f64; 8]) {
         // Sinusoidal input voltage
         let w = 2.0 * std::f64::consts::PI * 100.0;
         let uet = self.ue * (w * t).sin();
@@ -125,7 +123,7 @@ impl DAE<f64, SVector<f64, 8>> for AmplifierModel {
         m[(7, 6)] = self.c1;
     }
 
-    fn jacobian(&self, _t: f64, y: &SVector<f64, 8>, jac: &mut Matrix<f64>) {
+    fn jacobian(&self, _t: f64, y: &[f64; 8], jac: &mut Matrix<f64>) {
         // Sensitivities of exponential terms
         let g14 = self.beta * ((y[3] - y[2]) / self.uf).exp() / self.uf;
         let g27 = self.beta * ((y[6] - y[5]) / self.uf).exp() / self.uf;
@@ -169,7 +167,7 @@ fn main() {
     let model = AmplifierModel::new();
 
     // Initial conditions (computed from circuit steady-state)
-    let y0 = vector![
+    let y0 = [
         0.0,
         model.ub - 0.0 * model.r8 / model.r9,
         model.ub / (model.r6 / model.r5 + 1.0),
