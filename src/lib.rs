@@ -34,8 +34,8 @@
 //! }
 //!
 //! impl ODE for LinearEquation {
-//!     fn diff(&self, _t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
-//!         dydt[0] = self.a + self.b * y[0];
+//!     fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
+//!         *dydt = self.a + self.b * *y;
 //!     }
 //! }
 //!
@@ -43,7 +43,7 @@
 //!     let system = LinearEquation { a: 1.0, b: 2.0 };
 //!     let t0 = 0.0;
 //!     let tf = 1.0;
-//!     let y0 = [1.0];
+//!     let y0 = 1.0;
 //!     let solver = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-6);
 //!     let solution = match IVP::ode(&system, t0, tf, y0).method(solver).solve() {
 //!         Ok(sol) => sol,
@@ -51,7 +51,7 @@
 //!     };
 //!
 //!     for (t, y) in solution.iter() {
-//!         println!("t: {:.4}, y: {:.4}", t, y[0]);
+//!         println!("t: {:.4}, y: {:.4}", t, *y);
 //!     }
 //! }
 //! ```

@@ -1,7 +1,7 @@
-use differential_equations::ivp::IVP;
-// Compares the performance of solvers by the statistics, i.e. number of steps, function evaluations, etc.
+//! Compares the performance of solvers by the statistics, i.e. number of steps, function evaluations, etc.
 
 use super::systems;
+use differential_equations::ivp::IVP;
 use differential_equations::methods::ExplicitRungeKutta;
 use nalgebra::SVector;
 use quill::prelude::*;

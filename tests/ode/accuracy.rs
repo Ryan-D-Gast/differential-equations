@@ -1,14 +1,18 @@
-use differential_equations::ivp::IVP;
-// Suite of test cases for numerical methods vs results of SciPy using DOP853 & Tolerences = 1e-12
+//! Suite of test cases for numerical methods vs results of SciPy using DOP853 & Tolerences = 1e-12
 
 use super::systems::{
     ExponentialGrowth, HarmonicOscillator, HiresProblem, LinearEquation, LogisticEquation,
     RobertsonProblem,
 };
-use differential_equations::methods::{
-    AdamsPredictorCorrector, BDF, DiagonallyImplicitRungeKutta, ExplicitRungeKutta,
-    ImplicitRungeKutta,
+use differential_equations::{
+    ivp::IVP,
+    methods::{
+        AdamsPredictorCorrector, BDF, DiagonallyImplicitRungeKutta, ExplicitRungeKutta,
+        ImplicitRungeKutta,
+    },
+    traits::State,
 };
+
 use nalgebra::vector;
 
 macro_rules! test_ode {
@@ -44,14 +48,15 @@ macro_rules! test_ode {
 
             // Check the result against the expected result within the given tolerance
             let yf = results.y.last().unwrap();
+            let expected_val = $expected_result;
             for i in 0..yf.len() {
                 assert!(
-                    (yf[i] - $expected_result[i] as f64).abs() < $tolerance as f64,
+                    (yf.get_component(i) - expected_val.get_component(i)).abs() < $tolerance as f64,
                     "{} {} failed: Expected: {:?}, Got: {:?}",
                     stringify!($solver_name),
                     stringify!($system_name),
-                    $expected_result[i],
-                    yf[i]
+                    expected_val.get_component(i),
+                    yf.get_component(i)
                 );
             }
             println!("{} {} passed", stringify!($solver_name), stringify!($system_name));
@@ -66,8 +71,8 @@ fn accuracy() {
         ode: ExponentialGrowth { k: 1.0 },
         t0: 0.0,
         tf: 10.0,
-        y0: vector![1.0],
-        expected_result: vector![22026.46579479],
+        y0: 1.0,
+        expected_result: 22026.46579479,
 
         solver_name: DOP853,
         solver: ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12),
@@ -173,8 +178,8 @@ fn accuracy() {
         ode: ExponentialGrowth { k: 1.0 },
         t0: 0.0,
         tf: -10.0,
-        y0: vector![22026.46579479],
-        expected_result: vector![1.0],
+        y0: 22026.46579479,
+        expected_result: 1.0,
 
         // Explicit methods
 
@@ -282,8 +287,8 @@ fn accuracy() {
         ode: LinearEquation { a: 1.0, b: 1.0 },
         t0: 0.0,
         tf: 10.0,
-        y0: vector![1.0],
-        expected_result: vector![44051.93158958],
+        y0: 1.0,
+        expected_result: 44051.93158958,
 
         // Explicit methods
 
@@ -500,8 +505,8 @@ fn accuracy() {
         ode: LogisticEquation { k: 1.0, m: 10.0 },
         t0: 0.0,
         tf: 10.0,
-        y0: vector![0.1],
-        expected_result: vector![9.95525518],
+        y0: 0.1,
+        expected_result: 9.95525518,
 
         // Explicit methods
 

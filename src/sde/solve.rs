@@ -98,23 +98,23 @@ use crate::{
 /// }
 ///
 /// impl SDE for GBM {
-///     fn drift(&self, _t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
-///         dydt[0] = 0.1 * y[0]; // μS
+///     fn drift(&self, _t: f64, y: &f64, dydt: &mut f64) {
+///         *dydt = 0.1 * *y; // μS
 ///     }
 ///     
-///     fn diffusion(&self, _t: f64, y: &[f64; 1], dydw: &mut [f64; 1]) {
-///         dydw[0] = 0.2 * y[0]; // σS
+///     fn diffusion(&self, _t: f64, y: &f64, dydw: &mut f64) {
+///         *dydw = 0.2 * *y; // σS
 ///     }
 ///     
-///     fn noise(&mut self, dt: f64, dw: &mut [f64; 1]) {
+///     fn noise(&mut self, dt: f64, dw: &mut f64) {
 ///         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
-///         dw[0] = normal.sample(&mut self.rng);
+///         *dw = normal.sample(&mut self.rng);
 ///     }
 /// }
 ///
 /// let t0 = 0.0;
 /// let tf = 1.0;
-/// let y0 = [100.0];
+/// let y0 = 100.0;
 /// let mut gbm = GBM::new(42);
 /// let mut solver = ExplicitRungeKutta::euler(0.01);
 /// let mut solout = DefaultSolout::new();

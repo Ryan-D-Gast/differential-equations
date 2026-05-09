@@ -1,10 +1,10 @@
-use differential_equations::ivp::IVP;
 // Suite of test cases for DDE NumericalMethods.
 // Expected results should be verified against a trusted solver.
 
 use super::systems::MackeyGlass;
+use differential_equations::ivp::IVP;
+use differential_equations::traits::State;
 use differential_equations::methods::ExplicitRungeKutta;
-use nalgebra::vector;
 use std::fs;
 
 macro_rules! test_dde {
@@ -53,15 +53,16 @@ macro_rules! test_dde {
                 panic!("{} {} produced no results", stringify!($solver_name), stringify!($system_name));
             });
 
+            let expected_val = $expected_result;
             for i in 0..yf.len() {
                 assert!(
-                    (yf[i] - $expected_result[i]).abs() < $tolerance,
+                    (yf.get_component(i) - expected_val.get_component(i)).abs() < $tolerance,
                     "{} {} failed: Expected: {:?}, Got: {:?}. Difference: {:.6e}",
                     stringify!($solver_name),
                     stringify!($system_name),
-                    $expected_result[i],
-                    yf[i],
-                    (yf[i] - $expected_result[i]).abs()
+                    expected_val.get_component(i),
+                    yf.get_component(i),
+                    (yf.get_component(i) - expected_val.get_component(i)).abs()
                 );
             }
             println!("{} {} passed", stringify!($solver_name), stringify!($system_name));
@@ -82,11 +83,11 @@ fn accuracy() {
     // Define initial conditions and time span
     let t0 = 0.0;
     let tf = 50.0;
-    let y0 = vector![0.5];
+    let y0 = 0.5;
 
     // Define the history function: y(t) = 0.5 for t <= 0
-    let history_fn = |_t: f64| vector![0.5];
-    let expected_result = vector![0.6441197095478753];
+    let history_fn = |_t: f64| 0.5;
+    let expected_result = 0.6441197095478753;
 
     test_dde! {
         system_name: mackey_glass_default_params,

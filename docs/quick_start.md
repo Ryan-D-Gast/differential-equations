@@ -35,13 +35,13 @@ struct LogisticGrowth {
 // Implement the ODE trait for the LogisticGrowth struct
 impl ODE for LogisticGrowth {
     // Define the differential equation: dy/dt = k * y * (1 - y / m)
-    fn diff(&self, t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
-        dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
+    fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
+        *dydt = self.k * *y * (1.0 - *y / self.m);
     }
 
     // Optional: Define an event function to stop the solver
-    fn event(&self, t: f64, y: &[f64; 1]) -> ControlFlag {
-        if y[0] > 0.9 * self.m { // If population exceeds 90% of carrying capacity
+    fn event(&self, _t: f64, y: &f64) -> ControlFlag {
+        if *y > 0.9 * self.m { // If population exceeds 90% of carrying capacity
             ControlFlag::Terminate("Reached 90% of carrying capacity".to_string())
         } else {
             ControlFlag::Continue // Otherwise, continue solving
@@ -150,6 +150,7 @@ The `ODE` trait and related components like `IVP::ode` are defined with generics
 
 *   `T`: Represents the floating-point type used for calculations (e.g., `f64` or `f32`). This type applies to time and the components of the state vector.
 *   `Y`: Represents the type of the state vector. This can be:
+    *   A scalar `T` (e.g., `f64` or `f32`) for single-component systems.
     *   A `[T; N]` fixed-size array.
     *   A `Vec<T>` dynamically sized vector.
     *   An `nalgebra::SVector<T, N>` or dynamic nalgebra matrix/vector with the `nalgebra` feature.
@@ -157,16 +158,15 @@ The `ODE` trait and related components like `IVP::ode` are defined with generics
     *   A `faer::Mat<T>` with the `faer` feature.
     *   A custom struct (deriving the `State` trait) with fields of type `T`.
 
-The examples directory intentionally uses a mix of these forms: arrays for the
-smallest scalar examples, `Vec<f64>` for dynamic vector states, `ndarray::Array1`
+The examples directory intentionally uses a mix of these forms: scalars for the
+smallest examples, `Vec<f64>` for dynamic vector states, `ndarray::Array1`
 for an event example, `faer::Mat` for a matrix-backed scalar integration example,
 nalgebra vectors/matrices for linear algebra-heavy examples, and custom structs
 with `#[derive(State)]` for named domain state.
 
-Omitted `ODE` generics default to `T = f64` and `Y = [f64; 1]`. Scalar `f64` and
-`f32` values are not state types.
+Omitted `ODE` generics default to `T = f64` and `Y = f64`.
 
-In the `LogisticGrowth` example, `impl ODE` uses the default single-component array
+In the `LogisticGrowth` example, `impl ODE` uses the default scalar
 state. For multi-component systems, use `[f64; N]`, `Vec<f64>`, a feature-backed
 matrix/array type, or a custom `State` struct.
 

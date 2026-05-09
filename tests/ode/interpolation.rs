@@ -1,11 +1,11 @@
-use differential_equations::ivp::IVP;
-// Suite of test cases for checking the interpolation of the solvers.
+//! Suite of test cases for checking the interpolation of the solvers.
 
 use super::systems;
-use differential_equations::methods::{
-    AdamsPredictorCorrector, BDF, ExplicitRungeKutta, ImplicitRungeKutta,
+use differential_equations::{
+    ivp::IVP,
+    methods::{AdamsPredictorCorrector, BDF, ExplicitRungeKutta, ImplicitRungeKutta},
+    traits::State,
 };
-use nalgebra::vector;
 use systems::ExponentialGrowth;
 
 macro_rules! test_interpolation {
@@ -18,7 +18,7 @@ macro_rules! test_interpolation {
         // Set initial conditions
         let t0 = 0.0;
         let tf = 2.0;
-        let y0 = vector![1.0];
+        let y0 = 1.0;
 
         $(
             // Define the system
@@ -39,15 +39,15 @@ macro_rules! test_interpolation {
                 .unwrap();
 
             // Calculate the expected value using the exact solution
-            let expected_y = vector![f64::exp(0.5), f64::exp(1.0), f64::exp(1.69)];
+            let expected_y = vec![f64::exp(0.5), f64::exp(1.0), f64::exp(1.69)];
 
             // Check if the interpolated value is close to the expected value
             assert!(
-                (results.y[0][0] - expected_y[0]).abs() < $tolerance,
+                (results.y[0] - expected_y[0]).abs() < $tolerance,
                 "Interpolation failed for {}: Expected: {:?}, Got: {:?}",
                 stringify!($solver_name),
                 expected_y[0],
-                results.y[0][0]
+                results.y[0]
             );
         )+
     };
@@ -86,20 +86,20 @@ fn interpolation() {
 #[test]
 fn bdf_interpolation_all_eval_points() {
     let system = ExponentialGrowth { k: 1.0 };
-    let results = IVP::ode(&system, 0.0, 2.0, vector![1.0])
+    let results = IVP::ode(&system, 0.0, 2.0, 1.0)
         .t_eval(vec![0.5, 1.0, 1.69])
         .method(BDF::adaptive())
         .solve()
         .unwrap();
 
-    let expected_y = vector![f64::exp(0.5), f64::exp(1.0), f64::exp(1.69)];
+    let expected_y = vec![f64::exp(0.5), f64::exp(1.0), f64::exp(1.69)];
     for i in 0..expected_y.len() {
         assert!(
-            (results.y[i][0] - expected_y[i]).abs() < 1e-3,
+            (results.y[i] - expected_y[i]).abs() < 1e-3,
             "BDF interpolation failed at t={}: Expected: {:?}, Got: {:?}",
             results.t[i],
             expected_y[i],
-            results.y[i][0]
+            results.y[i]
         );
     }
 }

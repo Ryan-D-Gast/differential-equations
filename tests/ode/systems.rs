@@ -1,4 +1,4 @@
-// Defines systems for testing the ODE solvers
+//! Defines systems for testing the ODE solvers
 
 use differential_equations::ode::ODE;
 use nalgebra::SVector;
@@ -10,9 +10,9 @@ pub struct ExponentialGrowth {
     pub k: f64,
 }
 
-impl ODE<f64, SVector<f64, 1>> for ExponentialGrowth {
-    fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
-        dydt[0] = self.k * y[0];
+impl ODE<f64, f64> for ExponentialGrowth {
+    fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
+        *dydt = self.k * *y;
     }
 }
 
@@ -24,9 +24,9 @@ pub struct LinearEquation {
     pub b: f64,
 }
 
-impl ODE<f64, SVector<f64, 1>> for LinearEquation {
-    fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
-        dydt[0] = self.a + self.b * y[0];
+impl ODE<f64, f64> for LinearEquation {
+    fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
+        *dydt = self.a + self.b * *y;
     }
 }
 
@@ -53,9 +53,9 @@ pub struct LogisticEquation {
     pub m: f64,
 }
 
-impl ODE<f64, SVector<f64, 1>> for LogisticEquation {
-    fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
-        dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
+impl ODE<f64, f64> for LogisticEquation {
+    fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
+        *dydt = self.k * *y * (1.0 - *y / self.m);
     }
 }
 

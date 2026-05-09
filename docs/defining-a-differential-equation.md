@@ -8,10 +8,9 @@ Differential equations in this library are defined by implementing traits that s
 
 ## The ODE Trait
 
-The `ODE` trait is generic over three types:
+The `ODE` trait is generic over two types:
 - `T`: The independent variable type (typically `f64`)
 - `Y`: The state type (can be `f64`, vectors, or custom state structs)
-- `D`: The data type for event callbacks
 
 Here's the basic structure:
 
@@ -20,11 +19,10 @@ pub trait ODE<T = f64, Y = f64>
 where
     T: Real,
     Y: State<T>,
-    D: CallBackData,
 {
     fn diff(&self, t: T, y: &Y, dydt: &mut Y);
     
-    fn event(&self, t: T, y: &Y) -> ControlFlag<T, Y> {
+    fn event(&self, t: T, y: &Y) -> ControlFlag {
         ControlFlag::Continue
     }
     
@@ -57,11 +55,11 @@ impl ODE<f64, SIRState<f64>, PopulationMonitor> for SIRModel {
         dydt.recovered = self.gamma * i;
     }
 
-    fn event(&self, _t: f64, y: &SIRState<f64>) -> ControlFlag<PopulationMonitor> {
+    fn event(&self, _t: f64, y: &SIRState<f64>) -> ControlFlag {
         if y.infected < 1.0 {
-            ControlFlag::Terminate(PopulationMonitor::InfectedBelowOne)
+            ControlFlag::Terminate
         } else if y.population() < 1.0 {
-            ControlFlag::Terminate(PopulationMonitor::PopulationDiedOut)
+            ControlFlag::Terminate
         } else {
             ControlFlag::Continue
         }
@@ -203,11 +201,11 @@ impl ODE<f64, SIRState<f64>, PopulationMonitor> for SIRModel {
         dydt.recovered = self.gamma * i;
     }
 
-    fn event(&self, _t: f64, y: &SIRState<f64>) -> ControlFlag<PopulationMonitor> {
+    fn event(&self, _t: f64, y: &SIRState<f64>) -> ControlFlag {
         if y.infected < 1.0 {
-            ControlFlag::Terminate(PopulationMonitor::InfectedBelowOne)
+            ControlFlag::Terminate
         } else if y.population() < 1.0 {
-            ControlFlag::Terminate(PopulationMonitor::PopulationDiedOut)
+            ControlFlag::Terminate
         } else {
             ControlFlag::Continue
         }
@@ -217,7 +215,7 @@ impl ODE<f64, SIRState<f64>, PopulationMonitor> for SIRModel {
 
 ## Using Built-In State Types
 
-The solvers accept several state representations. Fixed-size arrays are the default
+The solvers accept several state representations. Scalar `f64` is the default
 single-state choice:
 
 ```rust
@@ -226,8 +224,23 @@ struct SimpleModel {
 }
 
 impl ODE for SimpleModel {
-    fn diff(&self, t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
-        dydt[0] = t * y[0] + self.parameter;
+    fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
+        *dydt = _t * *y + self.parameter;
+    }
+}
+```
+
+Use `[T; N]` for small fixed-size systems:
+
+```rust
+struct ArrayModel {
+    parameter: f64,
+}
+
+impl ODE<f64, [f64; 2]> for ArrayModel {
+    fn diff(&self, t: f64, y: &[f64; 2], dydt: &mut [f64; 2]) {
+        dydt[0] = y[1];
+        dydt[1] = -y[0] + self.parameter * t;
     }
 }
 ```

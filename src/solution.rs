@@ -362,23 +362,23 @@ mod tests {
 
     #[test]
     fn test_into_tuple() {
-        let mut sol: Solution<f64, [f64; 1]> = Solution::new();
-        sol.push(0.0, [10.0]);
-        sol.push(1.0, [20.0]);
+        let mut sol: Solution<f64, f64> = Solution::new();
+        sol.push(0.0, 10.0);
+        sol.push(1.0, 20.0);
 
         let (t, y) = sol.into_tuple();
         assert_eq!(t, vec![0.0, 1.0]);
-        assert_eq!(y, vec![[10.0], [20.0]]);
+        assert_eq!(y, vec![10.0, 20.0]);
     }
 
     #[test]
     fn test_solution_lifecycle() {
         // Test new and new_with_capacity
-        let sol_new: Solution<f64, [f64; 1]> = Solution::new();
+        let sol_new: Solution<f64, f64> = Solution::new();
         assert!(sol_new.t.is_empty());
         assert!(sol_new.y.is_empty());
 
-        let sol_cap: Solution<f64, [f64; 1]> = Solution::new_with_capacity(10);
+        let sol_cap: Solution<f64, f64> = Solution::new_with_capacity(10);
         assert!(sol_cap.t.is_empty());
         assert!(sol_cap.y.is_empty());
         assert!(sol_cap.t.capacity() >= 10);
@@ -386,20 +386,20 @@ mod tests {
 
         // Test push
         let mut sol = sol_new;
-        sol.push(2.0, [30.0]);
+        sol.push(2.0, 30.0);
         assert_eq!(sol.t.len(), 1);
         assert_eq!(sol.y.len(), 1);
         assert_eq!(sol.t[0], 2.0);
-        assert_eq!(sol.y[0], [30.0]);
+        assert_eq!(sol.y[0], 30.0);
 
         // Test last (non-empty)
         let last = sol.last().unwrap();
         assert_eq!(*last.0, 2.0);
-        assert_eq!(*last.1, [30.0]);
+        assert_eq!(*last.1, 30.0);
 
         // Test pop
         let popped = sol.pop();
-        assert_eq!(popped, Some((2.0, [30.0])));
+        assert_eq!(popped, Some((2.0, 30.0)));
         assert!(sol.t.is_empty());
         assert!(sol.y.is_empty());
 
@@ -410,18 +410,18 @@ mod tests {
         assert_eq!(sol.pop(), None);
 
         // Test truncate and iter
-        sol.push(0.0, [10.0]);
-        sol.push(1.0, [20.0]);
-        sol.push(2.0, [30.0]);
+        sol.push(0.0, 10.0);
+        sol.push(1.0, 20.0);
+        sol.push(2.0, 30.0);
 
-        let expected = vec![(0.0, [10.0]), (1.0, [20.0]), (2.0, [30.0])];
-        let actual: Vec<(f64, [f64; 1])> = sol.iter().map(|(&t, &y)| (t, y)).collect();
+        let expected = vec![(0.0, 10.0), (1.0, 20.0), (2.0, 30.0)];
+        let actual: Vec<(f64, f64)> = sol.iter().map(|(&t, &y)| (t, y)).collect();
         assert_eq!(actual, expected);
 
         sol.truncate(1);
         assert_eq!(sol.t.len(), 1);
         assert_eq!(sol.y.len(), 1);
         assert_eq!(sol.t[0], 0.0);
-        assert_eq!(sol.y[0], [10.0]);
+        assert_eq!(sol.y[0], 10.0);
     }
 }

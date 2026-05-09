@@ -30,13 +30,14 @@ impl<T: Copy + RealField + SupersetOf<f64>> Real for T {
     }
 }
 
-pub type DefaultState<T> = [T; 1];
+pub type DefaultState<T> = T;
 
 /// State vector trait
 ///
 /// Represents the state of the system being solved.
 ///
 /// Implements for the following types:
+/// * `T` - Scalar state
 /// * `[T; N]` - Fixed-size array state
 /// * `OMatrix` - Matrix type from nalgebra, enabled with the `nalgebra` feature
 /// * `Complex` - Complex number type from num-complex, enabled with the `num-complex` feature
@@ -430,6 +431,80 @@ pub trait State<T: Real>: Clone + Debug {
             max = max.max((err.get_component(i) / sk).abs());
         }
         max
+    }
+}
+
+impl<T> State<T> for T
+where
+    T: Real,
+{
+    fn len(&self) -> usize {
+        1
+    }
+
+    fn get_component(&self, _index: usize) -> T {
+        *self
+    }
+
+    fn set_component(&mut self, _index: usize, value: T) {
+        *self = value;
+    }
+
+    fn map_components_mut<F>(&mut self, mut f: F)
+    where
+        F: FnMut(usize, &mut T),
+    {
+        f(0, self);
+    }
+
+    fn zeros_like(&self) -> Self {
+        T::zero()
+    }
+
+    fn zeros() -> Self {
+        T::zero()
+    }
+
+    fn mul_add_assign(&mut self, alpha: T, other: &Self) {
+        *self += alpha * *other;
+    }
+
+    fn scale_mut(&mut self, alpha: T) {
+        *self *= alpha;
+    }
+
+    fn fill(&mut self, value: T) {
+        *self = value;
+    }
+
+    fn copy_from_state(&mut self, other: &Self) {
+        *self = *other;
+    }
+
+    fn norm_squared(&self) -> T {
+        *self * *self
+    }
+
+    fn diff_norm_squared(&self, other: &Self) -> T {
+        let diff = *self - *other;
+        diff * diff
+    }
+
+    fn error_norm(&self, y_new: &Self, err: &Self, atol: &Tolerance<T>, rtol: &Tolerance<T>) -> T {
+        let sk = atol[0] + rtol[0] * self.abs().max(y_new.abs());
+        let e = *err / sk;
+        e * e
+    }
+
+    fn error_norm_inf(
+        &self,
+        y_new: &Self,
+        err: &Self,
+        atol: &Tolerance<T>,
+        rtol: &Tolerance<T>,
+    ) -> T {
+        let sk = atol[0] + rtol[0] * self.abs().max(y_new.abs());
+        (*err / sk).abs()
     }
 }
 

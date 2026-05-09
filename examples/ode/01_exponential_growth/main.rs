@@ -27,14 +27,14 @@ struct ExponentialGrowth {
 
 impl ODE for ExponentialGrowth {
     // Define the differential equation dy/dt = k*y
-    fn diff(&self, _t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
-        dydt[0] = self.k * y[0];
+    fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
+        *dydt = self.k * *y;
     }
 }
 
 fn main() {
     // Define the ODE problem with initial conditions, this is known as a "initial value problem"
-    let y0 = [1.0];
+    let y0 = 1.0;
     let t0 = 0.0;
     let tf = 10.0;
     let ode = ExponentialGrowth { k: 1.0 };
@@ -73,7 +73,7 @@ fn main() {
             Series::builder()
                 .name("Numerical Solution")
                 .color("Blue")
-                .data(solution.iter().map(|(t, y)| (*t, y[0])).collect::<Vec<_>>())
+                .data(solution.iter().map(|(t, y)| (*t, *y)).collect::<Vec<_>>())
                 .marker(Marker::Circle)
                 .line(Line::Solid)
                 .build(),

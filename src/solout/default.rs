@@ -30,8 +30,8 @@ use super::*;
 /// struct ExponentialGrowth;
 ///
 /// impl ODE for ExponentialGrowth {
-///     fn diff(&self, _t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
-///         dydt[0] = y[0]; // dy/dt = y
+///     fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
+///         *dydt = *y; // dy/dt = y
 ///     }
 /// }
 ///
@@ -39,7 +39,7 @@ use super::*;
 /// let system = ExponentialGrowth;
 /// let t0 = 0.0;
 /// let tf = 2.0;
-/// let y0 = [1.0];
+/// let y0 = 1.0;
 /// let solver = ExplicitRungeKutta::dop853().rtol(1e-6).atol(1e-8);
 ///
 /// // Use the default output handler explicitly

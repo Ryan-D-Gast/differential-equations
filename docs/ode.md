@@ -39,8 +39,8 @@ struct LogisticGrowth {
 }
 
 impl ODE for LogisticGrowth {
-    fn diff(&self, _t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
-        dydt[0] = self.k * y[0] * (1.0 - y[0] / self.m);
+    fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
+        *dydt = self.k * *y * (1.0 - *y / self.m);
     }
 }
 
@@ -50,18 +50,18 @@ impl Event for LogisticGrowth {
         EventConfig::new(CrossingDirection::Positive, Some(1)) // Terminate after first event
     }
 
-    fn event(&self, _t: f64, y: &[f64; 1]) -> f64 {
+    fn event(&self, _t: f64, y: &f64) -> f64 {
         // Event function g(t,y) = y - 0.9*m
         // Zero crossing occurs when y = 0.9*m
-        y[0] - 0.9 * self.m
+        *y - 0.9 * self.m
     }
 }
 ```
 
 Note that the `ODE` is defined with generics `<T, Y>` where `T` is the float type
-(e.g. `f64` or `f32`) and `Y` is the state vector. Scalar `f64` and `f32` values
-are not state types; use `SVector<f64, 1>` or `Vector1<f64>` for a single state
-variable. A system with N variables can use `SVector<f64, N>`.
+(e.g. `f64` or `f32`) and `Y` is the state vector. `Y` can be a scalar (`f64`, `f32`),
+a fixed-size array (`[T; N]`), a `Vec<T>`, or various matrix types from `nalgebra`,
+`ndarray`, or `faer`.
 
 ## Solving an Initial Value Problem
 
@@ -70,7 +70,7 @@ The `IVP::ode` builder is used to solve the system using the solver. The builder
 ```rust
 fn main() {
     let method = ExplicitRungeKutta::dop853().rtol(1e-12).atol(1e-12);
-    let y0 = SVector::<f64, 1>::new(1.0);
+    let y0 = 1.0;
     let t0 = 0.0;
     let tf = 10.0;
     let ode = LogisticGrowth { k: 1.0, m: 10.0 };

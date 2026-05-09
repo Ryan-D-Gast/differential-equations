@@ -36,18 +36,18 @@ impl OrnsteinUhlenbeck {
     }
 }
 
-impl SDE<f64, [f64; 1]> for OrnsteinUhlenbeck {
-    fn drift(&self, _t: f64, y: &[f64; 1], dydt: &mut [f64; 1]) {
-        dydt[0] = self.theta * (self.mu - y[0]);
+impl SDE<f64, f64> for OrnsteinUhlenbeck {
+    fn drift(&self, _t: f64, y: &f64, dydt: &mut f64) {
+        *dydt = self.theta * (self.mu - *y);
     }
 
-    fn diffusion(&self, _t: f64, _y: &[f64; 1], dydw: &mut [f64; 1]) {
-        dydw[0] = self.sigma;
+    fn diffusion(&self, _t: f64, _y: &f64, dydw: &mut f64) {
+        *dydw = self.sigma;
     }
 
-    fn noise(&mut self, dt: f64, dw: &mut [f64; 1]) {
+    fn noise(&mut self, dt: f64, dw: &mut f64) {
         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
-        dw[0] = normal.sample(&mut self.rng);
+        *dw = normal.sample(&mut self.rng);
     }
 }
 
@@ -63,7 +63,7 @@ fn main() {
     // Time settings
     let t0 = 0.0;
     let tf = 10.0;
-    let y0 = [5.0]; // Initial value, far from mean
+    let y0 = 5.0; // Initial value, far from mean
 
     // Create the Ornstein-Uhlenbeck SDE problem
     let mut sde = OrnsteinUhlenbeck::new(theta, mu, sigma, seed);
@@ -78,12 +78,12 @@ fn main() {
         .unwrap();
 
     // --- Print the results ---
-    let final_value = solution.y.last().unwrap()[0];
+    let final_value = *solution.y.last().unwrap();
 
     println!("Simulating Ornstein-Uhlenbeck process with parameters:");
     println!("θ = {}, μ = {}, σ = {}", theta, mu, sigma);
     println!("Time interval: [{}, {}], Step size: {}", t0, tf, dt);
-    println!("Initial value: {}", y0[0]);
+    println!("Initial value: {}", y0);
     println!("Random seed: {}", seed);
     println!("Simulation completed:");
     println!("  Number of time steps: {}", solution.t.len());
@@ -105,6 +105,6 @@ fn main() {
 
     println!("\nIntermediate values:");
     for (t, y) in solution.iter() {
-        println!("  t = {:.2}: y = {:.6}", t, y[0]);
+        println!("  t = {:.2}: y = {:.6}", t, *y);
     }
 }

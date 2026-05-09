@@ -1,8 +1,8 @@
-use differential_equations::ivp::IVP;
 // Suite of test cases for numerical method error handling
 
 use differential_equations::{
     error::Error,
+    ivp::IVP,
     methods::{AdamsPredictorCorrector, ExplicitRungeKutta, ImplicitRungeKutta},
     ode::ODE,
     solout::{Event, EventConfig},

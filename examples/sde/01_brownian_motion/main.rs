@@ -34,19 +34,19 @@ impl BrownianMotion {
 /// Implementation of the SDE trait for Brownian motion
 impl SDE for BrownianMotion {
     /// Drift term for Brownian motion (0 for standard Brownian motion)
-    fn drift(&self, _t: f64, _y: &[f64; 1], dydt: &mut [f64; 1]) {
-        dydt[0] = 0.0; // No drift for standard Brownian motion
+    fn drift(&self, _t: f64, _y: &f64, dydt: &mut f64) {
+        *dydt = 0.0; // No drift for standard Brownian motion
     }
 
     /// Diffusion term for Brownian motion (σ)
-    fn diffusion(&self, _t: f64, _y: &[f64; 1], dydw: &mut [f64; 1]) {
-        dydw[0] = self.sigma;
+    fn diffusion(&self, _t: f64, _y: &f64, dydw: &mut f64) {
+        *dydw = self.sigma;
     }
 
     /// Generate noise for Brownian motion
-    fn noise(&mut self, dt: f64, dw: &mut [f64; 1]) {
+    fn noise(&mut self, dt: f64, dw: &mut f64) {
         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
-        dw[0] = normal.sample(&mut self.rng);
+        *dw = normal.sample(&mut self.rng);
     }
 }
 
@@ -54,7 +54,7 @@ fn main() {
     // --- Problem Configuration ---
     let t0 = 0.0;
     let tf = 5.0;
-    let y0 = [1.0];
+    let y0 = 1.0;
     let sigma = 0.5;
     let seed = 42;
     let mut sde = BrownianMotion::new(sigma, seed);
@@ -86,7 +86,7 @@ fn main() {
         .data([Series::builder()
             .name("Brownian Path")
             .color("Blue")
-            .data(solution.iter().map(|(t, y)| (*t, y[0])).collect::<Vec<_>>())
+            .data(solution.iter().map(|(t, y)| (*t, *y)).collect::<Vec<_>>())
             .build()])
         .build()
         .to_svg("examples/sde/01_brownian_motion/brownian_motion.svg")

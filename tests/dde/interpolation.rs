@@ -1,9 +1,8 @@
-use differential_equations::ivp::IVP;
 // Suite of test cases for checking the interpolation of DDE solvers.
 
 use super::systems::ExponentialGrowth;
+use differential_equations::ivp::IVP;
 use differential_equations::methods::ExplicitRungeKutta;
-use nalgebra::vector;
 
 macro_rules! test_dde_interpolation {
     (
@@ -15,7 +14,7 @@ macro_rules! test_dde_interpolation {
         // Set initial conditions and system parameters
         let t0 = 0.0;
         let tf = 2.0;
-        let y0 = vector![1.0];
+        let y0 = 1.0;
         let k = 1.0;
 
         let phi = |_t: f64| {
@@ -48,8 +47,8 @@ macro_rules! test_dde_interpolation {
 
             // Calculate the expected values using the exact solution y(t) = y0 * exp(k*t)
             for (idx, t_val) in t_eval_points.iter().enumerate() {
-                let expected_y_val = y0[0] * (k * t_val).exp();
-                let interpolated_y_val = results.y[idx][0];
+                let expected_y_val = y0 * (k * t_val).exp();
+                let interpolated_y_val = results.y[idx];
 
                 assert!(
                     (interpolated_y_val - expected_y_val).abs() < $tolerance,

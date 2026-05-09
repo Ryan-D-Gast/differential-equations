@@ -1,7 +1,6 @@
 // Defines systems to test the DDE solvers
 
 use differential_equations::dde::DDE;
-use nalgebra::SVector;
 
 #[derive(Clone)]
 pub struct MackeyGlass {
@@ -11,18 +10,12 @@ pub struct MackeyGlass {
     pub tau: f64,
 }
 
-impl DDE<1, f64, SVector<f64, 1>> for MackeyGlass {
-    fn diff(
-        &self,
-        _t: f64,
-        y: &SVector<f64, 1>,
-        yd: &[SVector<f64, 1>; 1],
-        dydt: &mut SVector<f64, 1>,
-    ) {
-        dydt[0] = (self.beta * yd[0][0]) / (1.0 + yd[0][0].powf(self.n)) - self.gamma * y[0];
+impl DDE<1, f64, f64> for MackeyGlass {
+    fn diff(&self, _t: f64, y: &f64, yd: &[f64; 1], dydt: &mut f64) {
+        *dydt = (self.beta * yd[0]) / (1.0 + yd[0].powf(self.n)) - self.gamma * *y;
     }
 
-    fn lags(&self, _t: f64, _y: &SVector<f64, 1>, lags: &mut [f64; 1]) {
+    fn lags(&self, _t: f64, _y: &f64, lags: &mut [f64; 1]) {
         lags[0] = self.tau;
     }
 }
@@ -32,18 +25,12 @@ pub struct ExponentialGrowth {
     pub k: f64,
 }
 
-impl DDE<1, f64, SVector<f64, 1>> for ExponentialGrowth {
-    fn diff(
-        &self,
-        _t: f64,
-        y: &SVector<f64, 1>,
-        _yd: &[SVector<f64, 1>; 1],
-        dydt: &mut SVector<f64, 1>,
-    ) {
-        dydt[0] = self.k * y[0];
+impl DDE<1, f64, f64> for ExponentialGrowth {
+    fn diff(&self, _t: f64, y: &f64, _yd: &[f64; 1], dydt: &mut f64) {
+        *dydt = self.k * *y;
     }
 
-    fn lags(&self, _t: f64, _y: &SVector<f64, 1>, lags: &mut [f64; 1]) {
+    fn lags(&self, _t: f64, _y: &f64, lags: &mut [f64; 1]) {
         lags[0] = 0.0; // Dummy lag because L > 0
     }
 }
