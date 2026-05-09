@@ -122,40 +122,44 @@ pub fn get_nalgebra_dimensions(type_name: &str) -> Option<(usize, usize)> {
 }
 
 /// Generate the appropriate nalgebra constructor for zeros
-pub fn generate_nalgebra_zeros(rows: usize, cols: usize) -> proc_macro2::TokenStream {
+pub fn generate_nalgebra_zeros(
+    scalar_ty: &proc_macro2::TokenStream,
+    rows: usize,
+    cols: usize,
+) -> proc_macro2::TokenStream {
     if cols == 1 {
         // This is a vector, use Vector constructor if available
         match rows {
-            2 => quote! { nalgebra::Vector2::<T>::zeros() },
-            3 => quote! { nalgebra::Vector3::<T>::zeros() },
-            4 => quote! { nalgebra::Vector4::<T>::zeros() },
-            5 => quote! { nalgebra::Vector5::<T>::zeros() },
-            6 => quote! { nalgebra::Vector6::<T>::zeros() },
-            _ => quote! { nalgebra::SMatrix::<T, #rows, #cols>::zeros() },
+            2 => quote! { nalgebra::Vector2::<#scalar_ty>::zeros() },
+            3 => quote! { nalgebra::Vector3::<#scalar_ty>::zeros() },
+            4 => quote! { nalgebra::Vector4::<#scalar_ty>::zeros() },
+            5 => quote! { nalgebra::Vector5::<#scalar_ty>::zeros() },
+            6 => quote! { nalgebra::Vector6::<#scalar_ty>::zeros() },
+            _ => quote! { nalgebra::SMatrix::<#scalar_ty, #rows, #cols>::zeros() },
         }
     } else if rows == 1 {
         // This is a row vector, use RowVector constructor if available
         match cols {
-            2 => quote! { nalgebra::RowVector2::<T>::zeros() },
-            3 => quote! { nalgebra::RowVector3::<T>::zeros() },
-            4 => quote! { nalgebra::RowVector4::<T>::zeros() },
-            5 => quote! { nalgebra::RowVector5::<T>::zeros() },
-            6 => quote! { nalgebra::RowVector6::<T>::zeros() },
-            _ => quote! { nalgebra::SMatrix::<T, #rows, #cols>::zeros() },
+            2 => quote! { nalgebra::RowVector2::<#scalar_ty>::zeros() },
+            3 => quote! { nalgebra::RowVector3::<#scalar_ty>::zeros() },
+            4 => quote! { nalgebra::RowVector4::<#scalar_ty>::zeros() },
+            5 => quote! { nalgebra::RowVector5::<#scalar_ty>::zeros() },
+            6 => quote! { nalgebra::RowVector6::<#scalar_ty>::zeros() },
+            _ => quote! { nalgebra::SMatrix::<#scalar_ty, #rows, #cols>::zeros() },
         }
     } else if rows == cols {
         // This is a square matrix, use Matrix constructor if available
         match rows {
-            2 => quote! { nalgebra::Matrix2::<T>::zeros() },
-            3 => quote! { nalgebra::Matrix3::<T>::zeros() },
-            4 => quote! { nalgebra::Matrix4::<T>::zeros() },
-            5 => quote! { nalgebra::Matrix5::<T>::zeros() },
-            6 => quote! { nalgebra::Matrix6::<T>::zeros() },
-            _ => quote! { nalgebra::SMatrix::<T, #rows, #cols>::zeros() },
+            2 => quote! { nalgebra::Matrix2::<#scalar_ty>::zeros() },
+            3 => quote! { nalgebra::Matrix3::<#scalar_ty>::zeros() },
+            4 => quote! { nalgebra::Matrix4::<#scalar_ty>::zeros() },
+            5 => quote! { nalgebra::Matrix5::<#scalar_ty>::zeros() },
+            6 => quote! { nalgebra::Matrix6::<#scalar_ty>::zeros() },
+            _ => quote! { nalgebra::SMatrix::<#scalar_ty, #rows, #cols>::zeros() },
         }
     } else {
         // General case
-        quote! { nalgebra::SMatrix::<T, #rows, #cols>::zeros() }
+        quote! { nalgebra::SMatrix::<#scalar_ty, #rows, #cols>::zeros() }
     }
 }
 
