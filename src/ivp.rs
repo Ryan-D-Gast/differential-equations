@@ -473,7 +473,7 @@ impl<EqType, T: Real, Y: State<T>, Method, SoloutType> IVP<EqType, T, Y, Method,
         event: &'a E,
     ) -> IVP<EqType, T, Y, Method, EventWrappedSolout<'a, T, Y, SoloutType, E>>
     where
-        E: Event<T, Y>,
+        E: Event<T, Y> + ?Sized,
         SoloutType: Solout<T, Y>,
     {
         IVP {
