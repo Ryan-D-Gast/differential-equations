@@ -73,10 +73,10 @@ pub fn solve_dde<const L: usize, T, Y, S, F, H, O>(
 where
     T: Real,
     Y: State<T>,
-    F: DDE<L, T, Y>,
+    F: DDE<L, T, Y> + ?Sized,
     H: Fn(T) -> Y + Clone,
-    S: DelayNumericalMethod<L, T, Y, H> + Interpolation<T, Y>,
-    O: Solout<T, Y>,
+    S: DelayNumericalMethod<L, T, Y, H> + Interpolation<T, Y> + ?Sized,
+    O: Solout<T, Y> + ?Sized,
 {
     // Initialize the Solution object
     let mut solution = Solution::new();

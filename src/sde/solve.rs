@@ -143,9 +143,9 @@ pub fn solve_sde<T, Y, S, F, O>(
 where
     T: Real,
     Y: State<T>,
-    F: SDE<T, Y>,
-    S: StochasticNumericalMethod<T, Y> + Interpolation<T, Y>,
-    O: Solout<T, Y>,
+    F: SDE<T, Y> + ?Sized,
+    S: StochasticNumericalMethod<T, Y> + Interpolation<T, Y> + ?Sized,
+    O: Solout<T, Y> + ?Sized,
 {
     // Initialize the Solution object
     let mut solution = Solution::new();

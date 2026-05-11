@@ -91,7 +91,7 @@ where
         solution: &mut Solution<T, Y>,
     ) -> ControlFlag<T, Y>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
     {
         // Interpolate between steps
         if t_prev != t_curr {

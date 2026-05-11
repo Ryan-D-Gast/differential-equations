@@ -110,7 +110,7 @@ impl<'a, T: Real, Y: State<T>, E: Event<T, Y> + ?Sized> EventSolout<'a, T, Y, E>
         interpolator: &mut I,
     ) -> Option<T>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
     {
         // Ensure that |f(a)| < |f(b)| swapping if necessary
         if fa.abs() < fb.abs() {
@@ -230,7 +230,7 @@ where
         solution: &mut Solution<T, Y>,
     ) -> ControlFlag<T, Y>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
     {
         // Evaluate event function at current endpoint
         let g_curr = self.event.event(t_curr, y_curr);
@@ -342,7 +342,7 @@ where
         solution: &mut Solution<T, Y>,
     ) -> ControlFlag<T, Y>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
     {
         let g_curr = self.event.event(t_curr, y_curr);
         let g_prev = match self.last_g {
@@ -401,7 +401,7 @@ where
         interpolator: &mut I,
     ) -> Option<T>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
     {
         if fa.abs() < fb.abs() {
             std::mem::swap(&mut a, &mut b);
@@ -506,7 +506,7 @@ where
         solution: &mut Solution<T, Y>,
     ) -> ControlFlag<T, Y>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
     {
         let flag = self
             .base

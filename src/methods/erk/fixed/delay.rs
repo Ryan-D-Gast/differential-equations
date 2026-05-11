@@ -24,7 +24,7 @@ impl<
 {
     fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &Y, phi: &H) -> Result<Evals, Error<T, Y>>
     where
-        F: DDE<L, T, Y>,
+        F: DDE<L, T, Y> + ?Sized,
     {
         // Initialize solver state
         let mut evals = Evals::new();
@@ -91,7 +91,7 @@ impl<
 
     fn step<F>(&mut self, dde: &F, phi: &H) -> Result<Evals, Error<T, Y>>
     where
-        F: DDE<L, T, Y>,
+        F: DDE<L, T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 

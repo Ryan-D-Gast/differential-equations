@@ -14,7 +14,7 @@ use crate::{
 impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, T, Y> {
     fn init<F>(&mut self, dae: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: DAE<T, Y>,
+        F: DAE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 
@@ -53,7 +53,7 @@ impl<T: Real, Y: State<T>> AlgebraicNumericalMethod<T, Y> for Radau5<Algebraic, 
 
     fn step<F>(&mut self, dae: &F) -> Result<Evals, Error<T, Y>>
     where
-        F: DAE<T, Y>,
+        F: DAE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 
