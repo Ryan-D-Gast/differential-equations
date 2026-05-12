@@ -99,7 +99,7 @@ impl Solout<f64, [f64; 2]> for PendulumSolout {
         solution: &mut Solution<f64, [f64; 2]>,
     ) -> ControlFlag<f64, [f64; 2]>
     where
-        I: Interpolation<f64, [f64; 2]>,
+        I: Interpolation<f64, [f64; 2]> + ?Sized,
     {
         let current_angle = y_curr[0];
         let dt = t_curr - self.last_output_time;

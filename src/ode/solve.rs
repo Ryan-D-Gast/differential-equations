@@ -124,9 +124,9 @@ pub fn solve_ode<T, Y, S, F, O>(
 where
     T: Real,
     Y: State<T>,
-    F: ODE<T, Y>,
-    S: OrdinaryNumericalMethod<T, Y> + Interpolation<T, Y>,
-    O: Solout<T, Y>,
+    F: ODE<T, Y> + ?Sized,
+    S: OrdinaryNumericalMethod<T, Y> + Interpolation<T, Y> + ?Sized,
+    O: Solout<T, Y> + ?Sized,
 {
     // Initialize the Solution object
     let mut solution = Solution::new();

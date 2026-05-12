@@ -75,7 +75,7 @@ impl<T: Real, Y: State<T>> Milstein<T, Y> {
 impl<T: Real, Y: State<T>> StochasticNumericalMethod<T, Y> for Milstein<T, Y> {
     fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: SDE<T, Y>,
+        F: SDE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 
@@ -106,7 +106,7 @@ impl<T: Real, Y: State<T>> StochasticNumericalMethod<T, Y> for Milstein<T, Y> {
 
     fn step<F>(&mut self, sde: &mut F) -> Result<Evals, Error<T, Y>>
     where
-        F: SDE<T, Y>,
+        F: SDE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 

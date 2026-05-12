@@ -57,7 +57,7 @@ impl InitialStepSize<Ordinary> {
     where
         T: Real,
         Y: State<T>,
-        F: ODE<T, Y>,
+        F: ODE<T, Y> + ?Sized,
     {
         // Direction of integration
         let posneg = (tf - t0).signum();
@@ -178,7 +178,7 @@ impl InitialStepSize<Delay> {
     where
         T: Real,
         Y: State<T>,
-        F: DDE<L, T, Y>,
+        F: DDE<L, T, Y> + ?Sized,
     {
         let posneg_init = (tf - t0).signum();
         let n_dim = y0.len();
@@ -349,7 +349,7 @@ impl InitialStepSize<Algebraic> {
     where
         T: Real,
         Y: State<T>,
-        F: DAE<T, Y>,
+        F: DAE<T, Y> + ?Sized,
     {
         let posneg = (tf - t0).signum();
         let dim = y0.len();

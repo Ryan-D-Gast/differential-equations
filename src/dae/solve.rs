@@ -91,8 +91,8 @@ pub fn solve_dae<T, V, S, F, O>(
 where
     T: Real,
     V: State<T>,
-    F: DAE<T, V>,
-    S: AlgebraicNumericalMethod<T, V> + Interpolation<T, V>,
+    F: DAE<T, V> + ?Sized,
+    S: AlgebraicNumericalMethod<T, V> + Interpolation<T, V> + ?Sized,
     O: Solout<T, V>,
 {
     // Initialize the Solution object
