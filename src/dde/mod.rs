@@ -5,8 +5,8 @@
 
 mod dde;
 mod numerical_method;
-mod solve;
+mod solve_ivp;
 
 pub use dde::DDE;
 pub use numerical_method::DelayNumericalMethod;
-pub use solve::solve_dde;
+pub use solve_ivp::solve_dde;

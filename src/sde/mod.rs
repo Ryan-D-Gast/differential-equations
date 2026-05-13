@@ -5,8 +5,8 @@
 
 mod numerical_method;
 mod sde;
-mod solve;
+mod solve_ivp;
 
 pub use numerical_method::StochasticNumericalMethod;
 pub use sde::SDE;
-pub use solve::solve_sde;
+pub use solve_ivp::solve_sde;
