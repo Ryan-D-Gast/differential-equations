@@ -146,10 +146,9 @@ required-features = ["nalgebra"]
 name = "ode_17_quadrature"
 path = "examples/ode/17_quadrature/main.rs"
 
-# Boundary Value Problem (BVP) examples
 [[example]]
-name = "bvp_01_harmonic_oscillator"
-path = "examples/bvp/01_harmonic_oscillator/main.rs"
+name = "ode_18_pipe_heat_transfer"
+path = "examples/ode/18_pipe_heat_transfer/main.rs"
 
 # Differential-Algebraic Equation (DAE) examples
 [[example]]

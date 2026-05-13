@@ -1,6 +1,7 @@
 # Ordinary Differential Equations (ODE)
 
-The `ode` module provides tools for solving ordinary differential equations (ODEs), specifically focusing on initial value problems (ODE IVPs).
+The `ode` module provides tools for solving ordinary differential equations (ODEs),
+including initial value problems (ODE IVPs) and boundary value problems (ODE BVPs).
 
 ## Table of Contents
 
@@ -178,6 +179,7 @@ For more examples, see the `examples` directory. The examples demonstrate differ
 | [Reduced Two-Body Problem with STM](../../examples/ode/14_r2bp_stm/main.rs) | Propagates a Kepler two-body orbit together with its state transition matrix. Demonstrates dual-number sensitivities, variational equations, and the solver `filter` hook for step-size post-processing. |
 | [Adjoint Sensitivities](../../examples/ode/16_adjoint_sensitivities/main.rs) | Demonstrates Adjoint Sensitivity Analysis (ASA) using backward-integration to compute gradients of a cost function with respect to parameters. |
 | [Quadrature via State Augmentation](../../examples/ode/17_quadrature/main.rs) | Computes cumulative energy dissipated by a damped oscillator as a quadrature. Demonstrates per-component tolerances — tight on the ODE state, loose on the quadrature. |
+| [Pipe Heat Transfer BVP](../../examples/ode/18_pipe_heat_transfer/main.rs) | Solves a steady pipe heat-transfer boundary value problem using `BVP::ode`, the regular `ODE` trait, the `Boundary` residual trait, and `ShootingMethod`. |
 
 ## Benchmarks
 
