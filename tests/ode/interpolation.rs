@@ -3,7 +3,10 @@
 use super::systems;
 use differential_equations::{
     ivp::IVP,
-    methods::{AdamsPredictorCorrector, BackwardDifferentiationFormula, ExplicitRungeKutta, ImplicitRungeKutta},
+    methods::{
+        AdamsPredictorCorrector, BackwardDifferentiationFormula, ExplicitRungeKutta,
+        ImplicitRungeKutta,
+    },
     traits::State,
 };
 use systems::ExponentialGrowth;

@@ -95,3 +95,16 @@ where
         }
     }
 }
+
+impl<EqType, T: Real, Y: State<T>> ODE<T, Y> for &EqType
+where
+    EqType: ODE<T, Y> + ?Sized,
+{
+    fn diff(&self, t: T, y: &Y, dydt: &mut Y) {
+        (*self).diff(t, y, dydt);
+    }
+
+    fn jacobian(&self, t: T, y: &Y, j: &mut Matrix<T>) {
+        (*self).jacobian(t, y, j);
+    }
+}

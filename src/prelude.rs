@@ -24,13 +24,14 @@
 //!
 //! ## Method Support Table
 //!
-//! | Method                        | ODE | DDE | SDE | DAE |
-//! |-------------------------------|:---:|:---:|:---:|:---:|
-//! | ExplicitRungeKutta            |  X  |  X  | (X) |     |
-//! | ImplicitRungeKutta            |  X  |     |     | {X} |
-//! | DiagonallyImplicitRungeKutta  |  X  |     |     |     |
-//! | BackwardDifferentiationFormula|  X  |     |     |     |
-//! | AdamsPredictorCorrector       |  X  |     |     |     |
+//! | Method                        | IVP | BVP | DDE | SDE | DAE |
+//! |-------------------------------|:---:|:---:|:---:|:---:|:---:|
+//! | ExplicitRungeKutta            |  X  |     |  X  | (X) |     |
+//! | ImplicitRungeKutta            |  X  |     |     |     | {X} |
+//! | DiagonallyImplicitRungeKutta  |  X  |     |     |     |     |
+//! | BackwardDifferentiationFormula|  X  |     |     |     |     |
+//! | AdamsPredictorCorrector       |  X  |     |     |     |     |
+//! | Shooting                      |     |  X  |     |     |     |
 //!
 //! - `X` = Supported
 //! - `(X)` = Supported for fixed step only (e.g., Euler, RK4)
@@ -40,15 +41,18 @@
 //!
 
 // Numerical Methods
+pub use crate::methods::bvp::{BVPMethod, Shooting};
 pub use crate::methods::{
     AdamsPredictorCorrector, BackwardDifferentiationFormula, DiagonallyImplicitRungeKutta,
     ExplicitRungeKutta, ImplicitRungeKutta,
 };
 
-// Initial Value Problems
+// Problem Builders
+pub use crate::bvp::BVP;
 pub use crate::ivp::IVP;
 
 // Equation Traits
+pub use crate::bvp::Boundary;
 pub use crate::dae::DAE;
 pub use crate::dde::DDE;
 pub use crate::ode::ODE;

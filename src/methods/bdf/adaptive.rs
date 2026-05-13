@@ -10,7 +10,7 @@ use crate::{
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
-use super::{BackwardDifferentiationFormula, BACKWARD_DIFFERENTIATION_FORMULA_ROWS, MAX_ORDER};
+use super::{BACKWARD_DIFFERENTIATION_FORMULA_ROWS, BackwardDifferentiationFormula, MAX_ORDER};
 
 impl<T: Real, Y: State<T>> BackwardDifferentiationFormula<Ordinary, T, Y> {
     fn scalar(value: f64) -> T {
@@ -69,8 +69,12 @@ impl<T: Real, Y: State<T>> BackwardDifferentiationFormula<Ordinary, T, Y> {
         psi.scaled(T::one() / self.alpha[order])
     }
 
-    fn compute_r(order: usize, factor: T) -> [[T; BACKWARD_DIFFERENTIATION_FORMULA_ROWS]; BACKWARD_DIFFERENTIATION_FORMULA_ROWS] {
-        let mut r = [[T::zero(); BACKWARD_DIFFERENTIATION_FORMULA_ROWS]; BACKWARD_DIFFERENTIATION_FORMULA_ROWS];
+    fn compute_r(
+        order: usize,
+        factor: T,
+    ) -> [[T; BACKWARD_DIFFERENTIATION_FORMULA_ROWS]; BACKWARD_DIFFERENTIATION_FORMULA_ROWS] {
+        let mut r = [[T::zero(); BACKWARD_DIFFERENTIATION_FORMULA_ROWS];
+            BACKWARD_DIFFERENTIATION_FORMULA_ROWS];
         for j in 0..=order {
             r[0][j] = T::one();
         }
@@ -98,7 +102,8 @@ impl<T: Real, Y: State<T>> BackwardDifferentiationFormula<Ordinary, T, Y> {
 
         let r = Self::compute_r(order, factor);
         let u = Self::compute_r(order, T::one());
-        let mut ru = [[T::zero(); BACKWARD_DIFFERENTIATION_FORMULA_ROWS]; BACKWARD_DIFFERENTIATION_FORMULA_ROWS];
+        let mut ru = [[T::zero(); BACKWARD_DIFFERENTIATION_FORMULA_ROWS];
+            BACKWARD_DIFFERENTIATION_FORMULA_ROWS];
 
         for i in 0..=order {
             for j in 0..=order {
@@ -204,7 +209,9 @@ impl<T: Real, Y: State<T>> BackwardDifferentiationFormula<Ordinary, T, Y> {
     }
 }
 
-impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BackwardDifferentiationFormula<Ordinary, T, Y> {
+impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
+    for BackwardDifferentiationFormula<Ordinary, T, Y>
+{
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
         F: ODE<T, Y> + ?Sized,
@@ -510,7 +517,13 @@ mod tests {
     #[test]
     fn backward_differentiation_formula_tracks_exponential_decay() {
         let system = ExponentialDecay { k: 1.0 };
-        let backward_differentiation_formula: BackwardDifferentiationFormula<Ordinary, f64, SVector<f64, 1>> = BackwardDifferentiationFormula::adaptive().rtol(1e-7).atol(1e-9);
+        let backward_differentiation_formula: BackwardDifferentiationFormula<
+            Ordinary,
+            f64,
+            SVector<f64, 1>,
+        > = BackwardDifferentiationFormula::adaptive()
+            .rtol(1e-7)
+            .atol(1e-9);
 
         let results = IVP::ode(&system, 0.0, 1.0, vector![1.0])
             .method(backward_differentiation_formula)
@@ -525,8 +538,14 @@ mod tests {
     #[test]
     fn backward_differentiation_formula_can_run_at_order_one() {
         let system = ExponentialDecay { k: 1.0 };
-        let backward_differentiation_formula: BackwardDifferentiationFormula<Ordinary, f64, SVector<f64, 1>> =
-            BackwardDifferentiationFormula::adaptive().max_order(1).rtol(1e-7).atol(1e-9);
+        let backward_differentiation_formula: BackwardDifferentiationFormula<
+            Ordinary,
+            f64,
+            SVector<f64, 1>,
+        > = BackwardDifferentiationFormula::adaptive()
+            .max_order(1)
+            .rtol(1e-7)
+            .atol(1e-9);
 
         let results = IVP::ode(&system, 0.0, 1.0, vector![1.0])
             .method(backward_differentiation_formula)

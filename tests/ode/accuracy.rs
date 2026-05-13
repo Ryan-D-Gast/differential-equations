@@ -7,8 +7,8 @@ use super::systems::{
 use differential_equations::{
     ivp::IVP,
     methods::{
-        AdamsPredictorCorrector, BackwardDifferentiationFormula, DiagonallyImplicitRungeKutta, ExplicitRungeKutta,
-        ImplicitRungeKutta,
+        AdamsPredictorCorrector, BackwardDifferentiationFormula, DiagonallyImplicitRungeKutta,
+        ExplicitRungeKutta, ImplicitRungeKutta,
     },
     traits::State,
 };
