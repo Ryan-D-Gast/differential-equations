@@ -31,6 +31,7 @@
 //! | DiagonallyImplicitRungeKutta  |  X  |     |     |     |
 //! | BackwardDifferentiationFormula|  X  |     |     |     |
 //! | AdamsPredictorCorrector       |  X  |     |     |     |
+//! | ShootingMethod                |     |     |     |  X  |
 //!
 //! - `X` = Supported
 //! - `(X)` = Supported for fixed step only (e.g., Euler, RK4)
@@ -44,11 +45,13 @@ pub use crate::methods::{
     AdamsPredictorCorrector, BackwardDifferentiationFormula, DiagonallyImplicitRungeKutta,
     ExplicitRungeKutta, ImplicitRungeKutta,
 };
+pub use crate::methods::bvp::{BVPMethod, ShootingMethod};
 
 // Initial Value Problems
 pub use crate::ivp::IVP;
 
 // Equation Traits
+pub use crate::bvp::BVP;
 pub use crate::dae::DAE;
 pub use crate::dde::DDE;
 pub use crate::ode::ODE;

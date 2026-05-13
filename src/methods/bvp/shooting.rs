@@ -1,9 +1,11 @@
 use crate::{
-    bvp::{bvp::BVP, solve::BVPMethod},
+    bvp::bvp::BVP,
     error::Error,
+    interpolate::Interpolation,
     ivp::IVP,
-    linalg::{Matrix, lu_decomp},
-    ode::ODE,
+    linalg::{Matrix, lin_solve, lu_decomp},
+    methods::bvp::BVPMethod,
+    ode::{ODE, OrdinaryNumericalMethod},
     solution::Solution,
     traits::{Real, State},
 };
@@ -23,6 +25,10 @@ where
     }
 }
 
+/// Shooting method for solving BVPs.
+///
+/// This method reduces a BVP to a sequence of IVPs. It iteratively
+/// adjusts the initial state to satisfy the boundary conditions at tf.
 pub struct ShootingMethod<M> {
     pub max_iterations: usize,
     pub tolerance: f64,
@@ -53,7 +59,7 @@ impl<M, T, Y> BVPMethod<T, Y> for ShootingMethod<M>
 where
     T: Real,
     Y: State<T>,
-    M: crate::ode::OrdinaryNumericalMethod<T, Y> + crate::interpolate::Interpolation<T, Y> + Clone,
+    M: OrdinaryNumericalMethod<T, Y> + Interpolation<T, Y> + Clone,
 {
     fn solve<EqType>(
         &mut self,
@@ -126,7 +132,7 @@ where
             }
 
             lu_decomp(&mut jacobian, &mut ip)?;
-            crate::linalg::linear::lin_solve(&jacobian, &mut negative_residual, &ip);
+            lin_solve(&jacobian, &mut negative_residual, &ip);
 
             // Update y
             for i in 0..dim {
@@ -144,7 +150,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{bvp::BvpProblem, prelude::*};
+    use crate::prelude::*;
 
     struct HarmonicOscillatorBVP {
         omega_sq: f64,
@@ -179,7 +185,7 @@ mod tests {
 
         let solver = ShootingMethod::new(ExplicitRungeKutta::dop853());
 
-        let result = BvpProblem::new(&bvp, t0, tf, y_guess)
+        let result = IVP::bvp(&bvp, t0, tf, y_guess)
             .method(solver)
             .solve()
             .unwrap();
