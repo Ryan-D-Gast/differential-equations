@@ -25,5 +25,5 @@ where
         y_guess: &Y,
     ) -> Result<Solution<T, Y>, Error<T, Y>>
     where
-        EqType: BVP<T, Y>;
+        EqType: BVP<T, Y> + ?Sized;
 }

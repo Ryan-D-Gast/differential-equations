@@ -11,13 +11,13 @@ use crate::{
 };
 
 /// Wrapper to adapt a BVP to an ODE.
-struct BvpToOde<'a, EqType> {
+struct BvpToOde<'a, EqType: ?Sized> {
     problem: &'a EqType,
 }
 
 impl<'a, EqType, T: Real, Y: State<T>> ODE<T, Y> for BvpToOde<'a, EqType>
 where
-    EqType: BVP<T, Y>,
+    EqType: BVP<T, Y> + ?Sized,
 {
     #[inline]
     fn diff(&self, t: T, y: &Y, dydt: &mut Y) {
@@ -69,7 +69,7 @@ where
         y_guess: &Y,
     ) -> Result<Solution<T, Y>, Error<T, Y>>
     where
-        EqType: BVP<T, Y>,
+        EqType: BVP<T, Y> + ?Sized,
     {
         let dim = y_guess.len();
         let mut y = y_guess.clone();
