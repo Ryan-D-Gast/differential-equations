@@ -232,25 +232,3 @@ let solution = IVP::ode(&system, t0, tf, y0).method(method).solve()?;
   behavior in equation traits.
 - For BVPs, implement `ODE` for the differential equation and `Boundary` for the
   endpoint residual.
-
-### Suggested Release Announcement
-
-`differential-equations` v0.6.0 is a major API and capability release focused on
-making the crate more consistent, more extensible, and easier to use for real
-scientific computing workflows.
-
-The biggest new capability is first-class ODE boundary value problem support
-with `BVP::ode`, `Boundary`, `Shooting::single`, and `Shooting::multiple`. BVPs
-now feel like IVPs: choose a problem, choose output, choose a method, and call
-`solve`.
-
-At the same time, IVP workflows have been cleaned up and expanded. ODE, DAE,
-DDE, and SDE solves now share the `IVP` builder style, closure-based constructors
-are available for quick problem definitions, event handling is unified, and
-output control is consistently available through builder methods.
-
-This release also adds higher-order SDE support, adaptive BDF, scalar state
-support, stronger errors, improved `State` derive behavior, trait-object
-compatibility work, more examples, and a new BVP test suite.
-
-The result is a more coherent foundation for future solvers and equation types.
