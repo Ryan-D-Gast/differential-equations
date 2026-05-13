@@ -40,7 +40,7 @@ where
 
 impl<EqType, T: Real, Y: State<T>> Boundary<T, Y> for &EqType
 where
-    EqType: Boundary<T, Y>,
+    EqType: Boundary<T, Y> + ?Sized,
 {
     fn boundary(&self, y_a: &Y, y_b: &Y, res: &mut Y) {
         (*self).boundary(y_a, y_b, res);
@@ -88,7 +88,7 @@ impl<'a, F, T, Y> BVP<&'a F, T, Y, (), DefaultSolout>
 where
     T: Real,
     Y: State<T>,
-    F: ODE<T, Y> + Boundary<T, Y>,
+    F: ODE<T, Y> + Boundary<T, Y> + ?Sized,
 {
     /// Create a boundary value problem for an ODE.
     pub fn ode(system: &'a F, t0: T, tf: T, y_guess: Y) -> Self {

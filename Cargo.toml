@@ -69,6 +69,10 @@ name = "dde"
 path = "tests/dde/main.rs"
 required-features = ["nalgebra"]
 
+[[test]]
+name = "bvp"
+path = "tests/bvp/main.rs"
+
 # Ordinary Differential Equation (ODE) examples
 [[example]]
 name = "ode_01_exponential_growth"

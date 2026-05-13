@@ -11,7 +11,7 @@ use crate::{
     traits::{Real, State},
 };
 
-pub use shooting::{Shooting, SingleShooting};
+pub use shooting::{MultipleShooting, Shooting, SingleShooting};
 
 /// Trait for boundary value problem solvers.
 pub trait BVPMethod<T, Y>

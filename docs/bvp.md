@@ -88,18 +88,30 @@ the insulated outlet gradient while `Shooting` finds the initial temperature
 gradient.
 See [Pipe Heat Transfer](../examples/ode/18_pipe_heat_transfer/main.rs).
 
-## Current Solver
+## Shooting Methods
 
-`Shooting::single` currently solves ODE BVPs by repeatedly solving IVPs and
-applying Newton iteration to the guessed initial state. The boundary residual
-state must have the same dimension as the ODE state. The `Shooting` namespace is
-reserved for related methods such as future multiple shooting support.
+`Shooting::single` solves ODE BVPs by repeatedly solving one IVP across the full
+interval and applying Newton iteration to the guessed initial state.
 
 ```rust
 let method = Shooting::single(ExplicitRungeKutta::dop853())
     .tolerance(1e-8)
     .max_iterations(50);
 ```
+
+`Shooting::multiple` partitions the interval into subintervals, solves an IVP on
+each segment, and uses Newton iteration to satisfy both the endpoint boundary
+conditions and continuity between neighboring segment states.
+
+```rust
+let method = Shooting::multiple(ExplicitRungeKutta::dop853())
+    .segments(5)
+    .tolerance(1e-8)
+    .max_iterations(50);
+```
+
+For both methods, the boundary residual state must have the same dimension as
+the ODE state.
 
 ## Output and Statistics
 
@@ -132,4 +144,5 @@ used by the shooting solve.
 | `BVP::ode_from_fn` | Build an ODE boundary value problem from derivative and boundary closures. |
 | `Boundary` | Define the endpoint residual for a BVP. |
 | `Shooting::single` | Solve ODE BVPs by iterating on the unknown initial state. |
+| `Shooting::multiple` | Solve ODE BVPs by iterating on segment node states and continuity residuals. |
 | `BVP::t_eval`, `BVP::even`, `BVP::dense` | Select output points for the final converged trajectory. |
