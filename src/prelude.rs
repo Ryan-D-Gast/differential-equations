@@ -41,11 +41,11 @@
 //!
 
 // Numerical Methods
+pub use crate::methods::bvp::{BVPMethod, Shooting};
 pub use crate::methods::{
     AdamsPredictorCorrector, BackwardDifferentiationFormula, DiagonallyImplicitRungeKutta,
     ExplicitRungeKutta, ImplicitRungeKutta,
 };
-pub use crate::methods::bvp::{BVPMethod, Shooting};
 
 // Problem Builders
 pub use crate::bvp::BVP;

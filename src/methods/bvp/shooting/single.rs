@@ -174,7 +174,11 @@ where
                 step.set_component(i, -residual.get_component(i));
             }
 
-            lu_decomp(&mut jacobian, &mut ip)?;
+            lu_decomp(&mut jacobian, &mut ip).map_err(|err| Error::LinearAlgebra {
+                t: t0,
+                y: y.clone(),
+                msg: err.to_string(),
+            })?;
             lin_solve(&jacobian, &mut step, &ip);
             total_evals.newton += 1;
             total_evals.decompositions += 1;
