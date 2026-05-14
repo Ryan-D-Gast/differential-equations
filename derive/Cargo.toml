@@ -18,8 +18,3 @@ proc-macro = true
 syn = "2.0.117"
 quote = "1.0.45"
 proc-macro2 = "1.0.106"
-
-[dev-dependencies]
-differential-equations = { path = ".." }
-nalgebra = "0.34.2"
-num-complex = "0.4.6"
