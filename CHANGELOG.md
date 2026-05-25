@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.6.1 - Support `wasm` target
+
+Disables the timer in `Solution` when the `wasm` target is detected, allowing the crate to compile and run in WebAssembly environments.
+
 ## v0.6.0 - First-Class Problem Builders, Events, and BVPs
 
 This release is a broad API and capability release for `differential-equations`.
