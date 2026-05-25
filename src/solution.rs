@@ -45,6 +45,7 @@ where
     pub steps: Steps,
 
     /// Timer tracking wall-clock time. `Running` during solving, `Completed` after finalization.
+    #[cfg(not(target_arch = "wasm32"))]
     pub timer: Timer<T>,
 }
 
@@ -72,6 +73,7 @@ where
             status: Status::Uninitialized,
             evals: Evals::new(),
             steps: Steps::new(),
+            #[cfg(not(target_arch = "wasm32"))]
             timer: Timer::Off,
         }
     }
@@ -87,6 +89,7 @@ where
             status: Status::Uninitialized,
             evals: Evals::new(),
             steps: Steps::new(),
+            #[cfg(not(target_arch = "wasm32"))]
             timer: Timer::Off,
         }
     }

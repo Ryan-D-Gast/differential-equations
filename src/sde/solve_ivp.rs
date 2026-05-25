@@ -151,6 +151,7 @@ where
     let mut solution = Solution::new();
 
     // Begin timing the solution process
+    #[cfg(not(target_arch = "wasm32"))]
     solution.timer.start();
 
     // Determine integration direction and check that tf != t0
@@ -195,6 +196,7 @@ where
         }
         ControlFlag::Terminate => {
             solution.status = Status::Interrupted;
+            #[cfg(not(target_arch = "wasm32"))]
             solution.timer.complete();
             return Ok(solution);
         }
@@ -216,6 +218,7 @@ where
                 // Set the status to complete and finalize the solution
                 solver.set_status(Status::Complete);
                 solution.status = Status::Complete;
+                #[cfg(not(target_arch = "wasm32"))]
                 solution.timer.complete();
                 return Ok(solution);
             }
@@ -260,6 +263,7 @@ where
             }
             ControlFlag::Terminate => {
                 solution.status = Status::Interrupted;
+                #[cfg(not(target_arch = "wasm32"))]
                 solution.timer.complete();
                 return Ok(solution);
             }
@@ -276,6 +280,7 @@ where
 
     // Finalize the solution
     solution.status = Status::Complete;
+    #[cfg(not(target_arch = "wasm32"))]
     solution.timer.complete();
 
     Ok(solution)
