@@ -19,13 +19,12 @@ include = [
     "src/**/*",
     "docs/**/*",
     "examples/**/*",
+    "tests/**/*",
+    "benches/**/*",
     "assets/*",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"
-]
-exclude = [
-    "examples/**/target/*",
 ]
 
 [features]
