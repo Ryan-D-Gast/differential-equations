@@ -24,7 +24,7 @@ impl PDE for HeatEquation {
 fn main() {
     let heat = HeatEquation { alpha: 0.1 };
     let grid = StructuredGrid::uniform([0.0], [1.0], [51]);
-    let boundary = BoundaryConditions::<f64, f64, 1>::builder()
+    let boundary = BoundaryConditions::builder()
         .dirichlet(BoundaryFace::lower(0), 0.0)
         .dirichlet(BoundaryFace::upper(0), 0.0)
         .build()
