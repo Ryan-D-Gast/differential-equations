@@ -13,6 +13,7 @@ use crate::{
     interpolate::Interpolation,
     methods::ToleranceConfig,
     ode::{ODE, OrdinaryNumericalMethod, solve_ode},
+    pde::{PDE, SpatialDiscretization},
     sde::{SDE, StochasticNumericalMethod, solve_sde},
     solout::{
         CrossingDirection, CrossingSolout, DefaultSolout, DenseSolout, EvenSolout, Event,
@@ -107,6 +108,28 @@ pub struct SdeEq<'a, F> {
 pub struct SdeEqOwned<F> {
     sde: F,
 }
+
+/// Marker for partial differential equations before spatial discretization.
+#[derive(Debug)]
+pub struct PdeEq<'a, F: ?Sized> {
+    pde: &'a F,
+}
+
+/// IVP produced after discretizing a PDE into a semi-discrete ODE system.
+pub type SemiDiscretePdeIvp<'a, F, T, U, Y, Method, SoloutType, const D: usize = 1> =
+    IVP<OdeEqOwned<crate::pde::SemiDiscretePde<'a, F, T, U, Y, D>>, T, Y, Method, SoloutType>;
+
+/// IVP produced after applying any PDE spatial discretization backend.
+pub type SpatiallyDiscretizedPdeIvp<T, Y, Method, SoloutType, System> =
+    IVP<OdeEqOwned<System>, T, Y, Method, SoloutType>;
+
+impl<F: ?Sized> Clone for PdeEq<'_, F> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<F: ?Sized> Copy for PdeEq<'_, F> {}
 
 /// Marker for delay differential equations.
 #[derive(Debug)]
@@ -282,6 +305,23 @@ impl<'a, F, T: Real, Y: State<T>> IVP<DaeEq<'a, F>, T, Y, (), DefaultSolout> {
             t0,
             tf,
             y0,
+            method: (),
+            solout: DefaultSolout::new(),
+        }
+    }
+}
+
+impl<'a, F: ?Sized, T: Real, Y: State<T>> IVP<PdeEq<'a, F>, T, Y, (), DefaultSolout> {
+    /// Create a new initial value problem for a PDE before spatial discretization.
+    ///
+    /// Use [`IVP::space`] to choose a spatial discretization, then choose a normal
+    /// time-integration method with [`IVP::method`].
+    pub fn pde(system: &'a F, t0: T, tf: T, u0: Y) -> Self {
+        Self {
+            equation: PdeEq { pde: system },
+            t0,
+            tf,
+            y0: u0,
             method: (),
             solout: DefaultSolout::new(),
         }
@@ -511,6 +551,33 @@ impl<EqType, T: Real, Y: State<T>, Method, SoloutType> IVP<EqType, T, Y, Method,
         let solout =
             HyperplaneCrossingSolout::new(point, normal, extractor).with_direction(direction);
         self.with_solout(solout)
+    }
+}
+
+impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> IVP<PdeEq<'a, F>, T, Y, Method, SoloutType> {
+    /// Set the spatial discretization for a PDE IVP.
+    ///
+    /// The returned problem is an ordinary IVP over the semi-discrete state, so
+    /// all existing ODE time integrators and output controls can be reused.
+    pub fn space<U, Backend, const D: usize>(
+        self,
+        space: Backend,
+    ) -> SpatiallyDiscretizedPdeIvp<T, Y, Method, SoloutType, Backend::System>
+    where
+        U: State<T>,
+        F: PDE<T, U, D>,
+        Backend: SpatialDiscretization<'a, F, T, U, Y, D>,
+    {
+        IVP {
+            equation: OdeEqOwned {
+                ode: space.discretize(self.equation.pde),
+            },
+            t0: self.t0,
+            tf: self.tf,
+            y0: self.y0,
+            method: self.method,
+            solout: self.solout,
+        }
     }
 }
 

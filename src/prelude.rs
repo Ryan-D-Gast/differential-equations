@@ -32,6 +32,7 @@
 //! | BackwardDifferentiationFormula|  X  |     |     |     |     |
 //! | AdamsPredictorCorrector       |  X  |     |     |     |     |
 //! | Shooting                      |     |  X  |     |     |     |
+//! | MethodOfLines                 |  X  |     |     |     |     |
 //!
 //! - `X` = Supported
 //! - `(X)` = Supported for fixed step only (e.g., Euler, RK4)
@@ -56,6 +57,10 @@ pub use crate::bvp::Boundary;
 pub use crate::dae::DAE;
 pub use crate::dde::DDE;
 pub use crate::ode::ODE;
+pub use crate::pde::{
+    BoundaryCondition, BoundaryConditions, BoundaryFace, MethodOfLines, PDE, SemiDiscretePde, Side,
+    SpatialDiscretization, SpatialScheme, StructuredGrid,
+};
 pub use crate::sde::SDE;
 
 // Output, Events, and Solution Types

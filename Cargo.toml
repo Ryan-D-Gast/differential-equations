@@ -72,6 +72,10 @@ required-features = ["nalgebra"]
 name = "bvp"
 path = "tests/bvp/main.rs"
 
+[[test]]
+name = "pde"
+path = "tests/pde/main.rs"
+
 # Ordinary Differential Equation (ODE) examples
 [[example]]
 name = "ode_01_exponential_growth"
@@ -187,6 +191,19 @@ path = "examples/dde/01_mackey_glass/main.rs"
 [[example]]
 name = "dde_02_breast_cancer_model"
 path = "examples/dde/02_breast_cancer_model/main.rs"
+
+# Partial Differential Equation (PDE) examples
+[[example]]
+name = "pde_01_heat_equation"
+path = "examples/pde/01_heat_equation/main.rs"
+
+[[example]]
+name = "pde_02_maxwell"
+path = "examples/pde/02_maxwell/main.rs"
+
+[[example]]
+name = "pde_03_compressible_navier_stokes"
+path = "examples/pde/03_compressible_navier_stokes/main.rs"
 
 # Benchmarks
 [[bench]]
