@@ -51,7 +51,8 @@ A high-performance library for solving differential equations in Rust, including
     - **Customizable Noise** - User implements noise in SDE implementation
 
 - **[Partial Differential Equations (PDEs)](./docs/pde.md)** - Method of lines spatial discretization for time-dependent PDEs.
-    - **1D Finite Differences** - Discretize scalar conservative PDEs on uniform grids, then reuse existing ODE IVP solvers
+    - **Method of Lines** - Discretize PDEs using finite-difference or simple finite-volume schemes.
+    - **Finite Volume** - Production backend for conservation laws with MUSCL reconstruction, limiters, and numerical fluxes.
 
 ## Feature Flags
 

@@ -121,7 +121,32 @@ See `examples/pde/` for complete runnable examples:
 - `02_maxwell`: Maxwell wave system with `U = Vec<f64>`
 - `03_compressible_navier_stokes`: conserved-variable flow example with `U = Vec<f64>`
 
-`MethodOfLines` currently offers finite-difference and finite-volume spatial
-schemes. The `IVP::pde(...).space(...)` call accepts any backend implementing
-`SpatialDiscretization`, so later specialized backends can plug into the same
-builder API.
+`MethodOfLines` currently offers finite-difference and basic cell-centered flux balance schemes.
+For conservation laws needing robust shock capturing, use the `FiniteVolume` backend, which provides explicit control over Riemann solvers, MUSCL reconstruction, and limiters.
+
+```rust
+# use differential_equations::prelude::*;
+# struct LinearAdvection { a: f64 }
+# impl PDE for LinearAdvection {
+#     fn flux(&self, _t: f64, _x: &[f64; 1], u: &f64, _grad_u: &[f64; 1], flux: &mut [f64; 1]) {
+#         flux[0] = self.a * u;
+#     }
+# }
+# let advection = LinearAdvection { a: 1.0 };
+# let grid = StructuredGrid::uniform([0.0], [1.0], [10]);
+# let boundary = BoundaryConditions::new();
+# let u0 = vec![0.0; grid.len()];
+let solution = IVP::pde(&advection, 0.0, 0.5, u0)
+    .space(
+        FiniteVolume::structured(grid)
+            .boundary(boundary)
+            .reconstruction(Reconstruction::MuscL)
+            .limiter(Limiter::Minmod)
+            .flux(NumericalFlux::Rusanov),
+    )
+    .method(ExplicitRungeKutta::ssp_rk3(0.01))
+    .solve()?;
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+The `IVP::pde(...).space(...)` call accepts any backend implementing `SpatialDiscretization`, so later specialized backends can plug into the same builder API.

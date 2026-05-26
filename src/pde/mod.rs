@@ -16,3 +16,6 @@ pub use method_of_lines::MethodOfLines;
 pub use pde::PDE;
 pub use semi_discrete::{SemiDiscretePde, SpatialScheme};
 pub use spatial_discretization::SpatialDiscretization;
+
+pub mod finite_volume;
+pub use finite_volume::{FiniteVolume, Limiter, NumericalFlux, Reconstruction};

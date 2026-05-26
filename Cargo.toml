@@ -211,3 +211,7 @@ name = "ode_solver_benchmarks"
 harness = false
 path = "benches/main.rs"
 required-features = ["nalgebra"]
+
+[[example]]
+name = "04_finite_volume_advection"
+path = "examples/pde/04_finite_volume_advection/main.rs"
