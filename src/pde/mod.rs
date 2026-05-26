@@ -5,6 +5,7 @@
 
 mod boundary;
 mod grid;
+mod maxwell;
 mod method_of_lines;
 mod pde;
 mod semi_discrete;
@@ -12,6 +13,7 @@ mod spatial_discretization;
 
 pub use boundary::{BoundaryCondition, BoundaryConditions};
 pub use grid::{BoundaryFace, Side, StructuredGrid};
+pub use maxwell::{SemiDiscreteYee, YeeGrid};
 pub use method_of_lines::MethodOfLines;
 pub use pde::PDE;
 pub use semi_discrete::{SemiDiscretePde, SpatialScheme};

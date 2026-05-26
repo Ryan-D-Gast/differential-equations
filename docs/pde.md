@@ -118,10 +118,13 @@ Use the PDE API when the model has at least one spatial derivative and one time 
 See `examples/pde/` for complete runnable examples:
 
 - `01_heat_equation`: scalar heat equation with `U = f64`
-- `02_maxwell`: Maxwell wave system with `U = Vec<f64>`
+- `02_maxwell`: Maxwell wave system with `U = Vec<f64>` using generic method of lines
 - `03_compressible_navier_stokes`: conserved-variable flow example with `U = Vec<f64>`
+- `04_maxwell_yee`: Maxwell wave system with `U = Vec<f64>` using the staggered Yee grid
 
-`MethodOfLines` currently offers finite-difference and finite-volume spatial
-schemes. The `IVP::pde(...).space(...)` call accepts any backend implementing
-`SpatialDiscretization`, so later specialized backends can plug into the same
-builder API.
+## Spatial Backends
+
+The `IVP::pde(...).space(...)` call accepts any backend implementing `SpatialDiscretization`.
+
+- **MethodOfLines**: Generic finite-difference and finite-volume schemes for general advection-diffusion PDEs.
+- **YeeGrid**: A staggered FDTD/Yee grid specialized for Maxwell's equations. Use this when solving Maxwell's wave equations, as it naturally handles curl operators and provides superior wave propagation and stability properties compared to co-located generic schemes.
