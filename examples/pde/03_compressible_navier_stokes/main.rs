@@ -79,11 +79,7 @@ fn main() {
         ns.conserved_from_primitive(rho, u, v, 1.0)
     };
 
-    let boundary = BoundaryConditions::new()
-        .neumann(BoundaryFace::lower(0), vec![0.0; 4])
-        .neumann(BoundaryFace::upper(0), vec![0.0; 4])
-        .neumann(BoundaryFace::lower(1), vec![0.0; 4])
-        .neumann(BoundaryFace::upper(1), vec![0.0; 4]);
+    let boundary = BoundaryConditions::<f64, Vec<f64>, 2>::neumann_all(vec![0.0; 4]);
 
     let mut u0 = Vec::with_capacity(grid.len() * local_field.len());
     for [x, y] in grid.points() {
