@@ -50,8 +50,9 @@ A high-performance library for solving differential equations in Rust, including
 - **[Stochastic Differential Equations (SDEs)](./docs/sde.md)** - Fixed step explicit Runge-Kutta methods for stochastic differential equations.
     - **Customizable Noise** - User implements noise in SDE implementation
 
-- **[Partial Differential Equations (PDEs)](./docs/pde.md)** - Method of lines spatial discretization for time-dependent PDEs.
-    - **1D Finite Differences** - Discretize scalar conservative PDEs on uniform grids, then reuse existing ODE IVP solvers
+- **[Partial Differential Equations (PDEs)](./docs/pde.md)** - Spatial discretization backends for time-dependent PDEs.
+    - **Method of Lines** - Discretize general conservative PDEs on structured grids with finite difference or finite volume schemes, then reuse existing ODE IVP solvers.
+    - **Yee Grid** - Specialized staggered FDTD grid for Maxwell's equations.
 
 ## Feature Flags
 
