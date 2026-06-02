@@ -188,8 +188,7 @@ where
             let bnd_side = self.grid.boundary_side(node, axis).unwrap_or(side);
             match self.face_boundary(axis, bnd_side) {
                 BoundaryCondition::Dirichlet(val) => {
-                    // Simple reflection/extrapolation for Dirichlet to keep symmetry or use exact value.
-                    // For distance > 1, this is an approximation.
+                    // Mirror around the prescribed face value to build a ghost state.
                     let mut ext = val.clone();
                     for i in 0..self.local_len() {
                         ext.set_component(

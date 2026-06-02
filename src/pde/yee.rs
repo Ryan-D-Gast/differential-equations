@@ -73,63 +73,6 @@ where
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_yee_configuration() {
-        let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [3, 3]);
-        let system: SemiDiscreteYee<'_, _, _, _, Vec<f64>, 2> =
-            YeeGrid::uniform_2d(grid, vec![0.0; 4])
-                .layout(YeeLayout {
-                    electric_z: 2,
-                    magnetic_x: 0,
-                    magnetic_y: 1,
-                })
-                .wave_speed_squared(9.0)
-                .discretize(&());
-
-        assert_eq!(system.layout.electric_z, 2);
-        assert_eq!(system.wave_speed_squared, 9.0);
-    }
-
-    #[test]
-    fn test_yee_diff_interior() {
-        let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [3, 3]);
-        let local_template = vec![0.0; 3];
-        let boundary = BoundaryConditions::neumann_all(vec![0.0; 3]);
-
-        let system = SemiDiscreteYee::<_, _, _, Vec<f64>, 2>::new(
-            &(),
-            grid.clone(),
-            boundary,
-            local_template,
-            YeeLayout::default(),
-            1.0,
-        );
-
-        let mut y = vec![0.0; 27]; // 3 * 3 nodes * 3 components
-        let mut dudt = vec![0.0; 27];
-
-        // Set E_z at center node (1, 1) to 1.0
-        let center = grid.flat_index([1, 1]);
-        y[center * 3] = 1.0;
-
-        system.diff(0.0, &y, &mut dudt);
-
-        // H_x at (1, 0) depends on E_z(1, 1) and E_z(1, 0).
-        // d(H_x)/dt = - d(E_z)/dy = - (1.0 - 0.0) / 0.5 = -2.0
-        let node_down = grid.flat_index([1, 0]);
-        assert_eq!(dudt[node_down * 3 + 1], -2.0);
-
-        // H_y at (0, 1) depends on E_z(1, 1) and E_z(0, 1).
-        // d(H_y)/dt = d(E_z)/dx = (1.0 - 0.0) / 0.5 = 2.0
-        let node_left = grid.flat_index([0, 1]);
-        assert_eq!(dudt[node_left * 3 + 2], 2.0);
-    }
-}
-
 impl<T, U, const D: usize> YeeGrid<T, U, D>
 where
     T: Real,
@@ -349,5 +292,83 @@ where
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_yee_configuration() {
+        let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [3, 3]);
+        let system: SemiDiscreteYee<'_, _, _, _, Vec<f64>, 2> =
+            YeeGrid::uniform_2d(grid, vec![0.0; 4])
+                .layout(YeeLayout {
+                    electric_z: 2,
+                    magnetic_x: 0,
+                    magnetic_y: 1,
+                })
+                .wave_speed_squared(9.0)
+                .discretize(&());
+
+        assert_eq!(system.layout.electric_z, 2);
+        assert_eq!(system.wave_speed_squared, 9.0);
+    }
+
+    #[test]
+    fn test_yee_diff_interior() {
+        let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [3, 3]);
+        let local_template = vec![0.0; 3];
+        let boundary = BoundaryConditions::neumann_all(vec![0.0; 3]);
+
+        let system = SemiDiscreteYee::<_, _, _, Vec<f64>, 2>::new(
+            &(),
+            grid.clone(),
+            boundary,
+            local_template,
+            YeeLayout::default(),
+            1.0,
+        );
+
+        let mut y = vec![0.0; 27];
+        let mut dudt = vec![0.0; 27];
+
+        let center = grid.flat_index([1, 1]);
+        y[center * 3] = 1.0;
+
+        system.diff(0.0, &y, &mut dudt);
+
+        let node_down = grid.flat_index([1, 0]);
+        assert_eq!(dudt[node_down * 3 + 1], -2.0);
+
+        let node_left = grid.flat_index([0, 1]);
+        assert_eq!(dudt[node_left * 3 + 2], 2.0);
+    }
+
+    #[test]
+    fn test_yee_wave_speed_scales_electric_update() {
+        let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [3, 3]);
+        let local_template = vec![0.0; 3];
+        let boundary = BoundaryConditions::neumann_all(vec![0.0; 3]);
+
+        let system = SemiDiscreteYee::<_, _, _, Vec<f64>, 2>::new(
+            &(),
+            grid.clone(),
+            boundary,
+            local_template,
+            YeeLayout::default(),
+            9.0,
+        );
+
+        let mut y = vec![0.0; 27];
+        let mut dudt = vec![0.0; 27];
+
+        let center = grid.flat_index([1, 1]);
+        y[center * 3 + 2] = 1.0;
+
+        system.diff(0.0, &y, &mut dudt);
+
+        assert_eq!(dudt[center * 3], 18.0);
     }
 }

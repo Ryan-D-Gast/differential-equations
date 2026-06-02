@@ -33,24 +33,40 @@ fn projection_reduces_velocity_divergence() {
 
     system.diff(0.0, &y, &mut dudt);
 
+    let max_divergence = max_velocity_divergence(&grid, &dudt, [0, 1], 2);
+    let unprojected_divergence = 2.0;
+
+    assert!(
+        max_divergence < 0.5 * unprojected_divergence,
+        "projection did not sufficiently reduce divergence: {max_divergence}"
+    );
+
+    for node in 0..grid.len() {
+        assert!(dudt[2 * node].is_finite());
+        assert!(dudt[2 * node + 1].is_finite());
+    }
+}
+
+fn max_velocity_divergence(
+    grid: &StructuredGrid<f64, 2>,
+    y: &[f64],
+    velocity_components: [usize; 2],
+    local_len: usize,
+) -> f64 {
     let [nx, ny] = grid.nodes();
     let mut max_divergence = 0.0_f64;
     for i in 1..(nx - 1) {
         for j in 1..(ny - 1) {
-            let node = grid.flat_index([i, j]);
-            let du_dx = (dudt[2 * grid.flat_index([i + 1, j])]
-                - dudt[2 * grid.flat_index([i - 1, j])])
+            let du_dx = (y[local_len * grid.flat_index([i + 1, j]) + velocity_components[0]]
+                - y[local_len * grid.flat_index([i - 1, j]) + velocity_components[0]])
                 / (2.0 * grid.dx(0));
-            let dv_dy = (dudt[2 * grid.flat_index([i, j + 1]) + 1]
-                - dudt[2 * grid.flat_index([i, j - 1]) + 1])
+            let dv_dy = (y[local_len * grid.flat_index([i, j + 1]) + velocity_components[1]]
+                - y[local_len * grid.flat_index([i, j - 1]) + velocity_components[1]])
                 / (2.0 * grid.dx(1));
             max_divergence = max_divergence.max((du_dx + dv_dy).abs());
-            assert!(dudt[2 * node].is_finite());
-            assert!(dudt[2 * node + 1].is_finite());
         }
     }
-
-    assert!(max_divergence < 1.0);
+    max_divergence
 }
 
 struct ViscousVelocity {

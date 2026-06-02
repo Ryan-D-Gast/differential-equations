@@ -2,13 +2,16 @@
 
 PDE support starts with the method of lines. The spatial domain is discretized first, producing a finite-dimensional ODE system that is integrated by the existing IVP solvers.
 
-The first supported form is a conservative PDE on a uniform structured grid:
+The generic method-of-lines backends support PDEs on uniform structured grids in
+divergence form:
 
 ```text
 u_t = div(flux(t, x, u, grad_u)) + source(t, x, u)
 ```
 
-Implement [`PDE`] for the physical equation, define a `StructuredGrid`, choose boundary conditions, and pass a `MethodOfLines` spatial discretization to `IVP::pde`.
+Implement [`PDE`] for the physical equation, define a `StructuredGrid`, choose
+boundary conditions, and pass a `MethodOfLines` spatial discretization to
+`IVP::pde`.
 
 ```rust
 use differential_equations::prelude::*;
@@ -136,9 +139,9 @@ See `examples/pde/` for complete runnable examples:
 
 The `IVP::pde(...).space(...)` call accepts any backend implementing `SpatialDiscretization`.
 
-- **MethodOfLines**: Generic finite-difference and finite-volume schemes for general advection-diffusion PDEs.
-- **FiniteVolume**: Cell-centered finite-volume backend with explicit control over numerical fluxes, MUSCL reconstruction, and limiters.
-- **YeeGrid**: Configurable two-dimensional staggered curl backend. Select the three local components with `YeeLayout` and set the wave speed explicitly. The Maxwell example uses the default `[E_z, H_x, H_y]` layout, but the backend is not tied to a Maxwell equation type.
+- **MethodOfLines**: Generic finite-difference and finite-volume schemes for PDEs in divergence form.
+- **FiniteVolume**: Cell-centered conservation-law backend with explicit control over numerical fluxes, MUSCL reconstruction, and limiters. It treats `PDE::flux` as the physical flux `F` in `u_t + div(F) = source`.
+- **YeeGrid**: Configurable two-dimensional staggered curl backend. Select the three local components with `YeeLayout` and set the wave speed explicitly. The Maxwell example uses the default `[E_z, H_x, H_y]` layout. `YeeGrid` does not read `PDE::flux`; the equation value is only used to fit the shared PDE IVP API.
 - **ProjectionMethod**: Configurable two-dimensional projection backend. Select the two local velocity components to project; additional local components keep the unprojected tendency supplied by the wrapped PDE.
 
 For conservation laws needing robust shock capturing, use `FiniteVolume`:
