@@ -3,7 +3,7 @@
 use std::marker::PhantomData;
 
 use crate::{
-    linalg::Matrix,
+    linalg::{Matrix, lin_solve, lu_decomp},
     ode::ODE,
     pde::{
         BoundaryCondition, BoundaryConditions, BoundaryFace, PDE, Side, SpatialDiscretization,
@@ -94,7 +94,8 @@ where
     grid: StructuredGrid<T, 2>,
     boundary: BoundaryConditions<T, U, 2>,
     local_template: U,
-    poisson: Matrix<T>,
+    poisson_lu: Matrix<T>,
+    poisson_pivots: Vec<usize>,
     marker: PhantomData<Y>,
 }
 
@@ -116,13 +117,17 @@ where
             2,
             "ProjectionMethod expects two local velocity components"
         );
-        let poisson = build_poisson_matrix(&grid);
+        let mut poisson_lu = build_poisson_matrix(&grid);
+        let mut poisson_pivots = vec![0; grid.len()];
+        lu_decomp(&mut poisson_lu, &mut poisson_pivots)
+            .expect("projection Poisson matrix should be nonsingular");
         Self {
             equation,
             grid,
             boundary,
             local_template,
-            poisson,
+            poisson_lu,
+            poisson_pivots,
             marker: PhantomData,
         }
     }
@@ -303,11 +308,8 @@ where
         );
 
         self.raw_tendency(t, y, dudt);
-        let rhs = self.divergence(dudt);
-        let pressure = self
-            .poisson
-            .lin_solve(rhs)
-            .expect("projection Poisson matrix should be nonsingular");
+        let mut pressure = self.divergence(dudt);
+        lin_solve(&self.poisson_lu, &mut pressure, &self.poisson_pivots);
         self.subtract_pressure_gradient(&pressure, dudt);
     }
 }
