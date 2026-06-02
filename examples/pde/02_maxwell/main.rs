@@ -42,11 +42,7 @@ fn main() {
     let maxwell = Maxwell { wave_speed: 1.0 };
     let grid = StructuredGrid::uniform([0.0_f64, 0.0], [1.0, 1.0], [41, 41]);
     let local_field = vec![0.0; 3];
-    let boundary = BoundaryConditions::new()
-        .neumann(BoundaryFace::lower(0), vec![0.0; 3])
-        .neumann(BoundaryFace::upper(0), vec![0.0; 3])
-        .neumann(BoundaryFace::lower(1), vec![0.0; 3])
-        .neumann(BoundaryFace::upper(1), vec![0.0; 3]);
+    let boundary = BoundaryConditions::neumann_all(vec![0.0; 3]);
 
     let mut u0 = Vec::with_capacity(grid.len() * local_field.len());
     for [x, y] in grid.points() {

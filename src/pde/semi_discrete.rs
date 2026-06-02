@@ -29,7 +29,7 @@ where
     equation: &'a Eq,
     grid: StructuredGrid<T, D>,
     local_template: U,
-    boundary: BoundaryConditions<T, U>,
+    boundary: BoundaryConditions<T, U, D>,
     scheme: SpatialScheme,
     marker: PhantomData<Y>,
 }
@@ -45,7 +45,7 @@ where
         equation: &'a Eq,
         grid: StructuredGrid<T, D>,
         local_template: U,
-        boundary: BoundaryConditions<T, U>,
+        boundary: BoundaryConditions<T, U, D>,
         scheme: SpatialScheme,
     ) -> Self {
         Self {
@@ -64,7 +64,7 @@ where
     }
 
     /// Boundary conditions used by this semi-discrete system.
-    pub fn boundary_conditions(&self) -> BoundaryConditions<T, U> {
+    pub fn boundary_conditions(&self) -> BoundaryConditions<T, U, D> {
         self.boundary.clone()
     }
 
@@ -126,16 +126,18 @@ where
         }
     }
 
-    fn face_boundary(&self, axis: usize, side: Side) -> Option<&BoundaryCondition<U>> {
+    fn face_boundary(&self, axis: usize, side: Side) -> &BoundaryCondition<U> {
         self.boundary.get_face(BoundaryFace { axis, side })
     }
 
     fn is_dirichlet_node(&self, node: usize) -> bool {
         (0..D).any(|axis| {
-            self.grid
-                .boundary_side(node, axis)
-                .and_then(|side| self.face_boundary(axis, side))
-                .is_some_and(|boundary| matches!(boundary, BoundaryCondition::Dirichlet(_)))
+            self.grid.boundary_side(node, axis).is_some_and(|side| {
+                matches!(
+                    self.face_boundary(axis, side),
+                    BoundaryCondition::Dirichlet(_)
+                )
+            })
         })
     }
 
@@ -155,12 +157,11 @@ where
         }
 
         match self.face_boundary(axis, side) {
-            Some(BoundaryCondition::Neumann(gradient)) => gradient.clone(),
-            Some(BoundaryCondition::Dirichlet(value)) => match side {
+            BoundaryCondition::Neumann(gradient) => gradient.clone(),
+            BoundaryCondition::Dirichlet(value) => match side {
                 Side::Lower => self.difference(&u, value, self.grid.dx(axis)),
                 Side::Upper => self.difference(value, &u, self.grid.dx(axis)),
             },
-            None => self.zero_local(),
         }
     }
 
@@ -214,15 +215,14 @@ where
         } else {
             let side = self.grid.boundary_side(node, axis).unwrap_or(side);
             match self.face_boundary(axis, side) {
-                Some(BoundaryCondition::Dirichlet(value)) => {
+                BoundaryCondition::Dirichlet(value) => {
                     let grad_axis = match side {
                         Side::Lower => self.difference(&u, value, self.grid.dx(axis)),
                         Side::Upper => self.difference(value, &u, self.grid.dx(axis)),
                     };
                     (value.clone(), grad_axis, x_node)
                 }
-                Some(BoundaryCondition::Neumann(gradient)) => (u, gradient.clone(), x_node),
-                None => (u, self.zero_local(), x_node),
+                BoundaryCondition::Neumann(gradient) => (u, gradient.clone(), x_node),
             }
         };
 

@@ -58,7 +58,8 @@ pub use crate::dae::DAE;
 pub use crate::dde::DDE;
 pub use crate::ode::ODE;
 pub use crate::pde::{
-    BoundaryCondition, BoundaryConditions, BoundaryFace, MethodOfLines, PDE, ProjectionMethod,
+    BoundaryCondition, BoundaryConditions, BoundaryConditionsBuilder,
+    BoundaryConditionsBuilderError, BoundaryFace, MethodOfLines, PDE, ProjectionMethod,
     ProjectionSemiDiscrete, SemiDiscretePde, Side, SpatialDiscretization, SpatialScheme,
     StructuredGrid,
 };

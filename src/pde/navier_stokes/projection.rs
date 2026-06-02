@@ -26,7 +26,7 @@ where
     U: State<T>,
 {
     grid: StructuredGrid<T, 2>,
-    boundary: BoundaryConditions<T, U>,
+    boundary: BoundaryConditions<T, U, 2>,
     local_template: U,
 }
 
@@ -52,7 +52,7 @@ where
             2,
             "ProjectionMethod expects two local velocity components"
         );
-        let boundary = BoundaryConditions::homogeneous_neumann_like::<2>(&local_template);
+        let boundary = BoundaryConditions::homogeneous_neumann_like(&local_template);
         Self {
             grid,
             boundary,
@@ -61,7 +61,7 @@ where
     }
 
     /// Set velocity boundary conditions.
-    pub fn boundary(mut self, boundary: BoundaryConditions<T, U>) -> Self {
+    pub fn boundary(mut self, boundary: BoundaryConditions<T, U, 2>) -> Self {
         self.boundary = boundary;
         self
     }
@@ -92,7 +92,7 @@ where
 {
     equation: &'a Eq,
     grid: StructuredGrid<T, 2>,
-    boundary: BoundaryConditions<T, U>,
+    boundary: BoundaryConditions<T, U, 2>,
     local_template: U,
     poisson: Matrix<T>,
     marker: PhantomData<Y>,
@@ -108,7 +108,7 @@ where
     pub(crate) fn new(
         equation: &'a Eq,
         grid: StructuredGrid<T, 2>,
-        boundary: BoundaryConditions<T, U>,
+        boundary: BoundaryConditions<T, U, 2>,
         local_template: U,
     ) -> Self {
         assert_eq!(
@@ -150,10 +150,12 @@ where
 
     fn is_dirichlet_node(&self, node: usize) -> bool {
         (0..2).any(|axis| {
-            self.grid
-                .boundary_side(node, axis)
-                .and_then(|side| self.boundary.get(BoundaryFace { axis, side }))
-                .is_some_and(|boundary| matches!(boundary, BoundaryCondition::Dirichlet(_)))
+            self.grid.boundary_side(node, axis).is_some_and(|side| {
+                matches!(
+                    self.boundary.get(BoundaryFace { axis, side }),
+                    BoundaryCondition::Dirichlet(_)
+                )
+            })
         })
     }
 
@@ -170,11 +172,8 @@ where
         }
 
         match self.boundary.get(BoundaryFace { axis, side }) {
-            Some(BoundaryCondition::Neumann(gradient)) => gradient.clone(),
-            Some(BoundaryCondition::Dirichlet(value)) => {
-                difference(&u, value, self.grid.dx(axis), side)
-            }
-            None => self.zero_local(),
+            BoundaryCondition::Neumann(gradient) => gradient.clone(),
+            BoundaryCondition::Dirichlet(value) => difference(&u, value, self.grid.dx(axis), side),
         }
     }
 

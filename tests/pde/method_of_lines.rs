@@ -37,9 +37,11 @@ impl PDE<f64, Vec<f64>, 1> for CoupledDiffusion {
 fn method_of_lines_matches_heat_equation_mode() {
     let heat = HeatEquation { alpha: 0.1 };
     let grid = StructuredGrid::uniform([0.0], [1.0], [41]);
-    let boundary = BoundaryConditions::new()
+    let boundary = BoundaryConditions::<f64, f64, 1>::builder()
         .dirichlet(BoundaryFace::lower(0), 0.0)
-        .dirichlet(BoundaryFace::upper(0), 0.0);
+        .dirichlet(BoundaryFace::upper(0), 0.0)
+        .build()
+        .expect("all boundary faces should be specified");
     let u0: Vec<f64> = grid
         .points()
         .map(|point| (std::f64::consts::PI * point[0]).sin())
@@ -71,9 +73,11 @@ fn method_of_lines_matches_heat_equation_mode() {
 fn dirichlet_boundaries_are_held_fixed() {
     let heat = HeatEquation { alpha: 1.0 };
     let grid = StructuredGrid::uniform([0.0], [1.0], [5]);
-    let boundary = BoundaryConditions::new()
+    let boundary = BoundaryConditions::<f64, f64, 1>::builder()
         .dirichlet(BoundaryFace::lower(0), 2.0)
-        .dirichlet(BoundaryFace::upper(0), -1.0);
+        .dirichlet(BoundaryFace::upper(0), -1.0)
+        .build()
+        .expect("all boundary faces should be specified");
     let system = MethodOfLines::finite_difference(grid)
         .boundary(boundary)
         .discretize(&heat);
@@ -90,9 +94,11 @@ fn dirichlet_boundaries_are_held_fixed() {
 fn method_of_lines_accepts_fixed_size_state() {
     let heat = HeatEquation { alpha: 1.0 };
     let grid = StructuredGrid::uniform([0.0], [1.0], [5]);
-    let boundary = BoundaryConditions::new()
+    let boundary = BoundaryConditions::<f64, f64, 1>::builder()
         .dirichlet(BoundaryFace::lower(0), 0.0)
-        .dirichlet(BoundaryFace::upper(0), 0.0);
+        .dirichlet(BoundaryFace::upper(0), 0.0)
+        .build()
+        .expect("all boundary faces should be specified");
     let system = MethodOfLines::finite_difference(grid)
         .boundary(boundary)
         .discretize::<_, [f64; 5]>(&heat);
@@ -112,9 +118,11 @@ fn method_of_lines_accepts_vector_field_state() {
         diffusivity: [1.0, 2.0],
     };
     let grid = StructuredGrid::uniform([0.0], [1.0], [3]);
-    let boundary = BoundaryConditions::new()
+    let boundary = BoundaryConditions::<f64, Vec<f64>, 1>::builder()
         .dirichlet(BoundaryFace::lower(0), vec![0.0, 1.0])
-        .dirichlet(BoundaryFace::upper(0), vec![1.0, 0.0]);
+        .dirichlet(BoundaryFace::upper(0), vec![1.0, 0.0])
+        .build()
+        .expect("all boundary faces should be specified");
     let semi_discrete = MethodOfLines::finite_difference_with_field(grid, vec![0.0; 2])
         .boundary(boundary)
         .discretize::<_, Vec<f64>>(&system);
@@ -136,9 +144,7 @@ fn neumann_boundary_uses_prescribed_gradient() {
     let heat = HeatEquation { alpha: 1.0 };
     let grid = StructuredGrid::uniform([0.0], [1.0], [5]);
     let dx = grid.dx(0);
-    let boundary = BoundaryConditions::new()
-        .neumann(BoundaryFace::lower(0), 0.0)
-        .neumann(BoundaryFace::upper(0), 0.0);
+    let boundary = BoundaryConditions::<f64, f64, 1>::neumann_all(0.0);
     let system = MethodOfLines::finite_difference(grid)
         .boundary(boundary)
         .discretize(&heat);
@@ -148,4 +154,14 @@ fn neumann_boundary_uses_prescribed_gradient() {
     system.diff(0.0, &y, &mut dydt);
 
     assert!((dydt[0] - (1.0 / dx) / dx).abs() < 1.0e-12);
+}
+
+#[test]
+fn boundary_builder_rejects_missing_faces() {
+    let error = BoundaryConditions::<f64, f64, 1>::builder()
+        .dirichlet(BoundaryFace::lower(0), 0.0)
+        .build()
+        .expect_err("upper boundary should be required");
+
+    assert_eq!(error.face, BoundaryFace::upper(0));
 }
