@@ -1,6 +1,6 @@
 //! Example 04: incompressible Navier-Stokes projection backend.
 //!
-//! This runs a small Taylor-Green-style velocity field through the projection
+//! This runs a smooth divergence-free cavity vortex through the projection
 //! backend and plots the final centerline velocity.
 
 use std::f64::consts::PI;
@@ -34,13 +34,14 @@ fn main() {
 
     let mut u0 = Vec::with_capacity(2 * grid.len());
     for [x, y] in grid.points() {
-        let u = (PI * x).sin() * (PI * y).cos();
-        let v = -(PI * x).cos() * (PI * y).sin();
+        let u = (PI * x).sin().powi(2) * (2.0 * PI * y).sin();
+        let v = -(PI * y).sin().powi(2) * (2.0 * PI * x).sin();
         u0.extend([u, v]);
     }
+    let boundary = BoundaryConditions::dirichlet_all(vec![0.0; 2]);
 
     let solution = IVP::pde(&equation, 0.0, 0.05, u0)
-        .space(ProjectionMethod::uniform(grid.clone()))
+        .space(ProjectionMethod::uniform(grid.clone()).boundary(boundary))
         .method(ExplicitRungeKutta::rk4(1.0e-3))
         .even(0.01)
         .solve()
@@ -56,16 +57,16 @@ fn main() {
     Plot::builder()
         .title("Incompressible Velocity by Projection Method")
         .x_label("Position x at y = 0.5")
-        .y_label("u velocity")
+        .y_label("v velocity")
         .legend(Legend::TopRightInside)
         .data([Series::builder()
-            .name("u centerline")
+            .name("v centerline")
             .color("Blue")
             .data(
                 (0..nx)
                     .map(|i| {
                         let node = grid.flat_index([i, j_mid]);
-                        (grid.point(node)[0], final_state[2 * node])
+                        (grid.point(node)[0], final_state[2 * node + 1])
                     })
                     .collect::<Vec<_>>(),
             )

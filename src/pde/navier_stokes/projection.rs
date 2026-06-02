@@ -309,8 +309,27 @@ where
 
         self.raw_tendency(t, y, dudt);
         let mut pressure = self.divergence(dudt);
+        self.zero_pressure_boundary_rhs(&mut pressure);
         lin_solve(&self.poisson_lu, &mut pressure, &self.poisson_pivots);
         self.subtract_pressure_gradient(&pressure, dudt);
+    }
+}
+
+impl<'a, Eq, T, U, Y> ProjectionSemiDiscrete<'a, Eq, T, U, Y>
+where
+    T: Real,
+    U: State<T>,
+    Y: State<T>,
+    Eq: PDE<T, U, 2> + ?Sized,
+{
+    fn zero_pressure_boundary_rhs(&self, rhs: &mut [T]) {
+        let [nx, ny] = self.grid.nodes();
+        for node in 0..self.grid.len() {
+            let [i, j] = self.grid.multi_index(node);
+            if i == 0 || j == 0 || i + 1 == nx || j + 1 == ny {
+                rhs[node] = T::zero();
+            }
+        }
     }
 }
 
@@ -355,4 +374,33 @@ where
     }
 
     matrix
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cached_poisson_solve_matches_matrix_solve() {
+        let grid = StructuredGrid::uniform([0.0_f64, 0.0], [1.0, 1.0], [5, 5]);
+        let poisson = build_poisson_matrix(&grid);
+        let mut poisson_lu = poisson.clone();
+        let mut pivots = vec![0; grid.len()];
+        lu_decomp(&mut poisson_lu, &mut pivots).expect("poisson matrix should factorize");
+
+        let rhs: Vec<f64> = (0..grid.len()).map(|index| index as f64 / 10.0).collect();
+        let expected = poisson
+            .lin_solve(rhs.clone())
+            .expect("poisson matrix should solve");
+        let mut actual = rhs;
+        lin_solve(&poisson_lu, &mut actual, &pivots);
+
+        let max_error = expected
+            .iter()
+            .zip(actual.iter())
+            .fold(0.0_f64, |max_error, (expected, actual)| {
+                max_error.max((expected - actual).abs())
+            });
+        assert!(max_error < 1.0e-10, "cached solve error: {max_error}");
+    }
 }

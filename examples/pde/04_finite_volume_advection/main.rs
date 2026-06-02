@@ -23,15 +23,15 @@ fn main() {
     let advection = LinearAdvection { a: 1.0 };
     let grid = StructuredGrid::uniform([0.0], [1.0], [100]);
 
-    // Smooth initial condition (sine wave)
+    // Smooth pulse that stays away from the boundaries over this short run.
     let u0: Vec<f64> = grid
         .points()
-        .map(|point| (2.0 * std::f64::consts::PI * point[0]).sin())
+        .map(|point| gaussian(point[0], 0.25, 0.04))
         .collect();
 
     let boundary = BoundaryConditions::neumann_all(0.0);
 
-    let tf = 0.5;
+    let tf = 0.2;
 
     let solution = IVP::pde(&advection, 0.0, tf, u0)
         .space(
@@ -61,7 +61,7 @@ fn main() {
         .legend(Legend::TopRightInside)
         .data([
             Series::builder()
-                .name("Numerical solution (SSP-RK3 + MUSCL)")
+                .name("Numerical solution")
                 .color("Blue")
                 .data(
                     grid.points()
@@ -75,17 +75,14 @@ fn main() {
                 .line(Line::Solid)
                 .build(),
             Series::builder()
-                .name("Analytical solution")
+                .name("Advected initial pulse")
                 .color("Red")
                 .data(
                     grid.points()
                         .map(|point| point[0])
                         .map(|x| {
-                            let mut x_shifted = x - advection.a * tf;
-                            while x_shifted < 0.0 {
-                                x_shifted += 1.0;
-                            }
-                            (x, (2.0 * std::f64::consts::PI * x_shifted).sin())
+                            let x_shifted = x - advection.a * tf;
+                            (x, gaussian(x_shifted, 0.25, 0.04))
                         })
                         .collect::<Vec<_>>(),
                 )
@@ -98,4 +95,8 @@ fn main() {
         .expect("failed to save plot as SVG");
 
     println!("Finite volume advection solved successfully");
+}
+
+fn gaussian(x: f64, center: f64, width: f64) -> f64 {
+    (-((x - center) / width).powi(2)).exp()
 }

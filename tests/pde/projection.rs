@@ -1,4 +1,5 @@
 use differential_equations::{ode::ODE, prelude::*};
+use std::f64::consts::PI;
 
 struct GradientDrive;
 
@@ -50,4 +51,62 @@ fn projection_reduces_velocity_divergence() {
     }
 
     assert!(max_divergence < 1.0);
+}
+
+struct ViscousVelocity {
+    viscosity: f64,
+}
+
+impl PDE<f64, Vec<f64>, 2> for ViscousVelocity {
+    fn flux(
+        &self,
+        _t: f64,
+        _x: &[f64; 2],
+        _u: &Vec<f64>,
+        grad_u: &[Vec<f64>; 2],
+        flux: &mut [Vec<f64>; 2],
+    ) {
+        flux[0][0] = self.viscosity * grad_u[0][0];
+        flux[0][1] = self.viscosity * grad_u[0][1];
+        flux[1][0] = self.viscosity * grad_u[1][0];
+        flux[1][1] = self.viscosity * grad_u[1][1];
+    }
+}
+
+#[test]
+fn projection_cavity_vortex_example_stays_finite() {
+    let equation = ViscousVelocity { viscosity: 0.01 };
+    let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [21, 21]);
+
+    let mut u0 = Vec::with_capacity(2 * grid.len());
+    for [x, y] in grid.points() {
+        let u = (PI * x).sin().powi(2) * (2.0 * PI * y).sin();
+        let v = -(PI * y).sin().powi(2) * (2.0 * PI * x).sin();
+        u0.extend([u, v]);
+    }
+    let boundary = BoundaryConditions::dirichlet_all(vec![0.0; 2]);
+
+    let solution = IVP::pde(&equation, 0.0, 0.05, u0)
+        .space(ProjectionMethod::uniform(grid).boundary(boundary))
+        .method(ExplicitRungeKutta::rk4(1.0e-3))
+        .even(0.01)
+        .solve()
+        .expect("projection method should solve");
+
+    let final_state = solution
+        .y
+        .last()
+        .expect("solution should include final state");
+    let max_norm = final_state
+        .iter()
+        .fold(0.0_f64, |max_value, value| max_value.max(value.abs()));
+
+    assert!(
+        max_norm.is_finite(),
+        "projection produced a non-finite state"
+    );
+    assert!(
+        max_norm < 2.0,
+        "projection example velocity grew unexpectedly: {max_norm}"
+    );
 }
