@@ -60,8 +60,8 @@ pub use crate::ode::ODE;
 pub use crate::pde::{
     BoundaryCondition, BoundaryConditions, BoundaryConditionsBuilder,
     BoundaryConditionsBuilderError, BoundaryFace, FiniteVolume, Limiter, MethodOfLines,
-    NumericalFlux, PDE, Reconstruction, SemiDiscretePde, SemiDiscreteYee, Side,
-    SpatialDiscretization, SpatialScheme, StructuredGrid, YeeGrid,
+    NumericalFlux, PDE, ProjectionMethod, ProjectionSemiDiscrete, Reconstruction, SemiDiscretePde,
+    SemiDiscreteYee, Side, SpatialDiscretization, SpatialScheme, StructuredGrid, YeeGrid,
 };
 pub use crate::sde::SDE;
 

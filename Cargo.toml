@@ -206,8 +206,16 @@ name = "pde_03_compressible_navier_stokes"
 path = "examples/pde/03_compressible_navier_stokes/main.rs"
 
 [[example]]
+name = "pde_04_finite_volume_advection"
+path = "examples/pde/04_finite_volume_advection/main.rs"
+
+[[example]]
 name = "pde_04_maxwell_yee"
 path = "examples/pde/04_maxwell_yee/main.rs"
+
+[[example]]
+name = "pde_04_incompressible_navier_stokes"
+path = "examples/pde/04_incompressible_navier_stokes/main.rs"
 
 # Benchmarks
 [[bench]]
@@ -215,7 +223,3 @@ name = "ode_solver_benchmarks"
 harness = false
 path = "benches/main.rs"
 required-features = ["nalgebra"]
-
-[[example]]
-name = "pde_04_finite_volume_advection"
-path = "examples/pde/04_finite_volume_advection/main.rs"

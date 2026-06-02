@@ -132,6 +132,7 @@ See `examples/pde/` for complete runnable examples:
 - `03_compressible_navier_stokes`: conserved-variable flow example with `U = Vec<f64>`
 - `04_finite_volume_advection`: scalar advection using the finite-volume backend
 - `04_maxwell_yee`: Maxwell wave system with `U = Vec<f64>` using the staggered Yee grid
+- `04_incompressible_navier_stokes`: projection backend for incompressible velocity fields
 
 ## Spatial Backends
 
@@ -140,6 +141,7 @@ The `IVP::pde(...).space(...)` call accepts any backend implementing `SpatialDis
 - **MethodOfLines**: Generic finite-difference and finite-volume schemes for general advection-diffusion PDEs.
 - **FiniteVolume**: Cell-centered finite-volume backend with explicit control over numerical fluxes, MUSCL reconstruction, and limiters.
 - **YeeGrid**: A staggered FDTD/Yee grid specialized for Maxwell's equations. Use this when solving Maxwell's wave equations, as it naturally handles curl operators and provides superior wave propagation and stability properties compared to co-located generic schemes.
+- **ProjectionMethod**: Incompressible-flow backend that projects two-dimensional velocity tendencies onto a lower-divergence field with a dense Poisson solve.
 
 For conservation laws needing robust shock capturing, use `FiniteVolume`:
 
@@ -164,6 +166,30 @@ let solution = IVP::pde(&advection, 0.0, 0.5, u0)
             .flux(NumericalFlux::Rusanov { max_speed: 1.0 }),
     )
     .method(ExplicitRungeKutta::ssp_rk3(0.01))
+    .solve()?;
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+For two-dimensional incompressible velocity states laid out as
+`[u0, v0, u1, v1, ...]`, use `ProjectionMethod`:
+
+```rust
+# use differential_equations::prelude::*;
+# struct NavierStokes { viscosity: f64 }
+# impl PDE<f64, Vec<f64>, 2> for NavierStokes {
+#     fn flux(&self, _t: f64, _x: &[f64; 2], _u: &Vec<f64>, grad_u: &[Vec<f64>; 2], flux: &mut [Vec<f64>; 2]) {
+#         flux[0][0] = self.viscosity * grad_u[0][0];
+#         flux[0][1] = self.viscosity * grad_u[0][1];
+#         flux[1][0] = self.viscosity * grad_u[1][0];
+#         flux[1][1] = self.viscosity * grad_u[1][1];
+#     }
+# }
+# let navier_stokes = NavierStokes { viscosity: 0.01 };
+# let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [9, 9]);
+# let velocity = vec![0.0; 2 * grid.len()];
+let solution = IVP::pde(&navier_stokes, 0.0, 0.1, velocity)
+    .space(ProjectionMethod::uniform(grid))
+    .method(ExplicitRungeKutta::rk4(1.0e-3))
     .solve()?;
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
