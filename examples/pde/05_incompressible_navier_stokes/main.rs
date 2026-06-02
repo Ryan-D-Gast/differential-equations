@@ -1,4 +1,4 @@
-//! Example 04: incompressible Navier-Stokes projection backend.
+//! Example 05: incompressible Navier-Stokes projection backend.
 //!
 //! This runs a smooth divergence-free cavity vortex through the projection
 //! backend and plots the final centerline velocity.
@@ -74,7 +74,7 @@ fn main() {
             .line(Line::Solid)
             .build()])
         .build()
-        .to_svg("examples/pde/06_incompressible_navier_stokes/navier_stokes.svg")
+        .to_svg("examples/pde/05_incompressible_navier_stokes/navier_stokes.svg")
         .expect("failed to save plot as SVG");
 
     println!("Incompressible Navier-Stokes projection example solved successfully");

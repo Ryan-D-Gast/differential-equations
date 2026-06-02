@@ -1,4 +1,4 @@
-//! Example 04: finite-volume advection with MUSCL reconstruction and limiters.
+//! Example 03: finite-volume advection with MUSCL reconstruction and limiters.
 //!
 //! This example solves the linear advection equation:
 //!
@@ -91,7 +91,7 @@ fn main() {
                 .build(),
         ])
         .build()
-        .to_svg("examples/pde/04_finite_volume_advection/finite_volume_advection.svg")
+        .to_svg("examples/pde/03_finite_volume_advection/finite_volume_advection.svg")
         .expect("failed to save plot as SVG");
 
     println!("Finite volume advection solved successfully");

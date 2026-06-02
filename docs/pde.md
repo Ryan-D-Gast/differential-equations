@@ -129,10 +129,9 @@ See `examples/pde/` for complete runnable examples:
 
 - `01_heat_equation`: scalar heat equation with `U = f64`
 - `02_maxwell`: Maxwell wave system with `U = Vec<f64>` using generic method of lines
-- `03_compressible_navier_stokes`: conserved-variable flow example with `U = Vec<f64>`
-- `04_finite_volume_advection`: scalar advection using the finite-volume backend
-- `05_maxwell_yee`: Maxwell wave system with `U = Vec<f64>` using the staggered Yee grid
-- `06_incompressible_navier_stokes`: projection backend for incompressible velocity fields
+- `03_finite_volume_advection`: scalar advection using the finite-volume backend
+- `04_maxwell_yee`: Maxwell wave system with `U = Vec<f64>` using the staggered Yee grid
+- `05_incompressible_navier_stokes`: projection backend for incompressible velocity fields
 
 ## Spatial Backends
 
