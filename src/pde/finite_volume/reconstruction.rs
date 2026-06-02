@@ -10,7 +10,7 @@ pub enum Reconstruction {
     #[default]
     Constant,
     /// Piecewise linear with MUSCL extrapolation (second order).
-    MuscL,
+    Muscl,
 }
 
 impl Reconstruction {
@@ -39,7 +39,7 @@ impl Reconstruction {
                 // Piecewise constant: face states are just the cell averages.
                 (u_face_l, u_face_r)
             }
-            Self::MuscL => {
+            Self::Muscl => {
                 let zero = T::zero();
                 let half = T::from_subset(&0.5);
                 let epsilon = T::from_subset(&1e-12); // To avoid division by zero

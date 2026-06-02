@@ -1,10 +1,10 @@
-//! Example 04: Finite Volume Advection with MUSCL reconstruction and limiters.
+//! Example 04: finite-volume advection with MUSCL reconstruction and limiters.
 //!
 //! This example solves the linear advection equation:
 //!
 //! u_t + a u_x = 0
 //!
-//! using the new Finite Volume spatial backend.
+//! using the finite-volume spatial backend.
 
 use differential_equations::prelude::*;
 use quill::prelude::*;
@@ -29,9 +29,6 @@ fn main() {
         .map(|point| (2.0 * std::f64::consts::PI * point[0]).sin())
         .collect();
 
-    // Use periodic boundaries via Neumann zeros, then manual injection.
-    // For a real periodic boundary, the PDE library would need native periodic grid support.
-    // We'll use Neumann (zero gradient) as a simple placeholder that doesn't crash.
     let boundary = BoundaryConditions::new()
         .neumann(BoundaryFace::lower(0), 0.0)
         .neumann(BoundaryFace::upper(0), 0.0);
@@ -42,9 +39,11 @@ fn main() {
         .space(
             FiniteVolume::structured(grid.clone())
                 .boundary(boundary)
-                .reconstruction(Reconstruction::MuscL)
+                .reconstruction(Reconstruction::Muscl)
                 .limiter(Limiter::Minmod)
-                .flux(NumericalFlux::Rusanov),
+                .flux(NumericalFlux::Rusanov {
+                    max_speed: advection.a.abs(),
+                }),
         )
         // Use SSP-RK3 for stability with finite volume
         .method(ExplicitRungeKutta::ssp_rk3(0.005))

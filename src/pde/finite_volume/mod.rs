@@ -34,9 +34,9 @@ mod tests {
 
         let fv = FiniteVolume::structured(grid.clone())
             .boundary(boundary)
-            .reconstruction(Reconstruction::MuscL)
+            .reconstruction(Reconstruction::Muscl)
             .limiter(Limiter::Minmod)
-            .flux(NumericalFlux::Rusanov);
+            .flux(NumericalFlux::Rusanov { max_speed: 1.0 });
 
         let system = fv.discretize(&adv);
         let u0 = vec![1.0, 2.0, 3.0, 4.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0];

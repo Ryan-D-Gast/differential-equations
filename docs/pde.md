@@ -122,7 +122,7 @@ See `examples/pde/` for complete runnable examples:
 - `03_compressible_navier_stokes`: conserved-variable flow example with `U = Vec<f64>`
 
 `MethodOfLines` currently offers finite-difference and basic cell-centered flux balance schemes.
-For conservation laws needing robust shock capturing, use the `FiniteVolume` backend, which provides explicit control over Riemann solvers, MUSCL reconstruction, and limiters.
+For conservation laws needing robust shock capturing, use the `FiniteVolume` backend, which provides explicit control over numerical fluxes, MUSCL reconstruction, and limiters.
 
 ```rust
 # use differential_equations::prelude::*;
@@ -140,9 +140,9 @@ let solution = IVP::pde(&advection, 0.0, 0.5, u0)
     .space(
         FiniteVolume::structured(grid)
             .boundary(boundary)
-            .reconstruction(Reconstruction::MuscL)
+            .reconstruction(Reconstruction::Muscl)
             .limiter(Limiter::Minmod)
-            .flux(NumericalFlux::Rusanov),
+            .flux(NumericalFlux::Rusanov { max_speed: 1.0 }),
     )
     .method(ExplicitRungeKutta::ssp_rk3(0.01))
     .solve()?;

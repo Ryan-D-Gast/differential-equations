@@ -249,18 +249,8 @@ where
             self.set_local_derivative(dudt, node, &derivative);
         }
 
-        // We accumulate fluxes across all boundaries.
-        // dudt_i = Source - 1/dx * (F_{i+1/2} - F_{i-1/2})
-        // But since we use method of lines we want u_t = - div F.
-        // Notice in standard method of lines it usually implements positive divergence F.
-        // Actually, method of lines `pde.rs` says: u_t = div(flux) + source.
-        // Thus F_{i+1/2} going out means we add F_{i+1/2} to right cell and subtract from left cell if F goes right?
-        // Wait, standard divergence theorem:
-        // u_t = (F_{i+1/2} - F_{i-1/2}) / dx.
-        // We'll compute the flux at the face, and then:
-        // left_cell += flux / dx
-        // right_cell -= flux / dx
-        // The flux direction is usually +x direction.
+        // Finite volume represents conservation laws as `u_t + div(F) = source`.
+        // Each face flux is added to one adjacent cell and subtracted from the other.
 
         for axis in 0..D {
             // Compute fluxes at each face.
@@ -297,9 +287,6 @@ where
                     .flux
                     .compute(self.equation, t, &x_face, &u_l, &u_r, axis);
 
-                // Add to current node (dudt_i += F_{i+1/2} / dx)
-                // Actually if u_t = F_x, then u_t = (F_{i+1/2} - F_{i-1/2}) / dx
-                // So upper face ADDS to node, lower face SUBTRACTS.
                 let mut current_deriv = self.zero_local();
                 for i in 0..local_len {
                     current_deriv.set_component(
@@ -311,7 +298,6 @@ where
                 self.set_local_derivative(dudt, node, &current_deriv);
 
                 if let Some(nr) = neighbor_right {
-                    // Subtract from neighbor right (dudt_{i+1} -= F_{i+1/2} / dx)
                     let mut neighbor_deriv = self.zero_local();
                     for i in 0..local_len {
                         neighbor_deriv.set_component(
@@ -350,7 +336,6 @@ where
                         axis,
                     );
 
-                    // Subtract lower face flux from node (dudt_i -= F_{i-1/2} / dx)
                     let mut current_deriv = self.zero_local();
                     for i in 0..local_len {
                         current_deriv.set_component(
