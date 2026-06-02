@@ -120,6 +120,35 @@ See `examples/pde/` for complete runnable examples:
 - `01_heat_equation`: scalar heat equation with `U = f64`
 - `02_maxwell`: Maxwell wave system with `U = Vec<f64>`
 - `03_compressible_navier_stokes`: conserved-variable flow example with `U = Vec<f64>`
+- `04_incompressible_navier_stokes`: projection backend for incompressible velocity fields
+
+## Incompressible Navier-Stokes
+
+Use `ProjectionMethod` for two-dimensional incompressible velocity states laid
+out as `[u0, v0, u1, v1, ...]`. The backend evaluates the supplied PDE terms,
+solves a dense Poisson problem with the crate's LU solver, and subtracts the
+pressure-potential gradient from the velocity tendency.
+
+```rust
+# use differential_equations::prelude::*;
+# struct NavierStokes { viscosity: f64 }
+# impl PDE<f64, Vec<f64>, 2> for NavierStokes {
+#     fn flux(&self, _t: f64, _x: &[f64; 2], _u: &Vec<f64>, grad_u: &[Vec<f64>; 2], flux: &mut [Vec<f64>; 2]) {
+#         flux[0][0] = self.viscosity * grad_u[0][0];
+#         flux[0][1] = self.viscosity * grad_u[0][1];
+#         flux[1][0] = self.viscosity * grad_u[1][0];
+#         flux[1][1] = self.viscosity * grad_u[1][1];
+#     }
+# }
+# let navier_stokes = NavierStokes { viscosity: 0.01 };
+# let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [9, 9]);
+# let velocity = vec![0.0; 2 * grid.len()];
+let solution = IVP::pde(&navier_stokes, 0.0, 0.1, velocity)
+    .space(ProjectionMethod::uniform(grid))
+    .method(ExplicitRungeKutta::rk4(1.0e-3))
+    .solve()?;
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
 
 `MethodOfLines` currently offers finite-difference and finite-volume spatial
 schemes. The `IVP::pde(...).space(...)` call accepts any backend implementing
