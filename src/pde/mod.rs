@@ -18,7 +18,7 @@ pub use boundary::{
 };
 pub use grid::{BoundaryFace, Side, StructuredGrid};
 pub use method_of_lines::MethodOfLines;
-pub use pde::PDE;
+pub use pde::{PDE, PdeFnWrapper, ZeroSource, pde_from_fn, pde_from_fn_flux};
 pub use projection::{ProjectionMethod, ProjectionSemiDiscrete};
 pub use semi_discrete::{SemiDiscretePde, SpatialScheme};
 pub use spatial_discretization::SpatialDiscretization;

@@ -44,3 +44,79 @@ where
         (*self).source(t, x, u, source);
     }
 }
+
+/// Zero-source marker for closure-based PDEs with no source term.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ZeroSource;
+
+/// Wrapper to construct a PDE from closures.
+#[derive(Debug, Clone, Copy)]
+pub struct PdeFnWrapper<Flux, Source> {
+    flux: Flux,
+    source: Source,
+}
+
+impl<Flux, Source> PdeFnWrapper<Flux, Source> {
+    /// Create a new PDE wrapper from a flux closure and a source closure.
+    pub fn new(flux: Flux, source: Source) -> Self {
+        Self { flux, source }
+    }
+}
+
+impl<T, U, const D: usize, Flux, Source> PDE<T, U, D> for PdeFnWrapper<Flux, Source>
+where
+    T: Real,
+    U: State<T>,
+    Flux: Fn(T, &[T; D], &U, &[U; D], &mut [U; D]),
+    Source: Fn(T, &[T; D], &U, &mut U),
+{
+    fn flux(&self, t: T, x: &[T; D], u: &U, grad_u: &[U; D], flux: &mut [U; D]) {
+        (self.flux)(t, x, u, grad_u, flux);
+    }
+
+    fn source(&self, t: T, x: &[T; D], u: &U, source: &mut U) {
+        (self.source)(t, x, u, source);
+    }
+}
+
+impl<T, U, const D: usize, Flux> PDE<T, U, D> for PdeFnWrapper<Flux, ZeroSource>
+where
+    T: Real,
+    U: State<T>,
+    Flux: Fn(T, &[T; D], &U, &[U; D], &mut [U; D]),
+{
+    fn flux(&self, t: T, x: &[T; D], u: &U, grad_u: &[U; D], flux: &mut [U; D]) {
+        (self.flux)(t, x, u, grad_u, flux);
+    }
+
+    fn source(&self, _t: T, _x: &[T; D], _u: &U, source: &mut U) {
+        source.fill(T::zero());
+    }
+}
+
+/// Create a PDE system from a flux closure and a source closure.
+pub fn pde_from_fn<T, U, const D: usize, Flux, Source>(
+    flux: Flux,
+    source: Source,
+) -> PdeFnWrapper<Flux, Source>
+where
+    T: Real,
+    U: State<T>,
+    Flux: Fn(T, &[T; D], &U, &[U; D], &mut [U; D]),
+    Source: Fn(T, &[T; D], &U, &mut U),
+{
+    PdeFnWrapper { flux, source }
+}
+
+/// Create a PDE system from a flux closure with a default zero source term.
+pub fn pde_from_fn_flux<T, U, const D: usize, Flux>(flux: Flux) -> PdeFnWrapper<Flux, ZeroSource>
+where
+    T: Real,
+    U: State<T>,
+    Flux: Fn(T, &[T; D], &U, &[U; D], &mut [U; D]),
+{
+    PdeFnWrapper {
+        flux,
+        source: ZeroSource,
+    }
+}

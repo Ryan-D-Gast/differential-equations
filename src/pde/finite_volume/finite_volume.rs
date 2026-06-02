@@ -84,9 +84,9 @@ where
     }
 
     /// Convert a PDE into a semi-discrete ODE system.
-    pub fn discretize<Eq, Y>(self, equation: &Eq) -> FiniteVolumeSemiDiscrete<'_, Eq, T, U, Y, D>
+    pub fn discretize<Eq, Y>(self, equation: Eq) -> FiniteVolumeSemiDiscrete<Eq, T, U, Y, D>
     where
-        Eq: PDE<T, U, D> + ?Sized,
+        Eq: PDE<T, U, D>,
         Y: State<T>,
     {
         FiniteVolumeSemiDiscrete {
@@ -102,31 +102,29 @@ where
     }
 }
 
-impl<'a, Eq, T, U, Y, const D: usize> SpatialDiscretization<'a, Eq, T, U, Y, D>
-    for FiniteVolume<T, U, D>
+impl<Eq, T, U, Y, const D: usize> SpatialDiscretization<Eq, T, U, Y, D> for FiniteVolume<T, U, D>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: PDE<T, U, D> + ?Sized + 'a,
+    Eq: PDE<T, U, D>,
 {
-    type System = FiniteVolumeSemiDiscrete<'a, Eq, T, U, Y, D>;
+    type System = FiniteVolumeSemiDiscrete<Eq, T, U, Y, D>;
 
-    fn discretize(self, equation: &'a Eq) -> Self::System {
+    fn discretize(self, equation: Eq) -> Self::System {
         FiniteVolume::discretize(self, equation)
     }
 }
 
 /// Semi-discrete system for finite volume.
 #[derive(Clone, Debug)]
-pub struct FiniteVolumeSemiDiscrete<'a, Eq, T, U = T, Y = Vec<T>, const D: usize = 1>
+pub struct FiniteVolumeSemiDiscrete<Eq, T, U = T, Y = Vec<T>, const D: usize = 1>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: ?Sized,
 {
-    pub(crate) equation: &'a Eq,
+    pub(crate) equation: Eq,
     pub(crate) grid: StructuredGrid<T, D>,
     pub(crate) local_template: U,
     pub(crate) boundary: BoundaryConditions<T, U, D>,
@@ -136,12 +134,12 @@ where
     pub(crate) marker: std::marker::PhantomData<Y>,
 }
 
-impl<'a, Eq, T, U, Y, const D: usize> FiniteVolumeSemiDiscrete<'a, Eq, T, U, Y, D>
+impl<Eq, T, U, Y, const D: usize> FiniteVolumeSemiDiscrete<Eq, T, U, Y, D>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: PDE<T, U, D> + ?Sized,
+    Eq: PDE<T, U, D>,
 {
     fn local_len(&self) -> usize {
         self.local_template.len()
@@ -218,12 +216,12 @@ where
     }
 }
 
-impl<'a, Eq, T, U, Y, const D: usize> ODE<T, Y> for FiniteVolumeSemiDiscrete<'a, Eq, T, U, Y, D>
+impl<Eq, T, U, Y, const D: usize> ODE<T, Y> for FiniteVolumeSemiDiscrete<Eq, T, U, Y, D>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: PDE<T, U, D> + ?Sized,
+    Eq: PDE<T, U, D>,
 {
     fn diff(&self, t: T, y: &Y, dudt: &mut Y) {
         let local_len = self.local_len();
@@ -283,7 +281,7 @@ where
 
                 let flux_upper = self
                     .flux
-                    .compute(self.equation, t, &x_face, &u_l, &u_r, axis);
+                    .compute(&self.equation, t, &x_face, &u_l, &u_r, axis);
 
                 let mut current_deriv = self.zero_local();
                 for i in 0..local_len {
@@ -326,7 +324,7 @@ where
                     x_face_lower[axis] -= self.grid.dx(axis) * T::from_subset(&0.5);
 
                     let flux_lower = self.flux.compute(
-                        self.equation,
+                        &self.equation,
                         t,
                         &x_face_lower,
                         &u_l_face,

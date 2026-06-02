@@ -115,16 +115,15 @@ where
     }
 }
 
-impl<'a, Eq, T, U, Y> SpatialDiscretization<'a, Eq, T, U, Y, 2> for YeeGrid<T, U, 2>
+impl<Eq, T, U, Y> SpatialDiscretization<Eq, T, U, Y, 2> for YeeGrid<T, U, 2>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: ?Sized + 'a,
 {
-    type System = SemiDiscreteYee<'a, Eq, T, U, Y, 2>;
+    type System = SemiDiscreteYee<Eq, T, U, Y, 2>;
 
-    fn discretize(self, equation: &'a Eq) -> Self::System {
+    fn discretize(self, equation: Eq) -> Self::System {
         SemiDiscreteYee::new(
             equation,
             self.grid,
@@ -138,15 +137,14 @@ where
 
 /// Semi-discrete ODE system produced by the Yee grid discretization.
 #[derive(Clone, Debug)]
-pub struct SemiDiscreteYee<'a, Eq, T, U, Y, const D: usize>
+pub struct SemiDiscreteYee<Eq, T, U, Y, const D: usize>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: ?Sized,
 {
     #[allow(dead_code)]
-    equation: &'a Eq,
+    equation: Eq,
     grid: StructuredGrid<T, D>,
     boundary: BoundaryConditions<T, U, D>,
     #[allow(dead_code)]
@@ -156,15 +154,14 @@ where
     marker: PhantomData<Y>,
 }
 
-impl<'a, Eq, T, U, Y> SemiDiscreteYee<'a, Eq, T, U, Y, 2>
+impl<Eq, T, U, Y> SemiDiscreteYee<Eq, T, U, Y, 2>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: ?Sized,
 {
     pub(crate) fn new(
-        equation: &'a Eq,
+        equation: Eq,
         grid: StructuredGrid<T, 2>,
         boundary: BoundaryConditions<T, U, 2>,
         local_template: U,
@@ -183,12 +180,11 @@ where
     }
 }
 
-impl<Eq, T, U, Y> ODE<T, Y> for SemiDiscreteYee<'_, Eq, T, U, Y, 2>
+impl<Eq, T, U, Y> ODE<T, Y> for SemiDiscreteYee<Eq, T, U, Y, 2>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: ?Sized,
 {
     fn diff(&self, _t: T, y: &Y, dudt: &mut Y) {
         let [nx, ny] = self.grid.nodes();
@@ -302,15 +298,14 @@ mod tests {
     #[test]
     fn test_yee_configuration() {
         let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [3, 3]);
-        let system: SemiDiscreteYee<'_, _, _, _, Vec<f64>, 2> =
-            YeeGrid::uniform_2d(grid, vec![0.0; 4])
-                .layout(YeeLayout {
-                    electric_z: 2,
-                    magnetic_x: 0,
-                    magnetic_y: 1,
-                })
-                .wave_speed_squared(9.0)
-                .discretize(&());
+        let system: SemiDiscreteYee<_, _, _, Vec<f64>, 2> = YeeGrid::uniform_2d(grid, vec![0.0; 4])
+            .layout(YeeLayout {
+                electric_z: 2,
+                magnetic_x: 0,
+                magnetic_y: 1,
+            })
+            .wave_speed_squared(9.0)
+            .discretize(&());
 
         assert_eq!(system.layout.electric_z, 2);
         assert_eq!(system.wave_speed_squared, 9.0);

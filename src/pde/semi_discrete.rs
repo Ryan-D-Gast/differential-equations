@@ -19,14 +19,13 @@ pub enum SpatialScheme {
 
 /// Semi-discrete ODE system produced by method of lines.
 #[derive(Clone, Debug)]
-pub struct SemiDiscretePde<'a, Eq, T, U = T, Y = Vec<T>, const D: usize = 1>
+pub struct SemiDiscretePde<Eq, T, U = T, Y = Vec<T>, const D: usize = 1>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: ?Sized,
 {
-    equation: &'a Eq,
+    equation: Eq,
     grid: StructuredGrid<T, D>,
     local_template: U,
     boundary: BoundaryConditions<T, U, D>,
@@ -34,15 +33,15 @@ where
     marker: PhantomData<Y>,
 }
 
-impl<'a, Eq, T, U, Y, const D: usize> SemiDiscretePde<'a, Eq, T, U, Y, D>
+impl<Eq, T, U, Y, const D: usize> SemiDiscretePde<Eq, T, U, Y, D>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: PDE<T, U, D> + ?Sized,
+    Eq: PDE<T, U, D>,
 {
     pub(crate) fn new(
-        equation: &'a Eq,
+        equation: Eq,
         grid: StructuredGrid<T, D>,
         local_template: U,
         boundary: BoundaryConditions<T, U, D>,
@@ -234,12 +233,12 @@ where
     }
 }
 
-impl<Eq, T, U, Y, const D: usize> ODE<T, Y> for SemiDiscretePde<'_, Eq, T, U, Y, D>
+impl<Eq, T, U, Y, const D: usize> ODE<T, Y> for SemiDiscretePde<Eq, T, U, Y, D>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: PDE<T, U, D> + ?Sized,
+    Eq: PDE<T, U, D>,
 {
     fn diff(&self, t: T, y: &Y, dudt: &mut Y) {
         let local_len = self.local_len();

@@ -101,9 +101,9 @@ where
     }
 
     /// Convert a PDE into a semi-discrete ODE system.
-    pub fn discretize<Eq, Y>(self, equation: &Eq) -> SemiDiscretePde<'_, Eq, T, U, Y, D>
+    pub fn discretize<Eq, Y>(self, equation: Eq) -> SemiDiscretePde<Eq, T, U, Y, D>
     where
-        Eq: PDE<T, U, D> + ?Sized,
+        Eq: PDE<T, U, D>,
         Y: State<T>,
     {
         SemiDiscretePde::new(
@@ -116,17 +116,16 @@ where
     }
 }
 
-impl<'a, Eq, T, U, Y, const D: usize> SpatialDiscretization<'a, Eq, T, U, Y, D>
-    for MethodOfLines<T, U, D>
+impl<Eq, T, U, Y, const D: usize> SpatialDiscretization<Eq, T, U, Y, D> for MethodOfLines<T, U, D>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: PDE<T, U, D> + ?Sized + 'a,
+    Eq: PDE<T, U, D>,
 {
-    type System = SemiDiscretePde<'a, Eq, T, U, Y, D>;
+    type System = SemiDiscretePde<Eq, T, U, Y, D>;
 
-    fn discretize(self, equation: &'a Eq) -> Self::System {
+    fn discretize(self, equation: Eq) -> Self::System {
         MethodOfLines::discretize(self, equation)
     }
 }

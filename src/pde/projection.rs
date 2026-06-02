@@ -83,16 +83,16 @@ where
     }
 }
 
-impl<'a, Eq, T, U, Y> SpatialDiscretization<'a, Eq, T, U, Y, 2> for ProjectionMethod<T, U>
+impl<Eq, T, U, Y> SpatialDiscretization<Eq, T, U, Y, 2> for ProjectionMethod<T, U>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: PDE<T, U, 2> + ?Sized + 'a,
+    Eq: PDE<T, U, 2>,
 {
-    type System = ProjectionSemiDiscrete<'a, Eq, T, U, Y>;
+    type System = ProjectionSemiDiscrete<Eq, T, U, Y>;
 
-    fn discretize(self, equation: &'a Eq) -> Self::System {
+    fn discretize(self, equation: Eq) -> Self::System {
         ProjectionSemiDiscrete::new(
             equation,
             self.grid,
@@ -105,14 +105,13 @@ where
 
 /// Semi-discrete ODE system produced by [`ProjectionMethod`].
 #[derive(Clone, Debug)]
-pub struct ProjectionSemiDiscrete<'a, Eq, T, U, Y>
+pub struct ProjectionSemiDiscrete<Eq, T, U, Y>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: ?Sized,
 {
-    equation: &'a Eq,
+    equation: Eq,
     grid: StructuredGrid<T, 2>,
     boundary: BoundaryConditions<T, U, 2>,
     local_template: U,
@@ -122,15 +121,15 @@ where
     marker: PhantomData<Y>,
 }
 
-impl<'a, Eq, T, U, Y> ProjectionSemiDiscrete<'a, Eq, T, U, Y>
+impl<Eq, T, U, Y> ProjectionSemiDiscrete<Eq, T, U, Y>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: PDE<T, U, 2> + ?Sized,
+    Eq: PDE<T, U, 2>,
 {
     pub(crate) fn new(
-        equation: &'a Eq,
+        equation: Eq,
         grid: StructuredGrid<T, 2>,
         boundary: BoundaryConditions<T, U, 2>,
         local_template: U,
@@ -348,12 +347,12 @@ where
     }
 }
 
-impl<Eq, T, U, Y> ODE<T, Y> for ProjectionSemiDiscrete<'_, Eq, T, U, Y>
+impl<Eq, T, U, Y> ODE<T, Y> for ProjectionSemiDiscrete<Eq, T, U, Y>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: PDE<T, U, 2> + ?Sized,
+    Eq: PDE<T, U, 2>,
 {
     fn diff(&self, t: T, y: &Y, dudt: &mut Y) {
         assert_eq!(
@@ -375,12 +374,12 @@ where
     }
 }
 
-impl<'a, Eq, T, U, Y> ProjectionSemiDiscrete<'a, Eq, T, U, Y>
+impl<Eq, T, U, Y> ProjectionSemiDiscrete<Eq, T, U, Y>
 where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: PDE<T, U, 2> + ?Sized,
+    Eq: PDE<T, U, 2>,
 {
     fn zero_pressure_boundary_rhs(&self, rhs: &mut [T]) {
         let [nx, ny] = self.grid.nodes();

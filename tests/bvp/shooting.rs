@@ -123,3 +123,18 @@ fn shooting_methods_solve_pipe_heat_transfer_bvp() {
         assert!((y_final[0] - pipe.analytical_outlet_temperature(length)).abs() < 1e-4);
     }
 }
+
+#[test]
+fn single_shooting_with_bvp_delegated_tolerances() {
+    let problem = HarmonicOscillatorBvp { target: 1.0 };
+    let method = Shooting::single(ExplicitRungeKutta::dop853());
+
+    let solution = BVP::ode(&problem, 0.0, std::f64::consts::FRAC_PI_2, [0.0, 0.5])
+        .method(method)
+        .rtol(1e-10)
+        .atol(1e-12)
+        .solve()
+        .expect("delegated tolerances should work");
+
+    assert_harmonic_solution(&solution);
+}
