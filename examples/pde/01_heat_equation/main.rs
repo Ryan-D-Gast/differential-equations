@@ -24,9 +24,11 @@ impl PDE for HeatEquation {
 fn main() {
     let heat = HeatEquation { alpha: 0.1 };
     let grid = StructuredGrid::uniform([0.0], [1.0], [51]);
-    let boundary = BoundaryConditions::new()
+    let boundary = BoundaryConditions::builder()
         .dirichlet(BoundaryFace::lower(0), 0.0)
-        .dirichlet(BoundaryFace::upper(0), 0.0);
+        .dirichlet(BoundaryFace::upper(0), 0.0)
+        .build()
+        .expect("all boundary faces should be specified");
     let u0: Vec<f64> = grid
         .points()
         .map(|point| (std::f64::consts::PI * point[0]).sin())

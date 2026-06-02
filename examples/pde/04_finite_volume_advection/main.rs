@@ -29,9 +29,7 @@ fn main() {
         .map(|point| (2.0 * std::f64::consts::PI * point[0]).sin())
         .collect();
 
-    let boundary = BoundaryConditions::new()
-        .neumann(BoundaryFace::lower(0), 0.0)
-        .neumann(BoundaryFace::upper(0), 0.0);
+    let boundary = BoundaryConditions::neumann_all(0.0);
 
     let tf = 0.5;
 

@@ -28,9 +28,10 @@ mod tests {
     fn test_finite_volume_conservation() {
         let adv = SimpleAdvection;
         let grid = StructuredGrid::uniform([0.0], [1.0], [10]);
-        let boundary = BoundaryConditions::new()
-            .dirichlet(BoundaryFace::lower(0), 1.0)
-            .dirichlet(BoundaryFace::upper(0), 0.0);
+        let boundary = BoundaryConditions::new(
+            [BoundaryCondition::Dirichlet(1.0)],
+            [BoundaryCondition::Dirichlet(0.0)],
+        );
 
         let fv = FiniteVolume::structured(grid.clone())
             .boundary(boundary)

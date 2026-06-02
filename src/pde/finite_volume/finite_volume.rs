@@ -18,7 +18,7 @@ where
 {
     grid: StructuredGrid<T, D>,
     local_template: U,
-    boundary: BoundaryConditions<T, U>,
+    boundary: BoundaryConditions<T, U, D>,
     reconstruction: Reconstruction,
     flux: NumericalFlux,
     limiter: Limiter,
@@ -33,7 +33,7 @@ where
         let local_template = T::zero();
         Self {
             grid,
-            boundary: BoundaryConditions::homogeneous_neumann_like::<1>(&local_template),
+            boundary: BoundaryConditions::homogeneous_neumann_like(&local_template),
             local_template,
             reconstruction: Reconstruction::default(),
             flux: NumericalFlux::default(),
@@ -51,7 +51,7 @@ where
     pub fn structured_with_field(grid: StructuredGrid<T, D>, local_template: U) -> Self {
         Self {
             grid,
-            boundary: BoundaryConditions::homogeneous_neumann_like::<D>(&local_template),
+            boundary: BoundaryConditions::homogeneous_neumann_like(&local_template),
             local_template,
             reconstruction: Reconstruction::default(),
             flux: NumericalFlux::default(),
@@ -60,7 +60,7 @@ where
     }
 
     /// Set boundary conditions.
-    pub fn boundary(mut self, boundary: BoundaryConditions<T, U>) -> Self {
+    pub fn boundary(mut self, boundary: BoundaryConditions<T, U, D>) -> Self {
         self.boundary = boundary;
         self
     }
@@ -129,7 +129,7 @@ where
     pub(crate) equation: &'a Eq,
     pub(crate) grid: StructuredGrid<T, D>,
     pub(crate) local_template: U,
-    pub(crate) boundary: BoundaryConditions<T, U>,
+    pub(crate) boundary: BoundaryConditions<T, U, D>,
     pub(crate) reconstruction: Reconstruction,
     pub(crate) flux: NumericalFlux,
     pub(crate) limiter: Limiter,
@@ -170,7 +170,7 @@ where
         }
     }
 
-    fn face_boundary(&self, axis: usize, side: Side) -> Option<&BoundaryCondition<U>> {
+    fn face_boundary(&self, axis: usize, side: Side) -> &BoundaryCondition<U> {
         self.boundary.get_face(BoundaryFace { axis, side })
     }
 
@@ -187,7 +187,7 @@ where
             let u = self.local_state(y, node);
             let bnd_side = self.grid.boundary_side(node, axis).unwrap_or(side);
             match self.face_boundary(axis, bnd_side) {
-                Some(BoundaryCondition::Dirichlet(val)) => {
+                BoundaryCondition::Dirichlet(val) => {
                     // Simple reflection/extrapolation for Dirichlet to keep symmetry or use exact value.
                     // For distance > 1, this is an approximation.
                     let mut ext = val.clone();
@@ -199,7 +199,7 @@ where
                     }
                     ext
                 }
-                Some(BoundaryCondition::Neumann(grad)) => {
+                BoundaryCondition::Neumann(grad) => {
                     let mut ext = u.clone();
                     let dx = self.grid.dx(axis) * T::from_subset(&(distance as f64));
                     for i in 0..self.local_len() {
@@ -214,7 +214,6 @@ where
                     }
                     ext
                 }
-                None => u,
             }
         }
     }
@@ -352,10 +351,12 @@ where
         // Zero out derivative for Dirichlet nodes
         for node in 0..self.grid.len() {
             let is_dirichlet = (0..D).any(|axis| {
-                self.grid
-                    .boundary_side(node, axis)
-                    .and_then(|side| self.face_boundary(axis, side))
-                    .is_some_and(|boundary| matches!(boundary, BoundaryCondition::Dirichlet(_)))
+                self.grid.boundary_side(node, axis).is_some_and(|side| {
+                    matches!(
+                        self.face_boundary(axis, side),
+                        BoundaryCondition::Dirichlet(_)
+                    )
+                })
             });
             if is_dirichlet {
                 self.set_local_derivative(dudt, node, &self.zero_local());
