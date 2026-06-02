@@ -130,6 +130,7 @@ See `examples/pde/` for complete runnable examples:
 - `01_heat_equation`: scalar heat equation with `U = f64`
 - `02_maxwell`: Maxwell wave system with `U = Vec<f64>` using generic method of lines
 - `03_compressible_navier_stokes`: conserved-variable flow example with `U = Vec<f64>`
+- `04_finite_volume_advection`: scalar advection using the finite-volume backend
 - `04_maxwell_yee`: Maxwell wave system with `U = Vec<f64>` using the staggered Yee grid
 
 ## Spatial Backends
@@ -137,4 +138,32 @@ See `examples/pde/` for complete runnable examples:
 The `IVP::pde(...).space(...)` call accepts any backend implementing `SpatialDiscretization`.
 
 - **MethodOfLines**: Generic finite-difference and finite-volume schemes for general advection-diffusion PDEs.
+- **FiniteVolume**: Cell-centered finite-volume backend with explicit control over numerical fluxes, MUSCL reconstruction, and limiters.
 - **YeeGrid**: A staggered FDTD/Yee grid specialized for Maxwell's equations. Use this when solving Maxwell's wave equations, as it naturally handles curl operators and provides superior wave propagation and stability properties compared to co-located generic schemes.
+
+For conservation laws needing robust shock capturing, use `FiniteVolume`:
+
+```rust
+# use differential_equations::prelude::*;
+# struct LinearAdvection { a: f64 }
+# impl PDE for LinearAdvection {
+#     fn flux(&self, _t: f64, _x: &[f64; 1], u: &f64, _grad_u: &[f64; 1], flux: &mut [f64; 1]) {
+#         flux[0] = self.a * u;
+#     }
+# }
+# let advection = LinearAdvection { a: 1.0 };
+# let grid = StructuredGrid::uniform([0.0], [1.0], [10]);
+# let boundary = BoundaryConditions::neumann_all(0.0);
+# let u0 = vec![0.0; grid.len()];
+let solution = IVP::pde(&advection, 0.0, 0.5, u0)
+    .space(
+        FiniteVolume::structured(grid)
+            .boundary(boundary)
+            .reconstruction(Reconstruction::Muscl)
+            .limiter(Limiter::Minmod)
+            .flux(NumericalFlux::Rusanov { max_speed: 1.0 }),
+    )
+    .method(ExplicitRungeKutta::ssp_rk3(0.01))
+    .solve()?;
+# Ok::<(), Box<dyn std::error::Error>>(())
+```

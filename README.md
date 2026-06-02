@@ -52,6 +52,7 @@ A high-performance library for solving differential equations in Rust, including
 
 - **[Partial Differential Equations (PDEs)](./docs/pde.md)** - Spatial discretization backends for time-dependent PDEs.
     - **Method of Lines** - Discretize general conservative PDEs on structured grids with finite difference or finite volume schemes, then reuse existing ODE IVP solvers.
+    - **Finite Volume** - Conservation-law backend with MUSCL reconstruction, limiters, and numerical fluxes.
     - **Yee Grid** - Specialized staggered FDTD grid for Maxwell's equations.
 
 ## Feature Flags
