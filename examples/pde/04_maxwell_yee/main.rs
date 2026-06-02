@@ -4,7 +4,7 @@
 //! `[E_z, H_x, H_y]` on a structured grid using the staggered Yee scheme.
 //! The plotted output is the final electric-field cross-section through the domain center.
 
-use differential_equations::{pde::YeeGrid, prelude::*};
+use differential_equations::prelude::*;
 use quill::prelude::*;
 
 struct Maxwell {
@@ -43,10 +43,10 @@ fn main() {
     let grid = StructuredGrid::uniform([0.0_f64, 0.0], [1.0, 1.0], [41, 41]);
     let local_field = vec![0.0; 3];
     let boundary = BoundaryConditions::new()
-        .neumann(BoundaryFace::lower(0), vec![0.0; 3])
-        .neumann(BoundaryFace::upper(0), vec![0.0; 3])
-        .neumann(BoundaryFace::lower(1), vec![0.0; 3])
-        .neumann(BoundaryFace::upper(1), vec![0.0; 3]);
+        .dirichlet(BoundaryFace::lower(0), vec![0.0; 3])
+        .dirichlet(BoundaryFace::upper(0), vec![0.0; 3])
+        .dirichlet(BoundaryFace::lower(1), vec![0.0; 3])
+        .dirichlet(BoundaryFace::upper(1), vec![0.0; 3]);
 
     let mut u0 = Vec::with_capacity(grid.len() * local_field.len());
     for [x, y] in grid.points() {

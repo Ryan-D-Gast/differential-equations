@@ -1,6 +1,6 @@
 use std::f64::consts::PI;
 
-use differential_equations::{pde::YeeGrid, prelude::*};
+use differential_equations::prelude::*;
 
 struct Maxwell2D {
     c2: f64,

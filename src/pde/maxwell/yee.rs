@@ -195,8 +195,8 @@ where
         // E_z = u[0], H_x = u[1], H_y = u[2]
         u.set_component(2, T::one()); // Set H_y = 1
 
-        let grad_u = [local_template.clone(), local_template.clone()];
-        let mut flux = [local_template.clone(), local_template.clone()];
+        let grad_u = [u.zeros_like(), u.zeros_like()];
+        let mut flux = [u.zeros_like(), u.zeros_like()];
         equation.flux(T::zero(), &[T::zero(), T::zero()], &u, &grad_u, &mut flux);
 
         // flux[0][0] should be c^2 * Hy = c^2 * 1 = c^2
