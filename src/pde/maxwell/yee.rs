@@ -20,7 +20,7 @@ where
     U: State<T>,
 {
     grid: StructuredGrid<T, D>,
-    boundary: BoundaryConditions<T, U>,
+    boundary: BoundaryConditions<T, U, D>,
     local_template: U,
 }
 
@@ -35,7 +35,7 @@ where
     pub fn uniform_2d(grid: StructuredGrid<T, 2>, local_template: U) -> Self {
         Self {
             grid,
-            boundary: BoundaryConditions::new(),
+            boundary: BoundaryConditions::homogeneous_neumann_like(&local_template),
             local_template,
         }
     }
@@ -88,7 +88,7 @@ mod tests {
         let maxwell = MockMaxwell { c2: 1.0 };
         let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [3, 3]);
         let local_template = vec![0.0; 3];
-        let boundary = BoundaryConditions::new();
+        let boundary = BoundaryConditions::neumann_all(vec![0.0; 3]);
 
         let system = SemiDiscreteYee::<_, _, _, Vec<f64>, 2>::new(
             &maxwell,
@@ -124,7 +124,7 @@ where
     U: State<T>,
 {
     /// Set boundary conditions.
-    pub fn boundary(mut self, boundary: BoundaryConditions<T, U>) -> Self {
+    pub fn boundary(mut self, boundary: BoundaryConditions<T, U, D>) -> Self {
         self.boundary = boundary;
         self
     }
@@ -156,7 +156,7 @@ where
     #[allow(dead_code)]
     equation: &'a Eq,
     grid: StructuredGrid<T, D>,
-    boundary: BoundaryConditions<T, U>,
+    boundary: BoundaryConditions<T, U, D>,
     #[allow(dead_code)]
     local_template: U,
     c2: T,
@@ -173,7 +173,7 @@ where
     pub(crate) fn new(
         equation: &'a Eq,
         grid: StructuredGrid<T, 2>,
-        boundary: BoundaryConditions<T, U>,
+        boundary: BoundaryConditions<T, U, 2>,
         local_template: U,
     ) -> Self {
         let c2 = Self::extract_c2(equation, &local_template);
@@ -288,7 +288,7 @@ where
                 for axis in 0..2 {
                     if let Some(side) = self.grid.boundary_side(node, axis) {
                         let face = BoundaryFace { axis, side };
-                        if let Some(BoundaryCondition::Dirichlet(_)) = self.boundary.get(face) {
+                        if matches!(self.boundary.get(face), BoundaryCondition::Dirichlet(_)) {
                             is_dirichlet = true;
                             break;
                         }

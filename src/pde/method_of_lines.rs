@@ -15,7 +15,7 @@ where
 {
     grid: StructuredGrid<T, D>,
     local_template: U,
-    boundary: BoundaryConditions<T, U>,
+    boundary: BoundaryConditions<T, U, D>,
     scheme: SpatialScheme,
 }
 
@@ -28,7 +28,7 @@ where
         let local_template = T::zero();
         Self {
             grid,
-            boundary: BoundaryConditions::homogeneous_neumann_like::<1>(&local_template),
+            boundary: BoundaryConditions::homogeneous_neumann_like(&local_template),
             local_template,
             scheme: SpatialScheme::FiniteDifference,
         }
@@ -39,7 +39,7 @@ where
         let local_template = T::zero();
         Self {
             grid,
-            boundary: BoundaryConditions::homogeneous_neumann_like::<1>(&local_template),
+            boundary: BoundaryConditions::homogeneous_neumann_like(&local_template),
             local_template,
             scheme: SpatialScheme::FiniteVolume,
         }
@@ -58,7 +58,7 @@ where
     pub fn finite_difference_with_field(grid: StructuredGrid<T, D>, local_template: U) -> Self {
         Self {
             grid,
-            boundary: BoundaryConditions::homogeneous_neumann_like::<D>(&local_template),
+            boundary: BoundaryConditions::homogeneous_neumann_like(&local_template),
             local_template,
             scheme: SpatialScheme::FiniteDifference,
         }
@@ -68,14 +68,14 @@ where
     pub fn finite_volume_with_field(grid: StructuredGrid<T, D>, local_template: U) -> Self {
         Self {
             grid,
-            boundary: BoundaryConditions::homogeneous_neumann_like::<D>(&local_template),
+            boundary: BoundaryConditions::homogeneous_neumann_like(&local_template),
             local_template,
             scheme: SpatialScheme::FiniteVolume,
         }
     }
 
     /// Set boundary conditions.
-    pub fn boundary(mut self, boundary: BoundaryConditions<T, U>) -> Self {
+    pub fn boundary(mut self, boundary: BoundaryConditions<T, U, D>) -> Self {
         self.boundary = boundary;
         self
     }
@@ -91,7 +91,7 @@ where
     }
 
     /// Access the boundary conditions.
-    pub fn boundary_conditions(&self) -> BoundaryConditions<T, U> {
+    pub fn boundary_conditions(&self) -> BoundaryConditions<T, U, D> {
         self.boundary.clone()
     }
 

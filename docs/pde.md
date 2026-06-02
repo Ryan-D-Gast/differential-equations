@@ -25,9 +25,10 @@ impl PDE for HeatEquation {
 
 let heat = HeatEquation { alpha: 0.1 };
 let grid = StructuredGrid::uniform([0.0], [1.0], [51]);
-let boundary = BoundaryConditions::new()
+let boundary = BoundaryConditions::<f64, f64, 1>::builder()
     .dirichlet(BoundaryFace::lower(0), 0.0)
-    .dirichlet(BoundaryFace::upper(0), 0.0);
+    .dirichlet(BoundaryFace::upper(0), 0.0)
+    .build()?;
 let u0 = grid.points().map(|point| (std::f64::consts::PI * point[0]).sin()).collect();
 
 let solution = IVP::pde(&heat, 0.0, 0.05, u0)
@@ -49,9 +50,10 @@ For lower-level control, discretize first and then use the regular ODE API:
 # }
 # let heat = HeatEquation { alpha: 0.1 };
 # let grid = StructuredGrid::uniform([0.0], [1.0], [51]);
-# let boundary = BoundaryConditions::new()
+# let boundary = BoundaryConditions::<f64, f64, 1>::builder()
 #     .dirichlet(BoundaryFace::lower(0), 0.0)
-#     .dirichlet(BoundaryFace::upper(0), 0.0);
+#     .dirichlet(BoundaryFace::upper(0), 0.0)
+#     .build()?;
 # let u0 = grid.points().map(|point| (std::f64::consts::PI * point[0]).sin()).collect();
 let semi_discrete = MethodOfLines::finite_difference(grid)
     .boundary(boundary)
@@ -64,6 +66,13 @@ let solution = IVP::ode(&semi_discrete, 0.0, 0.05, u0)
 ```
 
 Dirichlet boundaries hold endpoint values fixed. Neumann boundaries prescribe endpoint gradients and are included in the boundary flux balance.
+
+`BoundaryConditions<T, U, D>` is complete by construction: every lower and upper
+face must have exactly one condition. Use `BoundaryConditions::builder()` for
+mixed faces, `BoundaryConditions::dirichlet_all(value)` for all-Dirichlet
+domains, or `BoundaryConditions::neumann_all(value)` for all-Neumann domains.
+This intentionally permits valid mixed boundary-value problems while rejecting
+accidentally incomplete public boundary specifications.
 
 Vector fields use the same trait with a local field type `U: State<T>`. The full
 solver state is still a flat `State<T>` laid out by node and component:
@@ -102,9 +111,10 @@ impl PDE<f64, Vec<f64>, 1> for ReactionDiffusion {
 }
 # let equation = ReactionDiffusion { diffusivity: [1.0, 0.5] };
 # let grid = StructuredGrid::uniform([0.0], [1.0], [11]);
-# let boundary = BoundaryConditions::new()
+# let boundary = BoundaryConditions::<f64, Vec<f64>, 1>::builder()
 #     .dirichlet(BoundaryFace::lower(0), vec![0.0, 1.0])
-#     .dirichlet(BoundaryFace::upper(0), vec![1.0, 0.0]);
+#     .dirichlet(BoundaryFace::upper(0), vec![1.0, 0.0])
+#     .build()?;
 # let u0 = vec![0.0; grid.len() * 2];
 # let _solution = IVP::pde(&equation, 0.0, 0.1, u0)
 #     .space(MethodOfLines::finite_volume_with_field(grid, vec![0.0; 2]).boundary(boundary))

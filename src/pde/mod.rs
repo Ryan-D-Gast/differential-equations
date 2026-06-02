@@ -11,7 +11,10 @@ mod pde;
 mod semi_discrete;
 mod spatial_discretization;
 
-pub use boundary::{BoundaryCondition, BoundaryConditions};
+pub use boundary::{
+    BoundaryCondition, BoundaryConditions, BoundaryConditionsBuilder,
+    BoundaryConditionsBuilderError,
+};
 pub use grid::{BoundaryFace, Side, StructuredGrid};
 pub use maxwell::{SemiDiscreteYee, YeeGrid};
 pub use method_of_lines::MethodOfLines;

@@ -46,11 +46,7 @@ fn yee_grid_standing_wave_pec() {
     let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [21, 21]);
 
     // PEC boundaries
-    let boundary = BoundaryConditions::new()
-        .dirichlet(BoundaryFace::lower(0), vec![0.0; 3])
-        .dirichlet(BoundaryFace::upper(0), vec![0.0; 3])
-        .dirichlet(BoundaryFace::lower(1), vec![0.0; 3])
-        .dirichlet(BoundaryFace::upper(1), vec![0.0; 3]);
+    let boundary = BoundaryConditions::dirichlet_all(vec![0.0; 3]);
 
     let mut u0 = vec![0.0; grid.len() * 3];
     for (i, [x, y]) in grid.points().enumerate() {
