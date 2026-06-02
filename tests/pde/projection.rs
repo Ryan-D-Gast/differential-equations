@@ -110,3 +110,39 @@ fn projection_cavity_vortex_example_stays_finite() {
         "projection example velocity grew unexpectedly: {max_norm}"
     );
 }
+
+struct TracerSource;
+
+impl PDE<f64, Vec<f64>, 2> for TracerSource {
+    fn flux(
+        &self,
+        _t: f64,
+        _x: &[f64; 2],
+        _u: &Vec<f64>,
+        _grad_u: &[Vec<f64>; 2],
+        _flux: &mut [Vec<f64>; 2],
+    ) {
+    }
+
+    fn source(&self, _t: f64, _x: &[f64; 2], _u: &Vec<f64>, source: &mut Vec<f64>) {
+        source[0] = 5.0;
+    }
+}
+
+#[test]
+fn projection_preserves_unselected_components() {
+    let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [5, 5]);
+    let system = ProjectionMethod::with_field(grid.clone(), vec![0.0; 3])
+        .velocity_components([1, 2])
+        .discretize(&TracerSource);
+    let y = vec![0.0; 3 * grid.len()];
+    let mut dudt = vec![0.0; 3 * grid.len()];
+
+    system.diff(0.0, &y, &mut dudt);
+
+    for node in 0..grid.len() {
+        assert_eq!(dudt[3 * node], 5.0);
+        assert_eq!(dudt[3 * node + 1], 0.0);
+        assert_eq!(dudt[3 * node + 2], 0.0);
+    }
+}

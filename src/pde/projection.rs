@@ -1,4 +1,4 @@
-//! Projection backend for 2D incompressible velocity fields.
+//! Projection backend for two-dimensional incompressible vector fields.
 
 use std::marker::PhantomData;
 
@@ -12,13 +12,11 @@ use crate::{
     traits::{Real, State},
 };
 
-/// Projection-method spatial backend for two-dimensional incompressible flow.
+/// Projection-method spatial backend for two-dimensional incompressible flow-like systems.
 ///
-/// The global state is laid out as `[u0, v0, u1, v1, ...]` with two velocity
-/// components per grid node. The wrapped [`PDE`] supplies the unprojected
-/// velocity tendency through its flux and source terms. This backend then solves
-/// a pressure-like Poisson equation and subtracts its gradient so the returned
-/// velocity tendency has substantially lower discrete divergence.
+/// The backend projects two selected local components onto a lower-divergence
+/// field. Local states may contain additional components; those components keep
+/// the unprojected tendency supplied by the wrapped [`PDE`].
 #[derive(Clone, Debug)]
 pub struct ProjectionMethod<T, U = Vec<T>>
 where
@@ -28,6 +26,7 @@ where
     grid: StructuredGrid<T, 2>,
     boundary: BoundaryConditions<T, U, 2>,
     local_template: U,
+    velocity_components: [usize; 2],
 }
 
 impl<T> ProjectionMethod<T, Vec<T>>
@@ -45,24 +44,41 @@ where
     T: Real,
     U: State<T>,
 {
-    /// Create a projection backend with an explicit local velocity template.
+    /// Create a projection backend with an explicit local state template.
     pub fn with_field(grid: StructuredGrid<T, 2>, local_template: U) -> Self {
-        assert_eq!(
-            local_template.len(),
-            2,
-            "ProjectionMethod expects two local velocity components"
+        assert!(
+            local_template.len() >= 2,
+            "ProjectionMethod requires at least two local components"
         );
         let boundary = BoundaryConditions::homogeneous_neumann_like(&local_template);
         Self {
             grid,
             boundary,
             local_template,
+            velocity_components: [0, 1],
         }
     }
 
     /// Set velocity boundary conditions.
     pub fn boundary(mut self, boundary: BoundaryConditions<T, U, 2>) -> Self {
         self.boundary = boundary;
+        self
+    }
+
+    /// Select the local components used as the projected x/y velocity.
+    ///
+    /// Components not listed here are still evolved by the wrapped PDE terms,
+    /// but are not modified by the pressure projection.
+    pub fn velocity_components(mut self, components: [usize; 2]) -> Self {
+        assert!(
+            components[0] < self.local_template.len() && components[1] < self.local_template.len(),
+            "ProjectionMethod velocity component index out of bounds"
+        );
+        assert_ne!(
+            components[0], components[1],
+            "ProjectionMethod velocity components must be distinct"
+        );
+        self.velocity_components = components;
         self
     }
 }
@@ -77,7 +93,13 @@ where
     type System = ProjectionSemiDiscrete<'a, Eq, T, U, Y>;
 
     fn discretize(self, equation: &'a Eq) -> Self::System {
-        ProjectionSemiDiscrete::new(equation, self.grid, self.boundary, self.local_template)
+        ProjectionSemiDiscrete::new(
+            equation,
+            self.grid,
+            self.boundary,
+            self.local_template,
+            self.velocity_components,
+        )
     }
 }
 
@@ -94,6 +116,7 @@ where
     grid: StructuredGrid<T, 2>,
     boundary: BoundaryConditions<T, U, 2>,
     local_template: U,
+    velocity_components: [usize; 2],
     poisson_lu: Matrix<T>,
     poisson_pivots: Vec<usize>,
     marker: PhantomData<Y>,
@@ -111,11 +134,11 @@ where
         grid: StructuredGrid<T, 2>,
         boundary: BoundaryConditions<T, U, 2>,
         local_template: U,
+        velocity_components: [usize; 2],
     ) -> Self {
-        assert_eq!(
-            local_template.len(),
-            2,
-            "ProjectionMethod expects two local velocity components"
+        assert!(
+            local_template.len() >= 2,
+            "ProjectionMethod requires at least two local components"
         );
         let mut poisson_lu = build_poisson_matrix(&grid);
         let mut poisson_pivots = vec![0; grid.len()];
@@ -126,6 +149,7 @@ where
             grid,
             boundary,
             local_template,
+            velocity_components,
             poisson_lu,
             poisson_pivots,
             marker: PhantomData,
@@ -142,15 +166,23 @@ where
     }
 
     fn local_state(&self, y: &Y, node: usize) -> U {
+        let local_len = self.local_template.len();
         let mut local = self.zero_local();
-        local.set_component(0, y.get_component(2 * node));
-        local.set_component(1, y.get_component(2 * node + 1));
+        for component in 0..local_len {
+            local.set_component(component, y.get_component(node * local_len + component));
+        }
         local
     }
 
     fn set_local(&self, y: &mut Y, node: usize, local: &U) {
-        y.set_component(2 * node, local.get_component(0));
-        y.set_component(2 * node + 1, local.get_component(1));
+        let local_len = self.local_template.len();
+        for component in 0..local_len {
+            y.set_component(node * local_len + component, local.get_component(component));
+        }
+    }
+
+    fn global_component(&self, node: usize, local_component: usize) -> usize {
+        node * self.local_template.len() + local_component
     }
 
     fn is_dirichlet_node(&self, node: usize) -> bool {
@@ -205,7 +237,7 @@ where
                 self.equation.flux(t, &x, &u, &grad_lower, &mut flux_lower);
                 self.equation.flux(t, &x, &u, &grad_upper, &mut flux_upper);
 
-                for component in 0..2 {
+                for component in 0..self.local_template.len() {
                     derivative.set_component(
                         component,
                         derivative.get_component(component)
@@ -225,28 +257,48 @@ where
             let [i, j] = self.grid.multi_index(node);
             let [nx, ny] = self.grid.nodes();
             let du_dx = if i == 0 {
-                (y.get_component(2 * self.grid.flat_index([i + 1, j])) - y.get_component(2 * node))
+                (y.get_component(self.global_component(
+                    self.grid.flat_index([i + 1, j]),
+                    self.velocity_components[0],
+                )) - y.get_component(self.global_component(node, self.velocity_components[0])))
                     / self.grid.dx(0)
             } else if i + 1 == nx {
-                (y.get_component(2 * node) - y.get_component(2 * self.grid.flat_index([i - 1, j])))
+                (y.get_component(self.global_component(node, self.velocity_components[0]))
+                    - y.get_component(self.global_component(
+                        self.grid.flat_index([i - 1, j]),
+                        self.velocity_components[0],
+                    )))
                     / self.grid.dx(0)
             } else {
-                (y.get_component(2 * self.grid.flat_index([i + 1, j]))
-                    - y.get_component(2 * self.grid.flat_index([i - 1, j])))
-                    / (self.grid.dx(0) + self.grid.dx(0))
+                (y.get_component(self.global_component(
+                    self.grid.flat_index([i + 1, j]),
+                    self.velocity_components[0],
+                )) - y.get_component(self.global_component(
+                    self.grid.flat_index([i - 1, j]),
+                    self.velocity_components[0],
+                ))) / (self.grid.dx(0) + self.grid.dx(0))
             };
             let dv_dy = if j == 0 {
-                (y.get_component(2 * self.grid.flat_index([i, j + 1]) + 1)
-                    - y.get_component(2 * node + 1))
+                (y.get_component(self.global_component(
+                    self.grid.flat_index([i, j + 1]),
+                    self.velocity_components[1],
+                )) - y.get_component(self.global_component(node, self.velocity_components[1])))
                     / self.grid.dx(1)
             } else if j + 1 == ny {
-                (y.get_component(2 * node + 1)
-                    - y.get_component(2 * self.grid.flat_index([i, j - 1]) + 1))
+                (y.get_component(self.global_component(node, self.velocity_components[1]))
+                    - y.get_component(self.global_component(
+                        self.grid.flat_index([i, j - 1]),
+                        self.velocity_components[1],
+                    )))
                     / self.grid.dx(1)
             } else {
-                (y.get_component(2 * self.grid.flat_index([i, j + 1]) + 1)
-                    - y.get_component(2 * self.grid.flat_index([i, j - 1]) + 1))
-                    / (self.grid.dx(1) + self.grid.dx(1))
+                (y.get_component(self.global_component(
+                    self.grid.flat_index([i, j + 1]),
+                    self.velocity_components[1],
+                )) - y.get_component(self.global_component(
+                    self.grid.flat_index([i, j - 1]),
+                    self.velocity_components[1],
+                ))) / (self.grid.dx(1) + self.grid.dx(1))
             };
             div[node] = du_dx + dv_dy;
         }
@@ -257,8 +309,14 @@ where
         let [nx, ny] = self.grid.nodes();
         for node in 0..self.grid.len() {
             if self.is_dirichlet_node(node) {
-                dudt.set_component(2 * node, T::zero());
-                dudt.set_component(2 * node + 1, T::zero());
+                dudt.set_component(
+                    self.global_component(node, self.velocity_components[0]),
+                    T::zero(),
+                );
+                dudt.set_component(
+                    self.global_component(node, self.velocity_components[1]),
+                    T::zero(),
+                );
                 continue;
             }
 
@@ -282,8 +340,10 @@ where
                     / (self.grid.dx(1) + self.grid.dx(1))
             };
 
-            dudt.set_component(2 * node, dudt.get_component(2 * node) - dp_dx);
-            dudt.set_component(2 * node + 1, dudt.get_component(2 * node + 1) - dp_dy);
+            let u_index = self.global_component(node, self.velocity_components[0]);
+            let v_index = self.global_component(node, self.velocity_components[1]);
+            dudt.set_component(u_index, dudt.get_component(u_index) - dp_dx);
+            dudt.set_component(v_index, dudt.get_component(v_index) - dp_dy);
         }
     }
 }
@@ -298,13 +358,13 @@ where
     fn diff(&self, t: T, y: &Y, dudt: &mut Y) {
         assert_eq!(
             y.len(),
-            2 * self.grid.len(),
-            "ProjectionMethod state length must match 2 * grid nodes"
+            self.local_template.len() * self.grid.len(),
+            "ProjectionMethod state length must match local components * grid nodes"
         );
         assert_eq!(
             dudt.len(),
-            2 * self.grid.len(),
-            "ProjectionMethod derivative length must match 2 * grid nodes"
+            self.local_template.len() * self.grid.len(),
+            "ProjectionMethod derivative length must match local components * grid nodes"
         );
 
         self.raw_tendency(t, y, dudt);

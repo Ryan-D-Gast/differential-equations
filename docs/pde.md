@@ -130,8 +130,8 @@ See `examples/pde/` for complete runnable examples:
 - `01_heat_equation`: scalar heat equation with `U = f64`
 - `02_maxwell`: Maxwell wave system with `U = Vec<f64>` using generic method of lines
 - `03_finite_volume_advection`: scalar advection using the finite-volume backend
-- `04_maxwell_yee`: Maxwell wave system with `U = Vec<f64>` using the staggered Yee grid
-- `05_incompressible_navier_stokes`: projection backend for incompressible velocity fields
+- `04_maxwell_yee`: Maxwell wave system with `U = Vec<f64>` using a configurable staggered Yee grid
+- `05_incompressible_navier_stokes`: incompressible-flow model using a configurable projection backend
 
 ## Spatial Backends
 
@@ -139,8 +139,8 @@ The `IVP::pde(...).space(...)` call accepts any backend implementing `SpatialDis
 
 - **MethodOfLines**: Generic finite-difference and finite-volume schemes for general advection-diffusion PDEs.
 - **FiniteVolume**: Cell-centered finite-volume backend with explicit control over numerical fluxes, MUSCL reconstruction, and limiters.
-- **YeeGrid**: A staggered FDTD/Yee backend specialized for the two-dimensional transverse-magnetic Maxwell system with local field `[E_z, H_x, H_y]`. Use it for Maxwell wave equations where the staggered curl operators are the right model.
-- **ProjectionMethod**: Incompressible-flow backend that projects two-dimensional velocity tendencies onto a lower-divergence field with a dense Poisson solve.
+- **YeeGrid**: Configurable two-dimensional staggered curl backend. Select the three local components with `YeeLayout` and set the wave speed explicitly. The Maxwell example uses the default `[E_z, H_x, H_y]` layout, but the backend is not tied to a Maxwell equation type.
+- **ProjectionMethod**: Configurable two-dimensional projection backend. Select the two local velocity components to project; additional local components keep the unprojected tendency supplied by the wrapped PDE.
 
 For conservation laws needing robust shock capturing, use `FiniteVolume`:
 
@@ -169,7 +169,7 @@ let solution = IVP::pde(&advection, 0.0, 0.5, u0)
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-For two-dimensional incompressible velocity states laid out as
+For two-dimensional states with velocity components laid out as
 `[u0, v0, u1, v1, ...]`, use `ProjectionMethod`:
 
 ```rust
@@ -188,6 +188,33 @@ For two-dimensional incompressible velocity states laid out as
 # let velocity = vec![0.0; 2 * grid.len()];
 let solution = IVP::pde(&navier_stokes, 0.0, 0.1, velocity)
     .space(ProjectionMethod::uniform(grid))
+    .method(ExplicitRungeKutta::rk4(1.0e-3))
+    .solve()?;
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+For larger local states, construct the backend with an explicit template and
+select which components represent the projected x/y velocity:
+
+```rust
+# use differential_equations::prelude::*;
+# struct PassiveScalarFlow;
+# impl PDE<f64, Vec<f64>, 2> for PassiveScalarFlow {
+#     fn flux(
+#         &self,
+#         _t: f64,
+#         _x: &[f64; 2],
+#         _u: &Vec<f64>,
+#         _grad_u: &[Vec<f64>; 2],
+#         _flux: &mut [Vec<f64>; 2],
+#     ) {
+#     }
+# }
+# let equation = PassiveScalarFlow;
+# let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [9, 9]);
+# let state = vec![0.0; 3 * grid.len()];
+let solution = IVP::pde(&equation, 0.0, 0.1, state)
+    .space(ProjectionMethod::with_field(grid, vec![0.0; 3]).velocity_components([0, 1]))
     .method(ExplicitRungeKutta::rk4(1.0e-3))
     .solve()?;
 # Ok::<(), Box<dyn std::error::Error>>(())

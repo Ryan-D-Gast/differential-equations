@@ -2,17 +2,40 @@ use std::marker::PhantomData;
 
 use crate::{
     ode::ODE,
-    pde::{BoundaryCondition, BoundaryConditions, BoundaryFace, PDE, StructuredGrid},
+    pde::{BoundaryCondition, BoundaryConditions, BoundaryFace, StructuredGrid},
     traits::{Real, State},
 };
 
 use crate::pde::SpatialDiscretization;
 
-/// Yee-grid spatial discretization backend for two-dimensional TM Maxwell equations.
+/// Component layout for a two-dimensional Yee staggered-grid update.
 ///
-/// This backend implements a staggered spatial grid (FDTD/Yee scheme) for
-/// resolving the curl operators in Maxwell's equations. The local field is
-/// `[E_z, H_x, H_y]`; this is not a general-purpose staggered-grid backend.
+/// The default layout is `[electric_z, magnetic_x, magnetic_y] = [0, 1, 2]`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct YeeLayout {
+    /// Component updated by the staggered curl of the two magnetic components.
+    pub electric_z: usize,
+    /// Component updated from the y-derivative of `electric_z`.
+    pub magnetic_x: usize,
+    /// Component updated from the x-derivative of `electric_z`.
+    pub magnetic_y: usize,
+}
+
+impl Default for YeeLayout {
+    fn default() -> Self {
+        Self {
+            electric_z: 0,
+            magnetic_x: 1,
+            magnetic_y: 2,
+        }
+    }
+}
+
+/// Two-dimensional Yee staggered-grid spatial discretization backend.
+///
+/// This backend implements the standard 2D TM-style staggered curl update for
+/// three selected local components. It is configured by component indices and
+/// wave speed, so it is not tied to a particular equation type.
 #[derive(Clone, Debug)]
 pub struct YeeGrid<T, U, const D: usize>
 where
@@ -22,6 +45,8 @@ where
     grid: StructuredGrid<T, D>,
     boundary: BoundaryConditions<T, U, D>,
     local_template: U,
+    layout: YeeLayout,
+    wave_speed_squared: T,
 }
 
 impl<T, U> YeeGrid<T, U, 2>
@@ -31,12 +56,19 @@ where
 {
     /// Create a 2D Yee grid.
     ///
-    /// The local field state is assumed to be `[E_z, H_x, H_y]`.
+    /// The default component layout is `[electric_z, magnetic_x, magnetic_y] = [0, 1, 2]`
+    /// and the default wave speed is one.
     pub fn uniform_2d(grid: StructuredGrid<T, 2>, local_template: U) -> Self {
+        assert!(
+            local_template.len() >= 3,
+            "YeeGrid requires at least three local components"
+        );
         Self {
             grid,
             boundary: BoundaryConditions::homogeneous_neumann_like(&local_template),
             local_template,
+            layout: YeeLayout::default(),
+            wave_speed_squared: T::one(),
         }
     }
 }
@@ -45,56 +77,36 @@ where
 mod tests {
     use super::*;
 
-    struct MockMaxwell {
-        c2: f64,
-    }
-
-    impl PDE<f64, Vec<f64>, 2> for MockMaxwell {
-        fn flux(
-            &self,
-            _t: f64,
-            _x: &[f64; 2],
-            u: &Vec<f64>,
-            _grad_u: &[Vec<f64>; 2],
-            flux: &mut [Vec<f64>; 2],
-        ) {
-            let ez = u[0];
-            let hx = u[1];
-            let hy = u[2];
-
-            flux[0][0] = self.c2 * hy;
-            flux[0][1] = 0.0;
-            flux[0][2] = ez;
-
-            flux[1][0] = -self.c2 * hx;
-            flux[1][1] = -ez;
-            flux[1][2] = 0.0;
-        }
-    }
-
     #[test]
-    fn test_yee_extract_c2() {
-        let maxwell = MockMaxwell { c2: 9.0 };
-        let local_template = vec![0.0; 3];
-        let c2 = SemiDiscreteYee::<MockMaxwell, f64, Vec<f64>, Vec<f64>, 2>::extract_c2(
-            &maxwell,
-            &local_template,
-        );
-        assert_eq!(c2, 9.0);
+    fn test_yee_configuration() {
+        let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [3, 3]);
+        let system: SemiDiscreteYee<'_, _, _, _, Vec<f64>, 2> =
+            YeeGrid::uniform_2d(grid, vec![0.0; 4])
+                .layout(YeeLayout {
+                    electric_z: 2,
+                    magnetic_x: 0,
+                    magnetic_y: 1,
+                })
+                .wave_speed_squared(9.0)
+                .discretize(&());
+
+        assert_eq!(system.layout.electric_z, 2);
+        assert_eq!(system.wave_speed_squared, 9.0);
     }
 
     #[test]
     fn test_yee_diff_interior() {
-        let maxwell = MockMaxwell { c2: 1.0 };
         let grid = StructuredGrid::uniform([0.0, 0.0], [1.0, 1.0], [3, 3]);
         let local_template = vec![0.0; 3];
         let boundary = BoundaryConditions::neumann_all(vec![0.0; 3]);
 
         let system = SemiDiscreteYee::<_, _, _, Vec<f64>, 2>::new(
-            &maxwell,
+            &(),
             grid.clone(),
             boundary,
             local_template,
+            YeeLayout::default(),
+            1.0,
         );
 
         let mut y = vec![0.0; 27]; // 3 * 3 nodes * 3 components
@@ -128,6 +140,36 @@ where
         self.boundary = boundary;
         self
     }
+
+    /// Set the local component layout used by the Yee update.
+    pub fn layout(mut self, layout: YeeLayout) -> Self {
+        assert!(
+            layout.electric_z < self.local_template.len()
+                && layout.magnetic_x < self.local_template.len()
+                && layout.magnetic_y < self.local_template.len(),
+            "YeeGrid layout component index out of bounds"
+        );
+        assert!(
+            layout.electric_z != layout.magnetic_x
+                && layout.electric_z != layout.magnetic_y
+                && layout.magnetic_x != layout.magnetic_y,
+            "YeeGrid layout components must be distinct"
+        );
+        self.layout = layout;
+        self
+    }
+
+    /// Set the squared wave speed used in the electric-field update.
+    pub fn wave_speed_squared(mut self, wave_speed_squared: T) -> Self {
+        self.wave_speed_squared = wave_speed_squared;
+        self
+    }
+
+    /// Set the wave speed used in the electric-field update.
+    pub fn wave_speed(mut self, wave_speed: T) -> Self {
+        self.wave_speed_squared = wave_speed * wave_speed;
+        self
+    }
 }
 
 impl<'a, Eq, T, U, Y> SpatialDiscretization<'a, Eq, T, U, Y, 2> for YeeGrid<T, U, 2>
@@ -135,12 +177,19 @@ where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: PDE<T, U, 2> + ?Sized + 'a,
+    Eq: ?Sized + 'a,
 {
     type System = SemiDiscreteYee<'a, Eq, T, U, Y, 2>;
 
     fn discretize(self, equation: &'a Eq) -> Self::System {
-        SemiDiscreteYee::new(equation, self.grid, self.boundary, self.local_template)
+        SemiDiscreteYee::new(
+            equation,
+            self.grid,
+            self.boundary,
+            self.local_template,
+            self.layout,
+            self.wave_speed_squared,
+        )
     }
 }
 
@@ -159,7 +208,8 @@ where
     boundary: BoundaryConditions<T, U, D>,
     #[allow(dead_code)]
     local_template: U,
-    c2: T,
+    layout: YeeLayout,
+    wave_speed_squared: T,
     marker: PhantomData<Y>,
 }
 
@@ -168,39 +218,25 @@ where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: PDE<T, U, 2> + ?Sized,
+    Eq: ?Sized,
 {
     pub(crate) fn new(
         equation: &'a Eq,
         grid: StructuredGrid<T, 2>,
         boundary: BoundaryConditions<T, U, 2>,
         local_template: U,
+        layout: YeeLayout,
+        wave_speed_squared: T,
     ) -> Self {
-        let c2 = Self::extract_c2(equation, &local_template);
-
         Self {
             equation,
             grid,
             boundary,
             local_template,
-            c2,
+            layout,
+            wave_speed_squared,
             marker: PhantomData,
         }
-    }
-
-    fn extract_c2(equation: &'a Eq, local_template: &U) -> T {
-        let mut u = local_template.clone();
-        u.fill(T::zero());
-
-        // E_z = u[0], H_x = u[1], H_y = u[2]
-        u.set_component(2, T::one()); // Set H_y = 1
-
-        let grad_u = [u.zeros_like(), u.zeros_like()];
-        let mut flux = [u.zeros_like(), u.zeros_like()];
-        equation.flux(T::zero(), &[T::zero(), T::zero()], &u, &grad_u, &mut flux);
-
-        // flux[0][0] should be c^2 * Hy = c^2 * 1 = c^2
-        flux[0].get_component(0)
     }
 }
 
@@ -209,39 +245,29 @@ where
     T: Real,
     U: State<T>,
     Y: State<T>,
-    Eq: PDE<T, U, 2> + ?Sized,
+    Eq: ?Sized,
 {
     fn diff(&self, _t: T, y: &Y, dudt: &mut Y) {
         let [nx, ny] = self.grid.nodes();
         let dx = self.grid.dx(0);
         let dy = self.grid.dx(1);
-        let c2 = self.c2;
+        let c2 = self.wave_speed_squared;
+        let layout = self.layout;
+        let local_len = self.local_template.len();
 
         assert_eq!(
             y.len(),
-            self.grid.len() * 3,
-            "YeeGrid state length must match 3 * grid nodes"
+            self.grid.len() * local_len,
+            "YeeGrid state length must match local components * grid nodes"
         );
         assert_eq!(
             dudt.len(),
-            self.grid.len() * 3,
-            "YeeGrid derivative length must match 3 * grid nodes"
+            self.grid.len() * local_len,
+            "YeeGrid derivative length must match local components * grid nodes"
         );
 
         dudt.fill(T::zero());
 
-        // Field indices for the flat local field
-        let ez_idx = 0;
-        let hx_idx = 1;
-        let hy_idx = 2;
-
-        // 2D TM Mode Yee Grid Layout:
-        // E_z is at integer grid nodes (i, j).
-        // H_x is at (i, j + 1/2) -> stored at index (i, j).
-        // H_y is at (i + 1/2, j) -> stored at index (i, j).
-
-        // Update H_x: d(H_x)/dt = - d(E_z)/dy
-        // H_x(i, j) uses E_z(i, j+1) and E_z(i, j)
         for i in 0..nx {
             for j in 0..ny {
                 let node = self.grid.flat_index([i, j]);
@@ -249,12 +275,12 @@ where
                 // For H_x at (i, j+1/2), derivative requires E_z at j+1 and j.
                 if j + 1 < ny {
                     let node_up = self.grid.flat_index([i, j + 1]);
-                    let d_ez_dy = (y.get_component(node_up * 3 + ez_idx)
-                        - y.get_component(node * 3 + ez_idx))
+                    let d_ez_dy = (y.get_component(node_up * local_len + layout.electric_z)
+                        - y.get_component(node * local_len + layout.electric_z))
                         / dy;
-                    dudt.set_component(node * 3 + hx_idx, -d_ez_dy);
+                    dudt.set_component(node * local_len + layout.magnetic_x, -d_ez_dy);
                 } else {
-                    dudt.set_component(node * 3 + hx_idx, T::zero());
+                    dudt.set_component(node * local_len + layout.magnetic_x, T::zero());
                 }
             }
         }
@@ -267,12 +293,12 @@ where
 
                 if i + 1 < nx {
                     let node_right = self.grid.flat_index([i + 1, j]);
-                    let d_ez_dx = (y.get_component(node_right * 3 + ez_idx)
-                        - y.get_component(node * 3 + ez_idx))
+                    let d_ez_dx = (y.get_component(node_right * local_len + layout.electric_z)
+                        - y.get_component(node * local_len + layout.electric_z))
                         / dx;
-                    dudt.set_component(node * 3 + hy_idx, d_ez_dx);
+                    dudt.set_component(node * local_len + layout.magnetic_y, d_ez_dx);
                 } else {
-                    dudt.set_component(node * 3 + hy_idx, T::zero());
+                    dudt.set_component(node * local_len + layout.magnetic_y, T::zero());
                 }
             }
         }
@@ -296,12 +322,12 @@ where
                 }
 
                 if is_dirichlet {
-                    dudt.set_component(node * 3 + ez_idx, T::zero());
+                    dudt.set_component(node * local_len + layout.electric_z, T::zero());
                 } else {
                     let d_hy_dx = if i > 0 {
                         let node_left = self.grid.flat_index([i - 1, j]);
-                        (y.get_component(node * 3 + hy_idx)
-                            - y.get_component(node_left * 3 + hy_idx))
+                        (y.get_component(node * local_len + layout.magnetic_y)
+                            - y.get_component(node_left * local_len + layout.magnetic_y))
                             / dx
                     } else {
                         T::zero()
@@ -309,14 +335,17 @@ where
 
                     let d_hx_dy = if j > 0 {
                         let node_down = self.grid.flat_index([i, j - 1]);
-                        (y.get_component(node * 3 + hx_idx)
-                            - y.get_component(node_down * 3 + hx_idx))
+                        (y.get_component(node * local_len + layout.magnetic_x)
+                            - y.get_component(node_down * local_len + layout.magnetic_x))
                             / dy
                     } else {
                         T::zero()
                     };
 
-                    dudt.set_component(node * 3 + ez_idx, c2 * (d_hy_dx - d_hx_dy));
+                    dudt.set_component(
+                        node * local_len + layout.electric_z,
+                        c2 * (d_hy_dx - d_hx_dy),
+                    );
                 }
             }
         }

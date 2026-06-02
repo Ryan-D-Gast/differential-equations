@@ -5,24 +5,24 @@
 
 mod boundary;
 mod grid;
-mod maxwell;
 mod method_of_lines;
-mod navier_stokes;
 mod pde;
+mod projection;
 mod semi_discrete;
 mod spatial_discretization;
+mod yee;
 
 pub use boundary::{
     BoundaryCondition, BoundaryConditions, BoundaryConditionsBuilder,
     BoundaryConditionsBuilderError,
 };
 pub use grid::{BoundaryFace, Side, StructuredGrid};
-pub use maxwell::{SemiDiscreteYee, YeeGrid};
 pub use method_of_lines::MethodOfLines;
-pub use navier_stokes::{ProjectionMethod, ProjectionSemiDiscrete};
 pub use pde::PDE;
+pub use projection::{ProjectionMethod, ProjectionSemiDiscrete};
 pub use semi_discrete::{SemiDiscretePde, SpatialScheme};
 pub use spatial_discretization::SpatialDiscretization;
+pub use yee::{SemiDiscreteYee, YeeGrid, YeeLayout};
 
 pub mod finite_volume;
 pub use finite_volume::{FiniteVolume, Limiter, NumericalFlux, Reconstruction};

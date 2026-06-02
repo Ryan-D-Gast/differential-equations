@@ -51,7 +51,11 @@ fn main() {
     }
 
     let solution = IVP::pde(&maxwell, 0.0, 0.12, u0)
-        .space(YeeGrid::uniform_2d(grid.clone(), local_field).boundary(boundary))
+        .space(
+            YeeGrid::uniform_2d(grid.clone(), local_field)
+                .boundary(boundary)
+                .wave_speed(maxwell.wave_speed),
+        )
         .method(ExplicitRungeKutta::rk4(2.0e-4))
         .even(0.02)
         .solve()

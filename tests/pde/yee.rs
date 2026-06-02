@@ -58,7 +58,11 @@ fn yee_grid_standing_wave_pec() {
     let t_final = period;
 
     let solution = IVP::pde(&maxwell, 0.0, t_final, u0.clone())
-        .space(YeeGrid::uniform_2d(grid.clone(), vec![0.0; 3]).boundary(boundary))
+        .space(
+            YeeGrid::uniform_2d(grid.clone(), vec![0.0; 3])
+                .boundary(boundary)
+                .wave_speed_squared(c2),
+        )
         .method(ExplicitRungeKutta::rk4(0.001))
         .solve()
         .expect("Failed to solve Maxwell equations");
