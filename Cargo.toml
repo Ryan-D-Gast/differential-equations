@@ -210,12 +210,12 @@ name = "pde_04_finite_volume_advection"
 path = "examples/pde/04_finite_volume_advection/main.rs"
 
 [[example]]
-name = "pde_04_maxwell_yee"
-path = "examples/pde/04_maxwell_yee/main.rs"
+name = "pde_05_maxwell_yee"
+path = "examples/pde/05_maxwell_yee/main.rs"
 
 [[example]]
-name = "pde_04_incompressible_navier_stokes"
-path = "examples/pde/04_incompressible_navier_stokes/main.rs"
+name = "pde_06_incompressible_navier_stokes"
+path = "examples/pde/06_incompressible_navier_stokes/main.rs"
 
 # Benchmarks
 [[bench]]

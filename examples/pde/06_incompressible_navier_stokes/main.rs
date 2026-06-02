@@ -73,7 +73,7 @@ fn main() {
             .line(Line::Solid)
             .build()])
         .build()
-        .to_svg("examples/pde/04_incompressible_navier_stokes/navier_stokes.svg")
+        .to_svg("examples/pde/06_incompressible_navier_stokes/navier_stokes.svg")
         .expect("failed to save plot as SVG");
 
     println!("Incompressible Navier-Stokes projection example solved successfully");

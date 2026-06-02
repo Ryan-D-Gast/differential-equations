@@ -131,8 +131,8 @@ See `examples/pde/` for complete runnable examples:
 - `02_maxwell`: Maxwell wave system with `U = Vec<f64>` using generic method of lines
 - `03_compressible_navier_stokes`: conserved-variable flow example with `U = Vec<f64>`
 - `04_finite_volume_advection`: scalar advection using the finite-volume backend
-- `04_maxwell_yee`: Maxwell wave system with `U = Vec<f64>` using the staggered Yee grid
-- `04_incompressible_navier_stokes`: projection backend for incompressible velocity fields
+- `05_maxwell_yee`: Maxwell wave system with `U = Vec<f64>` using the staggered Yee grid
+- `06_incompressible_navier_stokes`: projection backend for incompressible velocity fields
 
 ## Spatial Backends
 
@@ -140,7 +140,7 @@ The `IVP::pde(...).space(...)` call accepts any backend implementing `SpatialDis
 
 - **MethodOfLines**: Generic finite-difference and finite-volume schemes for general advection-diffusion PDEs.
 - **FiniteVolume**: Cell-centered finite-volume backend with explicit control over numerical fluxes, MUSCL reconstruction, and limiters.
-- **YeeGrid**: A staggered FDTD/Yee grid specialized for Maxwell's equations. Use this when solving Maxwell's wave equations, as it naturally handles curl operators and provides superior wave propagation and stability properties compared to co-located generic schemes.
+- **YeeGrid**: A staggered FDTD/Yee backend specialized for the two-dimensional transverse-magnetic Maxwell system with local field `[E_z, H_x, H_y]`. Use it for Maxwell wave equations where the staggered curl operators are the right model.
 - **ProjectionMethod**: Incompressible-flow backend that projects two-dimensional velocity tendencies onto a lower-divergence field with a dense Poisson solve.
 
 For conservation laws needing robust shock capturing, use `FiniteVolume`:

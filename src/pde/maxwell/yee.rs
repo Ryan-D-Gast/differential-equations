@@ -8,11 +8,11 @@ use crate::{
 
 use crate::pde::SpatialDiscretization;
 
-/// Yee-grid spatial discretization backend for Maxwell's equations.
+/// Yee-grid spatial discretization backend for two-dimensional TM Maxwell equations.
 ///
 /// This backend implements a staggered spatial grid (FDTD/Yee scheme) for
-/// resolving the curl operators in Maxwell's equations. It provides stable
-/// and accurate wave propagation compared to co-located finite differences.
+/// resolving the curl operators in Maxwell's equations. The local field is
+/// `[E_z, H_x, H_y]`; this is not a general-purpose staggered-grid backend.
 #[derive(Clone, Debug)]
 pub struct YeeGrid<T, U, const D: usize>
 where

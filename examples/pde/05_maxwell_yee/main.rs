@@ -84,7 +84,7 @@ fn main() {
             .line(Line::Solid)
             .build()])
         .build()
-        .to_svg("examples/pde/04_maxwell_yee/maxwell_yee.svg")
+        .to_svg("examples/pde/05_maxwell_yee/maxwell_yee.svg")
         .expect("failed to save plot as SVG");
 
     println!("Maxwell system solved successfully with Yee Grid");
