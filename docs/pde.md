@@ -128,10 +128,9 @@ Use the PDE API when the model has at least one spatial derivative and one time 
 See `examples/pde/` for complete runnable examples:
 
 - `01_heat_equation`: scalar heat equation with `U = f64`
-- `02_maxwell`: Maxwell wave system with `U = Vec<f64>` using generic method of lines
-- `03_finite_volume_advection`: scalar advection using the finite-volume backend
-- `04_maxwell_yee`: Maxwell wave system with `U = Vec<f64>` using a configurable staggered Yee grid
-- `05_incompressible_navier_stokes`: incompressible-flow model using a configurable projection backend
+- `02_finite_volume_advection`: scalar advection using the finite-volume backend
+- `03_maxwell_yee`: Maxwell wave system with `U = Vec<f64>` using a configurable staggered Yee grid
+- `04_incompressible_navier_stokes`: incompressible-flow model using a configurable projection backend
 
 ## Spatial Backends
 

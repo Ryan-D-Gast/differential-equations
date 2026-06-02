@@ -198,20 +198,16 @@ name = "pde_01_heat_equation"
 path = "examples/pde/01_heat_equation/main.rs"
 
 [[example]]
-name = "pde_02_maxwell"
-path = "examples/pde/02_maxwell/main.rs"
+name = "pde_02_finite_volume_advection"
+path = "examples/pde/02_finite_volume_advection/main.rs"
 
 [[example]]
-name = "pde_03_finite_volume_advection"
-path = "examples/pde/03_finite_volume_advection/main.rs"
+name = "pde_03_maxwell_yee"
+path = "examples/pde/03_maxwell_yee/main.rs"
 
 [[example]]
-name = "pde_04_maxwell_yee"
-path = "examples/pde/04_maxwell_yee/main.rs"
-
-[[example]]
-name = "pde_05_incompressible_navier_stokes"
-path = "examples/pde/05_incompressible_navier_stokes/main.rs"
+name = "pde_04_incompressible_navier_stokes"
+path = "examples/pde/04_incompressible_navier_stokes/main.rs"
 
 # Benchmarks
 [[bench]]

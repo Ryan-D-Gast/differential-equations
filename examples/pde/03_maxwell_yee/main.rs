@@ -1,8 +1,8 @@
-//! Example 02: Maxwell equations with method of lines.
+//! Example 03: Maxwell equations with Yee Grid.
 //!
 //! This solves a transverse-magnetic 2D Maxwell system with local field
-//! `[E_z, H_x, H_y]` on a structured grid. The plotted output is the final
-//! electric-field cross-section through the domain center.
+//! `[E_z, H_x, H_y]` on a structured grid using the staggered Yee scheme.
+//! The plotted output is the final electric-field cross-section through the domain center.
 
 use differential_equations::prelude::*;
 use quill::prelude::*;
@@ -42,7 +42,7 @@ fn main() {
     let maxwell = Maxwell { wave_speed: 1.0 };
     let grid = StructuredGrid::uniform([0.0_f64, 0.0], [1.0, 1.0], [41, 41]);
     let local_field = vec![0.0; 3];
-    let boundary = BoundaryConditions::neumann_all(vec![0.0; 3]);
+    let boundary = BoundaryConditions::dirichlet_all(vec![0.0; 3]);
 
     let mut u0 = Vec::with_capacity(grid.len() * local_field.len());
     for [x, y] in grid.points() {
@@ -52,8 +52,9 @@ fn main() {
 
     let solution = IVP::pde(&maxwell, 0.0, 0.12, u0)
         .space(
-            MethodOfLines::finite_difference_with_field(grid.clone(), local_field)
-                .boundary(boundary),
+            YeeGrid::uniform_2d(grid.clone(), local_field)
+                .boundary(boundary)
+                .wave_speed(maxwell.wave_speed),
         )
         .method(ExplicitRungeKutta::rk4(2.0e-4))
         .even(0.02)
@@ -68,13 +69,13 @@ fn main() {
     let j_mid = ny / 2;
 
     Plot::builder()
-        .title("Maxwell Equations by Method of Lines")
+        .title("Maxwell Equations by Yee Grid")
         .x_label("Position x at y = 0.5")
         .y_label("Electric field E_z")
         .legend(Legend::TopRightInside)
         .data([Series::builder()
             .name("E_z cross-section")
-            .color("Blue")
+            .color("Red")
             .data(
                 (0..nx)
                     .map(|i| {
@@ -87,8 +88,8 @@ fn main() {
             .line(Line::Solid)
             .build()])
         .build()
-        .to_svg("examples/pde/02_maxwell/maxwell.svg")
+        .to_svg("examples/pde/03_maxwell_yee/maxwell_yee.svg")
         .expect("failed to save plot as SVG");
 
-    println!("Maxwell system solved successfully with method of lines");
+    println!("Maxwell system solved successfully with Yee Grid");
 }
