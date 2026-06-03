@@ -15,15 +15,15 @@ use quill::prelude::*;
 
 struct KeplerProblem;
 
-impl Hamiltonian<f64> for KeplerProblem {
+impl Hamiltonian<f64, Vec<f64>> for KeplerProblem {
     // velocity is dq/dt = dH/dp = p
-    fn velocity(&self, _t: f64, _q: &[f64], p: &[f64], dq: &mut [f64]) {
+    fn velocity(&self, _t: f64, _q: &Vec<f64>, p: &Vec<f64>, dq: &mut Vec<f64>) {
         dq[0] = p[0];
         dq[1] = p[1];
     }
 
     // force is dp/dt = -dH/dq = -q / r^3
-    fn force(&self, _t: f64, q: &[f64], _p: &[f64], dp: &mut [f64]) {
+    fn force(&self, _t: f64, q: &Vec<f64>, _p: &Vec<f64>, dp: &mut Vec<f64>) {
         let q_x = q[0];
         let q_y = q[1];
         let r = (q_x * q_x + q_y * q_y).sqrt();

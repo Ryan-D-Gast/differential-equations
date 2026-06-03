@@ -14,16 +14,14 @@ impl ODE<f64, Vec<f64>> for SimpleHarmonicOscillator {
     }
 }
 
-// Implement the new safe Hamiltonian trait
-impl Hamiltonian<f64> for SimpleHarmonicOscillator {
-    fn velocity(&self, _t: f64, _q: &[f64], p: &[f64], dq: &mut [f64]) {
-        dq.copy_from_slice(p);
+// Implement the new safe Hamiltonian trait using State API
+impl Hamiltonian<f64, Vec<f64>> for SimpleHarmonicOscillator {
+    fn velocity(&self, _t: f64, _q: &Vec<f64>, p: &Vec<f64>, dq: &mut Vec<f64>) {
+        dq[0] = p[0];
     }
 
-    fn force(&self, _t: f64, q: &[f64], _p: &[f64], dp: &mut [f64]) {
-        for i in 0..q.len() {
-            dp[i] = -q[i];
-        }
+    fn force(&self, _t: f64, q: &Vec<f64>, _p: &Vec<f64>, dp: &mut Vec<f64>) {
+        dp[0] = -q[0];
     }
 }
 
@@ -90,10 +88,10 @@ fn test_symplectic_solves_harmonic_oscillator_trait() {
 fn test_symplectic_solves_harmonic_oscillator_from_fn() {
     let y0 = vec![1.0, 0.0]; // q=1, p=0
 
-    let velocity = |_t: f64, _q: &[f64], p: &[f64], dq: &mut [f64]| {
-        dq.copy_from_slice(p);
+    let velocity = |_t: f64, _q: &Vec<f64>, p: &Vec<f64>, dq: &mut Vec<f64>| {
+        dq[0] = p[0];
     };
-    let force = |_t: f64, q: &[f64], _p: &[f64], dp: &mut [f64]| {
+    let force = |_t: f64, q: &Vec<f64>, _p: &Vec<f64>, dp: &mut Vec<f64>| {
         dp[0] = -q[0];
     };
 

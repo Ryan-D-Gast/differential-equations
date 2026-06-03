@@ -318,7 +318,7 @@ where
 
 impl<'a, H, T: Real, Y: State<T>> IVP<OdeEqOwned<HamiltonianSystem<&'a H>>, T, Y, (), DefaultSolout>
 where
-    H: Hamiltonian<T> + ?Sized,
+    H: Hamiltonian<T, Y> + ?Sized,
 {
     /// Create a new initial value problem for a Hamiltonian system from a reference.
     ///
@@ -344,8 +344,8 @@ where
 impl<V, F, T: Real, Y: State<T>>
     IVP<OdeEqOwned<HamiltonianSystem<HamiltonianFnWrapper<V, F>>>, T, Y, (), DefaultSolout>
 where
-    V: Fn(T, &[T], &[T], &mut [T]),
-    F: Fn(T, &[T], &[T], &mut [T]),
+    V: Fn(T, &Y, &Y, &mut Y),
+    F: Fn(T, &Y, &Y, &mut Y),
 {
     /// Create a new initial value problem for a Hamiltonian system from velocity and force closures.
     ///

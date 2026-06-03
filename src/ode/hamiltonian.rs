@@ -1,6 +1,6 @@
 use crate::{
     ode::ODE,
-    traits::{Real, State},
+    traits::{DefaultState, Real, State},
 };
 
 /// Hamiltonian system trait for symplectic solvers.
@@ -12,27 +12,29 @@ use crate::{
 /// dp/dt = force(t, q, p)
 ///
 /// The state vector for the ODE solver is assumed to be laid out as `y = [q, p]`.
-pub trait Hamiltonian<T = f64>
+pub trait Hamiltonian<T = f64, Y = DefaultState<T>>
 where
     T: Real,
+    Y: State<T>,
 {
     /// Compute the time derivative of positions: dq/dt = velocity(t, q, p)
-    fn velocity(&self, t: T, q: &[T], p: &[T], dq: &mut [T]);
+    fn velocity(&self, t: T, q: &Y, p: &Y, dq: &mut Y);
 
     /// Compute the time derivative of momenta: dp/dt = force(t, q, p)
-    fn force(&self, t: T, q: &[T], p: &[T], dp: &mut [T]);
+    fn force(&self, t: T, q: &Y, p: &Y, dp: &mut Y);
 }
 
-impl<H, T> Hamiltonian<T> for &H
+impl<H, T, Y> Hamiltonian<T, Y> for &H
 where
     T: Real,
-    H: Hamiltonian<T> + ?Sized,
+    Y: State<T>,
+    H: Hamiltonian<T, Y> + ?Sized,
 {
-    fn velocity(&self, t: T, q: &[T], p: &[T], dq: &mut [T]) {
+    fn velocity(&self, t: T, q: &Y, p: &Y, dq: &mut Y) {
         (*self).velocity(t, q, p, dq);
     }
 
-    fn force(&self, t: T, q: &[T], p: &[T], dp: &mut [T]) {
+    fn force(&self, t: T, q: &Y, p: &Y, dp: &mut Y) {
         (*self).force(t, q, p, dp);
     }
 }
@@ -54,28 +56,28 @@ impl<H, T, Y> ODE<T, Y> for HamiltonianSystem<H>
 where
     T: Real,
     Y: State<T>,
-    H: Hamiltonian<T>,
+    H: Hamiltonian<T, Y>,
 {
     fn diff(&self, t: T, y: &Y, dydt: &mut Y) {
         let n = y.len();
         let half = n / 2;
 
-        let mut q = vec![T::zero(); half];
-        let mut p = vec![T::zero(); half];
+        let mut q = y.zeros_like();
+        let mut p = y.zeros_like();
         for i in 0..half {
-            q[i] = y.get_component(i);
-            p[i] = y.get_component(half + i);
+            q.set_component(i, y.get_component(i));
+            p.set_component(i, y.get_component(half + i));
         }
 
-        let mut dq = vec![T::zero(); half];
-        let mut dp = vec![T::zero(); half];
+        let mut dq = y.zeros_like();
+        let mut dp = y.zeros_like();
 
         self.hamiltonian.velocity(t, &q, &p, &mut dq);
         self.hamiltonian.force(t, &q, &p, &mut dp);
 
         for i in 0..half {
-            dydt.set_component(i, dq[i]);
-            dydt.set_component(half + i, dp[i]);
+            dydt.set_component(i, dq.get_component(i));
+            dydt.set_component(half + i, dp.get_component(i));
         }
     }
 }
@@ -94,17 +96,18 @@ impl<V, F> HamiltonianFnWrapper<V, F> {
     }
 }
 
-impl<T, V, F> Hamiltonian<T> for HamiltonianFnWrapper<V, F>
+impl<T, Y, V, F> Hamiltonian<T, Y> for HamiltonianFnWrapper<V, F>
 where
     T: Real,
-    V: Fn(T, &[T], &[T], &mut [T]),
-    F: Fn(T, &[T], &[T], &mut [T]),
+    Y: State<T>,
+    V: Fn(T, &Y, &Y, &mut Y),
+    F: Fn(T, &Y, &Y, &mut Y),
 {
-    fn velocity(&self, t: T, q: &[T], p: &[T], dq: &mut [T]) {
+    fn velocity(&self, t: T, q: &Y, p: &Y, dq: &mut Y) {
         (self.velocity)(t, q, p, dq);
     }
 
-    fn force(&self, t: T, q: &[T], p: &[T], dp: &mut [T]) {
+    fn force(&self, t: T, q: &Y, p: &Y, dp: &mut Y) {
         (self.force)(t, q, p, dp);
     }
 }
