@@ -327,6 +327,25 @@ where
     /// dp/dt = force(t, q, p)
     ///
     /// The state vector `y` is assumed to be laid out as `y = [q, p]`.
+    ///
+    /// # Example
+    /// ```rust
+    /// use differential_equations::prelude::*;
+    ///
+    /// struct HarmonicOscillator;
+    ///
+    /// impl Hamiltonian<f64, Vec<f64>> for HarmonicOscillator {
+    ///     fn velocity(&self, _t: f64, _q: &Vec<f64>, p: &Vec<f64>, dq: &mut Vec<f64>) {
+    ///         dq[0] = p[0];
+    ///     }
+    ///     fn force(&self, _t: f64, q: &Vec<f64>, _p: &Vec<f64>, dp: &mut Vec<f64>) {
+    ///         dp[0] = -q[0];
+    ///     }
+    /// }
+    ///
+    /// let system = HarmonicOscillator;
+    /// let ivp = IVP::hamiltonian(&system, 0.0, 1.0, vec![1.0, 0.0]);
+    /// ```
     pub fn hamiltonian(system: &'a H, t0: T, tf: T, y0: Y) -> Self {
         Self {
             equation: OdeEqOwned {
@@ -350,6 +369,20 @@ where
     /// Create a new initial value problem for a Hamiltonian system from velocity and force closures.
     ///
     /// The state vector `y` is assumed to be laid out as `y = [q, p]`.
+    ///
+    /// # Example
+    /// ```rust
+    /// use differential_equations::prelude::*;
+    ///
+    /// let velocity = |_t: f64, _q: &Vec<f64>, p: &Vec<f64>, dq: &mut Vec<f64>| {
+    ///     dq[0] = p[0];
+    /// };
+    /// let force = |_t: f64, q: &Vec<f64>, _p: &Vec<f64>, dp: &mut Vec<f64>| {
+    ///     dp[0] = -q[0];
+    /// };
+    ///
+    /// let ivp = IVP::hamiltonian_from_fn(velocity, force, 0.0, 1.0, vec![1.0, 0.0]);
+    /// ```
     pub fn hamiltonian_from_fn(velocity: V, force: F, t0: T, tf: T, y0: Y) -> Self {
         Self {
             equation: OdeEqOwned {
