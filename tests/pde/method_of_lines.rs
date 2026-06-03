@@ -165,3 +165,19 @@ fn boundary_builder_rejects_missing_faces() {
 
     assert_eq!(error.face, BoundaryFace::upper(0));
 }
+
+#[test]
+fn boundary_builder_error_implements_error_trait() {
+    let error = BoundaryConditions::<f64, f64, 1>::builder()
+        .dirichlet(BoundaryFace::lower(0), 0.0)
+        .build()
+        .expect_err("upper boundary should be required");
+
+    let formatted = format!("{}", error);
+    assert!(formatted.contains("Boundary conditions are incomplete"));
+
+    // Verify it can be converted to Box<dyn std::error::Error>
+    let dyn_error: Box<dyn std::error::Error> = Box::new(error);
+    assert!(dyn_error.to_string().contains("missing face"));
+}
+
