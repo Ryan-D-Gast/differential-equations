@@ -30,6 +30,7 @@ where
     local_template: U,
     boundary: BoundaryConditions<T, U, D>,
     scheme: SpatialScheme,
+    dirichlet_mask: Vec<bool>,
     marker: PhantomData<Y>,
 }
 
@@ -47,12 +48,25 @@ where
         boundary: BoundaryConditions<T, U, D>,
         scheme: SpatialScheme,
     ) -> Self {
+        let dirichlet_mask = (0..grid.len())
+            .map(|node| {
+                (0..D).any(|axis| {
+                    grid.boundary_side(node, axis).is_some_and(|side| {
+                        matches!(
+                            boundary.get_face(BoundaryFace { axis, side }),
+                            BoundaryCondition::Dirichlet(_)
+                        )
+                    })
+                })
+            })
+            .collect();
         Self {
             equation,
             grid,
             local_template,
             boundary,
             scheme,
+            dirichlet_mask,
             marker: PhantomData,
         }
     }
@@ -130,14 +144,7 @@ where
     }
 
     fn is_dirichlet_node(&self, node: usize) -> bool {
-        (0..D).any(|axis| {
-            self.grid.boundary_side(node, axis).is_some_and(|side| {
-                matches!(
-                    self.face_boundary(axis, side),
-                    BoundaryCondition::Dirichlet(_)
-                )
-            })
-        })
+        self.dirichlet_mask[node]
     }
 
     fn directional_gradient(&self, y: &Y, node: usize, axis: usize, side: Side) -> U {

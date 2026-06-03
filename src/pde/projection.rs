@@ -118,6 +118,7 @@ where
     velocity_components: [usize; 2],
     poisson_lu: Matrix<T>,
     poisson_pivots: Vec<usize>,
+    dirichlet_mask: Vec<bool>,
     marker: PhantomData<Y>,
 }
 
@@ -143,6 +144,18 @@ where
         let mut poisson_pivots = vec![0; grid.len()];
         lu_decomp(&mut poisson_lu, &mut poisson_pivots)
             .expect("projection Poisson matrix should be nonsingular");
+        let dirichlet_mask = (0..grid.len())
+            .map(|node| {
+                (0..2).any(|axis| {
+                    grid.boundary_side(node, axis).is_some_and(|side| {
+                        matches!(
+                            boundary.get(BoundaryFace { axis, side }),
+                            BoundaryCondition::Dirichlet(_)
+                        )
+                    })
+                })
+            })
+            .collect();
         Self {
             equation,
             grid,
@@ -151,6 +164,7 @@ where
             velocity_components,
             poisson_lu,
             poisson_pivots,
+            dirichlet_mask,
             marker: PhantomData,
         }
     }
@@ -185,14 +199,7 @@ where
     }
 
     fn is_dirichlet_node(&self, node: usize) -> bool {
-        (0..2).any(|axis| {
-            self.grid.boundary_side(node, axis).is_some_and(|side| {
-                matches!(
-                    self.boundary.get(BoundaryFace { axis, side }),
-                    BoundaryCondition::Dirichlet(_)
-                )
-            })
-        })
+        self.dirichlet_mask[node]
     }
 
     fn directional_gradient(&self, y: &Y, node: usize, axis: usize, side: Side) -> U {

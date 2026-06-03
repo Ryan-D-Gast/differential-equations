@@ -41,9 +41,8 @@ impl Limiter {
             Self::VanLeer => {
                 let zero = T::zero();
                 if r > zero {
-                    let num = r + r.abs();
-                    let den = T::one() + r.abs();
-                    num / den
+                    let two = T::from_subset(&2.0);
+                    (two * r) / (T::one() + r)
                 } else {
                     zero
                 }

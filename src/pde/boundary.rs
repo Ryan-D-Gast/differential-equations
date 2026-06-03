@@ -101,6 +101,18 @@ pub struct BoundaryConditionsBuilderError {
     pub face: BoundaryFace,
 }
 
+impl std::fmt::Display for BoundaryConditionsBuilderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Boundary conditions are incomplete: missing face at axis {}, side {:?}",
+            self.face.axis, self.face.side
+        )
+    }
+}
+
+impl std::error::Error for BoundaryConditionsBuilderError {}
+
 /// Builder for complete mixed boundary conditions.
 #[derive(Clone, Debug)]
 pub struct BoundaryConditionsBuilder<T, U = DefaultState<T>, const D: usize = 1>
