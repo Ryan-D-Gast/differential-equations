@@ -180,4 +180,3 @@ fn boundary_builder_error_implements_error_trait() {
     let dyn_error: Box<dyn std::error::Error> = Box::new(error);
     assert!(dyn_error.to_string().contains("missing face"));
 }
-

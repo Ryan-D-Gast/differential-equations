@@ -50,7 +50,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
 {
     fn init<Eq>(&mut self, _ode: &Eq, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        Eq: ODE<T, Y>,
+        Eq: ODE<T, Y> + ?Sized,
     {
         let evals = Evals::new();
 
@@ -74,7 +74,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
 
     fn step<Eq>(&mut self, ode: &Eq) -> Result<Evals, Error<T, Y>>
     where
-        Eq: ODE<T, Y>,
+        Eq: ODE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 
