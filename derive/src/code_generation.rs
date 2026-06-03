@@ -274,46 +274,56 @@ pub fn generate_set_branches(
 pub fn generate_zeros_init(
     fields: &Punctuated<Field, Comma>,
     field_info: &[FieldTypeInfo],
+    scalar_ty: &proc_macro2::TokenStream,
+    zero: &proc_macro2::TokenStream,
 ) -> Vec<proc_macro2::TokenStream> {
-    fields.iter().zip(field_info).map(|(field, field_type)| {
-        match &field.ident {
-            Some(ident) => {
-                match field_type {
-                    FieldTypeInfo::Single => quote! { #ident: T::zero() },
-                    FieldTypeInfo::Array { array_size } => quote! { #ident: [T::zero(); #array_size] },
-                    FieldTypeInfo::SMatrix { rows, cols } => {
-                        let zeros_expr = generate_nalgebra_zeros(*rows, *cols);
-                        quote! { #ident: #zeros_expr }
-                    },
-                    FieldTypeInfo::Complex => quote! { #ident: num_complex::Complex::new(T::zero(), T::zero()) },
-                    FieldTypeInfo::ArrayOfSMatrix { array_size, rows, cols } => {
-                        let zeros_expr = generate_nalgebra_zeros(*rows, *cols);
-                        quote! { #ident: [#zeros_expr; #array_size] }
-                    },
-                    FieldTypeInfo::ArrayOfComplex { array_size } => {
-                        quote! { #ident: [num_complex::Complex::new(T::zero(), T::zero()); #array_size] }
-                    },
+    fields
+        .iter()
+        .zip(field_info)
+        .map(|(field, field_type)| match &field.ident {
+            Some(ident) => match field_type {
+                FieldTypeInfo::Single => quote! { #ident: #zero },
+                FieldTypeInfo::Array { array_size } => quote! { #ident: [#zero; #array_size] },
+                FieldTypeInfo::SMatrix { rows, cols } => {
+                    let zeros_expr = generate_nalgebra_zeros(scalar_ty, *rows, *cols);
+                    quote! { #ident: #zeros_expr }
+                }
+                FieldTypeInfo::Complex => {
+                    quote! { #ident: num_complex::Complex::new(#zero, #zero) }
+                }
+                FieldTypeInfo::ArrayOfSMatrix {
+                    array_size,
+                    rows,
+                    cols,
+                } => {
+                    let zeros_expr = generate_nalgebra_zeros(scalar_ty, *rows, *cols);
+                    quote! { #ident: [#zeros_expr; #array_size] }
+                }
+                FieldTypeInfo::ArrayOfComplex { array_size } => {
+                    quote! { #ident: [num_complex::Complex::new(#zero, #zero); #array_size] }
                 }
             },
-            None => {
-                match field_type {
-                    FieldTypeInfo::Single => quote! { T::zero() },
-                    FieldTypeInfo::Array { array_size } => quote! { [T::zero(); #array_size] },
-                    FieldTypeInfo::SMatrix { rows, cols } => {
-                        generate_nalgebra_zeros(*rows, *cols)
-                    },
-                    FieldTypeInfo::Complex => quote! { num_complex::Complex::new(T::zero(), T::zero()) },
-                    FieldTypeInfo::ArrayOfSMatrix { array_size, rows, cols } => {
-                        let zeros_expr = generate_nalgebra_zeros(*rows, *cols);
-                        quote! { [#zeros_expr; #array_size] }
-                    },
-                    FieldTypeInfo::ArrayOfComplex { array_size } => {
-                        quote! { [num_complex::Complex::new(T::zero(), T::zero()); #array_size] }
-                    },
+            None => match field_type {
+                FieldTypeInfo::Single => quote! { #zero },
+                FieldTypeInfo::Array { array_size } => quote! { [#zero; #array_size] },
+                FieldTypeInfo::SMatrix { rows, cols } => {
+                    generate_nalgebra_zeros(scalar_ty, *rows, *cols)
                 }
-            }
-        }
-    }).collect()
+                FieldTypeInfo::Complex => quote! { num_complex::Complex::new(#zero, #zero) },
+                FieldTypeInfo::ArrayOfSMatrix {
+                    array_size,
+                    rows,
+                    cols,
+                } => {
+                    let zeros_expr = generate_nalgebra_zeros(scalar_ty, *rows, *cols);
+                    quote! { [#zeros_expr; #array_size] }
+                }
+                FieldTypeInfo::ArrayOfComplex { array_size } => {
+                    quote! { [num_complex::Complex::new(#zero, #zero); #array_size] }
+                }
+            },
+        })
+        .collect()
 }
 
 /// Generate debug field implementations

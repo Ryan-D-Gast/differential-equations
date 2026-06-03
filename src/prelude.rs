@@ -24,12 +24,15 @@
 //!
 //! ## Method Support Table
 //!
-//! | Method                        | ODE | DDE | SDE | DAE |
-//! |-------------------------------|:---:|:---:|:---:|:---:|
-//! | ExplicitRungeKutta            |  X  |  X  | (X) |     |
-//! | ImplicitRungeKutta            |  X  |     |     | {X} |
-//! | DiagonallyImplicitRungeKutta  |  X  |     |     |     |
-//! | AdamsPredictorCorrector       |  X  |     |     |     |
+//! | Method                        | IVP | BVP | DDE | SDE | DAE |
+//! |-------------------------------|:---:|:---:|:---:|:---:|:---:|
+//! | ExplicitRungeKutta            |  X  |     |  X  | (X) |     |
+//! | ImplicitRungeKutta            |  X  |     |     |     | {X} |
+//! | DiagonallyImplicitRungeKutta  |  X  |     |     |     |     |
+//! | BackwardDifferentiationFormula|  X  |     |     |     |     |
+//! | AdamsPredictorCorrector       |  X  |     |     |     |     |
+//! | Shooting                      |     |  X  |     |     |     |
+//! | MethodOfLines                 |  X  |     |     |     |     |
 //!
 //! - `X` = Supported
 //! - `(X)` = Supported for fixed step only (e.g., Euler, RK4)
@@ -39,18 +42,28 @@
 //!
 
 // Numerical Methods
+pub use crate::methods::bvp::{BVPMethod, Shooting};
 pub use crate::methods::{
-    AdamsPredictorCorrector, BDF, DiagonallyImplicitRungeKutta, ExplicitRungeKutta,
-    ImplicitRungeKutta,
+    AdamsPredictorCorrector, BackwardDifferentiationFormula, DiagonallyImplicitRungeKutta,
+    ExplicitRungeKutta, ImplicitRungeKutta,
 };
 
-// Initial Value Problems
+// Problem Builders
+pub use crate::bvp::BVP;
 pub use crate::ivp::IVP;
 
 // Equation Traits
+pub use crate::bvp::Boundary;
 pub use crate::dae::DAE;
 pub use crate::dde::DDE;
 pub use crate::ode::ODE;
+pub use crate::pde::{
+    BoundaryCondition, BoundaryConditions, BoundaryConditionsBuilder,
+    BoundaryConditionsBuilderError, BoundaryFace, FiniteVolume, Limiter, MethodOfLines,
+    NumericalFlux, PDE, PdeFnWrapper, ProjectionMethod, ProjectionSemiDiscrete, Reconstruction,
+    SemiDiscretePde, SemiDiscreteYee, Side, SpatialDiscretization, SpatialScheme, StructuredGrid,
+    YeeGrid, YeeLayout, ZeroSource, pde_from_fn, pde_from_fn_flux,
+};
 pub use crate::sde::SDE;
 
 // Output, Events, and Solution Types

@@ -558,3 +558,56 @@ impl<T: Real> ButcherTableau<T, 2> {
         }
     }
 }
+
+impl<T: Real> ButcherTableau<T, 3> {
+    /// Strong Stability Preserving 3rd order method (SSP-RK3).
+    ///
+    /// # Overview
+    /// This provides a 3-stage, explicit Runge-Kutta method with:
+    /// - Primary order: 3
+    /// - Embedded order: None
+    /// - Number of stages: 3
+    ///
+    /// # Notes
+    /// - Also known as Shu-Osher 3rd order method.
+    /// - Designed to preserve strong stability properties for hyperbolic PDEs.
+    ///
+    /// # Butcher Tableau
+    /// ```text
+    /// 0   |
+    /// 1   | 1
+    /// 1/2 | 1/4 1/4
+    /// ----|-------------
+    ///     | 1/6 1/6 2/3
+    /// ```
+    pub fn ssp_rk3() -> Self {
+        let mut c = [0.0; 3];
+        let mut a = [[0.0; 3]; 3];
+        let mut b = [0.0; 3];
+
+        c[0] = 0.0;
+        c[1] = 1.0;
+        c[2] = 0.5;
+
+        a[1][0] = 1.0;
+        a[2][0] = 0.25;
+        a[2][1] = 0.25;
+
+        b[0] = 1.0 / 6.0;
+        b[1] = 1.0 / 6.0;
+        b[2] = 2.0 / 3.0;
+
+        let a = a.map(|row| row.map(|x| T::from_f64(x).unwrap()));
+        let b = b.map(|x| T::from_f64(x).unwrap());
+        let c = c.map(|x| T::from_f64(x).unwrap());
+
+        Self {
+            c,
+            a,
+            b,
+            bh: None,
+            bi: None,
+            er: None,
+        }
+    }
+}

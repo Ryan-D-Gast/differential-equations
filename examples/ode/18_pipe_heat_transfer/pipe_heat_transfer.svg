@@ -1,0 +1,208 @@
+<svg height="600" viewBox="0 0 800 600" width="800" xmlns="http://www.w3.org/2000/svg">
+<rect fill="white" height="600" width="800" x="0" y="0"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="20" text-anchor="middle" x="415" y="30">
+Steady Pipe Heat-Transfer BVP
+</text>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="14" text-anchor="middle" x="415" y="576">
+Position x (m)
+</text>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="14" text-anchor="middle" transform="rotate(-90, 18, 300)" x="18" y="300">
+Temperature (K)
+</text>
+<rect fill="none" height="480" stroke="#000000" stroke-width="1.5" width="710" x="60" y="60"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="60" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="60" y="549">
+0.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="60" x2="60" y1="60" y2="65"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="131" x2="131" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="131" x2="131" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="131" y="549">
+1.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="131" x2="131" y1="60" y2="65"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="202" x2="202" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="202" x2="202" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="202" y="549">
+2.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="202" x2="202" y1="60" y2="65"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="273" x2="273" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="273" x2="273" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="273" y="549">
+3.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="273" x2="273" y1="60" y2="65"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="344" x2="344" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="344" x2="344" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="344" y="549">
+4.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="344" x2="344" y1="60" y2="65"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="415" x2="415" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="415" x2="415" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="415" y="549">
+5.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="415" x2="415" y1="60" y2="65"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="486.00003" x2="486.00003" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="486.00003" x2="486.00003" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="486.00003" y="549">
+6.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="486.00003" x2="486.00003" y1="60" y2="65"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="557" x2="557" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="557" x2="557" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="557" y="549">
+7.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="557" x2="557" y1="60" y2="65"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="628" x2="628" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="628" x2="628" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="628" y="549">
+8.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="628" x2="628" y1="60" y2="65"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="699" x2="699" y1="60" y2="540"/>
+<line stroke="#000000" stroke-width="1" x1="699" x2="699" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="699" y="549">
+9.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="699" x2="699" y1="60" y2="65"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="770" y1="540" y2="535"/>
+<text dominant-baseline="hanging" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="middle" x="770" y="549">
+10.0
+</text>
+<line stroke="#000000" stroke-width="1" x1="770" x2="770" y1="60" y2="65"/>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="535.2126" y2="535.2126"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="535.2126" y2="535.2126"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="535.2126" y2="535.2126"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="535.2126">
+315.0
+</text>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="494.35168" y2="494.35168"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="494.35168" y2="494.35168"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="494.35168" y2="494.35168"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="494.35168">
+320.0
+</text>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="453.49072" y2="453.49072"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="453.49072" y2="453.49072"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="453.49072" y2="453.49072"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="453.49072">
+325.0
+</text>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="412.62982" y2="412.62982"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="412.62982" y2="412.62982"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="412.62982" y2="412.62982"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="412.62982">
+330.0
+</text>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="371.76886" y2="371.76886"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="371.76886" y2="371.76886"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="371.76886" y2="371.76886"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="371.76886">
+335.0
+</text>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="330.90796" y2="330.90796"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="330.90796" y2="330.90796"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="330.90796" y2="330.90796"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="330.90796">
+340.0
+</text>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="290.047" y2="290.047"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="290.047" y2="290.047"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="290.047" y2="290.047"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="290.047">
+345.0
+</text>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="249.18607" y2="249.18607"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="249.18607" y2="249.18607"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="249.18607" y2="249.18607"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="249.18607">
+350.0
+</text>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="208.32513" y2="208.32513"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="208.32513" y2="208.32513"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="208.32513" y2="208.32513"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="208.32513">
+355.0
+</text>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="167.4642" y2="167.4642"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="167.4642" y2="167.4642"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="167.4642" y2="167.4642"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="167.4642">
+360.0
+</text>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="126.60327" y2="126.60327"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="126.60327" y2="126.60327"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="126.60327" y2="126.60327"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="126.60327">
+365.0
+</text>
+<line stroke="#c0c0c0" stroke-width="0.5" x1="60" x2="770" y1="85.74234" y2="85.74234"/>
+<line stroke="#000000" stroke-width="1" x1="60" x2="65" y1="85.74234" y2="85.74234"/>
+<line stroke="#000000" stroke-width="1" x1="770" x2="765" y1="85.74234" y2="85.74234"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="10" text-anchor="end" x="52" y="85.74234">
+370.0
+</text>
+<defs>
+<clipPath id="plotAreaClip">
+<rect height="480" width="710" x="60" y="60"/>
+</clipPath>
+</defs>
+<g clip-path="url(#plotAreaClip)">
+<path d="M60,60 L77.75,90.70856 L95.5,119.85913 L113.25,147.52478 L131,173.77441 L148.75,198.67352 L166.5,222.28455 L184.25,244.66702 L202,265.87634 L219.75,285.9659 L237.5,304.98553 L255.25,322.98267 L273,340.00262 L290.75,356.08813 L308.5,371.27954 L326.25,385.61432 L344,399.12854 L361.75,411.85593 L379.5,423.8284 L397.25,435.07562 L415,445.6263 L432.74997,455.50635 L450.5,464.74048 L468.25,473.35208 L486.00003,481.36243 L503.75,488.7914 L521.5,495.65802 L539.25,501.9792 L557,507.77087 L574.75,513.04736 L592.5,517.822 L610.25,522.1064 L628,525.9117 L645.75,529.2473 L663.5,532.12134 L681.25,534.54126 L699,536.51294 L716.75,538.0415 L734.5,539.1304 L752.25,539.7828 L770,540" fill="none" stroke="#0000ff" stroke-width="1"/>
+<circle cx="60" cy="60" fill="#0000ff" r="1.5"/>
+<circle cx="77.75" cy="90.70856" fill="#0000ff" r="1.5"/>
+<circle cx="95.5" cy="119.85913" fill="#0000ff" r="1.5"/>
+<circle cx="113.25" cy="147.52478" fill="#0000ff" r="1.5"/>
+<circle cx="131" cy="173.77441" fill="#0000ff" r="1.5"/>
+<circle cx="148.75" cy="198.67352" fill="#0000ff" r="1.5"/>
+<circle cx="166.5" cy="222.28455" fill="#0000ff" r="1.5"/>
+<circle cx="184.25" cy="244.66702" fill="#0000ff" r="1.5"/>
+<circle cx="202" cy="265.87634" fill="#0000ff" r="1.5"/>
+<circle cx="219.75" cy="285.9659" fill="#0000ff" r="1.5"/>
+<circle cx="237.5" cy="304.98553" fill="#0000ff" r="1.5"/>
+<circle cx="255.25" cy="322.98267" fill="#0000ff" r="1.5"/>
+<circle cx="273" cy="340.00262" fill="#0000ff" r="1.5"/>
+<circle cx="290.75" cy="356.08813" fill="#0000ff" r="1.5"/>
+<circle cx="308.5" cy="371.27954" fill="#0000ff" r="1.5"/>
+<circle cx="326.25" cy="385.61432" fill="#0000ff" r="1.5"/>
+<circle cx="344" cy="399.12854" fill="#0000ff" r="1.5"/>
+<circle cx="361.75" cy="411.85593" fill="#0000ff" r="1.5"/>
+<circle cx="379.5" cy="423.8284" fill="#0000ff" r="1.5"/>
+<circle cx="397.25" cy="435.07562" fill="#0000ff" r="1.5"/>
+<circle cx="415" cy="445.6263" fill="#0000ff" r="1.5"/>
+<circle cx="432.74997" cy="455.50635" fill="#0000ff" r="1.5"/>
+<circle cx="450.5" cy="464.74048" fill="#0000ff" r="1.5"/>
+<circle cx="468.25" cy="473.35208" fill="#0000ff" r="1.5"/>
+<circle cx="486.00003" cy="481.36243" fill="#0000ff" r="1.5"/>
+<circle cx="503.75" cy="488.7914" fill="#0000ff" r="1.5"/>
+<circle cx="521.5" cy="495.65802" fill="#0000ff" r="1.5"/>
+<circle cx="539.25" cy="501.9792" fill="#0000ff" r="1.5"/>
+<circle cx="557" cy="507.77087" fill="#0000ff" r="1.5"/>
+<circle cx="574.75" cy="513.04736" fill="#0000ff" r="1.5"/>
+<circle cx="592.5" cy="517.822" fill="#0000ff" r="1.5"/>
+<circle cx="610.25" cy="522.1064" fill="#0000ff" r="1.5"/>
+<circle cx="628" cy="525.9117" fill="#0000ff" r="1.5"/>
+<circle cx="645.75" cy="529.2473" fill="#0000ff" r="1.5"/>
+<circle cx="663.5" cy="532.12134" fill="#0000ff" r="1.5"/>
+<circle cx="681.25" cy="534.54126" fill="#0000ff" r="1.5"/>
+<circle cx="699" cy="536.51294" fill="#0000ff" r="1.5"/>
+<circle cx="716.75" cy="538.0415" fill="#0000ff" r="1.5"/>
+<circle cx="734.5" cy="539.1304" fill="#0000ff" r="1.5"/>
+<circle cx="752.25" cy="539.7828" fill="#0000ff" r="1.5"/>
+<circle cx="770" cy="540" fill="#0000ff" r="1.5"/>
+<path d="M60,60 L67.1,72.47525 L74.2,84.69388 L81.3,96.66086 L88.4,108.381226 L95.5,119.85913 L102.600006,131.09961 L109.7,142.10693 L116.8,152.8858 L123.899994,163.43997 L131,173.77417 L138.1,183.89236 L145.20001,193.79858 L152.29999,203.49683 L159.4,212.99109 L166.5,222.28479 L173.6,231.38199 L180.70001,240.28616 L187.79999,249.001 L194.9,257.5301 L202,265.87634 L209.09999,274.04358 L216.2,282.0349 L223.29999,289.85373 L230.40001,297.5027 L237.5,304.9853 L244.59999,312.3043 L251.70001,319.4627 L258.8,326.46344 L265.90002,333.3094 L273,340.0029 L280.1,346.54703 L287.2,352.94403 L294.3,359.19684 L301.40002,365.30804 L308.5,371.27954 L315.59998,377.11417 L322.7,382.8141 L329.8,388.3816 L336.90002,393.81915 L344,399.12854 L351.1,404.31195 L358.19998,409.3717 L365.30002,414.30975 L372.4,419.12805 L379.5,423.8284 L386.59998,428.41278 L393.69998,432.88293 L400.80002,437.24063 L407.9,441.4881 L415,445.6263 L422.1,449.6573 L429.19998,453.58276 L436.30002,457.404 L443.40002,461.12274 L450.5,464.74048 L457.6,468.25867 L464.69998,471.6784 L471.80002,475.0016 L478.90002,478.229 L486.00003,481.36243 L493.1,484.4028 L500.2,487.35114 L507.3,490.20923 L514.4,492.97775 L521.5,495.65802 L528.6,498.25122 L535.69995,500.7579 L542.80005,503.1795 L549.9,505.51685 L557,507.77087 L564.1,509.94238 L571.19995,512.03253 L578.3,514.04193 L585.4,515.9715 L592.5,517.8218 L599.6,519.594 L606.7,521.2881 L613.80005,522.90546 L620.9,524.4465 L628,525.9117 L635.10004,527.30176 L642.2,528.6174 L649.30005,529.8588 L656.39996,531.0265 L663.5,532.12134 L670.60004,533.1434 L677.7,534.0933 L684.8,534.9712 L691.89996,535.7777 L699,536.51294 L706.10004,537.17737 L713.19995,537.7709 L720.3,538.2944 L727.39996,538.7473 L734.5,539.1304 L741.60004,539.4436 L748.69995,539.68726 L755.8,539.8611 L762.89996,539.96533 L770,540" fill="none" stroke="#ff0000" stroke-dasharray="5 5" stroke-width="1"/>
+</g>
+<rect fill="white" height="56" stroke="#000000" stroke-width="1" width="250.40001" x="509.59998" y="70"/>
+<rect fill="#0000ff" height="14.400001" width="15" x="519.6" y="81.8"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="12" text-anchor="start" x="539.6" y="89">
+Numerical BVP solution
+</text>
+<rect fill="#ff0000" height="14.400001" width="15" x="519.6" y="99.8"/>
+<text dominant-baseline="middle" fill="#000000" font-family="Times New Roman" font-size="12" text-anchor="start" x="539.6" y="107">
+Analytical insulated-end profile
+</text>
+</svg>

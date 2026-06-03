@@ -12,31 +12,43 @@ mod bdf;
 mod dirk;
 mod erk;
 mod irk;
+mod milstein;
 mod symplectic;
 
+pub mod bvp;
+
 pub use apc::AdamsPredictorCorrector;
-pub use bdf::BDF;
+pub use bdf::BackwardDifferentiationFormula;
 pub use dirk::DiagonallyImplicitRungeKutta;
 pub use erk::ExplicitRungeKutta;
 pub use irk::ImplicitRungeKutta;
+pub use milstein::Milstein;
 pub use symplectic::SymplecticIntegrator;
 
 // Typestate categories for differential equation types.
+#[derive(Clone)]
 pub struct Ordinary;
+#[derive(Clone)]
 pub struct Delay;
+#[derive(Clone)]
 pub struct Stochastic;
+#[derive(Clone)]
 pub struct Algebraic;
 
 /// Fixed-step methods
+#[derive(Clone)]
 pub struct Fixed;
 
 /// Adaptive-step methods
+#[derive(Clone)]
 pub struct Adaptive;
 
 /// Explicit Adaptive-step methods by Dormand-Prince
+#[derive(Clone)]
 pub struct DormandPrince;
 
 /// Radau IIA methods
+#[derive(Clone)]
 pub struct Radau;
 
 /// Trait to allow configuring tolerances on numerical methods generically.

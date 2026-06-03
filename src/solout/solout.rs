@@ -27,5 +27,5 @@ where
         solution: &mut Solution<T, Y>,
     ) -> ControlFlag<T, Y>
     where
-        I: Interpolation<T, Y>;
+        I: Interpolation<T, Y> + ?Sized;
 }

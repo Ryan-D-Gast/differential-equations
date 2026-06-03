@@ -33,7 +33,7 @@ where
     ///
     fn init<F>(&mut self, dae: &F, t0: T, tf: T, y0: &V) -> Result<Evals, Error<T, V>>
     where
-        F: DAE<T, V>;
+        F: DAE<T, V> + ?Sized;
 
     /// Step through solving the DAE by one step
     ///
@@ -45,7 +45,7 @@ where
     ///
     fn step<F>(&mut self, dae: &F) -> Result<Evals, Error<T, V>>
     where
-        F: DAE<T, V>;
+        F: DAE<T, V> + ?Sized;
 
     // Access fields of the solver
 

@@ -1,33 +1,38 @@
-//! Low-level ODE solve function.
+//! Solve SDE function
 
 use crate::{
     control::ControlFlag,
     error::Error,
     interpolate::Interpolation,
-    ode::{ODE, OrdinaryNumericalMethod},
+    sde::{SDE, StochasticNumericalMethod},
     solout::*,
     solution::Solution,
     status::Status,
     traits::{Real, State},
 };
 
-/// Solves an Initial Value Problem for a system of ordinary differential equations.
+/// Solves a Stochastic Differential Equation (SDE) for a system of stochastic differential equations.
 ///
-/// This is the core solution function that drives the numerical integration of ODEs.
+/// This is the core solution function that drives the numerical integration of SDEs.
 /// It handles initialization, time stepping, event detection, and solution output
 /// according to the provided output strategy.
 ///
-/// Prefer [`crate::ivp::IVP::ode`] for the high-level builder API. This function
+/// Prefer [`crate::ivp::IVP::sde`] for the high-level builder API. This function
 /// remains available for callers that need direct control over solver and output
 /// handler references.
 ///
 /// # Overview
 ///
-/// An Initial Value Problem takes the form:
+/// A Stochastic Differential Equation takes the form:
 ///
 /// ```text
-/// dy/dt = f(t, y),  t ∈ [t0, tf],  y(t0) = y0
+/// dY = a(t, Y)dt + b(t, Y)dW,  t ∈ [t0, tf],  Y(t0) = y0
 /// ```
+///
+/// where:
+/// - a(t, Y) is the drift term (deterministic part)
+/// - b(t, Y) is the diffusion term (stochastic part)
+/// - dW represents a Wiener process increment
 ///
 /// This function solves such a problem by:
 ///
@@ -39,8 +44,8 @@ use crate::{
 ///
 /// # Arguments
 ///
-/// * `solver` - Configured solver instance with appropriate settings (e.g., tolerances)
-/// * `system` - The ODE system that implements the `ODE` trait
+/// * `solver` - Configured solver instance with appropriate settings (e.g., step size)
+/// * `system` - The SDE system that implements the `SDE` trait
 /// * `t0` - Initial time point
 /// * `tf` - Final time point (can be less than `t0` for backward integration)
 /// * `y0` - Initial state vector
@@ -49,7 +54,7 @@ use crate::{
 /// # Returns
 ///
 /// * `Ok(Solution)` - If integration completes successfully or is terminated by an event
-/// * `Err(Status)` - If an error occurs (e.g., excessive stiffness, maximum steps reached)
+/// * `Err(Status)` - If an error occurs (e.g., maximum steps reached)
 ///
 /// # Solution Object
 ///
@@ -61,48 +66,62 @@ use crate::{
 /// * `status` - Final solver status (Complete or Interrupted)
 /// * `evals`  - Number of function evaluations performed
 /// * `steps`  - Total number of steps attempted
-/// * `timer`  - Timer for tracking the solve time
+/// * `timer`  - Timer object for tracking solve time
 ///
 /// # Event Handling
 ///
-/// The solver checks for events after each step using the `event` method of the system.
-/// If an event returns `ControlFlag::Terminate`, the integration stops and interpolates
-/// to find the precise point where the event occurred, using a modified regula falsi method.
+/// The solver supports event detection through the `Solout` interface via `EventWrappedSolout`.
+/// You can add an event handler using the `IVP::event()` builder method.
+/// If an event terminates the solver, the integration stops and interpolates
+/// to find the precise point where the event occurred using Brent-Dekker root finding.
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,no_run
 /// use differential_equations::{
 ///     prelude::*,
+///     sde::solve_sde,
 ///     solout::DefaultSolout,
-///     ode::solve_ode,
 /// };
+/// use rand::SeedableRng;
+/// use rand_distr::{Distribution, Normal};
 ///
-/// // Define a simple exponential growth ode: dy/dt = y
-/// struct ExponentialGrowth;
+/// struct GBM {
+///     rng: rand::rngs::StdRng,
+/// }
 ///
-/// impl ODE for ExponentialGrowth {
-///     fn diff(&self, _t: f64, y: &f64, dydt: &mut f64) {
-///         *dydt = *y;
+/// impl GBM {
+///     fn new(seed: u64) -> Self {
+///         Self {
+///             rng: rand::rngs::StdRng::seed_from_u64(seed),
+///         }
 ///     }
 /// }
 ///
-/// // Solve from t=0 to t=1 with initial condition y=1
-/// let mut method = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-10);
+/// impl SDE for GBM {
+///     fn drift(&self, _t: f64, y: &f64, dydt: &mut f64) {
+///         *dydt = 0.1 * *y; // μS
+///     }
+///     
+///     fn diffusion(&self, _t: f64, y: &f64, dydw: &mut f64) {
+///         *dydw = 0.2 * *y; // σS
+///     }
+///     
+///     fn noise(&mut self, dt: f64, dw: &mut f64) {
+///         let normal = Normal::new(0.0, dt.sqrt()).unwrap();
+///         *dw = normal.sample(&mut self.rng);
+///     }
+/// }
+///
+/// let t0 = 0.0;
+/// let tf = 1.0;
+/// let y0 = 100.0;
+/// let mut gbm = GBM::new(42);
+/// let mut solver = ExplicitRungeKutta::euler(0.01);
 /// let mut solout = DefaultSolout::new();
-/// let system = ExponentialGrowth;
-/// let y0 = 1.0;
-/// let result = solve_ode(&mut method, &system, 0.0, 1.0, &y0, &mut solout);
 ///
-/// match result {
-///     Ok(solution) => {
-///         println!("Final value: {}", solution.y.last().unwrap());
-///         println!("Number of steps: {}", solution.steps.total());
-///     },
-///     Err(status) => {
-///         println!("Integration failed: {:?}", status);
-///     }
-/// }
+/// // Solve the SDE
+/// let result = solve_sde(&mut solver, &mut gbm, t0, tf, &y0, &mut solout);
 /// ```
 ///
 /// # Notes
@@ -111,10 +130,11 @@ use crate::{
 /// * For backward integration, `tf` should be less than `t0`.
 /// * The `tf == t0` case is considered an error (no integration to perform).
 /// * The output points depend on the chosen `Solout` implementation.
+/// * Due to the stochastic nature, each run will produce different results unless a specific seed is used.
 ///
-pub fn solve_ode<T, Y, S, F, O>(
+pub fn solve_sde<T, Y, S, F, O>(
     solver: &mut S,
-    ode: &F,
+    sde: &mut F,
     t0: T,
     tf: T,
     y0: &Y,
@@ -123,14 +143,15 @@ pub fn solve_ode<T, Y, S, F, O>(
 where
     T: Real,
     Y: State<T>,
-    F: ODE<T, Y>,
-    S: OrdinaryNumericalMethod<T, Y> + Interpolation<T, Y>,
-    O: Solout<T, Y>,
+    F: SDE<T, Y> + ?Sized,
+    S: StochasticNumericalMethod<T, Y> + Interpolation<T, Y> + ?Sized,
+    O: Solout<T, Y> + ?Sized,
 {
     // Initialize the Solution object
     let mut solution = Solution::new();
 
     // Begin timing the solution process
+    #[cfg(not(target_arch = "wasm32"))]
     solution.timer.start();
 
     // Determine integration direction and check that tf != t0
@@ -145,7 +166,7 @@ where
     };
 
     // Clear statistics in case it was used before and reset solver and check for errors
-    match solver.init(ode, t0, tf, y0) {
+    match solver.init(sde, t0, tf, y0) {
         Ok(evals) => {
             solution.evals += evals;
         }
@@ -166,7 +187,7 @@ where
         ControlFlag::Continue => {}
         ControlFlag::ModifyState(tm, ym) => {
             // Reinitialize the solver with the modified state
-            match solver.init(ode, tm, tf, &ym) {
+            match solver.init(sde, tm, tf, &ym) {
                 Ok(evals) => {
                     solution.evals += evals;
                 }
@@ -175,12 +196,13 @@ where
         }
         ControlFlag::Terminate => {
             solution.status = Status::Interrupted;
+            #[cfg(not(target_arch = "wasm32"))]
             solution.timer.complete();
             return Ok(solution);
         }
     }
 
-    // Set OrdinaryNumericalMethod to Solving
+    // Set StochasticNumericalMethod to Solving
     solver.set_status(Status::Solving);
     solution.status = Status::Solving;
 
@@ -196,6 +218,7 @@ where
                 // Set the status to complete and finalize the solution
                 solver.set_status(Status::Complete);
                 solution.status = Status::Complete;
+                #[cfg(not(target_arch = "wasm32"))]
                 solution.timer.complete();
                 return Ok(solution);
             }
@@ -205,20 +228,11 @@ where
         }
 
         // Perform a step
-        match solver.step(ode) {
+        match solver.step(sde) {
             Ok(evals) => {
                 // Update function evaluations
                 solution.evals += evals;
-
-                // Check for a RejectedStep
-                if let Status::RejectedStep = solver.status() {
-                    // Update rejected steps and re-do the step
-                    solution.steps.rejected += 1;
-                    continue;
-                } else {
-                    // Update accepted steps and continue to processing
-                    solution.steps.accepted += 1;
-                }
+                solution.steps.accepted += 1;
             }
             Err(e) => {
                 // Set solver status to error and return error
@@ -240,7 +254,7 @@ where
             ControlFlag::Continue => {}
             ControlFlag::ModifyState(tm, ym) => {
                 // Reinitialize the solver with the modified state
-                match solver.init(ode, tm, tf, &ym) {
+                match solver.init(sde, tm, tf, &ym) {
                     Ok(evals) => {
                         solution.evals += evals;
                     }
@@ -249,6 +263,7 @@ where
             }
             ControlFlag::Terminate => {
                 solution.status = Status::Interrupted;
+                #[cfg(not(target_arch = "wasm32"))]
                 solution.timer.complete();
                 return Ok(solution);
             }
@@ -265,6 +280,7 @@ where
 
     // Finalize the solution
     solution.status = Status::Complete;
+    #[cfg(not(target_arch = "wasm32"))]
     solution.timer.complete();
 
     Ok(solution)

@@ -210,7 +210,7 @@ where
         solution: &mut Solution<T, Y2>,
     ) -> ControlFlag<T, Y2>
     where
-        I: Interpolation<T, Y2>,
+        I: Interpolation<T, Y2> + ?Sized,
     {
         // Extract position from current state and calculate distance
         let pos_curr = (self.extractor)(y_curr);
@@ -283,7 +283,7 @@ where
         dist_upper: T,
     ) -> Option<T>
     where
-        I: Interpolation<T, Y2>,
+        I: Interpolation<T, Y2> + ?Sized,
     {
         // Start with linear interpolation as initial guess
         let mut t = t_lower - dist_lower * (t_upper - t_lower) / (dist_upper - dist_lower);

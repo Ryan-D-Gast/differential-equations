@@ -85,7 +85,7 @@ where
         solution: &mut Solution<T, Y>,
     ) -> ControlFlag<T, Y>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
     {
         // Output the current time and state to the vectors
         solution.push(t_curr, y_curr.clone());

@@ -17,7 +17,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y>,
+        F: ODE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 
@@ -76,7 +76,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
     fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y>,
+        F: ODE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 
@@ -205,7 +205,12 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 self.delta_k_vec[i] = self.rhs_newton[i];
             }
             self.newton_matrix
-                .lin_solve_mut(&mut self.delta_k_vec[..])?;
+                .lin_solve_mut(&mut self.delta_k_vec[..])
+                .map_err(|e| crate::error::Error::LinearAlgebra {
+                    t: self.t,
+                    y: self.y.clone(),
+                    msg: e.to_string(),
+                })?;
             self.lu_decompositions += 1;
 
             // Update z_i and increment norm

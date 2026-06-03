@@ -1,8 +1,9 @@
-//! Low-level DAE solve function.
+//! Core solver function for Delay Differential Equation Initial Value Problems.
 
 use crate::{
     control::ControlFlag,
-    dae::{AlgebraicNumericalMethod, DAE},
+    dde::DDE,
+    dde::numerical_method::DelayNumericalMethod,
     error::Error,
     interpolate::Interpolation,
     solout::*,
@@ -11,96 +12,78 @@ use crate::{
     traits::{Real, State},
 };
 
-/// Solves an Initial Value Problem for a system of differential algebraic equations.
+/// Solves an Initial Value Problem for a system of Delay Differential Equations (DDEs).
 ///
-/// This is the core solution function that drives the numerical integration of DAEs.
-/// It handles initialization, time stepping, event detection, and solution output
-/// according to the provided output strategy.
+/// This is the core function that drives the numerical integration process for DDEs.
+/// It manages the solver steps, handles history lookups, processes events defined
+/// in the [`DDE`] trait, and collects the solution according to the [`Solout`] strategy.
 ///
-/// Prefer [`crate::ivp::IVP::dae`] for the high-level builder API. This function
-/// remains available for callers that need direct control over solver and output
+/// **Note:** Prefer [`crate::ivp::IVP::dde`] for the high-level builder API. Use
+/// this function directly only if you need finer control over solver and output
 /// handler references.
 ///
 /// # Overview
 ///
-/// An Initial Value Problem takes the form:
+/// A DDE Initial Value Problem is defined as:
 ///
 /// ```text
-/// m·dy/dt = f(t, y),  t ∈ [t0, tf],  y(t0) = y0
+/// dy/dt = f(t, y(t), y(t - tau1), y(t - tau2), ...),  for t in [t0, tf]
+/// y(t) = phi(t),                                      for t <= t0
 /// ```
 ///
-/// Where m is the mass matrix that can contain zeros for algebraic constraints.
-/// This function solves such a problem by:
-///
-/// 1. Initializing the solver with the system and initial conditions
-/// 2. Stepping the solver through the integration interval
-/// 3. Detecting and handling events (if any)
-/// 4. Collecting solution points according to the specified output strategy
-/// 5. Monitoring for errors or exceptional conditions
+/// This function solves such problems by iteratively stepping the `solver` from `t0` to `tf`.
 ///
 /// # Arguments
 ///
-/// * `solver` - Configured solver instance with appropriate settings (e.g., tolerances)
-/// * `system` - The DAE system that implements the `DAE` trait
-/// * `t0` - Initial time point
-/// * `tf` - Final time point (can be less than `t0` for backward integration)
-/// * `y0` - Initial state vector
-/// * `solout` - Solution output strategy that controls which points are included in the result
+/// * `solver`: A mutable reference to a DDE solver instance. The solver must implement
+///   both [`DelayNumericalMethod`] (specifically adapted for DDEs, handling the history lookup
+///   closure in its `init` and `step` methods) and [`Interpolation`] (for dense output
+///   and event localization).
+/// * `dde`: A reference to the DDE system definition, which must implement the [`DDE`] trait.
+///   This provides the `diff` function (the right-hand side of the DDE) and optionally
+///   an `event` function.
+/// * `t0`: The initial time point of the integration interval.
+/// * `tf`: The final time point of the integration interval. `tf` must be different from `t0`.
+/// * `y0`: A reference to the initial state vector `y(t0)`.
+/// * `phi`: The initial history function. This must be a function or closure implementing
+///   `Fn(T) -> V` that returns the state vector `Y` for any time `t <= t0`.
+/// * `solout`: A mutable reference to a solution output handler implementing the [`Solout`] trait.
+///   This determines how and when solution points `(t, y)` are recorded or processed.
 ///
 /// # Returns
 ///
-/// * `Ok(Solution)` - If integration completes successfully or is terminated by an event
-/// * `Err(Status)` - If an error occurs (e.g., excessive stiffness, maximum steps reached)
+/// * `Ok(Solution<T, Y>)`: If the integration completes successfully (reaches `tf`) or is
+///   cleanly interrupted by an event detected by `dde.event()` or `solout.solout()`.
+///   The [`Solution`] struct contains the time points, corresponding state vectors,
+///   solver statistics, and potentially event data (`D`).
+/// * `Err(Error<T, Y>)`: If the solver encounters an error during initialization or stepping.
+///   This could be due to invalid input (`Error::BadInput`), failure to meet tolerances
+///   (`Error::StepSizeTooSmall`), exceeding the maximum number of steps (`Error::MaxSteps`),
+///   or potential stiffness detected by the solver (`Error::Stiffness`).
 ///
-/// # Solution Object
-///
-/// The returned `Solution` object contains:
-///
-/// * `t` - Vector of time points
-/// * `y` - Vector of state vectors at each time point
-/// * `solout` - Struct of the solution output strategy used
-/// * `status` - Final solver status (Complete or Interrupted)
-/// * `evals` - Number of function evaluations performed
-/// * `steps` - Total number of steps attempted
-/// * `rejected_steps` - Number of steps rejected by the error control
-/// * `accepted_steps` - Number of steps accepted by the error control
-/// * `solve_time` - Wall time taken for the integration
-///
-/// # Event Handling
-///
-/// The solver checks for events after each step using the `event` method of the system.
-/// If an event returns `ControlFlag::Terminate`, the integration stops and interpolates
-/// to find the precise point where the event occurred, using a modified regula falsi method.
-///
-/// # Notes
-///
-/// * For forward integration, `tf` should be greater than `t0`.
-/// * For backward integration, `tf` should be less than `t0`.
-/// * The `tf == t0` case is considered an error (no integration to perform).
-/// * The output points depend on the chosen `Solout` implementation.
-///
-pub fn solve_dae<T, V, S, F, O>(
+pub fn solve_dde<const L: usize, T, Y, S, F, H, O>(
     solver: &mut S,
-    dae: &F,
+    dde: &F,
     t0: T,
     tf: T,
-    y0: &V,
+    y0: &Y,
+    phi: H,
     solout: &mut O,
-) -> Result<Solution<T, V>, Error<T, V>>
+) -> Result<Solution<T, Y>, Error<T, Y>>
 where
     T: Real,
-    V: State<T>,
-    F: DAE<T, V>,
-    S: AlgebraicNumericalMethod<T, V> + Interpolation<T, V>,
-    O: Solout<T, V>,
+    Y: State<T>,
+    F: DDE<L, T, Y> + ?Sized,
+    H: Fn(T) -> Y + Clone,
+    S: DelayNumericalMethod<L, T, Y, H> + Interpolation<T, Y> + ?Sized,
+    O: Solout<T, Y> + ?Sized,
 {
     // Initialize the Solution object
     let mut solution = Solution::new();
-
-    // Begin timing the solution process
+    #[cfg(not(target_arch = "wasm32"))]
     solution.timer.start();
 
-    // Determine integration direction and check that tf != t0
+    // Determine integration direction and check tf != t0
     let integration_direction = match (tf - t0).signum() {
         x if x == T::one() => T::one(),
         x if x == T::from_f64(-1.0).unwrap() => T::from_f64(-1.0).unwrap(),
@@ -111,8 +94,8 @@ where
         }
     };
 
-    // Clear statistics in case it was used before and reset solver and check for errors
-    match solver.init(dae, t0, tf, y0) {
+    // Initialize the solver
+    match solver.init(dde, t0, tf, y0, &phi) {
         Ok(evals) => {
             solution.evals += evals;
         }
@@ -133,7 +116,7 @@ where
         ControlFlag::Continue => {}
         ControlFlag::ModifyState(tm, ym) => {
             // Reinitialize the solver with the modified state
-            match solver.init(dae, tm, tf, &ym) {
+            match solver.init(dde, tm, tf, &ym, &phi) {
                 Ok(evals) => {
                     solution.evals += evals;
                 }
@@ -142,12 +125,13 @@ where
         }
         ControlFlag::Terminate => {
             solution.status = Status::Interrupted;
+            #[cfg(not(target_arch = "wasm32"))]
             solution.timer.complete();
             return Ok(solution);
         }
     }
 
-    // Set OrdinaryNumericalMethod to Solving
+    // Set solver status
     solver.set_status(Status::Solving);
     solution.status = Status::Solving;
 
@@ -163,6 +147,7 @@ where
                 // Set the status to complete and finalize the solution
                 solver.set_status(Status::Complete);
                 solution.status = Status::Complete;
+                #[cfg(not(target_arch = "wasm32"))]
                 solution.timer.complete();
                 return Ok(solution);
             }
@@ -172,28 +157,23 @@ where
         }
 
         // Perform a step
-        match solver.step(dae) {
+        match solver.step(dde, &phi) {
             Ok(evals) => {
-                // Update function evaluations
                 solution.evals += evals;
 
-                // Check for a RejectedStep
                 if let Status::RejectedStep = solver.status() {
-                    // Update rejected steps and re-do the step
                     solution.steps.rejected += 1;
                     continue;
                 } else {
-                    // Update accepted steps and continue to processing
                     solution.steps.accepted += 1;
                 }
             }
             Err(e) => {
-                // Set solver status to error and return error
                 return Err(e);
             }
         }
 
-        // Record the result
+        // Record the result using solout
         y_curr = solver.y().clone();
         y_prev = solver.y_prev().clone();
         match solout.solout(
@@ -207,7 +187,7 @@ where
             ControlFlag::Continue => {}
             ControlFlag::ModifyState(tm, ym) => {
                 // Reinitialize the solver with the modified state
-                match solver.init(dae, tm, tf, &ym) {
+                match solver.init(dde, tm, tf, &ym, &phi) {
                     Ok(evals) => {
                         solution.evals += evals;
                     }
@@ -216,6 +196,7 @@ where
             }
             ControlFlag::Terminate => {
                 solution.status = Status::Interrupted;
+                #[cfg(not(target_arch = "wasm32"))]
                 solution.timer.complete();
                 return Ok(solution);
             }
@@ -227,11 +208,10 @@ where
         }
     }
 
-    // Solution completed successfully
     solver.set_status(Status::Complete);
 
-    // Finalize the solution
     solution.status = Status::Complete;
+    #[cfg(not(target_arch = "wasm32"))]
     solution.timer.complete();
 
     Ok(solution)

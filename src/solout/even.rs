@@ -94,7 +94,7 @@ where
         solution: &mut Solution<T, Y>,
     ) -> ControlFlag<T, Y>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
     {
         // Determine the alignment offset (remainder when divided by dt)
         let offset = self.t0 % self.dt;

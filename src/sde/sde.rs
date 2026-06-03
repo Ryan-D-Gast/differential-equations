@@ -1,7 +1,6 @@
 //! Defines system of stochastic differential equations for numerical solvers.
 //! The NumericalMethods use this trait to take a input system from the user and solve
-//! Includes a stochastic differential equation and optional event function to interupt solver
-//! given a condition or event.
+//! Includes a stochastic differential equation. Event handling is provided via the separate `Event` trait.
 
 use crate::traits::{DefaultState, Real, State};
 
@@ -9,16 +8,11 @@ use crate::traits::{DefaultState, Real, State};
 ///
 /// SDE trait defines the stochastic differential equation dY = a(t,Y)dt + b(t,Y)dW for the solver.
 /// The stochastic differential equation is used to solve systems with both deterministic and random components.
-/// The trait also includes a solout function to interupt the solver when a condition
-/// is met or event occurs.
 ///
 /// # Impl
 /// * `drift`     - Deterministic part a(t,Y) of the SDE in form drift(t, &y, &mut dydt).
 /// * `diffusion` - Stochastic part b(t,Y) of the SDE in form diffusion(t, &y, &mut dydw).
 /// * `noise`     - Generates the random noise increments for the SDE.
-/// * `event`     - Event function to interupt solver when condition is met or event occurs.
-///
-/// Note that the event function is optional and can be left out when implementing.
 pub trait SDE<T = f64, Y = DefaultState<T>>
 where
     T: Real,

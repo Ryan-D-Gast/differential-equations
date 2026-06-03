@@ -10,9 +10,11 @@
 //! This library provides numerical solvers for:
 //!
 //! - **[Ordinary Differential Equations (ODE)](crate::ode)**: initial value problems, fixed/adaptive step, event detection, flexible output
+//! - **[Boundary Value Problems (BVP)](crate::bvp)**: problems with boundary conditions at both ends of the interval
 //! - **[Differential Algebraic Equations (DAE)](crate::dae)**: equations in the form M f' = f(t,y) where M can be singular
 //! - **[Delay Differential Equations (DDE)](crate::dde)**: constant/state-dependent delays, same features as ODE
 //! - **[Stochastic Differential Equations (SDE)](crate::sde)**: drift-diffusion, user RNG, same features as ODE
+//! - **[Partial Differential Equations (PDE)](crate::pde)**: method of lines spatial discretization, solved by existing ODE/DAE methods
 //!
 //! ## Feature Flags
 //!
@@ -56,6 +58,23 @@
 //! }
 //! ```
 //!
+//! Alternatively, for simple problems you can use a closure:
+//!
+//! ```rust
+//! use differential_equations::prelude::*;
+//!
+//! fn main() {
+//!     let t0 = 0.0;
+//!     let tf = 1.0;
+//!     let y0 = 1.0;
+//!
+//!     let solution = IVP::ode_from_fn(|t, y, dydt| *dydt = t * y, t0, tf, y0)
+//!         .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-6))
+//!         .solve()
+//!         .unwrap();
+//! }
+//! ```
+//!
 //! ## License
 //!
 //! ```text
@@ -82,10 +101,12 @@ pub mod methods;
 pub mod tableau;
 
 // Differential Equations
+pub mod bvp;
 pub mod dae;
 pub mod dde;
 pub mod ivp;
 pub mod ode;
+pub mod pde;
 pub mod sde;
 
 // Output Control
