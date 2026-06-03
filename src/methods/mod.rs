@@ -13,6 +13,7 @@ mod dirk;
 mod erk;
 mod irk;
 mod milstein;
+mod symplectic;
 
 pub mod bvp;
 
@@ -22,6 +23,7 @@ pub use dirk::DiagonallyImplicitRungeKutta;
 pub use erk::ExplicitRungeKutta;
 pub use irk::ImplicitRungeKutta;
 pub use milstein::Milstein;
+pub use symplectic::SymplecticIntegrator;
 
 // Typestate categories for differential equation types.
 #[derive(Clone)]

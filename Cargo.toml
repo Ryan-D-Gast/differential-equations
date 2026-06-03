@@ -215,3 +215,7 @@ name = "ode_solver_benchmarks"
 harness = false
 path = "benches/main.rs"
 required-features = ["nalgebra"]
+
+[[example]]
+name = "ode_19_orbital_mechanics_energy_conservation"
+path = "examples/ode/19_orbital_mechanics_energy_conservation/main.rs"
