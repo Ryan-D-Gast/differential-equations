@@ -56,7 +56,7 @@ pub use crate::ivp::IVP;
 pub use crate::bvp::Boundary;
 pub use crate::dae::DAE;
 pub use crate::dde::DDE;
-pub use crate::ode::ODE;
+pub use crate::ode::{Hamiltonian, HamiltonianFnWrapper, HamiltonianSystem, ODE};
 pub use crate::pde::{
     BoundaryCondition, BoundaryConditions, BoundaryConditionsBuilder,
     BoundaryConditionsBuilderError, BoundaryFace, FiniteVolume, Limiter, MethodOfLines,

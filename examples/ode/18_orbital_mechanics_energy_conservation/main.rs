@@ -15,24 +15,22 @@ use quill::prelude::*;
 
 struct KeplerProblem;
 
-impl ODE<f64, Vec<f64>> for KeplerProblem {
-    // y = [q_x, q_y, p_x, p_y]
-    fn diff(&self, _t: f64, y: &Vec<f64>, dydt: &mut Vec<f64>) {
-        let q_x = y[0];
-        let q_y = y[1];
-        let p_x = y[2];
-        let p_y = y[3];
+impl Hamiltonian<f64> for KeplerProblem {
+    // velocity is dq/dt = dH/dp = p
+    fn velocity(&self, _t: f64, _q: &[f64], p: &[f64], dq: &mut [f64]) {
+        dq[0] = p[0];
+        dq[1] = p[1];
+    }
 
+    // force is dp/dt = -dH/dq = -q / r^3
+    fn force(&self, _t: f64, q: &[f64], _p: &[f64], dp: &mut [f64]) {
+        let q_x = q[0];
+        let q_y = q[1];
         let r = (q_x * q_x + q_y * q_y).sqrt();
         let r3 = r * r * r;
 
-        // dq/dt = p
-        dydt[0] = p_x;
-        dydt[1] = p_y;
-
-        // dp/dt = -q / r^3
-        dydt[2] = -q_x / r3;
-        dydt[3] = -q_y / r3;
+        dp[0] = -q_x / r3;
+        dp[1] = -q_y / r3;
     }
 }
 
@@ -66,19 +64,19 @@ fn main() {
     let initial_energy = compute_energy(&y0);
 
     // 1. Runge-Kutta 4 (RK4)
-    let sol_rk4 = IVP::ode(&KeplerProblem, t0, tf, y0.clone())
+    let sol_rk4 = IVP::hamiltonian(&KeplerProblem, t0, tf, y0.clone())
         .method(ExplicitRungeKutta::rk4(dt).max_steps(50000))
         .solve()
         .expect("RK4 Failed");
 
     // 2. Velocity Verlet (Symplectic 2nd Order)
-    let sol_vv = IVP::ode(&KeplerProblem, t0, tf, y0.clone())
+    let sol_vv = IVP::hamiltonian(&KeplerProblem, t0, tf, y0.clone())
         .method(SymplecticIntegrator::velocity_verlet(dt).max_steps(50000))
         .solve()
         .expect("Velocity Verlet Failed");
 
     // 3. Ruth-Forest (Symplectic 4th Order)
-    let sol_rf = IVP::ode(&KeplerProblem, t0, tf, y0.clone())
+    let sol_rf = IVP::hamiltonian(&KeplerProblem, t0, tf, y0.clone())
         .method(SymplecticIntegrator::ruth_forest(dt).max_steps(50000))
         .solve()
         .expect("Ruth-Forest Failed");

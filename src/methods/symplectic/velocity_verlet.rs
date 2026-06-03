@@ -51,6 +51,12 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
     {
         let evals = Evals::new();
 
+        if y0.len() == 0 || y0.len() % 2 != 0 {
+            return Err(Error::BadInput {
+                msg: "Symplectic integrators require a non-empty state vector with an even number of elements (split equally between positions and momenta).".to_string(),
+            });
+        }
+
         if self.h == T::zero() {
             let duration = (tf - t0).abs();
             let default_steps = T::from_usize(100).unwrap();
@@ -64,6 +70,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
 
         self.t = t0;
         self.y = y0.clone();
+        self.y_prev = y0.clone();
 
         self.status = Status::Initialized;
         Ok(evals)
@@ -86,6 +93,8 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
             });
         }
         self.steps += 1;
+
+        self.y_prev = self.y.clone();
 
         let n = self.y.len();
         let half_n = n / 2;
@@ -153,7 +162,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
     }
 
     fn y_prev(&self) -> &Y {
-        &self.y
+        &self.y_prev
     }
 
     fn h(&self) -> T {
@@ -177,7 +186,6 @@ impl<T: Real, Y: State<T>> crate::interpolate::Interpolation<T, Y>
     for SymplecticIntegrator<Ordinary, Fixed, T, Y, 2>
 {
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
-        // Basic linear interpolation for symplectic integrators since we don't store dydt_prev
         if t_interp < self.t_prev() || t_interp > self.t {
             return Err(Error::OutOfBounds {
                 t_interp,
@@ -186,9 +194,12 @@ impl<T: Real, Y: State<T>> crate::interpolate::Interpolation<T, Y>
             });
         }
 
-        // This is a placeholder since we don't have dense output for these
-        // methods currently. For precise continuous output of symplectic methods,
-        // specialized interpolation is usually required.
-        Ok(self.y.clone())
+        let s = (t_interp - self.t_prev()) / self.h;
+        let mut y_interp = self.y_prev.clone();
+        for i in 0..y_interp.len() {
+            let diff = self.y.get_component(i) - self.y_prev.get_component(i);
+            y_interp.set_component(i, y_interp.get_component(i) + s * diff);
+        }
+        Ok(y_interp)
     }
 }

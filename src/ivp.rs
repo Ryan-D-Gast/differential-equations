@@ -12,7 +12,10 @@ use crate::{
     error::Error,
     interpolate::Interpolation,
     methods::ToleranceConfig,
-    ode::{ODE, OrdinaryNumericalMethod, solve_ode},
+    ode::{
+        Hamiltonian, HamiltonianFnWrapper, HamiltonianSystem, ODE, OrdinaryNumericalMethod,
+        solve_ode,
+    },
     pde::{PDE, SpatialDiscretization},
     sde::{SDE, StochasticNumericalMethod, solve_sde},
     solout::{
@@ -303,6 +306,54 @@ where
         Self {
             equation: OdeEqOwned {
                 ode: OdeFnWrapper { f },
+            },
+            t0,
+            tf,
+            y0,
+            method: (),
+            solout: DefaultSolout::new(),
+        }
+    }
+}
+
+impl<'a, H, T: Real, Y: State<T>> IVP<OdeEqOwned<HamiltonianSystem<&'a H>>, T, Y, (), DefaultSolout>
+where
+    H: Hamiltonian<T> + ?Sized,
+{
+    /// Create a new initial value problem for a Hamiltonian system from a reference.
+    ///
+    /// The Hamiltonian system defines positions $q$ and momenta $p$ satisfying:
+    /// dq/dt = velocity(t, q, p)
+    /// dp/dt = force(t, q, p)
+    ///
+    /// The state vector `y` is assumed to be laid out as `y = [q, p]`.
+    pub fn hamiltonian(system: &'a H, t0: T, tf: T, y0: Y) -> Self {
+        Self {
+            equation: OdeEqOwned {
+                ode: HamiltonianSystem::new(system),
+            },
+            t0,
+            tf,
+            y0,
+            method: (),
+            solout: DefaultSolout::new(),
+        }
+    }
+}
+
+impl<V, F, T: Real, Y: State<T>>
+    IVP<OdeEqOwned<HamiltonianSystem<HamiltonianFnWrapper<V, F>>>, T, Y, (), DefaultSolout>
+where
+    V: Fn(T, &[T], &[T], &mut [T]),
+    F: Fn(T, &[T], &[T], &mut [T]),
+{
+    /// Create a new initial value problem for a Hamiltonian system from velocity and force closures.
+    ///
+    /// The state vector `y` is assumed to be laid out as `y = [q, p]`.
+    pub fn hamiltonian_from_fn(velocity: V, force: F, t0: T, tf: T, y0: Y) -> Self {
+        Self {
+            equation: OdeEqOwned {
+                ode: HamiltonianSystem::new(HamiltonianFnWrapper::new(velocity, force)),
             },
             t0,
             tf,
