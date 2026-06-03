@@ -217,5 +217,5 @@ path = "benches/main.rs"
 required-features = ["nalgebra"]
 
 [[example]]
-name = "18_orbital_mechanics_energy_conservation"
-path = "examples/ode/18_orbital_mechanics_energy_conservation/main.rs"
+name = "ode_19_orbital_mechanics_energy_conservation"
+path = "examples/ode/19_orbital_mechanics_energy_conservation/main.rs"

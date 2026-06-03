@@ -1,4 +1,4 @@
-//! Example 18: Orbital Mechanics Energy Conservation
+//! Example 19: Orbital Mechanics Energy Conservation
 //!
 //! This example simulates the Kepler problem (a 2-body orbital mechanics problem)
 //! using symplectic integrators (Velocity Verlet and Ruth-Forest) to demonstrate
@@ -119,7 +119,7 @@ fn main() {
                 .build(),
         ])
         .build()
-        .to_svg("examples/ode/18_orbital_mechanics_energy_conservation/energy_error.svg")
+        .to_svg("examples/ode/19_orbital_mechanics_energy_conservation/energy_error.svg")
         .expect("Failed to save energy plot");
 
     // Plot Orbits
@@ -134,7 +134,7 @@ fn main() {
             .data(orbit_rf)
             .build()])
         .build()
-        .to_svg("examples/ode/18_orbital_mechanics_energy_conservation/orbit.svg")
+        .to_svg("examples/ode/19_orbital_mechanics_energy_conservation/orbit.svg")
         .expect("Failed to save orbit plot");
 
     println!("Simulation finished.");
