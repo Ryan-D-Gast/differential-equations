@@ -14,6 +14,7 @@
 //! - **[Differential Algebraic Equations (DAE)](crate::dae)**: equations in the form M f' = f(t,y) where M can be singular
 //! - **[Delay Differential Equations (DDE)](crate::dde)**: constant/state-dependent delays, same features as ODE
 //! - **[Stochastic Differential Equations (SDE)](crate::sde)**: drift-diffusion, user RNG, same features as ODE
+//! - **[Partial Differential Equations (PDE)](crate::pde)**: method of lines spatial discretization, solved by existing ODE/DAE methods
 //!
 //! ## Feature Flags
 //!
@@ -105,6 +106,7 @@ pub mod dae;
 pub mod dde;
 pub mod ivp;
 pub mod ode;
+pub mod pde;
 pub mod sde;
 
 // Output Control

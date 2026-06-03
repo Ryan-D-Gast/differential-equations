@@ -2,13 +2,14 @@
 
 use crate::{
     error::Error,
-    methods::bvp::BVPMethod,
+    methods::{ToleranceConfig, bvp::BVPMethod},
     ode::{ODE, solve_bvp},
     solout::{
         CrossingDirection, CrossingSolout, DefaultSolout, DenseSolout, EvenSolout, Event,
         EventWrappedSolout, HyperplaneCrossingSolout, Solout, TEvalSolout,
     },
     solution::Solution,
+    tolerance::Tolerance,
     traits::{DefaultState, Real, State},
 };
 
@@ -246,5 +247,34 @@ where
             &self.y_guess,
             &mut self.solout,
         )
+    }
+}
+
+impl<EqType, T: Real, Y: State<T>, Method, SoloutType> BVP<EqType, T, Y, Method, SoloutType>
+where
+    Method: ToleranceConfig<T>,
+{
+    /// Set relative tolerance on the underlying solver.
+    pub fn rtol<V: Into<Tolerance<T>>>(self, rtol: V) -> Self {
+        BVP {
+            equation: self.equation,
+            t0: self.t0,
+            tf: self.tf,
+            y_guess: self.y_guess,
+            method: self.method.rtol(rtol),
+            solout: self.solout,
+        }
+    }
+
+    /// Set absolute tolerance on the underlying solver.
+    pub fn atol<V: Into<Tolerance<T>>>(self, atol: V) -> Self {
+        BVP {
+            equation: self.equation,
+            t0: self.t0,
+            tf: self.tf,
+            y_guess: self.y_guess,
+            method: self.method.atol(atol),
+            solout: self.solout,
+        }
     }
 }

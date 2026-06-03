@@ -80,3 +80,10 @@ impl_erk_fixed_step_constructor!(
     4,
     "Creates the three-eighths rule 4th order Runge-Kutta method."
 );
+impl_erk_fixed_step_constructor!(
+    ssp_rk3,
+    false,
+    3,
+    3,
+    "Creates the Strong Stability Preserving 3rd order Runge-Kutta method."
+);
