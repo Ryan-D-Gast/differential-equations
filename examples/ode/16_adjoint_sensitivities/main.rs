@@ -63,7 +63,7 @@ fn main() {
     let adjoint_y0 = vector![dg_dy_final[0], dg_dy_final[1], 0.0, 0.0];
 
     // Integrate backwards from tf to t0
-    let adjoint_solution = IVP::ode_adjoint_sensitivity(&adjoint_ode, tf, t0, adjoint_y0)
+    let adjoint_solution = IVP::ode(&adjoint_ode, tf, t0, adjoint_y0)
         .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8))
         .solve()
         .unwrap();

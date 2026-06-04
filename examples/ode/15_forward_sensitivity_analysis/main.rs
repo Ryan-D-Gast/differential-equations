@@ -52,7 +52,7 @@ fn main() {
     // Solve the augmented system using Forward Sensitivity Analysis.
     let fsa_ode = ForwardSensitivityOde::new(&decay, SVector::from([0.0]));
 
-    let solution = IVP::ode_forward_sensitivity(&fsa_ode, t0, tf, y0_aug)
+    let solution = IVP::ode(&fsa_ode, t0, tf, y0_aug)
         .method(method)
         .solve()
         .unwrap();

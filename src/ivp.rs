@@ -12,7 +12,6 @@ use crate::{
     error::Error,
     interpolate::Interpolation,
     methods::ToleranceConfig,
-    ode::sensitivity::{adjoint::AdjointOde, forward::ForwardSensitivityOde},
     ode::{ODE, OrdinaryNumericalMethod, solve_ode},
     sde::{SDE, StochasticNumericalMethod, solve_sde},
     solout::{
@@ -360,47 +359,5 @@ where
             self.equation.history.clone(),
             &mut self.solout,
         )
-    }
-}
-
-impl<'a, F, T: Real, Y: State<T>, P: State<T>, YA: State<T>>
-    IVP<OdeEq<'a, ForwardSensitivityOde<'a, F, T, Y, P>>, T, YA, (), DefaultSolout>
-{
-    /// Create a new initial value problem for ordinary differential equation forward sensitivity analysis.
-    pub fn ode_forward_sensitivity(
-        system: &'a ForwardSensitivityOde<'a, F, T, Y, P>,
-        t0: T,
-        tf: T,
-        y0_aug: YA,
-    ) -> Self {
-        Self {
-            equation: OdeEq { ode: system },
-            t0,
-            tf,
-            y0: y0_aug,
-            method: (),
-            solout: DefaultSolout::new(),
-        }
-    }
-}
-
-impl<'a, F, T: Real, Y: State<T>, P: State<T>, YA: State<T>>
-    IVP<OdeEq<'a, AdjointOde<'a, F, T, Y, P>>, T, YA, (), DefaultSolout>
-{
-    /// Create a new initial value problem for ordinary differential equation adjoint sensitivity analysis.
-    pub fn ode_adjoint_sensitivity(
-        system: &'a AdjointOde<'a, F, T, Y, P>,
-        t0: T,
-        tf: T,
-        y0_aug: YA,
-    ) -> Self {
-        Self {
-            equation: OdeEq { ode: system },
-            t0,
-            tf,
-            y0: y0_aug,
-            method: (),
-            solout: DefaultSolout::new(),
-        }
     }
 }

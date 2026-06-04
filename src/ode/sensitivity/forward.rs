@@ -10,6 +10,8 @@ pub struct ForwardSensitivityOde<'a, F, T: Real, Y: State<T>, P: State<T>> {
     y_proto: Y,
     j_y: RefCell<Matrix<T>>,
     j_p: RefCell<Matrix<T>>,
+    y_cache: RefCell<Y>,
+    dydt_cache: RefCell<Y>,
     _marker: std::marker::PhantomData<P>,
 }
 
@@ -25,9 +27,11 @@ where
         let m = ode.parameters().len();
         Self {
             ode,
-            y_proto,
+            y_proto: y_proto.clone(),
             j_y: RefCell::new(Matrix::full(n, n)),
             j_p: RefCell::new(Matrix::full(n, m)),
+            y_cache: RefCell::new(y_proto.zeros_like()),
+            dydt_cache: RefCell::new(y_proto.zeros_like()),
             _marker: std::marker::PhantomData,
         }
     }
@@ -45,22 +49,22 @@ where
         let n = self.y_proto.len();
         let m = self.j_p.borrow().dims().1;
 
-        let mut y = self.y_proto.zeros_like();
+        let mut y = self.y_cache.borrow_mut();
         for i in 0..n {
             y.set_component(i, y_aug.get_component(i));
         }
 
-        let mut dydt = self.y_proto.zeros_like();
-        self.ode.diff(t, &y, &mut dydt);
+        let mut dydt = self.dydt_cache.borrow_mut();
+        self.ode.diff(t, &*y, &mut *dydt);
         for i in 0..n {
             dydt_aug.set_component(i, dydt.get_component(i));
         }
 
         let mut j_y = self.j_y.borrow_mut();
-        self.ode.jacobian(t, &y, &mut j_y);
+        self.ode.jacobian(t, &*y, &mut j_y);
 
         let mut j_p = self.j_p.borrow_mut();
-        self.ode.jacobian_p(t, &y, &mut j_p);
+        self.ode.jacobian_p(t, &*y, &mut j_p);
 
         // dS/dt = J_y * S + J_p
         // S is an n x m matrix stored column-wise or row-wise. Let's do row-wise.
