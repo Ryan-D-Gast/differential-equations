@@ -7,7 +7,7 @@
 //!   Stiff and Differential-Algebraic Problems. Springer.
 
 use crate::{
-    linalg::{Matrix, error::LinalgError},
+    linalg::{Matrix, MatrixStorage, error::LinalgError},
     traits::Real,
 };
 
@@ -77,6 +77,109 @@ pub fn lu_decomp<T: Real>(a: &mut Matrix<T>, ip: &mut [usize]) -> Result<(), Lin
             expected: n,
             actual: ip.len(),
         });
+    }
+
+    if let MatrixStorage::Sparse { ref mut coords, .. } = a.storage {
+        // Native Sparse Gaussian Elimination / LU Decomposition using coordinate lists
+        // Note: Performance could be optimized using CSR or Vec<Vec<(usize, T)>> for O(1) row access
+
+        let mut rows: Vec<Vec<(usize, T)>> = vec![Vec::new(); n];
+        for &(r, c, v) in coords.iter() {
+            rows[r].push((c, v));
+        }
+
+        if n == 1 {
+            let diag = rows[0]
+                .iter()
+                .find(|(c, _)| *c == 0)
+                .map(|&(_, v)| v)
+                .unwrap_or(T::zero());
+            if diag == T::zero() {
+                return Err(LinalgError::Singular { step: 1 });
+            }
+            ip[0] = 0;
+            return Ok(());
+        }
+
+        let nm1 = n - 1;
+        for k in 0..nm1 {
+            let kp1 = k + 1;
+
+            let mut m = k;
+            let mut max_val = rows[k]
+                .iter()
+                .find(|(c, _)| *c == k)
+                .map(|&(_, v)| v.abs())
+                .unwrap_or(T::zero());
+
+            for i in kp1..n {
+                let val = rows[i]
+                    .iter()
+                    .find(|(c, _)| *c == k)
+                    .map(|&(_, v)| v.abs())
+                    .unwrap_or(T::zero());
+                if val > max_val {
+                    max_val = val;
+                    m = i;
+                }
+            }
+
+            ip[k] = m;
+            let pivot = rows[m]
+                .iter()
+                .find(|(c, _)| *c == k)
+                .map(|&(_, v)| v)
+                .unwrap_or(T::zero());
+
+            if pivot == T::zero() {
+                return Err(LinalgError::Singular { step: k + 1 });
+            }
+
+            if m != k {
+                rows.swap(k, m);
+            }
+
+            let pivot_inv = T::one() / pivot;
+            let k_row = rows[k].clone();
+
+            for i in kp1..n {
+                let mut factor = T::zero();
+                if let Some(pos) = rows[i].iter().position(|(c, _)| *c == k) {
+                    factor = rows[i][pos].1 * pivot_inv;
+                    rows[i][pos].1 = factor; // L component
+                }
+
+                if factor != T::zero() {
+                    for &(c, v) in k_row.iter() {
+                        if c > k {
+                            if let Some(pos) = rows[i].iter().position(|(col, _)| *col == c) {
+                                rows[i][pos].1 -= factor * v;
+                            } else {
+                                rows[i].push((c, -factor * v));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let diag = rows[n - 1]
+            .iter()
+            .find(|(c, _)| *c == n - 1)
+            .map(|&(_, v)| v)
+            .unwrap_or(T::zero());
+        if diag == T::zero() {
+            return Err(LinalgError::Singular { step: n });
+        }
+
+        coords.clear();
+        for (r, row) in rows.into_iter().enumerate() {
+            for (c, v) in row {
+                coords.push((r, c, v));
+            }
+        }
+
+        return Ok(());
     }
 
     if n == 1 {
@@ -355,6 +458,62 @@ mod tests {
         // We can verify that the diagonal elements are non-zero
         assert!(a[(0, 0)].abs() > 1e-10);
         assert!(a[(1, 1)].abs() > 1e-10);
+    }
+
+    #[test]
+    fn test_dec_sparse_2x2() {
+        let mut a = Matrix::sparse_from_triplets(
+            2,
+            2,
+            vec![(0, 0, 2.0_f64), (0, 1, 1.0), (1, 0, 4.0), (1, 1, 3.0)],
+        );
+        let mut ip = [0; 2];
+
+        let result = lu_decomp(&mut a, &mut ip);
+        assert!(result.is_ok());
+
+        let mut b = vec![5.0_f64, 11.0];
+        crate::linalg::lin_solve(&a, &mut b, &ip);
+
+        assert!((b[0] - 2.0).abs() < 1e-12);
+        assert!((b[1] - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_dec_sparse_3x3() {
+        let mut a = Matrix::sparse_from_triplets(
+            3,
+            3,
+            vec![
+                (0, 0, 1.0_f64),
+                (0, 2, 2.0),
+                (1, 1, 3.0),
+                (2, 0, 2.0),
+                (2, 2, 5.0),
+            ],
+        );
+        let mut ip = [0; 3];
+
+        let result = lu_decomp(&mut a, &mut ip);
+        assert!(result.is_ok());
+
+        let mut b = vec![5.0_f64, 9.0, 12.0];
+        crate::linalg::lin_solve(&a, &mut b, &ip);
+
+        assert!((b[0] - 1.0).abs() < 1e-12);
+        assert!((b[1] - 3.0).abs() < 1e-12);
+        assert!((b[2] - 2.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_dec_sparse_singular() {
+        let mut a_singular = Matrix::sparse_from_triplets(
+            2,
+            2,
+            vec![(0, 0, 1.0_f64), (0, 1, 2.0), (1, 0, 2.0), (1, 1, 4.0)],
+        );
+        let mut ip = [0; 2];
+        assert!(lu_decomp(&mut a_singular, &mut ip).is_err());
     }
 
     #[test]
