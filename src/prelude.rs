@@ -65,5 +65,3 @@ pub use crate::status::Status;
 
 // Linear Algebra
 pub use crate::linalg::Matrix;
-#[cfg(feature = "rayon")]
-pub use crate::parallel::ParallelSolve;

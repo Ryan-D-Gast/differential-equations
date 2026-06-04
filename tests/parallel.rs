@@ -1,6 +1,5 @@
-#![cfg(feature = "rayon")]
-use differential_equations::parallel::ParallelSolve;
 use differential_equations::prelude::*;
+use rayon::prelude::*;
 
 struct TestOde;
 impl ODE for TestOde {
@@ -62,7 +61,7 @@ fn test_parallel_solvers() {
 
     let ode = TestOde;
     let dae = TestDae;
-    let mut sdes: Vec<_> = (0..10).map(|i| TestSde::new(i)).collect();
+    let mut sdes: Vec<_> = (0..10).map(TestSde::new).collect();
     let dde = TestDde;
 
     // ODE
@@ -70,7 +69,7 @@ fn test_parallel_solvers() {
     for _ in 0..10 {
         ode_ivps.push(IVP::ode(&ode, t0, tf, y0).method(ExplicitRungeKutta::dop853()));
     }
-    let ode_results = ode_ivps.par_solve();
+    let ode_results: Vec<_> = ode_ivps.into_par_iter().map(|ivp| ivp.solve()).collect();
     assert_eq!(ode_results.len(), 10);
     assert!(ode_results.into_iter().all(|r| r.is_ok()));
 
@@ -79,7 +78,7 @@ fn test_parallel_solvers() {
     for _ in 0..10 {
         dae_ivps.push(IVP::dae(&dae, t0, tf, y0).method(ImplicitRungeKutta::radau5()));
     }
-    let dae_results = dae_ivps.par_solve();
+    let dae_results: Vec<_> = dae_ivps.into_par_iter().map(|ivp| ivp.solve()).collect();
     assert_eq!(dae_results.len(), 10);
     assert!(dae_results.into_iter().all(|r| r.is_ok()));
 
@@ -88,7 +87,7 @@ fn test_parallel_solvers() {
         .iter_mut()
         .map(|sde| IVP::sde(sde, t0, tf, y0).method(ExplicitRungeKutta::euler(0.01)))
         .collect();
-    let sde_results = sde_ivps.par_solve();
+    let sde_results: Vec<_> = sde_ivps.into_par_iter().map(|ivp| ivp.solve()).collect();
     assert_eq!(sde_results.len(), 10);
     assert!(sde_results.into_iter().all(|r| r.is_ok()));
 
@@ -98,7 +97,7 @@ fn test_parallel_solvers() {
     for _ in 0..10 {
         dde_ivps.push(IVP::dde(&dde, t0, tf, y0, history).method(ExplicitRungeKutta::dop853()));
     }
-    let dde_results = dde_ivps.par_solve();
+    let dde_results: Vec<_> = dde_ivps.into_par_iter().map(|ivp| ivp.solve()).collect();
     assert_eq!(dde_results.len(), 10);
     assert!(dde_results.into_iter().all(|r| r.is_ok()));
 }

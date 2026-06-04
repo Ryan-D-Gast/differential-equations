@@ -109,5 +109,3 @@ pub mod utils;
 pub mod derive {
     pub use differential_equations_derive::State;
 }
-#[cfg(feature = "rayon")]
-pub mod parallel;

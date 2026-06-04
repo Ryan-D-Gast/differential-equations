@@ -7,11 +7,10 @@
 //! stock prices in finance. The SDE is:
 //! dS = μ·S·dt + σ·S·dW
 
-#[cfg(feature = "rayon")]
-use differential_equations::parallel::ParallelSolve;
 use differential_equations::prelude::*;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
+use rayon::prelude::*;
 
 struct GeometricBrownianMotion {
     mu: f64,
@@ -67,31 +66,23 @@ fn main() {
     }
 
     // Solve in parallel
-    #[cfg(feature = "rayon")]
-    {
-        let ivps: Vec<_> = systems
-            .iter_mut()
-            .map(|sde| IVP::sde(sde, t0, tf, y0).method(ExplicitRungeKutta::euler(dt)))
-            .collect();
+    let ivps: Vec<_> = systems
+        .iter_mut()
+        .map(|sde| IVP::sde(sde, t0, tf, y0).method(ExplicitRungeKutta::euler(dt)))
+        .collect();
 
-        let results = ivps.par_solve();
-        let mut final_prices = Vec::new();
+    let results: Vec<_> = ivps.into_par_iter().map(|ivp| ivp.solve()).collect();
+    let mut final_prices = Vec::new();
 
-        for res in results {
-            let solution = res.unwrap();
-            final_prices.push(*solution.y.last().unwrap());
-        }
-
-        let mean_price: f64 = final_prices.iter().sum::<f64>() / num_simulations as f64;
-        let expected_price = y0 * (mu * tf).exp();
-
-        println!("Completed in {:?}", start.elapsed());
-        println!("Monte Carlo Mean Final Price: {:.2}", mean_price);
-        println!("Theoretical Expected Price:   {:.2}", expected_price);
+    for res in results {
+        let solution = res.unwrap();
+        final_prices.push(*solution.y.last().unwrap());
     }
 
-    #[cfg(not(feature = "rayon"))]
-    {
-        println!("Please enable the 'rayon' feature to run the Monte Carlo simulation.");
-    }
+    let mean_price: f64 = final_prices.iter().sum::<f64>() / num_simulations as f64;
+    let expected_price = y0 * (mu * tf).exp();
+
+    println!("Completed in {:?}", start.elapsed());
+    println!("Monte Carlo Mean Final Price: {:.2}", mean_price);
+    println!("Theoretical Expected Price:   {:.2}", expected_price);
 }
