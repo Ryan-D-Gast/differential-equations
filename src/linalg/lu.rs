@@ -461,6 +461,62 @@ mod tests {
     }
 
     #[test]
+    fn test_dec_sparse_2x2() {
+        let mut a = Matrix::sparse_from_triplets(
+            2,
+            2,
+            vec![(0, 0, 2.0_f64), (0, 1, 1.0), (1, 0, 4.0), (1, 1, 3.0)],
+        );
+        let mut ip = [0; 2];
+
+        let result = lu_decomp(&mut a, &mut ip);
+        assert!(result.is_ok());
+
+        let mut b = vec![5.0_f64, 11.0];
+        crate::linalg::lin_solve(&a, &mut b, &ip);
+
+        assert!((b[0] - 2.0).abs() < 1e-12);
+        assert!((b[1] - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_dec_sparse_3x3() {
+        let mut a = Matrix::sparse_from_triplets(
+            3,
+            3,
+            vec![
+                (0, 0, 1.0_f64),
+                (0, 2, 2.0),
+                (1, 1, 3.0),
+                (2, 0, 2.0),
+                (2, 2, 5.0),
+            ],
+        );
+        let mut ip = [0; 3];
+
+        let result = lu_decomp(&mut a, &mut ip);
+        assert!(result.is_ok());
+
+        let mut b = vec![5.0_f64, 9.0, 12.0];
+        crate::linalg::lin_solve(&a, &mut b, &ip);
+
+        assert!((b[0] - 1.0).abs() < 1e-12);
+        assert!((b[1] - 3.0).abs() < 1e-12);
+        assert!((b[2] - 2.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_dec_sparse_singular() {
+        let mut a_singular = Matrix::sparse_from_triplets(
+            2,
+            2,
+            vec![(0, 0, 1.0_f64), (0, 1, 2.0), (1, 0, 2.0), (1, 1, 4.0)],
+        );
+        let mut ip = [0; 2];
+        assert!(lu_decomp(&mut a_singular, &mut ip).is_err());
+    }
+
+    #[test]
     fn test_dec_singular() {
         // Test with a singular matrix
         let mut a = Matrix::from_vec(2, 2, vec![1.0_f64, 0.0, 0.0, 0.0]).unwrap();
