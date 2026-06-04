@@ -64,7 +64,7 @@ pub trait Event<T: Real = f64, Y: State<T> = DefaultState<T>> {
 /// high accuracy. The event point `(t_event, y_event)` is then appended to the solution. Depending
 /// on the `EventConfig::terminate` setting the integration may terminate after collecting the
 /// specified number of events.
-pub struct EventSolout<'a, T: Real, Y: State<T>, E: Event<T, Y>> {
+pub struct EventSolout<'a, T: Real, Y: State<T>, E: Event<T, Y> + ?Sized> {
     /// User provided event object implementing `Event`
     event: &'a E,
     /// Configuration (direction filtering and termination count)
@@ -83,7 +83,7 @@ pub struct EventSolout<'a, T: Real, Y: State<T>, E: Event<T, Y>> {
     _marker: std::marker::PhantomData<Y>,
 }
 
-impl<'a, T: Real, Y: State<T>, E: Event<T, Y>> EventSolout<'a, T, Y, E> {
+impl<'a, T: Real, Y: State<T>, E: Event<T, Y> + ?Sized> EventSolout<'a, T, Y, E> {
     pub fn new(event: &'a E, t0: T, tf: T) -> Self {
         let direction = (tf - t0).signum();
         let config = event.config();
@@ -110,7 +110,7 @@ impl<'a, T: Real, Y: State<T>, E: Event<T, Y>> EventSolout<'a, T, Y, E> {
         interpolator: &mut I,
     ) -> Option<T>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
     {
         // Ensure that |f(a)| < |f(b)| swapping if necessary
         if fa.abs() < fb.abs() {
@@ -218,7 +218,7 @@ impl<'a, T, Y, E> Solout<T, Y> for EventSolout<'a, T, Y, E>
 where
     T: Real,
     Y: State<T>,
-    E: Event<T, Y>,
+    E: Event<T, Y> + ?Sized,
 {
     fn solout<I>(
         &mut self,
@@ -230,7 +230,7 @@ where
         solution: &mut Solution<T, Y>,
     ) -> ControlFlag<T, Y>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
     {
         // Evaluate event function at current endpoint
         let g_curr = self.event.event(t_curr, y_curr);
@@ -299,7 +299,7 @@ where
 pub struct EventWrappedSolout<'a, T: Real, Y: State<T>, O, E>
 where
     O: Solout<T, Y>,
-    E: Event<T, Y>,
+    E: Event<T, Y> + ?Sized,
 {
     base: O,
     event: &'a E,
@@ -315,7 +315,7 @@ where
 impl<'a, T: Real, Y: State<T>, O, E> EventWrappedSolout<'a, T, Y, O, E>
 where
     O: Solout<T, Y>,
-    E: Event<T, Y>,
+    E: Event<T, Y> + ?Sized,
 {
     pub fn new(base: O, event: &'a E, t0: T, tf: T) -> Self {
         let config = event.config();
@@ -342,7 +342,7 @@ where
         solution: &mut Solution<T, Y>,
     ) -> ControlFlag<T, Y>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
     {
         let g_curr = self.event.event(t_curr, y_curr);
         let g_prev = match self.last_g {
@@ -401,7 +401,7 @@ where
         interpolator: &mut I,
     ) -> Option<T>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
     {
         if fa.abs() < fb.abs() {
             std::mem::swap(&mut a, &mut b);
@@ -494,7 +494,7 @@ where
     T: Real,
     Y: State<T>,
     O: Solout<T, Y>,
-    E: Event<T, Y>,
+    E: Event<T, Y> + ?Sized,
 {
     fn solout<I>(
         &mut self,
@@ -506,7 +506,7 @@ where
         solution: &mut Solution<T, Y>,
     ) -> ControlFlag<T, Y>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
     {
         let flag = self
             .base

@@ -17,7 +17,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 {
     fn init<F>(&mut self, sde: &mut F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: SDE<T, Y>,
+        F: SDE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 
@@ -66,7 +66,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
     fn step<F>(&mut self, sde: &mut F) -> Result<Evals, Error<T, Y>>
     where
-        F: SDE<T, Y>,
+        F: SDE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 

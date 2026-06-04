@@ -88,6 +88,56 @@ fn test_multiple_single_fields() {
 }
 
 #[test]
+fn test_non_generic_named_state() {
+    #[derive(State, PartialEq)]
+    struct ConcreteState {
+        x: f64,
+        y: f64,
+        velocity: [f64; 2],
+    }
+
+    let mut state = ConcreteState {
+        x: 1.0,
+        y: 2.0,
+        velocity: [3.0, 4.0],
+    };
+    test_state_basics(&mut state, 4);
+
+    let other = ConcreteState {
+        x: 0.5,
+        y: 1.5,
+        velocity: [2.0, 3.0],
+    };
+    let sum = state + other;
+    assert_eq!(sum.x, 1.5);
+    assert_eq!(sum.y, 3.5);
+    assert_eq!(sum.velocity, [5.0, 7.0]);
+
+    let scaled = sum * 2.0;
+    assert_eq!(scaled.x, 3.0);
+    assert_eq!(scaled.y, 7.0);
+    assert_eq!(scaled.velocity, [10.0, 14.0]);
+
+    let zero = ConcreteState::zeros();
+    assert_eq!(zero.x, 0.0);
+    assert_eq!(zero.y, 0.0);
+    assert_eq!(zero.velocity, [0.0, 0.0]);
+}
+
+#[test]
+fn test_non_generic_tuple_state() {
+    #[derive(State, PartialEq)]
+    struct ConcreteTuple(f64, [f64; 2]);
+
+    let mut state = ConcreteTuple(1.0, [2.0, 3.0]);
+    test_state_basics(&mut state, 3);
+
+    let difference = state - ConcreteTuple(1.0, [1.0, 1.0]);
+    assert_eq!(difference.0, 0.0);
+    assert_eq!(difference.1, [1.0, 2.0]);
+}
+
+#[test]
 fn test_array_fields_only() {
     #[derive(State)]
     struct ArrayFields<T> {

@@ -7,6 +7,7 @@ use std::{
     ops::{Index, IndexMut},
 };
 
+#[derive(Clone)]
 pub enum Tolerance<T: Real> {
     Scalar(T),
     Vector(Vec<T>),

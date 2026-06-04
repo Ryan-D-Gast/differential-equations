@@ -64,7 +64,7 @@ impl<T: Real, Y: State<T>> AdamsPredictorCorrector<Ordinary, Adaptive, T, Y, 4> 
 
     fn rk4_step<F>(ode: &F, t: &mut T, y: &mut Y, h: T, k: &mut [Y; 4]) -> usize
     where
-        F: ODE<T, Y>,
+        F: ODE<T, Y> + ?Sized,
     {
         let two = T::from_f64(2.0).unwrap();
         let six = T::from_f64(6.0).unwrap();
@@ -89,7 +89,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
 {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y>,
+        F: ODE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 
@@ -144,7 +144,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
 
     fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y>,
+        F: ODE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 

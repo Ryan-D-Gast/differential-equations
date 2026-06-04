@@ -31,7 +31,7 @@ where
     ///
     fn init<F>(&mut self, dde: &F, t0: T, tf: T, y0: &Y, phi: &H) -> Result<Evals, Error<T, Y>>
     where
-        F: DDE<L, T, Y>;
+        F: DDE<L, T, Y> + ?Sized;
 
     /// Advance the solution by one step
     ///
@@ -43,7 +43,7 @@ where
     ///
     fn step<F>(&mut self, dde: &F, phi: &H) -> Result<Evals, Error<T, Y>>
     where
-        F: DDE<L, T, Y>;
+        F: DDE<L, T, Y> + ?Sized;
 
     // Accessors
 

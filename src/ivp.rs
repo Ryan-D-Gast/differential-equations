@@ -12,7 +12,11 @@ use crate::{
     error::Error,
     interpolate::Interpolation,
     methods::ToleranceConfig,
-    ode::{ODE, OrdinaryNumericalMethod, solve_ode},
+    ode::{
+        Hamiltonian, HamiltonianFnWrapper, HamiltonianSystem, ODE, OrdinaryNumericalMethod,
+        solve_ode,
+    },
+    pde::{PDE, SpatialDiscretization},
     sde::{SDE, StochasticNumericalMethod, solve_sde},
     solout::{
         CrossingDirection, CrossingSolout, DefaultSolout, DenseSolout, EvenSolout, Event,
@@ -50,6 +54,22 @@ impl<F> Clone for OdeEq<'_, F> {
 
 impl<F> Copy for OdeEq<'_, F> {}
 
+/// Marker for owned ordinary differential equations (from closure).
+#[derive(Debug)]
+pub struct OdeEqOwned<F> {
+    ode: F,
+}
+
+impl<F: Clone> Clone for OdeEqOwned<F> {
+    fn clone(&self) -> Self {
+        Self {
+            ode: self.ode.clone(),
+        }
+    }
+}
+
+impl<F: Copy> Copy for OdeEqOwned<F> {}
+
 /// Marker for differential algebraic equations.
 #[derive(Debug)]
 pub struct DaeEq<'a, F> {
@@ -64,11 +84,71 @@ impl<F> Clone for DaeEq<'_, F> {
 
 impl<F> Copy for DaeEq<'_, F> {}
 
+/// Marker for owned differential algebraic equations (from closure).
+#[derive(Debug)]
+pub struct DaeEqOwned<F> {
+    dae: F,
+}
+
+impl<F: Clone> Clone for DaeEqOwned<F> {
+    fn clone(&self) -> Self {
+        Self {
+            dae: self.dae.clone(),
+        }
+    }
+}
+
+impl<F: Copy> Copy for DaeEqOwned<F> {}
+
 /// Marker for stochastic differential equations.
 #[derive(Debug)]
 pub struct SdeEq<'a, F> {
     sde: &'a mut F,
 }
+
+/// Marker for owned stochastic differential equations (from closure).
+#[derive(Debug)]
+pub struct SdeEqOwned<F> {
+    sde: F,
+}
+
+/// Marker for partial differential equations before spatial discretization.
+#[derive(Debug)]
+pub struct PdeEq<'a, F: ?Sized> {
+    pde: &'a F,
+}
+
+/// Marker for owned partial differential equations.
+#[derive(Debug)]
+pub struct PdeEqOwned<F> {
+    pde: F,
+}
+
+impl<F: Clone> Clone for PdeEqOwned<F> {
+    fn clone(&self) -> Self {
+        Self {
+            pde: self.pde.clone(),
+        }
+    }
+}
+
+impl<F: Copy> Copy for PdeEqOwned<F> {}
+
+/// IVP produced after discretizing a PDE into a semi-discrete ODE system.
+pub type SemiDiscretePdeIvp<F, T, U, Y, Method, SoloutType, const D: usize = 1> =
+    IVP<OdeEqOwned<crate::pde::SemiDiscretePde<F, T, U, Y, D>>, T, Y, Method, SoloutType>;
+
+/// IVP produced after applying any PDE spatial discretization backend.
+pub type SpatiallyDiscretizedPdeIvp<T, Y, Method, SoloutType, System> =
+    IVP<OdeEqOwned<System>, T, Y, Method, SoloutType>;
+
+impl<F: ?Sized> Clone for PdeEq<'_, F> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<F: ?Sized> Copy for PdeEq<'_, F> {}
 
 /// Marker for delay differential equations.
 #[derive(Debug)]
@@ -86,11 +166,228 @@ impl<const L: usize, F, H: Clone> Clone for DdeEq<'_, L, F, H> {
     }
 }
 
+/// Marker for owned delay differential equations (from closure).
+#[derive(Debug)]
+pub struct DdeEqOwned<const L: usize, F, H> {
+    dde: F,
+    history: H,
+}
+
+impl<const L: usize, F: Clone, H: Clone> Clone for DdeEqOwned<L, F, H> {
+    fn clone(&self) -> Self {
+        Self {
+            dde: self.dde.clone(),
+            history: self.history.clone(),
+        }
+    }
+}
+
+/// Internal wrapper for `ode_from_fn`
+#[derive(Debug)]
+pub struct OdeFnWrapper<F> {
+    f: F,
+}
+
+impl<T, Y, F> ODE<T, Y> for OdeFnWrapper<F>
+where
+    T: Real,
+    Y: State<T>,
+    F: Fn(T, &Y, &mut Y),
+{
+    fn diff(&self, t: T, y: &Y, dydt: &mut Y) {
+        (self.f)(t, y, dydt)
+    }
+}
+
+/// Internal wrapper for `dae_from_fn`
+#[derive(Debug)]
+pub struct DaeFnWrapper<F, M> {
+    f: F,
+    m: M,
+}
+
+impl<T, Y, F, M> DAE<T, Y> for DaeFnWrapper<F, M>
+where
+    T: Real,
+    Y: State<T>,
+    F: Fn(T, &Y, &mut Y),
+    M: Fn(&mut crate::linalg::Matrix<T>),
+{
+    fn diff(&self, t: T, y: &Y, f: &mut Y) {
+        (self.f)(t, y, f)
+    }
+
+    fn mass(&self, m: &mut crate::linalg::Matrix<T>) {
+        (self.m)(m)
+    }
+}
+
+/// Internal wrapper for `sde_from_fn`
+#[derive(Debug)]
+pub struct SdeFnWrapper<Drift, Diff, Noise> {
+    drift_fn: Drift,
+    diffusion_fn: Diff,
+    noise_fn: Noise,
+}
+
+impl<T, Y, Drift, Diff, Noise> SDE<T, Y> for SdeFnWrapper<Drift, Diff, Noise>
+where
+    T: Real,
+    Y: State<T>,
+    Drift: Fn(T, &Y, &mut Y),
+    Diff: Fn(T, &Y, &mut Y),
+    Noise: FnMut(T, &mut Y),
+{
+    fn drift(&self, t: T, y: &Y, dydt: &mut Y) {
+        (self.drift_fn)(t, y, dydt)
+    }
+
+    fn diffusion(&self, t: T, y: &Y, dydw: &mut Y) {
+        (self.diffusion_fn)(t, y, dydw)
+    }
+
+    fn noise(&mut self, dt: T, dw: &mut Y) {
+        (self.noise_fn)(dt, dw)
+    }
+}
+
+/// Internal wrapper for `dde_from_fn`
+#[derive(Debug)]
+pub struct DdeFnWrapper<const L: usize, Diff, Lags> {
+    diff_fn: Diff,
+    lags_fn: Lags,
+}
+
+impl<const L: usize, T, Y, Diff, Lags> DDE<L, T, Y> for DdeFnWrapper<L, Diff, Lags>
+where
+    T: Real,
+    Y: State<T>,
+    Diff: Fn(T, &Y, &[Y; L], &mut Y),
+    Lags: Fn(T, &Y, &mut [T; L]),
+{
+    fn diff(&self, t: T, y: &Y, yd: &[Y; L], dydt: &mut Y) {
+        (self.diff_fn)(t, y, yd, dydt)
+    }
+
+    fn lags(&self, t: T, y: &Y, lags: &mut [T; L]) {
+        (self.lags_fn)(t, y, lags)
+    }
+}
+
 impl<'a, F, T: Real, Y: State<T>> IVP<OdeEq<'a, F>, T, Y, (), DefaultSolout> {
     /// Create a new initial value problem for an ordinary differential equation.
     pub fn ode(system: &'a F, t0: T, tf: T, y0: Y) -> Self {
         Self {
             equation: OdeEq { ode: system },
+            t0,
+            tf,
+            y0,
+            method: (),
+            solout: DefaultSolout::new(),
+        }
+    }
+}
+
+impl<F, T: Real, Y: State<T>> IVP<OdeEqOwned<OdeFnWrapper<F>>, T, Y, (), DefaultSolout>
+where
+    F: Fn(T, &Y, &mut Y),
+{
+    /// Create a new initial value problem for an ordinary differential equation from a closure.
+    ///
+    /// # Example
+    /// ```rust
+    /// use differential_equations::prelude::*;
+    /// let t0 = 0.0;
+    /// let tf = 1.0;
+    /// let y0 = 1.0;
+    /// let ivp = IVP::ode_from_fn(|t, y, dydt| { *dydt = t * y; }, t0, tf, y0);
+    /// ```
+    pub fn ode_from_fn(f: F, t0: T, tf: T, y0: Y) -> Self {
+        Self {
+            equation: OdeEqOwned {
+                ode: OdeFnWrapper { f },
+            },
+            t0,
+            tf,
+            y0,
+            method: (),
+            solout: DefaultSolout::new(),
+        }
+    }
+}
+
+impl<'a, H, T: Real, Y: State<T>> IVP<OdeEqOwned<HamiltonianSystem<&'a H>>, T, Y, (), DefaultSolout>
+where
+    H: Hamiltonian<T, Y> + ?Sized,
+{
+    /// Create a new initial value problem for a Hamiltonian system from a reference.
+    ///
+    /// The Hamiltonian system defines positions $q$ and momenta $p$ satisfying:
+    /// dq/dt = velocity(t, q, p)
+    /// dp/dt = force(t, q, p)
+    ///
+    /// The state vector `y` is assumed to be laid out as `y = [q, p]`.
+    ///
+    /// # Example
+    /// ```rust
+    /// use differential_equations::prelude::*;
+    ///
+    /// struct HarmonicOscillator;
+    ///
+    /// impl Hamiltonian<f64, Vec<f64>> for HarmonicOscillator {
+    ///     fn velocity(&self, _t: f64, _q: &Vec<f64>, p: &Vec<f64>, dq: &mut Vec<f64>) {
+    ///         dq[0] = p[0];
+    ///     }
+    ///     fn force(&self, _t: f64, q: &Vec<f64>, _p: &Vec<f64>, dp: &mut Vec<f64>) {
+    ///         dp[0] = -q[0];
+    ///     }
+    /// }
+    ///
+    /// let system = HarmonicOscillator;
+    /// let ivp = IVP::hamiltonian(&system, 0.0, 1.0, vec![1.0, 0.0]);
+    /// ```
+    pub fn hamiltonian(system: &'a H, t0: T, tf: T, y0: Y) -> Self {
+        Self {
+            equation: OdeEqOwned {
+                ode: HamiltonianSystem::new(system),
+            },
+            t0,
+            tf,
+            y0,
+            method: (),
+            solout: DefaultSolout::new(),
+        }
+    }
+}
+
+impl<V, F, T: Real, Y: State<T>>
+    IVP<OdeEqOwned<HamiltonianSystem<HamiltonianFnWrapper<V, F>>>, T, Y, (), DefaultSolout>
+where
+    V: Fn(T, &Y, &Y, &mut Y),
+    F: Fn(T, &Y, &Y, &mut Y),
+{
+    /// Create a new initial value problem for a Hamiltonian system from velocity and force closures.
+    ///
+    /// The state vector `y` is assumed to be laid out as `y = [q, p]`.
+    ///
+    /// # Example
+    /// ```rust
+    /// use differential_equations::prelude::*;
+    ///
+    /// let velocity = |_t: f64, _q: &Vec<f64>, p: &Vec<f64>, dq: &mut Vec<f64>| {
+    ///     dq[0] = p[0];
+    /// };
+    /// let force = |_t: f64, q: &Vec<f64>, _p: &Vec<f64>, dp: &mut Vec<f64>| {
+    ///     dp[0] = -q[0];
+    /// };
+    ///
+    /// let ivp = IVP::hamiltonian_from_fn(velocity, force, 0.0, 1.0, vec![1.0, 0.0]);
+    /// ```
+    pub fn hamiltonian_from_fn(velocity: V, force: F, t0: T, tf: T, y0: Y) -> Self {
+        Self {
+            equation: OdeEqOwned {
+                ode: HamiltonianSystem::new(HamiltonianFnWrapper::new(velocity, force)),
+            },
             t0,
             tf,
             y0,
@@ -114,11 +411,125 @@ impl<'a, F, T: Real, Y: State<T>> IVP<DaeEq<'a, F>, T, Y, (), DefaultSolout> {
     }
 }
 
+impl<'a, F: ?Sized, T: Real, Y: State<T>> IVP<PdeEq<'a, F>, T, Y, (), DefaultSolout> {
+    /// Create a new initial value problem for a PDE before spatial discretization.
+    ///
+    /// Use [`IVP::space`] to choose a spatial discretization, then choose a normal
+    /// time-integration method with [`IVP::method`].
+    pub fn pde(system: &'a F, t0: T, tf: T, u0: Y) -> Self {
+        Self {
+            equation: PdeEq { pde: system },
+            t0,
+            tf,
+            y0: u0,
+            method: (),
+            solout: DefaultSolout::new(),
+        }
+    }
+}
+
+impl<Flux, T: Real, Y: State<T>>
+    IVP<PdeEqOwned<crate::pde::PdeFnWrapper<Flux, crate::pde::ZeroSource>>, T, Y, (), DefaultSolout>
+{
+    /// Create a new initial value problem for a PDE from a flux closure with a default zero source.
+    pub fn pde_from_fn<U, const D: usize>(flux: Flux, t0: T, tf: T, u0: Y) -> Self
+    where
+        U: State<T>,
+        Flux: Fn(T, &[T; D], &U, &[U; D], &mut [U; D]),
+    {
+        Self {
+            equation: PdeEqOwned {
+                pde: crate::pde::pde_from_fn_flux::<T, U, D, _>(flux),
+            },
+            t0,
+            tf,
+            y0: u0,
+            method: (),
+            solout: DefaultSolout::new(),
+        }
+    }
+}
+
+impl<Flux, Source, T: Real, Y: State<T>>
+    IVP<PdeEqOwned<crate::pde::PdeFnWrapper<Flux, Source>>, T, Y, (), DefaultSolout>
+{
+    /// Create a new initial value problem for a PDE from flux and source closures.
+    pub fn pde_from_fn_with_source<U, const D: usize>(
+        flux: Flux,
+        source: Source,
+        t0: T,
+        tf: T,
+        u0: Y,
+    ) -> Self
+    where
+        U: State<T>,
+        Flux: Fn(T, &[T; D], &U, &[U; D], &mut [U; D]),
+        Source: Fn(T, &[T; D], &U, &mut U),
+    {
+        Self {
+            equation: PdeEqOwned {
+                pde: crate::pde::pde_from_fn::<T, U, D, _, _>(flux, source),
+            },
+            t0,
+            tf,
+            y0: u0,
+            method: (),
+            solout: DefaultSolout::new(),
+        }
+    }
+}
+
+impl<F, M, T: Real, Y: State<T>> IVP<DaeEqOwned<DaeFnWrapper<F, M>>, T, Y, (), DefaultSolout>
+where
+    F: Fn(T, &Y, &mut Y),
+    M: Fn(&mut crate::linalg::Matrix<T>),
+{
+    /// Create a new initial value problem for a differential algebraic equation from closures.
+    pub fn dae_from_fn(f: F, m: M, t0: T, tf: T, y0: Y) -> Self {
+        Self {
+            equation: DaeEqOwned {
+                dae: DaeFnWrapper { f, m },
+            },
+            t0,
+            tf,
+            y0,
+            method: (),
+            solout: DefaultSolout::new(),
+        }
+    }
+}
+
 impl<'a, F, T: Real, Y: State<T>> IVP<SdeEq<'a, F>, T, Y, (), DefaultSolout> {
     /// Create a new initial value problem for a stochastic differential equation.
     pub fn sde(system: &'a mut F, t0: T, tf: T, y0: Y) -> Self {
         Self {
             equation: SdeEq { sde: system },
+            t0,
+            tf,
+            y0,
+            method: (),
+            solout: DefaultSolout::new(),
+        }
+    }
+}
+
+impl<Drift, Diff, Noise, T: Real, Y: State<T>>
+    IVP<SdeEqOwned<SdeFnWrapper<Drift, Diff, Noise>>, T, Y, (), DefaultSolout>
+where
+    Drift: Fn(T, &Y, &mut Y),
+    Diff: Fn(T, &Y, &mut Y),
+    Noise: FnMut(T, &mut Y),
+{
+    /// Create a new initial value problem for a stochastic differential equation from closures.
+    pub fn sde_from_fn(drift: Drift, diffusion: Diff, noise: Noise, t0: T, tf: T, y0: Y) -> Self {
+        Self {
+            equation: SdeEqOwned {
+                sde: SdeFnWrapper {
+                    drift_fn: drift,
+                    diffusion_fn: diffusion,
+                    noise_fn: noise,
+                },
+            },
             t0,
             tf,
             y0,
@@ -136,6 +547,32 @@ impl<'a, F, H, T: Real, Y: State<T>, const L: usize>
         Self {
             equation: DdeEq {
                 dde: system,
+                history: history_function,
+            },
+            t0,
+            tf,
+            y0,
+            method: (),
+            solout: DefaultSolout::new(),
+        }
+    }
+}
+
+impl<const L: usize, Diff, Lags, H, T: Real, Y: State<T>>
+    IVP<DdeEqOwned<L, DdeFnWrapper<L, Diff, Lags>, H>, T, Y, (), DefaultSolout>
+where
+    Diff: Fn(T, &Y, &[Y; L], &mut Y),
+    Lags: Fn(T, &Y, &mut [T; L]),
+    H: Fn(T) -> Y + Clone,
+{
+    /// Create a new initial value problem for a delay differential equation from closures.
+    pub fn dde_from_fn(diff: Diff, lags: Lags, t0: T, tf: T, y0: Y, history_function: H) -> Self {
+        Self {
+            equation: DdeEqOwned {
+                dde: DdeFnWrapper {
+                    diff_fn: diff,
+                    lags_fn: lags,
+                },
                 history: history_function,
             },
             t0,
@@ -227,7 +664,7 @@ impl<EqType, T: Real, Y: State<T>, Method, SoloutType> IVP<EqType, T, Y, Method,
         event: &'a E,
     ) -> IVP<EqType, T, Y, Method, EventWrappedSolout<'a, T, Y, SoloutType, E>>
     where
-        E: Event<T, Y>,
+        E: Event<T, Y> + ?Sized,
         SoloutType: Solout<T, Y>,
     {
         IVP {
@@ -268,6 +705,57 @@ impl<EqType, T: Real, Y: State<T>, Method, SoloutType> IVP<EqType, T, Y, Method,
     }
 }
 
+impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> IVP<PdeEq<'a, F>, T, Y, Method, SoloutType> {
+    /// Set the spatial discretization for a PDE IVP.
+    ///
+    /// The returned problem is an ordinary IVP over the semi-discrete state, so
+    /// all existing ODE time integrators and output controls can be reused.
+    pub fn space<U, Backend, const D: usize>(
+        self,
+        space: Backend,
+    ) -> SpatiallyDiscretizedPdeIvp<T, Y, Method, SoloutType, Backend::System>
+    where
+        U: State<T>,
+        F: PDE<T, U, D>,
+        Backend: SpatialDiscretization<&'a F, T, U, Y, D>,
+    {
+        IVP {
+            equation: OdeEqOwned {
+                ode: space.discretize(self.equation.pde),
+            },
+            t0: self.t0,
+            tf: self.tf,
+            y0: self.y0,
+            method: self.method,
+            solout: self.solout,
+        }
+    }
+}
+
+impl<F, T: Real, Y: State<T>, Method, SoloutType> IVP<PdeEqOwned<F>, T, Y, Method, SoloutType> {
+    /// Set the spatial discretization for an owned PDE IVP.
+    pub fn space<U, Backend, const D: usize>(
+        self,
+        space: Backend,
+    ) -> SpatiallyDiscretizedPdeIvp<T, Y, Method, SoloutType, Backend::System>
+    where
+        U: State<T>,
+        F: PDE<T, U, D>,
+        Backend: SpatialDiscretization<F, T, U, Y, D>,
+    {
+        IVP {
+            equation: OdeEqOwned {
+                ode: space.discretize(self.equation.pde),
+            },
+            t0: self.t0,
+            tf: self.tf,
+            y0: self.y0,
+            method: self.method,
+            solout: self.solout,
+        }
+    }
+}
+
 impl<EqType, T: Real, Y: State<T>, Method, SoloutType> IVP<EqType, T, Y, Method, SoloutType>
 where
     Method: ToleranceConfig<T>,
@@ -302,6 +790,25 @@ where
     }
 }
 
+impl<F, T: Real, Y: State<T>, Method, SoloutType> IVP<OdeEqOwned<F>, T, Y, Method, SoloutType>
+where
+    F: ODE<T, Y>,
+    Method: OrdinaryNumericalMethod<T, Y> + Interpolation<T, Y>,
+    SoloutType: Solout<T, Y>,
+{
+    /// Solve the ODE initial value problem.
+    pub fn solve(mut self) -> Result<Solution<T, Y>, Error<T, Y>> {
+        solve_ode(
+            &mut self.method,
+            &self.equation.ode,
+            self.t0,
+            self.tf,
+            &self.y0,
+            &mut self.solout,
+        )
+    }
+}
+
 impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> IVP<DaeEq<'a, F>, T, Y, Method, SoloutType>
 where
     F: DAE<T, Y>,
@@ -313,6 +820,25 @@ where
         solve_dae(
             &mut self.method,
             self.equation.dae,
+            self.t0,
+            self.tf,
+            &self.y0,
+            &mut self.solout,
+        )
+    }
+}
+
+impl<F, T: Real, Y: State<T>, Method, SoloutType> IVP<DaeEqOwned<F>, T, Y, Method, SoloutType>
+where
+    F: DAE<T, Y>,
+    Method: AlgebraicNumericalMethod<T, Y> + Interpolation<T, Y>,
+    SoloutType: Solout<T, Y>,
+{
+    /// Solve the DAE initial value problem.
+    pub fn solve(mut self) -> Result<Solution<T, Y>, Error<T, Y>> {
+        solve_dae(
+            &mut self.method,
+            &self.equation.dae,
             self.t0,
             self.tf,
             &self.y0,
@@ -340,6 +866,25 @@ where
     }
 }
 
+impl<F, T: Real, Y: State<T>, Method, SoloutType> IVP<SdeEqOwned<F>, T, Y, Method, SoloutType>
+where
+    F: SDE<T, Y>,
+    Method: StochasticNumericalMethod<T, Y> + Interpolation<T, Y>,
+    SoloutType: Solout<T, Y>,
+{
+    /// Solve the SDE initial value problem.
+    pub fn solve(mut self) -> Result<Solution<T, Y>, Error<T, Y>> {
+        solve_sde(
+            &mut self.method,
+            &mut self.equation.sde,
+            self.t0,
+            self.tf,
+            &self.y0,
+            &mut self.solout,
+        )
+    }
+}
+
 impl<'a, const L: usize, F, H, T: Real, Y: State<T>, Method, SoloutType>
     IVP<DdeEq<'a, L, F, H>, T, Y, Method, SoloutType>
 where
@@ -353,6 +898,28 @@ where
         solve_dde(
             &mut self.method,
             self.equation.dde,
+            self.t0,
+            self.tf,
+            &self.y0,
+            self.equation.history.clone(),
+            &mut self.solout,
+        )
+    }
+}
+
+impl<const L: usize, F, H, T: Real, Y: State<T>, Method, SoloutType>
+    IVP<DdeEqOwned<L, F, H>, T, Y, Method, SoloutType>
+where
+    F: DDE<L, T, Y>,
+    H: Fn(T) -> Y + Clone,
+    Method: DelayNumericalMethod<L, T, Y, H> + Interpolation<T, Y>,
+    SoloutType: Solout<T, Y>,
+{
+    /// Solve the DDE initial value problem.
+    pub fn solve(mut self) -> Result<Solution<T, Y>, Error<T, Y>> {
+        solve_dde(
+            &mut self.method,
+            &self.equation.dde,
             self.t0,
             self.tf,
             &self.y0,

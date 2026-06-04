@@ -17,7 +17,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y>,
+        F: ODE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 
@@ -67,7 +67,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
     fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y>,
+        F: ODE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 
@@ -181,7 +181,13 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
             // Solve (I - h*A⊗J) Δz = -F(z) using in-place LU on our matrix
             let mut rhs = self.rhs_newton.clone();
-            self.newton_matrix.lin_solve_mut(&mut rhs[..])?;
+            self.newton_matrix
+                .lin_solve_mut(&mut rhs[..])
+                .map_err(|e| crate::error::Error::LinearAlgebra {
+                    t: self.t,
+                    y: self.y.clone(),
+                    msg: e.to_string(),
+                })?;
             evals.solves += 1;
 
             // Update z_i and increment norm

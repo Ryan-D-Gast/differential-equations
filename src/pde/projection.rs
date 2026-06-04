@@ -1,0 +1,472 @@
+//! Projection backend for two-dimensional incompressible vector fields.
+
+use std::marker::PhantomData;
+
+use crate::{
+    linalg::{Matrix, lin_solve, lu_decomp},
+    ode::ODE,
+    pde::{
+        BoundaryCondition, BoundaryConditions, BoundaryFace, PDE, Side, SpatialDiscretization,
+        StructuredGrid,
+    },
+    traits::{Real, State},
+};
+
+/// Projection-method spatial backend for two-dimensional incompressible flow-like systems.
+///
+/// The backend projects two selected local components onto a lower-divergence
+/// field. Local states may contain additional components; those components keep
+/// the unprojected tendency supplied by the wrapped [`PDE`].
+#[derive(Clone, Debug)]
+pub struct ProjectionMethod<T, U = Vec<T>>
+where
+    T: Real,
+    U: State<T>,
+{
+    grid: StructuredGrid<T, 2>,
+    boundary: BoundaryConditions<T, U, 2>,
+    local_template: U,
+    velocity_components: [usize; 2],
+}
+
+impl<T> ProjectionMethod<T, Vec<T>>
+where
+    T: Real,
+{
+    /// Create a projection backend for a 2D velocity field on a structured grid.
+    pub fn uniform(grid: StructuredGrid<T, 2>) -> Self {
+        Self::with_field(grid, vec![T::zero(); 2])
+    }
+}
+
+impl<T, U> ProjectionMethod<T, U>
+where
+    T: Real,
+    U: State<T>,
+{
+    /// Create a projection backend with an explicit local state template.
+    pub fn with_field(grid: StructuredGrid<T, 2>, local_template: U) -> Self {
+        assert!(
+            local_template.len() >= 2,
+            "ProjectionMethod requires at least two local components"
+        );
+        let boundary = BoundaryConditions::homogeneous_neumann_like(&local_template);
+        Self {
+            grid,
+            boundary,
+            local_template,
+            velocity_components: [0, 1],
+        }
+    }
+
+    /// Set velocity boundary conditions.
+    pub fn boundary(mut self, boundary: BoundaryConditions<T, U, 2>) -> Self {
+        self.boundary = boundary;
+        self
+    }
+
+    /// Select the local components used as the projected x/y velocity.
+    ///
+    /// Components not listed here are still evolved by the wrapped PDE terms,
+    /// but are not modified by the pressure projection.
+    pub fn velocity_components(mut self, components: [usize; 2]) -> Self {
+        assert!(
+            components[0] < self.local_template.len() && components[1] < self.local_template.len(),
+            "ProjectionMethod velocity component index out of bounds"
+        );
+        assert_ne!(
+            components[0], components[1],
+            "ProjectionMethod velocity components must be distinct"
+        );
+        self.velocity_components = components;
+        self
+    }
+}
+
+impl<Eq, T, U, Y> SpatialDiscretization<Eq, T, U, Y, 2> for ProjectionMethod<T, U>
+where
+    T: Real,
+    U: State<T>,
+    Y: State<T>,
+    Eq: PDE<T, U, 2>,
+{
+    type System = ProjectionSemiDiscrete<Eq, T, U, Y>;
+
+    fn discretize(self, equation: Eq) -> Self::System {
+        ProjectionSemiDiscrete::new(
+            equation,
+            self.grid,
+            self.boundary,
+            self.local_template,
+            self.velocity_components,
+        )
+    }
+}
+
+/// Semi-discrete ODE system produced by [`ProjectionMethod`].
+#[derive(Clone, Debug)]
+pub struct ProjectionSemiDiscrete<Eq, T, U, Y>
+where
+    T: Real,
+    U: State<T>,
+    Y: State<T>,
+{
+    equation: Eq,
+    grid: StructuredGrid<T, 2>,
+    boundary: BoundaryConditions<T, U, 2>,
+    local_template: U,
+    velocity_components: [usize; 2],
+    poisson_lu: Matrix<T>,
+    poisson_pivots: Vec<usize>,
+    dirichlet_mask: Vec<bool>,
+    marker: PhantomData<Y>,
+}
+
+impl<Eq, T, U, Y> ProjectionSemiDiscrete<Eq, T, U, Y>
+where
+    T: Real,
+    U: State<T>,
+    Y: State<T>,
+    Eq: PDE<T, U, 2>,
+{
+    pub(crate) fn new(
+        equation: Eq,
+        grid: StructuredGrid<T, 2>,
+        boundary: BoundaryConditions<T, U, 2>,
+        local_template: U,
+        velocity_components: [usize; 2],
+    ) -> Self {
+        assert!(
+            local_template.len() >= 2,
+            "ProjectionMethod requires at least two local components"
+        );
+        let mut poisson_lu = build_poisson_matrix(&grid);
+        let mut poisson_pivots = vec![0; grid.len()];
+        lu_decomp(&mut poisson_lu, &mut poisson_pivots)
+            .expect("projection Poisson matrix should be nonsingular");
+        let dirichlet_mask = (0..grid.len())
+            .map(|node| {
+                (0..2).any(|axis| {
+                    grid.boundary_side(node, axis).is_some_and(|side| {
+                        matches!(
+                            boundary.get(BoundaryFace { axis, side }),
+                            BoundaryCondition::Dirichlet(_)
+                        )
+                    })
+                })
+            })
+            .collect();
+        Self {
+            equation,
+            grid,
+            boundary,
+            local_template,
+            velocity_components,
+            poisson_lu,
+            poisson_pivots,
+            dirichlet_mask,
+            marker: PhantomData,
+        }
+    }
+
+    /// Spatial grid used by this projection system.
+    pub fn grid(&self) -> &StructuredGrid<T, 2> {
+        &self.grid
+    }
+
+    fn zero_local(&self) -> U {
+        self.local_template.zeros_like()
+    }
+
+    fn local_state(&self, y: &Y, node: usize) -> U {
+        let local_len = self.local_template.len();
+        let mut local = self.zero_local();
+        for component in 0..local_len {
+            local.set_component(component, y.get_component(node * local_len + component));
+        }
+        local
+    }
+
+    fn set_local(&self, y: &mut Y, node: usize, local: &U) {
+        let local_len = self.local_template.len();
+        for component in 0..local_len {
+            y.set_component(node * local_len + component, local.get_component(component));
+        }
+    }
+
+    fn global_component(&self, node: usize, local_component: usize) -> usize {
+        node * self.local_template.len() + local_component
+    }
+
+    fn is_dirichlet_node(&self, node: usize) -> bool {
+        self.dirichlet_mask[node]
+    }
+
+    fn directional_gradient(&self, y: &Y, node: usize, axis: usize, side: Side) -> U {
+        let u = self.local_state(y, node);
+        let neighbor = match side {
+            Side::Lower => self.grid.neighbor(node, axis, -1),
+            Side::Upper => self.grid.neighbor(node, axis, 1),
+        };
+
+        if let Some(neighbor) = neighbor {
+            let other = self.local_state(y, neighbor);
+            return difference(&u, &other, self.grid.dx(axis), side);
+        }
+
+        match self.boundary.get(BoundaryFace { axis, side }) {
+            BoundaryCondition::Neumann(gradient) => gradient.clone(),
+            BoundaryCondition::Dirichlet(value) => difference(&u, value, self.grid.dx(axis), side),
+        }
+    }
+
+    fn raw_tendency(&self, t: T, y: &Y, dudt: &mut Y) {
+        dudt.fill(T::zero());
+        for node in 0..self.grid.len() {
+            if self.is_dirichlet_node(node) {
+                continue;
+            }
+
+            let u = self.local_state(y, node);
+            let x = self.grid.point(node);
+            let mut derivative = self.zero_local();
+            self.equation.source(t, &x, &u, &mut derivative);
+
+            for axis in 0..2 {
+                let mut flux_lower = [self.zero_local(), self.zero_local()];
+                let mut flux_upper = [self.zero_local(), self.zero_local()];
+                let mut grad_lower = [self.zero_local(), self.zero_local()];
+                let mut grad_upper = [self.zero_local(), self.zero_local()];
+                grad_lower[axis] = self.directional_gradient(y, node, axis, Side::Lower);
+                grad_upper[axis] = self.directional_gradient(y, node, axis, Side::Upper);
+
+                self.equation.flux(t, &x, &u, &grad_lower, &mut flux_lower);
+                self.equation.flux(t, &x, &u, &grad_upper, &mut flux_upper);
+
+                for component in 0..self.local_template.len() {
+                    derivative.set_component(
+                        component,
+                        derivative.get_component(component)
+                            + (flux_upper[axis].get_component(component)
+                                - flux_lower[axis].get_component(component))
+                                / self.grid.dx(axis),
+                    );
+                }
+            }
+            self.set_local(dudt, node, &derivative);
+        }
+    }
+
+    fn divergence(&self, y: &Y) -> Vec<T> {
+        let mut div = vec![T::zero(); self.grid.len()];
+        for node in 0..self.grid.len() {
+            let [i, j] = self.grid.multi_index(node);
+            let [nx, ny] = self.grid.nodes();
+            let du_dx = if i == 0 {
+                (y.get_component(self.global_component(
+                    self.grid.flat_index([i + 1, j]),
+                    self.velocity_components[0],
+                )) - y.get_component(self.global_component(node, self.velocity_components[0])))
+                    / self.grid.dx(0)
+            } else if i + 1 == nx {
+                (y.get_component(self.global_component(node, self.velocity_components[0]))
+                    - y.get_component(self.global_component(
+                        self.grid.flat_index([i - 1, j]),
+                        self.velocity_components[0],
+                    )))
+                    / self.grid.dx(0)
+            } else {
+                (y.get_component(self.global_component(
+                    self.grid.flat_index([i + 1, j]),
+                    self.velocity_components[0],
+                )) - y.get_component(self.global_component(
+                    self.grid.flat_index([i - 1, j]),
+                    self.velocity_components[0],
+                ))) / (self.grid.dx(0) + self.grid.dx(0))
+            };
+            let dv_dy = if j == 0 {
+                (y.get_component(self.global_component(
+                    self.grid.flat_index([i, j + 1]),
+                    self.velocity_components[1],
+                )) - y.get_component(self.global_component(node, self.velocity_components[1])))
+                    / self.grid.dx(1)
+            } else if j + 1 == ny {
+                (y.get_component(self.global_component(node, self.velocity_components[1]))
+                    - y.get_component(self.global_component(
+                        self.grid.flat_index([i, j - 1]),
+                        self.velocity_components[1],
+                    )))
+                    / self.grid.dx(1)
+            } else {
+                (y.get_component(self.global_component(
+                    self.grid.flat_index([i, j + 1]),
+                    self.velocity_components[1],
+                )) - y.get_component(self.global_component(
+                    self.grid.flat_index([i, j - 1]),
+                    self.velocity_components[1],
+                ))) / (self.grid.dx(1) + self.grid.dx(1))
+            };
+            div[node] = du_dx + dv_dy;
+        }
+        div
+    }
+
+    fn subtract_pressure_gradient(&self, pressure: &[T], dudt: &mut Y) {
+        let [nx, ny] = self.grid.nodes();
+        for node in 0..self.grid.len() {
+            if self.is_dirichlet_node(node) {
+                dudt.set_component(
+                    self.global_component(node, self.velocity_components[0]),
+                    T::zero(),
+                );
+                dudt.set_component(
+                    self.global_component(node, self.velocity_components[1]),
+                    T::zero(),
+                );
+                continue;
+            }
+
+            let [i, j] = self.grid.multi_index(node);
+            let dp_dx = if i == 0 {
+                (pressure[self.grid.flat_index([i + 1, j])] - pressure[node]) / self.grid.dx(0)
+            } else if i + 1 == nx {
+                (pressure[node] - pressure[self.grid.flat_index([i - 1, j])]) / self.grid.dx(0)
+            } else {
+                (pressure[self.grid.flat_index([i + 1, j])]
+                    - pressure[self.grid.flat_index([i - 1, j])])
+                    / (self.grid.dx(0) + self.grid.dx(0))
+            };
+            let dp_dy = if j == 0 {
+                (pressure[self.grid.flat_index([i, j + 1])] - pressure[node]) / self.grid.dx(1)
+            } else if j + 1 == ny {
+                (pressure[node] - pressure[self.grid.flat_index([i, j - 1])]) / self.grid.dx(1)
+            } else {
+                (pressure[self.grid.flat_index([i, j + 1])]
+                    - pressure[self.grid.flat_index([i, j - 1])])
+                    / (self.grid.dx(1) + self.grid.dx(1))
+            };
+
+            let u_index = self.global_component(node, self.velocity_components[0]);
+            let v_index = self.global_component(node, self.velocity_components[1]);
+            dudt.set_component(u_index, dudt.get_component(u_index) - dp_dx);
+            dudt.set_component(v_index, dudt.get_component(v_index) - dp_dy);
+        }
+    }
+}
+
+impl<Eq, T, U, Y> ODE<T, Y> for ProjectionSemiDiscrete<Eq, T, U, Y>
+where
+    T: Real,
+    U: State<T>,
+    Y: State<T>,
+    Eq: PDE<T, U, 2>,
+{
+    fn diff(&self, t: T, y: &Y, dudt: &mut Y) {
+        assert_eq!(
+            y.len(),
+            self.local_template.len() * self.grid.len(),
+            "ProjectionMethod state length must match local components * grid nodes"
+        );
+        assert_eq!(
+            dudt.len(),
+            self.local_template.len() * self.grid.len(),
+            "ProjectionMethod derivative length must match local components * grid nodes"
+        );
+
+        self.raw_tendency(t, y, dudt);
+        let mut pressure = self.divergence(dudt);
+        self.zero_pressure_boundary_rhs(&mut pressure);
+        lin_solve(&self.poisson_lu, &mut pressure, &self.poisson_pivots);
+        self.subtract_pressure_gradient(&pressure, dudt);
+    }
+}
+
+impl<Eq, T, U, Y> ProjectionSemiDiscrete<Eq, T, U, Y>
+where
+    T: Real,
+    U: State<T>,
+    Y: State<T>,
+    Eq: PDE<T, U, 2>,
+{
+    fn zero_pressure_boundary_rhs(&self, rhs: &mut [T]) {
+        let [nx, ny] = self.grid.nodes();
+        for node in 0..self.grid.len() {
+            let [i, j] = self.grid.multi_index(node);
+            if i == 0 || j == 0 || i + 1 == nx || j + 1 == ny {
+                rhs[node] = T::zero();
+            }
+        }
+    }
+}
+
+fn difference<T, U>(u: &U, other: &U, dx: T, side: Side) -> U
+where
+    T: Real,
+    U: State<T>,
+{
+    let mut out = u.zeros_like();
+    for component in 0..u.len() {
+        let value = match side {
+            Side::Lower => (u.get_component(component) - other.get_component(component)) / dx,
+            Side::Upper => (other.get_component(component) - u.get_component(component)) / dx,
+        };
+        out.set_component(component, value);
+    }
+    out
+}
+
+fn build_poisson_matrix<T>(grid: &StructuredGrid<T, 2>) -> Matrix<T>
+where
+    T: Real,
+{
+    let n = grid.len();
+    let [nx, ny] = grid.nodes();
+    let inv_dx2 = T::one() / (grid.dx(0) * grid.dx(0));
+    let inv_dy2 = T::one() / (grid.dx(1) * grid.dx(1));
+    let mut matrix = Matrix::full(n, n);
+
+    for node in 0..n {
+        let [i, j] = grid.multi_index(node);
+        if i == 0 || j == 0 || i + 1 == nx || j + 1 == ny {
+            matrix[(node, node)] = T::one();
+            continue;
+        }
+
+        matrix[(node, node)] = -T::from_subset(&2.0) * (inv_dx2 + inv_dy2);
+        matrix[(node, grid.flat_index([i - 1, j]))] = inv_dx2;
+        matrix[(node, grid.flat_index([i + 1, j]))] = inv_dx2;
+        matrix[(node, grid.flat_index([i, j - 1]))] = inv_dy2;
+        matrix[(node, grid.flat_index([i, j + 1]))] = inv_dy2;
+    }
+
+    matrix
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cached_poisson_solve_matches_matrix_solve() {
+        let grid = StructuredGrid::uniform([0.0_f64, 0.0], [1.0, 1.0], [5, 5]);
+        let poisson = build_poisson_matrix(&grid);
+        let mut poisson_lu = poisson.clone();
+        let mut pivots = vec![0; grid.len()];
+        lu_decomp(&mut poisson_lu, &mut pivots).expect("poisson matrix should factorize");
+
+        let rhs: Vec<f64> = (0..grid.len()).map(|index| index as f64 / 10.0).collect();
+        let expected = poisson
+            .lin_solve(rhs.clone())
+            .expect("poisson matrix should solve");
+        let mut actual = rhs;
+        lin_solve(&poisson_lu, &mut actual, &pivots);
+
+        let max_error = expected
+            .iter()
+            .zip(actual.iter())
+            .fold(0.0_f64, |max_error, (expected, actual)| {
+                max_error.max((expected - actual).abs())
+            });
+        assert!(max_error < 1.0e-10, "cached solve error: {max_error}");
+    }
+}

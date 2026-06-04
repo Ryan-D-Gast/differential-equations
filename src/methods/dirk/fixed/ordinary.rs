@@ -17,7 +17,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 {
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y>,
+        F: ODE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 
@@ -65,7 +65,7 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
 
     fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y>,
+        F: ODE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 
@@ -147,7 +147,18 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
                 self.jacobian_age += 1;
 
                 // Solve (I - h*a_ii J) Δz = -F(z) using in-place LU
-                self.delta_z = self.jacobian.lin_solve(self.rhs_newton.clone()).unwrap();
+                match self.jacobian.lin_solve(self.rhs_newton.clone()) {
+                    Ok(dz) => self.delta_z = dz,
+                    Err(e) => {
+                        let mapped_err = Error::LinearAlgebra {
+                            t: self.t,
+                            y: self.y.clone(),
+                            msg: e.to_string(),
+                        };
+                        self.status = Status::Error(mapped_err.clone());
+                        return Err(mapped_err);
+                    }
+                }
                 evals.solves += 1;
 
                 // Update z and increment norm

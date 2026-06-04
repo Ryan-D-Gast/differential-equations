@@ -1,6 +1,6 @@
 [package]
 name = "differential-equations"
-version = "0.6.0"
+version = "0.6.1"
 authors = ["Ryan D. Gast <ryan.d.gast@gmail.com>"]
 description = "A Rust library for solving differential equations."
 edition = "2024"
@@ -19,13 +19,12 @@ include = [
     "src/**/*",
     "docs/**/*",
     "examples/**/*",
+    "tests/**/*",
+    "benches/**/*",
     "assets/*",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"
-]
-exclude = [
-    "examples/**/target/*",
 ]
 
 [features]
@@ -46,7 +45,7 @@ too_many_arguments = "allow"
 simba = "0.9.1" # Scalar traits shared with nalgebra without requiring nalgebra
 nalgebra = { version = "^0.34.2", optional = true } # Linear algebra state backend
 num-complex = { version = "^0.4.6", optional = true } # Complex number state backend
-differential-equations-derive = { version = "0.2.0", path = "derive" } # Derives State trait on structs
+differential-equations-derive = "0.2.0" # Derives State trait on structs
 polars = { version = "^0.53.0", optional = true } # DataFrame integration for the solution
 serde = { version = "1.0.228", features = ["derive"], optional = true } # solution serialization/deserialization
 ndarray = { version = "0.17.2", optional = true }
@@ -68,6 +67,14 @@ required-features = ["nalgebra"]
 name = "dde"
 path = "tests/dde/main.rs"
 required-features = ["nalgebra"]
+
+[[test]]
+name = "bvp"
+path = "tests/bvp/main.rs"
+
+[[test]]
+name = "pde"
+path = "tests/pde/main.rs"
 
 # Ordinary Differential Equation (ODE) examples
 [[example]]
@@ -146,6 +153,10 @@ required-features = ["nalgebra"]
 name = "ode_17_quadrature"
 path = "examples/ode/17_quadrature/main.rs"
 
+[[example]]
+name = "ode_18_pipe_heat_transfer"
+path = "examples/ode/18_pipe_heat_transfer/main.rs"
+
 # Differential-Algebraic Equation (DAE) examples
 [[example]]
 name = "dae_01_amplifier"
@@ -181,9 +192,30 @@ path = "examples/dde/01_mackey_glass/main.rs"
 name = "dde_02_breast_cancer_model"
 path = "examples/dde/02_breast_cancer_model/main.rs"
 
+# Partial Differential Equation (PDE) examples
+[[example]]
+name = "pde_01_heat_equation"
+path = "examples/pde/01_heat_equation/main.rs"
+
+[[example]]
+name = "pde_02_finite_volume_advection"
+path = "examples/pde/02_finite_volume_advection/main.rs"
+
+[[example]]
+name = "pde_03_maxwell_yee"
+path = "examples/pde/03_maxwell_yee/main.rs"
+
+[[example]]
+name = "pde_04_incompressible_navier_stokes"
+path = "examples/pde/04_incompressible_navier_stokes/main.rs"
+
 # Benchmarks
 [[bench]]
 name = "ode_solver_benchmarks"
 harness = false
 path = "benches/main.rs"
 required-features = ["nalgebra"]
+
+[[example]]
+name = "ode_19_orbital_mechanics_energy_conservation"
+path = "examples/ode/19_orbital_mechanics_energy_conservation/main.rs"

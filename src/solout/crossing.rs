@@ -193,7 +193,7 @@ where
         solution: &mut Solution<T, Y>,
     ) -> ControlFlag<T, Y>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
     {
         // Calculate the offset from threshold (to detect zero-crossing)
         let current_value = y_curr.get_component(self.component_idx);
@@ -259,7 +259,7 @@ impl<T: Real> CrossingSolout<T> {
         offset_upper: T,
     ) -> Option<T>
     where
-        I: Interpolation<T, Y>,
+        I: Interpolation<T, Y> + ?Sized,
         Y: State<T>,
     {
         // Start with linear interpolation as initial guess

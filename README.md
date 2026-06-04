@@ -38,6 +38,7 @@ A high-performance library for solving differential equations in Rust, including
 
 - **[Ordinary Differential Equations (ODEs)](./docs/ode.md)** - Fixed-step and adaptive solvers with comprehensive features including event detection, dense output, and customizable and common recipes for solution output.
     - **Initial Value Problems** - Solve problems with known initial conditions
+    - **Boundary Value Problems** - Solve endpoint-constrained ODE problems with [`BVP::ode`](./docs/bvp.md) and the same final-trajectory output controls used by IVPs
 
 - **[Differential Algebraic Equations (DAEs)](./docs/dae.md)** - Implicit differential algebraic equations in the form $M f \prime = f(t,y)$ where $M$ can be singular
     - **Index-1,2,3 DAEs** - Index-1 implicitly supported, higher index equations require declaration in solver.
@@ -48,6 +49,11 @@ A high-performance library for solving differential equations in Rust, including
 
 - **[Stochastic Differential Equations (SDEs)](./docs/sde.md)** - Fixed step explicit Runge-Kutta methods for stochastic differential equations.
     - **Customizable Noise** - User implements noise in SDE implementation
+
+- **[Partial Differential Equations (PDEs)](./docs/pde.md)** - Spatial discretization backends for time-dependent PDEs.
+    - **Method of Lines** - Discretize general conservative PDEs on structured grids with finite difference or finite volume schemes, then reuse existing ODE IVP solvers.
+    - **Finite Volume** - Conservation-law backend with MUSCL reconstruction, limiters, and numerical fluxes.
+    - **Yee Grid** - Specialized staggered FDTD grid for Maxwell's equations.
 
 ## Feature Flags
 
