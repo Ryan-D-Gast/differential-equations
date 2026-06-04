@@ -8,8 +8,6 @@
 //! The parameter is `k`. We want to know how the final state `y(t_f)` changes
 //! with respect to `k` (i.e., dy/dk).
 
-use differential_equations::ode::sensitivity::forward::ForwardSensitivityOde;
-use differential_equations::ode::sensitivity::traits::ParametrizedODE;
 use differential_equations::prelude::*;
 use nalgebra::SVector;
 

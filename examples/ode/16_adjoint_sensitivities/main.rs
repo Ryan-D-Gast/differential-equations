@@ -4,8 +4,6 @@
 //! using the backward-integration capability of the solvers via the structured
 //! `AdjointOde` API.
 
-use differential_equations::ode::sensitivity::adjoint::AdjointOde;
-use differential_equations::ode::sensitivity::traits::ParametrizedODE;
 use differential_equations::prelude::*;
 use nalgebra::{SVector, vector};
 
