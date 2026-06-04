@@ -5,7 +5,32 @@ use crate::solution::Solution;
 use crate::traits::{Real, State};
 use std::cell::RefCell;
 
-/// Adjoint Sensitivity System Wrapper
+/// Adjoint Sensitivity System Wrapper.
+///
+/// This wrapper encapsulates a parametrized system of differential equations
+/// and sets up the adjoint system to solve backwards in time.
+///
+/// # Mathematical Formulation
+/// To evaluate sensitivities of a terminal cost function with respect to parameters,
+/// the adjoint state $\lambda(t)$ and parameter accumulator $\mu(t)$ are integrated backwards in time:
+///
+/// $$\frac{d\lambda}{dt} = -J_y^T \lambda$$
+/// $$\frac{d\mu}{dt} = -J_p^T \lambda$$
+///
+/// where $J_y$ and $J_p$ are evaluated along the forward trajectory $y(t)$ (obtained via
+/// interpolation of the forward pass solution).
+///
+/// The augmented state vector layout is `[lambda_0, ..., lambda_{n-1}, mu_0, ..., mu_{m-1}]`.
+///
+/// # Lifetimes and Ownership
+/// * `'a` - The lifetime of the referenced parametrized ODE system. The wrapper borrows
+///   the user's system to prevent unnecessary duplication.
+///
+/// # Type Parameters
+/// * `F` - Parametrized ODE system type implementing [`ParametrizedODE`].
+/// * `T` - Scalar type implementing [`Real`].
+/// * `Y` - State type representing the system variables.
+/// * `P` - State type representing the parameter list.
 pub struct AdjointOde<'a, F, T: Real, Y: State<T>, P: State<T>> {
     ode: &'a F,
     forward_solution: Solution<T, Y>,
@@ -28,6 +53,15 @@ where
     P: State<T>,
     F: ParametrizedODE<T, Y, P>,
 {
+    /// Creates a new adjoint sensitivity system wrapper.
+    ///
+    /// # Arguments
+    /// * `ode` - A reference to the user's parametrized ODE system.
+    /// * `forward_solution` - The [`Solution`] obtained from solving the forward ODE.
+    /// * `y_proto` - A prototype instance of state `Y` used for zero-allocation caching.
+    ///
+    /// # Returns
+    /// An instance of `AdjointOde`.
     pub fn new(ode: &'a F, forward_solution: Solution<T, Y>, y_proto: Y) -> Self {
         let n = y_proto.len();
         let m = ode.parameters().len();

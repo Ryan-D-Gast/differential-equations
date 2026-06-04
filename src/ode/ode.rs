@@ -1,7 +1,6 @@
 //! Defines system of differential equations for numerical solvers.
 //! The NumericalMethods use this trait to take a input system from the user and solve
-//! Includes a differential equation and optional event function to interupt solver
-//! given a condition or event.
+//! Includes a differential equation. Event handling is provided via the separate `Event` trait.
 
 use crate::{
     linalg::Matrix,
@@ -12,15 +11,12 @@ use crate::{
 ///
 /// ODE trait defines the differential equation dydt = f(t, y) for the solver.
 /// The differential equation is used to solve the ordinary differential equation.
-/// The trait also includes a solout function to interupt the solver when a condition
-/// is met or event occurs.
 ///
 /// # Impl
 /// * `diff`    - Differential Equation dydt = f(t, y) in form f(t, &y, &mut dydt).
-/// * `event`   - Event function to interupt solver when condition is met or event occurs.
 /// * `jacobian` - Jacobian matrix J = df/dy for the system of equations.
 ///
-/// Note that the event and jacobian functions are optional and can be left out when implementing.
+/// Note that the jacobian function is optional and can be left out when implementing.
 pub trait ODE<T = f64, Y = DefaultState<T>>
 where
     T: Real,
@@ -97,5 +93,18 @@ where
                     / perturbation;
             }
         }
+    }
+}
+
+impl<EqType, T: Real, Y: State<T>> ODE<T, Y> for &EqType
+where
+    EqType: ODE<T, Y> + ?Sized,
+{
+    fn diff(&self, t: T, y: &Y, dydt: &mut Y) {
+        (*self).diff(t, y, dydt);
+    }
+
+    fn jacobian(&self, t: T, y: &Y, j: &mut Matrix<T>) {
+        (*self).jacobian(t, y, j);
     }
 }

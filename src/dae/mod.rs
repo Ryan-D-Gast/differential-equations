@@ -15,8 +15,8 @@
 //!
 mod dae;
 mod numerical_method;
-mod solve;
+mod solve_ivp;
 
 pub use dae::DAE;
 pub use numerical_method::AlgebraicNumericalMethod;
-pub use solve::solve_dae;
+pub use solve_ivp::solve_dae;

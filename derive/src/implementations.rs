@@ -4,17 +4,33 @@ use crate::field_analysis::FieldTypeInfo;
 use quote::quote;
 use syn::{Field, Ident, punctuated::Punctuated, token::Comma};
 
+#[derive(Clone)]
+pub struct ImplContext {
+    pub impl_generics: proc_macro2::TokenStream,
+    pub type_generics: proc_macro2::TokenStream,
+    pub where_clause: proc_macro2::TokenStream,
+    pub scalar_ty: proc_macro2::TokenStream,
+    pub zero_expr: proc_macro2::TokenStream,
+}
+
 /// Generate Add trait implementation
 pub fn generate_add_impl(
     name: &Ident,
+    context: &ImplContext,
     fields: &Punctuated<Field, Comma>,
     field_info: &[FieldTypeInfo],
 ) -> proc_macro2::TokenStream {
-    let add_fields = generate_operation_fields(fields, field_info, OperationType::Add);
+    let add_fields = generate_operation_fields(fields, field_info, OperationType::Add, context);
     let constructor = generate_constructor_syntax(&add_fields, fields);
+    let ImplContext {
+        impl_generics,
+        type_generics,
+        where_clause,
+        ..
+    } = context;
 
     quote! {
-        impl<T: differential_equations::traits::Real> std::ops::Add for #name<T> {
+        impl #impl_generics std::ops::Add for #name #type_generics #where_clause {
             type Output = Self;
 
             fn add(self, rhs: Self) -> Self::Output {
@@ -27,14 +43,21 @@ pub fn generate_add_impl(
 /// Generate Sub trait implementation
 pub fn generate_sub_impl(
     name: &Ident,
+    context: &ImplContext,
     fields: &Punctuated<Field, Comma>,
     field_info: &[FieldTypeInfo],
 ) -> proc_macro2::TokenStream {
-    let sub_fields = generate_operation_fields(fields, field_info, OperationType::Sub);
+    let sub_fields = generate_operation_fields(fields, field_info, OperationType::Sub, context);
     let constructor = generate_constructor_syntax(&sub_fields, fields);
+    let ImplContext {
+        impl_generics,
+        type_generics,
+        where_clause,
+        ..
+    } = context;
 
     quote! {
-        impl<T: differential_equations::traits::Real> std::ops::Sub for #name<T> {
+        impl #impl_generics std::ops::Sub for #name #type_generics #where_clause {
             type Output = Self;
 
             fn sub(self, rhs: Self) -> Self::Output {
@@ -47,13 +70,20 @@ pub fn generate_sub_impl(
 /// Generate AddAssign trait implementation
 pub fn generate_add_assign_impl(
     name: &Ident,
+    context: &ImplContext,
     fields: &Punctuated<Field, Comma>,
     field_info: &[FieldTypeInfo],
 ) -> proc_macro2::TokenStream {
     let add_assign_ops = generate_assign_operations(fields, field_info);
+    let ImplContext {
+        impl_generics,
+        type_generics,
+        where_clause,
+        ..
+    } = context;
 
     quote! {
-        impl<T: differential_equations::traits::Real> std::ops::AddAssign for #name<T> {
+        impl #impl_generics std::ops::AddAssign for #name #type_generics #where_clause {
             fn add_assign(&mut self, rhs: Self) {
                 #(#add_assign_ops)*
             }
@@ -64,17 +94,25 @@ pub fn generate_add_assign_impl(
 /// Generate Mul<T> trait implementation
 pub fn generate_mul_impl(
     name: &Ident,
+    context: &ImplContext,
     fields: &Punctuated<Field, Comma>,
     field_info: &[FieldTypeInfo],
 ) -> proc_macro2::TokenStream {
-    let mul_fields = generate_operation_fields(fields, field_info, OperationType::Mul);
+    let mul_fields = generate_operation_fields(fields, field_info, OperationType::Mul, context);
     let constructor = generate_constructor_syntax(&mul_fields, fields);
+    let ImplContext {
+        impl_generics,
+        type_generics,
+        where_clause,
+        scalar_ty,
+        ..
+    } = context;
 
     quote! {
-        impl<T: differential_equations::traits::Real> std::ops::Mul<T> for #name<T> {
+        impl #impl_generics std::ops::Mul<#scalar_ty> for #name #type_generics #where_clause {
             type Output = Self;
 
-            fn mul(self, rhs: T) -> Self::Output {
+            fn mul(self, rhs: #scalar_ty) -> Self::Output {
                 #constructor
             }
         }
@@ -84,17 +122,25 @@ pub fn generate_mul_impl(
 /// Generate Div<T> trait implementation
 pub fn generate_div_impl(
     name: &Ident,
+    context: &ImplContext,
     fields: &Punctuated<Field, Comma>,
     field_info: &[FieldTypeInfo],
 ) -> proc_macro2::TokenStream {
-    let div_fields = generate_operation_fields(fields, field_info, OperationType::Div);
+    let div_fields = generate_operation_fields(fields, field_info, OperationType::Div, context);
     let constructor = generate_constructor_syntax(&div_fields, fields);
+    let ImplContext {
+        impl_generics,
+        type_generics,
+        where_clause,
+        scalar_ty,
+        ..
+    } = context;
 
     quote! {
-        impl<T: differential_equations::traits::Real> std::ops::Div<T> for #name<T> {
+        impl #impl_generics std::ops::Div<#scalar_ty> for #name #type_generics #where_clause {
             type Output = Self;
 
-            fn div(self, rhs: T) -> Self::Output {
+            fn div(self, rhs: #scalar_ty) -> Self::Output {
                 #constructor
             }
         }
@@ -102,9 +148,16 @@ pub fn generate_div_impl(
 }
 
 /// Generate Clone trait implementation
-pub fn generate_clone_impl(name: &Ident) -> proc_macro2::TokenStream {
+pub fn generate_clone_impl(name: &Ident, context: &ImplContext) -> proc_macro2::TokenStream {
+    let ImplContext {
+        impl_generics,
+        type_generics,
+        where_clause,
+        ..
+    } = context;
+
     quote! {
-        impl<T: differential_equations::traits::Real> Clone for #name<T> {
+        impl #impl_generics Clone for #name #type_generics #where_clause {
             fn clone(&self) -> Self {
                 *self
             }
@@ -113,19 +166,34 @@ pub fn generate_clone_impl(name: &Ident) -> proc_macro2::TokenStream {
 }
 
 /// Generate Copy trait implementation
-pub fn generate_copy_impl(name: &Ident) -> proc_macro2::TokenStream {
+pub fn generate_copy_impl(name: &Ident, context: &ImplContext) -> proc_macro2::TokenStream {
+    let ImplContext {
+        impl_generics,
+        type_generics,
+        where_clause,
+        ..
+    } = context;
+
     quote! {
-        impl<T: differential_equations::traits::Real> Copy for #name<T> {}
+        impl #impl_generics Copy for #name #type_generics #where_clause {}
     }
 }
 
 /// Generate Debug trait implementation
 pub fn generate_debug_impl(
     name: &Ident,
+    context: &ImplContext,
     debug_fields: &[proc_macro2::TokenStream],
 ) -> proc_macro2::TokenStream {
+    let ImplContext {
+        impl_generics,
+        type_generics,
+        where_clause,
+        ..
+    } = context;
+
     quote! {
-        impl<T: differential_equations::traits::Real + std::fmt::Debug> std::fmt::Debug for #name<T> {
+        impl #impl_generics std::fmt::Debug for #name #type_generics #where_clause {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 f.debug_struct(stringify!(#name))
                     #(#debug_fields)*
@@ -138,6 +206,7 @@ pub fn generate_debug_impl(
 /// Generate State trait implementation
 pub fn generate_state_impl(
     name: &Ident,
+    context: &ImplContext,
     total_elements: usize,
     field_get_branches: &[proc_macro2::TokenStream],
     field_set_branches: &[proc_macro2::TokenStream],
@@ -145,24 +214,32 @@ pub fn generate_state_impl(
     fields: &Punctuated<Field, Comma>,
 ) -> proc_macro2::TokenStream {
     let zeros_constructor = generate_constructor_syntax(zeros_init, fields);
+    let ImplContext {
+        impl_generics,
+        type_generics,
+        where_clause,
+        scalar_ty,
+        zero_expr,
+    } = context;
+    let zero = zero_expr;
 
     quote! {
-        impl<T: differential_equations::traits::Real> differential_equations::traits::State<T> for #name<T> {
+        impl #impl_generics differential_equations::traits::State<#scalar_ty> for #name #type_generics #where_clause {
             fn len(&self) -> usize {
                 #total_elements
             }
 
-            fn get_component(&self, index: usize) -> T {
+            fn get_component(&self, index: usize) -> #scalar_ty {
                 self.__state_get(index)
             }
 
-            fn set_component(&mut self, index: usize, value: T) {
+            fn set_component(&mut self, index: usize, value: #scalar_ty) {
                 self.__state_set(index, value);
             }
 
             fn map_components_mut<F>(&mut self, mut f: F)
             where
-                F: FnMut(usize, &mut T),
+                F: FnMut(usize, &mut #scalar_ty),
             {
                 // This is a bit tricky for a struct with named fields if we don't have a way to get a &mut T by index.
                 // However, the macro generates __state_set which we can use with __state_get.
@@ -183,7 +260,7 @@ pub fn generate_state_impl(
                 #zeros_constructor
             }
 
-            fn mul_add_assign(&mut self, alpha: T, other: &Self) {
+            fn mul_add_assign(&mut self, alpha: #scalar_ty, other: &Self) {
                 assert_eq!(self.len(), other.len(), "State length mismatch");
                 for i in 0..self.len() {
                     let value = self.__state_get(i) + alpha * other.__state_get(i);
@@ -191,14 +268,14 @@ pub fn generate_state_impl(
                 }
             }
 
-            fn scale_mut(&mut self, alpha: T) {
+            fn scale_mut(&mut self, alpha: #scalar_ty) {
                 for i in 0..self.len() {
                     let value = self.__state_get(i) * alpha;
                     self.__state_set(i, value);
                 }
             }
 
-            fn fill(&mut self, value: T) {
+            fn fill(&mut self, value: #scalar_ty) {
                 for i in 0..self.len() {
                     self.__state_set(i, value);
                 }
@@ -210,8 +287,8 @@ pub fn generate_state_impl(
                 }
             }
 
-            fn norm_squared(&self) -> T {
-                let mut sum = T::zero();
+            fn norm_squared(&self) -> #scalar_ty {
+                let mut sum = #zero;
                 for i in 0..self.len() {
                     let value = self.__state_get(i);
                     sum += value * value;
@@ -219,8 +296,8 @@ pub fn generate_state_impl(
                 sum
             }
 
-            fn diff_norm_squared(&self, other: &Self) -> T {
-                let mut sum = T::zero();
+            fn diff_norm_squared(&self, other: &Self) -> #scalar_ty {
+                let mut sum = #zero;
                 for i in 0..self.len() {
                     let diff = self.__state_get(i) - other.__state_get(i);
                     sum += diff * diff;
@@ -232,10 +309,10 @@ pub fn generate_state_impl(
                 &self,
                 y_new: &Self,
                 err: &Self,
-                atol: &differential_equations::tolerance::Tolerance<T>,
-                rtol: &differential_equations::tolerance::Tolerance<T>,
-            ) -> T {
-                let mut sum = T::zero();
+                atol: &differential_equations::tolerance::Tolerance<#scalar_ty>,
+                rtol: &differential_equations::tolerance::Tolerance<#scalar_ty>,
+            ) -> #scalar_ty {
+                let mut sum = #zero;
                 for i in 0..self.len() {
                     let sk = atol[i] + rtol[i] * self.__state_get(i).abs().max(y_new.__state_get(i).abs());
                     let e = err.__state_get(i) / sk;
@@ -248,10 +325,10 @@ pub fn generate_state_impl(
                 &self,
                 y_new: &Self,
                 err: &Self,
-                atol: &differential_equations::tolerance::Tolerance<T>,
-                rtol: &differential_equations::tolerance::Tolerance<T>,
-            ) -> T {
-                let mut max = T::zero();
+                atol: &differential_equations::tolerance::Tolerance<#scalar_ty>,
+                rtol: &differential_equations::tolerance::Tolerance<#scalar_ty>,
+            ) -> #scalar_ty {
+                let mut max = #zero;
                 for i in 0..self.len() {
                     let sk = atol[i] + rtol[i] * self.__state_get(i).abs().max(y_new.__state_get(i).abs());
                     max = max.max((err.__state_get(i) / sk).abs());
@@ -260,14 +337,14 @@ pub fn generate_state_impl(
             }
         }
 
-        impl<T: differential_equations::traits::Real> #name<T> {
-            fn __state_get(&self, i: usize) -> T {
+        impl #impl_generics #name #type_generics #where_clause {
+            fn __state_get(&self, i: usize) -> #scalar_ty {
                 assert!(i < #total_elements, "Index out of bounds");
                 #(#field_get_branches)*
                 unreachable!()
             }
 
-            fn __state_set(&mut self, i: usize, value: T) {
+            fn __state_set(&mut self, i: usize, value: #scalar_ty) {
                 assert!(i < #total_elements, "Index out of bounds");
                 #(#field_set_branches)*
                 unreachable!();
@@ -287,14 +364,21 @@ enum OperationType {
 /// Generate Neg trait implementation (unary minus)
 pub fn generate_neg_impl(
     name: &Ident,
+    context: &ImplContext,
     fields: &Punctuated<Field, Comma>,
     field_info: &[FieldTypeInfo],
 ) -> proc_macro2::TokenStream {
-    let neg_fields = generate_neg_fields(fields, field_info);
+    let neg_fields = generate_neg_fields(fields, field_info, context);
     let constructor = generate_constructor_syntax(&neg_fields, fields);
+    let ImplContext {
+        impl_generics,
+        type_generics,
+        where_clause,
+        ..
+    } = context;
 
     quote! {
-        impl<T: differential_equations::traits::Real> std::ops::Neg for #name<T> {
+        impl #impl_generics std::ops::Neg for #name #type_generics #where_clause {
             type Output = Self;
 
             fn neg(self) -> Self::Output {
@@ -308,7 +392,10 @@ pub fn generate_neg_impl(
 fn generate_neg_fields(
     fields: &Punctuated<Field, Comma>,
     field_info: &[FieldTypeInfo],
+    context: &ImplContext,
 ) -> Vec<proc_macro2::TokenStream> {
+    let zero = &context.zero_expr;
+
     fields
         .iter()
         .enumerate()
@@ -319,7 +406,7 @@ fn generate_neg_fields(
                 FieldTypeInfo::Array { array_size } => {
                     quote! {
                         #ident: {
-                            let mut result = [T::zero(); #array_size];
+                            let mut result = [#zero; #array_size];
                             for i in 0..#array_size { result[i] = -self.#ident[i]; }
                             result
                         }
@@ -353,7 +440,7 @@ fn generate_neg_fields(
                     FieldTypeInfo::Array { array_size } => {
                         quote! {
                             {
-                                let mut result = [T::zero(); #array_size];
+                                let mut result = [#zero; #array_size];
                                 for i in 0..#array_size { result[i] = -self.#index[i]; }
                                 result
                             }
@@ -417,7 +504,10 @@ fn generate_operation_fields(
     fields: &Punctuated<Field, Comma>,
     field_info: &[FieldTypeInfo],
     op_type: OperationType,
+    context: &ImplContext,
 ) -> Vec<proc_macro2::TokenStream> {
+    let zero = &context.zero_expr;
+
     fields
         .iter()
         .enumerate()
@@ -444,7 +534,7 @@ fn generate_operation_fields(
                         OperationType::Add | OperationType::Sub => {
                             quote! {
                                 #ident: {
-                                    let mut result = [T::zero(); #array_size];
+                                    let mut result = [#zero; #array_size];
                                     for i in 0..#array_size {
                                         result[i] = #lhs.#ident[i] #op_symbol #rhs.#ident[i];
                                     }
@@ -455,7 +545,7 @@ fn generate_operation_fields(
                         OperationType::Mul | OperationType::Div => {
                             quote! {
                                 #ident: {
-                                    let mut result = [T::zero(); #array_size];
+                                    let mut result = [#zero; #array_size];
                                     for i in 0..#array_size {
                                         result[i] = #lhs.#ident[i] #op_symbol #rhs;
                                     }
@@ -544,7 +634,7 @@ fn generate_operation_fields(
                             OperationType::Add | OperationType::Sub => {
                                 quote! {
                                     {
-                                        let mut result = [T::zero(); #array_size];
+                                        let mut result = [#zero; #array_size];
                                         for i in 0..#array_size {
                                             result[i] = #lhs.#index[i] #op_symbol #rhs.#index[i];
                                         }
@@ -555,7 +645,7 @@ fn generate_operation_fields(
                             OperationType::Mul | OperationType::Div => {
                                 quote! {
                                     {
-                                        let mut result = [T::zero(); #array_size];
+                                        let mut result = [#zero; #array_size];
                                         for i in 0..#array_size {
                                             result[i] = #lhs.#index[i] #op_symbol #rhs;
                                         }

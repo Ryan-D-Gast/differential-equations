@@ -8,7 +8,7 @@
 //!   Stiff and Differential-Algebraic Problems. Springer.
 
 use crate::{
-    linalg::Matrix,
+    linalg::{Matrix, MatrixStorage},
     traits::{Real, State},
 };
 
@@ -52,7 +52,56 @@ use crate::{
 /// 1. Solve Ly = Pb (forward substitution with pivoting)
 /// 2. Solve Ux = y (back substitution)
 pub fn lin_solve<T: Real, Y: State<T>>(a: &Matrix<T>, b: &mut Y, ip: &[usize]) {
-    b.apply_linear_solve(&a.data, ip);
+    if let MatrixStorage::Sparse { ref coords, .. } = a.storage {
+        // Fast path for sparse LU solve if matrix is stored sparsely
+        let n = a.nrows();
+
+        // 1. Convert coords to row-based representation for faster access
+        let mut rows: Vec<Vec<(usize, T)>> = vec![Vec::new(); n];
+        for &(r, c, v) in coords.iter() {
+            rows[r].push((c, v));
+        }
+        for row in rows.iter_mut() {
+            row.sort_by_key(|&(c, _)| c);
+        }
+
+        // 2. Forward elimination Ly = Pb
+        for k in 0..n - 1 {
+            let m = ip[k];
+            let tk = b.get_component(k);
+            let tm = b.get_component(m);
+            b.set_component(k, tm);
+            b.set_component(m, tk);
+
+            let pivot_val = b.get_component(k);
+
+            for i in k + 1..n {
+                if let Ok(pos) = rows[i].binary_search_by_key(&k, |&(c, _)| c) {
+                    let val = rows[i][pos].1;
+                    let current = b.get_component(i);
+                    b.set_component(i, current - val * pivot_val);
+                }
+            }
+        }
+
+        // 3. Back substitution Ux = y
+        for i in (0..n).rev() {
+            let mut sum = b.get_component(i);
+            let mut diag = T::one();
+
+            for &(col, val) in rows[i].iter() {
+                if col > i {
+                    sum -= val * b.get_component(col);
+                } else if col == i {
+                    diag = val;
+                }
+            }
+
+            b.set_component(i, sum / diag);
+        }
+    } else {
+        b.apply_linear_solve(&a.data, ip);
+    }
 }
 
 /// Solves a complex linear system (AR + i*AI)*X = (BR + i*BI) using LU decomposition.

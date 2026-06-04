@@ -10,16 +10,16 @@ use crate::{
     utils::{constrain_step_size, validate_step_size_parameters},
 };
 
-use super::{BDF, BDF_ROWS, MAX_ORDER};
+use super::{BACKWARD_DIFFERENTIATION_FORMULA_ROWS, BackwardDifferentiationFormula, MAX_ORDER};
 
-impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
+impl<T: Real, Y: State<T>> BackwardDifferentiationFormula<Ordinary, T, Y> {
     fn scalar(value: f64) -> T {
-        T::from_f64(value).expect("BDF constants must be representable as the solver scalar type")
+        T::from_f64(value).expect("BackwardDifferentiationFormula constants must be representable as the solver scalar type")
     }
 
     fn order_scalar(order: usize) -> T {
         T::from_usize(order)
-            .expect("BDF order constants must be representable as the solver scalar type")
+            .expect("BackwardDifferentiationFormula order constants must be representable as the solver scalar type")
     }
 
     fn init_coefficients(&mut self) {
@@ -69,8 +69,12 @@ impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
         psi.scaled(T::one() / self.alpha[order])
     }
 
-    fn compute_r(order: usize, factor: T) -> [[T; BDF_ROWS]; BDF_ROWS] {
-        let mut r = [[T::zero(); BDF_ROWS]; BDF_ROWS];
+    fn compute_r(
+        order: usize,
+        factor: T,
+    ) -> [[T; BACKWARD_DIFFERENTIATION_FORMULA_ROWS]; BACKWARD_DIFFERENTIATION_FORMULA_ROWS] {
+        let mut r = [[T::zero(); BACKWARD_DIFFERENTIATION_FORMULA_ROWS];
+            BACKWARD_DIFFERENTIATION_FORMULA_ROWS];
         for j in 0..=order {
             r[0][j] = T::one();
         }
@@ -98,7 +102,8 @@ impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
 
         let r = Self::compute_r(order, factor);
         let u = Self::compute_r(order, T::one());
-        let mut ru = [[T::zero(); BDF_ROWS]; BDF_ROWS];
+        let mut ru = [[T::zero(); BACKWARD_DIFFERENTIATION_FORMULA_ROWS];
+            BACKWARD_DIFFERENTIATION_FORMULA_ROWS];
 
         for i in 0..=order {
             for j in 0..=order {
@@ -135,7 +140,7 @@ impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
         lu_decomp(&mut self.newton_matrix, &mut self.ip).is_ok()
     }
 
-    fn solve_bdf_system<F>(
+    fn solve_system<F>(
         &mut self,
         ode: &F,
         t_new: T,
@@ -146,7 +151,7 @@ impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
         evals: &mut Evals,
     ) -> (bool, usize, Y, Y)
     where
-        F: ODE<T, Y>,
+        F: ODE<T, Y> + ?Sized,
     {
         let mut d = self.y.zeros_like();
         let mut y = y_predict;
@@ -204,10 +209,12 @@ impl<T: Real, Y: State<T>> BDF<Ordinary, T, Y> {
     }
 }
 
-impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y> {
+impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
+    for BackwardDifferentiationFormula<Ordinary, T, Y>
+{
     fn init<F>(&mut self, ode: &F, t0: T, tf: T, y0: &Y) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y>,
+        F: ODE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 
@@ -256,7 +263,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
 
     fn step<F>(&mut self, ode: &F) -> Result<Evals, Error<T, Y>>
     where
-        F: ODE<T, Y>,
+        F: ODE<T, Y> + ?Sized,
     {
         let mut evals = Evals::new();
 
@@ -316,7 +323,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
                     self.lu_valid = true;
                 }
 
-                (converged, n_iter, y_new, d) = self.solve_bdf_system(
+                (converged, n_iter, y_new, d) = self.solve_system(
                     ode,
                     t_new,
                     y_predict.clone(),
@@ -460,7 +467,7 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for BDF<Ordinary, T, Y>
     }
 }
 
-impl<T: Real, Y: State<T>> Interpolation<T, Y> for BDF<Ordinary, T, Y> {
+impl<T: Real, Y: State<T>> Interpolation<T, Y> for BackwardDifferentiationFormula<Ordinary, T, Y> {
     fn interpolate(&mut self, t_interp: T) -> Result<Y, Error<T, Y>> {
         if t_interp < self.t_prev || t_interp > self.t {
             return Err(Error::OutOfBounds {
@@ -508,12 +515,18 @@ mod tests {
     }
 
     #[test]
-    fn bdf_tracks_exponential_decay() {
+    fn backward_differentiation_formula_tracks_exponential_decay() {
         let system = ExponentialDecay { k: 1.0 };
-        let bdf: BDF<Ordinary, f64, SVector<f64, 1>> = BDF::adaptive().rtol(1e-7).atol(1e-9);
+        let backward_differentiation_formula: BackwardDifferentiationFormula<
+            Ordinary,
+            f64,
+            SVector<f64, 1>,
+        > = BackwardDifferentiationFormula::adaptive()
+            .rtol(1e-7)
+            .atol(1e-9);
 
         let results = IVP::ode(&system, 0.0, 1.0, vector![1.0])
-            .method(bdf)
+            .method(backward_differentiation_formula)
             .solve()
             .unwrap();
 
@@ -523,13 +536,19 @@ mod tests {
     }
 
     #[test]
-    fn bdf_can_run_at_order_one() {
+    fn backward_differentiation_formula_can_run_at_order_one() {
         let system = ExponentialDecay { k: 1.0 };
-        let bdf: BDF<Ordinary, f64, SVector<f64, 1>> =
-            BDF::adaptive().max_order(1).rtol(1e-7).atol(1e-9);
+        let backward_differentiation_formula: BackwardDifferentiationFormula<
+            Ordinary,
+            f64,
+            SVector<f64, 1>,
+        > = BackwardDifferentiationFormula::adaptive()
+            .max_order(1)
+            .rtol(1e-7)
+            .atol(1e-9);
 
         let results = IVP::ode(&system, 0.0, 1.0, vector![1.0])
-            .method(bdf)
+            .method(backward_differentiation_formula)
             .solve()
             .unwrap();
 

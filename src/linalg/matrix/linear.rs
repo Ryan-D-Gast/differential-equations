@@ -1,7 +1,6 @@
 //! Linear solves: A x = b via LU with partial pivoting on a dense copy.
 
 use crate::{
-    error::Error,
     linalg::LinalgError,
     traits::{Real, State},
 };
@@ -10,19 +9,19 @@ use super::base::Matrix;
 
 impl<T: Real> Matrix<T> {
     /// Solve A x = b, Returns Err if the matrix is singular or dimensions are incompatible
-    pub fn lin_solve<Y>(&self, b: Y) -> Result<Y, Error<T, Y>>
+    pub fn lin_solve<Y>(&self, b: Y) -> Result<Y, LinalgError>
     where
         Y: State<T>,
     {
         let n = self.n;
         if self.m != n {
-            return Err(Error::BadInput {
-                msg: "Matrix solve requires a square matrix".into(),
+            return Err(LinalgError::BadInput {
+                message: "Matrix solve requires a square matrix".into(),
             });
         }
         if b.len() != n {
-            return Err(Error::BadInput {
-                msg: "Incompatible vector length".into(),
+            return Err(LinalgError::BadInput {
+                message: "Incompatible vector length".into(),
             });
         }
 
@@ -51,7 +50,7 @@ impl<T: Real> Matrix<T> {
             // Check for singularity
             if pivot_val <= eps {
                 // Note the t, y are not known here and should be updated by caller before returning to user
-                return Err(LinalgError::Singular { step: k + 1 }.into());
+                return Err(LinalgError::Singular { step: k + 1 });
             }
 
             if pivot_row != k {
