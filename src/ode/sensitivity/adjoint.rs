@@ -23,16 +23,17 @@ use std::cell::RefCell;
 /// The augmented state vector layout is `[lambda_0, ..., lambda_{n-1}, mu_0, ..., mu_{m-1}]`.
 ///
 /// # Lifetimes and Ownership
-/// * `'a` - The lifetime of the referenced parametrized ODE system. The wrapper borrows
-///   the user's system to prevent unnecessary duplication.
+/// * `F` - Parametrized ODE system type implementing [`ParametrizedODE`]. The wrapper owns
+///   the system, which allows it to support both owned systems (e.g. from closures)
+///   and borrowed systems (via references since references to parametrized ODEs
+///   also implement the trait).
 ///
 /// # Type Parameters
-/// * `F` - Parametrized ODE system type implementing [`ParametrizedODE`].
 /// * `T` - Scalar type implementing [`Real`].
 /// * `Y` - State type representing the system variables.
 /// * `P` - State type representing the parameter list.
-pub struct AdjointOde<'a, F, T: Real, Y: State<T>, P: State<T>> {
-    ode: &'a F,
+pub struct AdjointOde<F, T: Real, Y: State<T>, P: State<T>> {
+    ode: F,
     forward_solution: Solution<T, Y>,
     y_proto: Y,
     j_y_t: RefCell<Matrix<T>>,
@@ -46,7 +47,7 @@ pub struct AdjointOde<'a, F, T: Real, Y: State<T>, P: State<T>> {
     _marker: std::marker::PhantomData<P>,
 }
 
-impl<'a, F, T, Y, P> AdjointOde<'a, F, T, Y, P>
+impl<F, T, Y, P> AdjointOde<F, T, Y, P>
 where
     T: Real,
     Y: State<T>,
@@ -56,13 +57,13 @@ where
     /// Creates a new adjoint sensitivity system wrapper.
     ///
     /// # Arguments
-    /// * `ode` - A reference to the user's parametrized ODE system.
+    /// * `ode` - The parametrized ODE system (can be owned or a reference).
     /// * `forward_solution` - The [`Solution`] obtained from solving the forward ODE.
     /// * `y_proto` - A prototype instance of state `Y` used for zero-allocation caching.
     ///
     /// # Returns
     /// An instance of `AdjointOde`.
-    pub fn new(ode: &'a F, forward_solution: Solution<T, Y>, y_proto: Y) -> Self {
+    pub fn new(ode: F, forward_solution: Solution<T, Y>, y_proto: Y) -> Self {
         let n = y_proto.len();
         let m = ode.parameters().len();
         Self {
@@ -128,7 +129,7 @@ where
     }
 }
 
-impl<'a, F, T, Y, P, YA> ODE<T, YA> for AdjointOde<'a, F, T, Y, P>
+impl<F, T, Y, P, YA> ODE<T, YA> for AdjointOde<F, T, Y, P>
 where
     T: Real,
     Y: State<T>,

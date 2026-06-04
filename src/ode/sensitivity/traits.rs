@@ -54,3 +54,63 @@ pub trait ParametrizedODE<T: Real, Y: State<T>, P: State<T>>: ODE<T, Y> {
     ///   to `y.len() x p.len()`.
     fn jacobian_p(&self, t: T, y: &Y, j: &mut Matrix<T>);
 }
+
+impl<F, T: Real, Y: State<T>, P: State<T>> ParametrizedODE<T, Y, P> for &F
+where
+    F: ParametrizedODE<T, Y, P> + ?Sized,
+{
+    fn parameters(&self) -> P {
+        (*self).parameters()
+    }
+
+    fn jacobian_p(&self, t: T, y: &Y, j: &mut Matrix<T>) {
+        (*self).jacobian_p(t, y, j)
+    }
+}
+
+/// Internal wrapper for creating a parametrized ODE from closures.
+#[derive(Debug, Clone, Copy)]
+pub struct ParametrizedOdeFnWrapper<F, JP, P> {
+    pub(crate) diff_fn: F,
+    pub(crate) jacobian_p_fn: JP,
+    pub(crate) parameters: P,
+}
+
+impl<F, JP, P> ParametrizedOdeFnWrapper<F, JP, P> {
+    /// Creates a new closure-based parametrized ODE.
+    pub fn new(diff_fn: F, jacobian_p_fn: JP, parameters: P) -> Self {
+        Self {
+            diff_fn,
+            jacobian_p_fn,
+            parameters,
+        }
+    }
+}
+
+impl<T, Y, F, JP, P> ODE<T, Y> for ParametrizedOdeFnWrapper<F, JP, P>
+where
+    T: Real,
+    Y: State<T>,
+    F: Fn(T, &Y, &mut Y),
+{
+    fn diff(&self, t: T, y: &Y, dydt: &mut Y) {
+        (self.diff_fn)(t, y, dydt)
+    }
+}
+
+impl<T, Y, P, F, JP> ParametrizedODE<T, Y, P> for ParametrizedOdeFnWrapper<F, JP, P>
+where
+    T: Real,
+    Y: State<T>,
+    P: State<T> + Clone,
+    F: Fn(T, &Y, &mut Y),
+    JP: Fn(T, &Y, &mut Matrix<T>),
+{
+    fn parameters(&self) -> P {
+        self.parameters.clone()
+    }
+
+    fn jacobian_p(&self, t: T, y: &Y, j: &mut Matrix<T>) {
+        (self.jacobian_p_fn)(t, y, j)
+    }
+}

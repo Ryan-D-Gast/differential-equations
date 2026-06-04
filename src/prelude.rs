@@ -58,7 +58,7 @@ pub use crate::dae::DAE;
 pub use crate::dde::DDE;
 pub use crate::ode::{
     Hamiltonian, HamiltonianFnWrapper, HamiltonianSystem, ODE,
-    sensitivity::{AdjointOde, ForwardSensitivityOde, ParametrizedODE},
+    sensitivity::{AdjointOde, ForwardSensitivityOde, ParametrizedODE, ParametrizedOdeFnWrapper},
 };
 pub use crate::pde::{
     BoundaryCondition, BoundaryConditions, BoundaryConditionsBuilder,

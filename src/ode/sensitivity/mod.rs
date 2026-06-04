@@ -4,4 +4,4 @@ pub mod traits;
 
 pub use adjoint::AdjointOde;
 pub use forward::ForwardSensitivityOde;
-pub use traits::ParametrizedODE;
+pub use traits::{ParametrizedODE, ParametrizedOdeFnWrapper};

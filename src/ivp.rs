@@ -185,7 +185,7 @@ impl<const L: usize, F: Clone, H: Clone> Clone for DdeEqOwned<L, F, H> {
 /// Internal wrapper for `ode_from_fn`
 #[derive(Debug)]
 pub struct OdeFnWrapper<F> {
-    f: F,
+    pub(crate) f: F,
 }
 
 impl<T, Y, F> ODE<T, Y> for OdeFnWrapper<F>
@@ -926,5 +926,123 @@ where
             self.equation.history.clone(),
             &mut self.solout,
         )
+    }
+}
+
+impl<F, T: Real, Y: State<T>> IVP<OdeEqOwned<F>, T, Y, (), DefaultSolout> {
+    /// Create a new initial value problem for an owned ordinary differential equation.
+    pub fn ode_owned(ode: F, t0: T, tf: T, y0: Y) -> Self {
+        Self {
+            equation: OdeEqOwned { ode },
+            t0,
+            tf,
+            y0,
+            method: (),
+            solout: DefaultSolout::new(),
+        }
+    }
+}
+
+impl<'a, F, T: Real, Y: State<T>, Method, SoloutType> IVP<OdeEq<'a, F>, T, Y, Method, SoloutType> {
+    /// Augments the IVP with forward sensitivity equations, borrowing the referenced ODE.
+    #[allow(clippy::type_complexity)]
+    pub fn forward_sensitivity<P: State<T>, YA: State<T>>(
+        self,
+        y0_aug: YA,
+    ) -> IVP<
+        OdeEqOwned<crate::ode::sensitivity::ForwardSensitivityOde<&'a F, T, Y, P>>,
+        T,
+        YA,
+        Method,
+        SoloutType,
+    >
+    where
+        &'a F: crate::ode::sensitivity::ParametrizedODE<T, Y, P>,
+    {
+        let fsa_ode =
+            crate::ode::sensitivity::ForwardSensitivityOde::new(self.equation.ode, self.y0);
+        IVP {
+            equation: OdeEqOwned { ode: fsa_ode },
+            t0: self.t0,
+            tf: self.tf,
+            y0: y0_aug,
+            method: self.method,
+            solout: self.solout,
+        }
+    }
+}
+
+impl<F, T: Real, Y: State<T>, Method, SoloutType> IVP<OdeEqOwned<F>, T, Y, Method, SoloutType> {
+    /// Augments the IVP with forward sensitivity equations, consuming the owned ODE.
+    #[allow(clippy::type_complexity)]
+    pub fn forward_sensitivity<P: State<T>, YA: State<T>>(
+        self,
+        y0_aug: YA,
+    ) -> IVP<
+        OdeEqOwned<crate::ode::sensitivity::ForwardSensitivityOde<F, T, Y, P>>,
+        T,
+        YA,
+        Method,
+        SoloutType,
+    >
+    where
+        F: crate::ode::sensitivity::ParametrizedODE<T, Y, P>,
+    {
+        let fsa_ode =
+            crate::ode::sensitivity::ForwardSensitivityOde::new(self.equation.ode, self.y0);
+        IVP {
+            equation: OdeEqOwned { ode: fsa_ode },
+            t0: self.t0,
+            tf: self.tf,
+            y0: y0_aug,
+            method: self.method,
+            solout: self.solout,
+        }
+    }
+}
+
+impl<F, T: Real, Y: State<T>, Method, SoloutType>
+    IVP<OdeEqOwned<OdeFnWrapper<F>>, T, Y, Method, SoloutType>
+where
+    F: Fn(T, &Y, &mut Y),
+{
+    /// Augments the closure-based IVP with forward sensitivity equations.
+    #[allow(clippy::type_complexity)]
+    pub fn forward_sensitivity_from_fn<JP, P: State<T> + Clone, YA: State<T>>(
+        self,
+        jacobian_p: JP,
+        parameters: P,
+        y0_aug: YA,
+    ) -> IVP<
+        OdeEqOwned<
+            crate::ode::sensitivity::ForwardSensitivityOde<
+                crate::ode::sensitivity::ParametrizedOdeFnWrapper<F, JP, P>,
+                T,
+                Y,
+                P,
+            >,
+        >,
+        T,
+        YA,
+        Method,
+        SoloutType,
+    >
+    where
+        JP: Fn(T, &Y, &mut crate::linalg::Matrix<T>),
+    {
+        let parametrized = crate::ode::sensitivity::ParametrizedOdeFnWrapper::new(
+            self.equation.ode.f,
+            jacobian_p,
+            parameters,
+        );
+        let fsa_ode = crate::ode::sensitivity::ForwardSensitivityOde::new(parametrized, self.y0);
+        IVP {
+            equation: OdeEqOwned { ode: fsa_ode },
+            t0: self.t0,
+            tf: self.tf,
+            y0: y0_aug,
+            method: self.method,
+            solout: self.solout,
+        }
     }
 }

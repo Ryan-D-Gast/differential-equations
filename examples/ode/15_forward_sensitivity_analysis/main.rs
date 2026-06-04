@@ -36,7 +36,9 @@ impl ParametrizedODE<f64, SVector<f64, 1>, SVector<f64, 1>> for Decay {
 fn main() {
     let decay = Decay { k: 1.0 };
 
-    // Initial conditions: y(0) = 1.0.
+    // Initial condition for the forward state
+    let y0 = SVector::<f64, 1>::from([1.0]);
+
     // The initial sensitivity S(0) = dy/dk(0) = 0.0 because the initial state does not depend on `k`.
     // The augmented state is [y, S].
     let y0_aug = SVector::<f64, 2>::from([1.0, 0.0]);
@@ -48,9 +50,8 @@ fn main() {
     let method = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8);
 
     // Solve the augmented system using Forward Sensitivity Analysis.
-    let fsa_ode = ForwardSensitivityOde::new(&decay, SVector::from([0.0]));
-
-    let solution = IVP::ode(&fsa_ode, t0, tf, y0_aug)
+    let solution = IVP::ode(&decay, t0, tf, y0)
+        .forward_sensitivity(y0_aug)
         .method(method)
         .solve()
         .unwrap();

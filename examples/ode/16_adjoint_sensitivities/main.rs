@@ -51,17 +51,15 @@ fn main() {
         .solve()
         .unwrap();
 
-    // 2. Solve the adjoint problem backwards using the wrapper
-    let y_proto = vector![0.0, 0.0]; // Prototype Y state for initialization
-    let adjoint_ode = AdjointOde::new(&forward_ode, forward_solution.clone(), y_proto);
-
+    // 2. Solve the adjoint problem backwards using the new builder method
     // Initial condition for backward pass: lambda(T) = dg/dy(T)^T, mu(T) = 0
     let y_final = forward_solution.y.last().unwrap();
     let dg_dy_final = vector![0.0, y_final[1] - 0.5];
     let adjoint_y0 = vector![dg_dy_final[0], dg_dy_final[1], 0.0, 0.0];
 
-    // Integrate backwards from tf to t0
-    let adjoint_solution = IVP::ode(&adjoint_ode, tf, t0, adjoint_y0)
+    // Integrate backwards
+    let adjoint_solution = forward_solution
+        .adjoint_sensitivity(&forward_ode, adjoint_y0)
         .method(ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8))
         .solve()
         .unwrap();
