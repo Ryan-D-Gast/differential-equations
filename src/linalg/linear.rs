@@ -8,7 +8,7 @@
 //!   Stiff and Differential-Algebraic Problems. Springer.
 
 use crate::{
-    linalg::Matrix,
+    linalg::{Matrix, MatrixStorage},
     traits::{Real, State},
 };
 
@@ -51,8 +51,6 @@ use crate::{
 /// The solution process is:
 /// 1. Solve Ly = Pb (forward substitution with pivoting)
 /// 2. Solve Ux = y (back substitution)
-use crate::linalg::MatrixStorage;
-
 pub fn lin_solve<T: Real, Y: State<T>>(a: &Matrix<T>, b: &mut Y, ip: &[usize]) {
     if let MatrixStorage::Sparse { ref coords, .. } = a.storage {
         // Fast path for sparse LU solve if matrix is stored sparsely

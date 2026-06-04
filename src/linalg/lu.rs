@@ -7,7 +7,7 @@
 //!   Stiff and Differential-Algebraic Problems. Springer.
 
 use crate::{
-    linalg::{Matrix, error::LinalgError},
+    linalg::{Matrix, MatrixStorage, error::LinalgError},
     traits::Real,
 };
 
@@ -64,8 +64,6 @@ use crate::{
 ///
 /// # Errors
 /// Returns [`LinalgError`] if the matrix is not square, pivot slice has wrong size, or matrix is singular.
-use crate::linalg::MatrixStorage;
-
 pub fn lu_decomp<T: Real>(a: &mut Matrix<T>, ip: &mut [usize]) -> Result<(), LinalgError> {
     let n = a.nrows();
     if n != a.ncols() {
