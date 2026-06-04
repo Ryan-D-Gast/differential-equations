@@ -6,6 +6,7 @@
 mod hamiltonian;
 mod numerical_method;
 mod ode;
+pub mod sensitivity;
 mod solve_bvp;
 mod solve_ivp;
 

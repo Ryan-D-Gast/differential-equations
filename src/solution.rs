@@ -7,6 +7,9 @@ use polars::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    ivp::{IVP, OdeEqOwned},
+    linalg::Matrix,
+    solout::DefaultSolout,
     stats::{Evals, Steps, Timer},
     status::Status,
     traits::{Real, State},
@@ -356,6 +359,100 @@ where
         }
 
         DataFrame::new(self.t.len(), columns)
+    }
+
+    /// Creates an IVP for the backward integration of adjoint sensitivity equations.
+    ///
+    /// The returned IVP integrates backwards from the final time of the forward integration to the initial time.
+    ///
+    /// # Arguments
+    /// * `ode` - The parametrized ODE system (can be owned or a reference).
+    /// * `y0_aug` - The initial augmented state for the adjoint variables, typically `[lambda(t_f), mu(t_f)]`.
+    #[allow(clippy::type_complexity)]
+    pub fn adjoint_sensitivity<F, P: State<T>, YA: State<T>>(
+        &self,
+        ode: F,
+        y0_aug: YA,
+    ) -> IVP<OdeEqOwned<crate::ode::sensitivity::AdjointOde<F, T, Y, P>>, T, YA, (), DefaultSolout>
+    where
+        F: crate::ode::sensitivity::ParametrizedODE<T, Y, P>,
+    {
+        let t_start = self
+            .t
+            .last()
+            .copied()
+            .expect("Solution must have at least one time point");
+        let t_end = self
+            .t
+            .first()
+            .copied()
+            .expect("Solution must have at least one time point");
+        let y_proto = self
+            .y
+            .first()
+            .expect("Solution must have at least one state point")
+            .clone();
+        let adjoint_ode = crate::ode::sensitivity::AdjointOde::new(ode, self.clone(), y_proto);
+        IVP::ode_owned(adjoint_ode, t_start, t_end, y0_aug)
+    }
+
+    /// Creates an IVP for the backward integration of adjoint sensitivity equations using closures.
+    ///
+    /// The returned IVP integrates backwards from the final time of the forward integration to the initial time.
+    ///
+    /// # Arguments
+    /// * `diff_fn` - The differential equation closure `f(t, y, dydt)`.
+    /// * `jacobian_p_fn` - The parameter Jacobian closure `df/dp(t, y, dfdp)`.
+    /// * `parameters` - The parameters vector.
+    /// * `y0_aug` - The initial augmented state for the adjoint variables, typically `[lambda(t_f), mu(t_f)]`.
+    #[allow(clippy::type_complexity)]
+    pub fn adjoint_sensitivity_from_fn<F, JP, P: State<T> + Clone, YA: State<T>>(
+        &self,
+        diff_fn: F,
+        jacobian_p_fn: JP,
+        parameters: P,
+        y0_aug: YA,
+    ) -> IVP<
+        OdeEqOwned<
+            crate::ode::sensitivity::AdjointOde<
+                crate::ode::sensitivity::ParametrizedOdeFnWrapper<F, JP, P>,
+                T,
+                Y,
+                P,
+            >,
+        >,
+        T,
+        YA,
+        (),
+        DefaultSolout,
+    >
+    where
+        F: Fn(T, &Y, &mut Y),
+        JP: Fn(T, &Y, &mut Matrix<T>),
+    {
+        let t_start = self
+            .t
+            .last()
+            .copied()
+            .expect("Solution must have at least one time point");
+        let t_end = self
+            .t
+            .first()
+            .copied()
+            .expect("Solution must have at least one time point");
+        let y_proto = self
+            .y
+            .first()
+            .expect("Solution must have at least one state point")
+            .clone();
+        let parametrized = crate::ode::sensitivity::ParametrizedOdeFnWrapper::new(
+            diff_fn,
+            jacobian_p_fn,
+            parameters,
+        );
+        let adjoint_ode =
+            crate::ode::sensitivity::AdjointOde::new(parametrized, self.clone(), y_proto);
+        IVP::ode_owned(adjoint_ode, t_start, t_end, y0_aug)
     }
 }
 

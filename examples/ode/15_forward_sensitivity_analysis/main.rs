@@ -1,65 +1,65 @@
-//! Example 15: Forward Sensitivity Analysis (FSA) using Dual Numbers
+//! Example 15: Forward Sensitivity Analysis (FSA)
 //!
 //! This example demonstrates how to compute sensitivities of an ODE solution
-//! with respect to its parameters using the `num-dual` crate.
-//!
-//! Forward sensitivity analysis calculates the gradient of the solver states y
-//! with respect to system parameters p. By making our ODE implementation generic
-//! over the `Real` trait, we can solve the system using dual numbers, which compute
-//! both the state and its derivatives simultaneously without requiring an
-//! explicitly augmented sensitivity matrix system.
+//! with respect to its parameters using the new structured API for
+//! forward sensitivities.
 //!
 //! We use a simple decay model: dy/dt = -k * y
 //! The parameter is `k`. We want to know how the final state `y(t_f)` changes
 //! with respect to `k` (i.e., dy/dk).
 
 use differential_equations::prelude::*;
-use differential_equations::traits::Real;
 use nalgebra::SVector;
-use num_dual::Dual64;
 
 /// A simple decay model: dy/dt = -k * y
-/// We make the struct generic over `T` to support both `f64` and `Dual64`.
-struct Decay<T> {
-    k: T,
+struct Decay {
+    k: f64,
 }
 
-impl<T: Real> ODE<T, SVector<T, 1>> for Decay<T> {
-    fn diff(&self, _t: T, y: &SVector<T, 1>, dydt: &mut SVector<T, 1>) {
+impl ODE<f64, SVector<f64, 1>> for Decay {
+    fn diff(&self, _t: f64, y: &SVector<f64, 1>, dydt: &mut SVector<f64, 1>) {
         dydt[0] = -self.k * y[0];
     }
 }
 
-fn main() {
-    // We want to evaluate the sensitivity with respect to `k`. The dual part of
-    // `k` is 1.0 because dk/dk = 1.
-    let k = Dual64::new(1.0, 1.0);
-    let decay = Decay { k };
+impl ParametrizedODE<f64, SVector<f64, 1>, SVector<f64, 1>> for Decay {
+    fn parameters(&self) -> SVector<f64, 1> {
+        SVector::from([self.k])
+    }
 
-    // Initial conditions: y(0) = 1.0.
-    // The dual part is 0.0 because the initial state does not depend on `k`.
-    let y0 = SVector::from([Dual64::from(1.0)]);
+    fn jacobian_p(&self, _t: f64, y: &SVector<f64, 1>, j: &mut Matrix<f64>) {
+        // df/dk = -y
+        j[(0, 0)] = -y[0];
+    }
+}
+
+fn main() {
+    let decay = Decay { k: 1.0 };
+
+    // Initial condition for the forward state
+    let y0 = SVector::<f64, 1>::from([1.0]);
+
+    // The initial sensitivity S(0) = dy/dk(0) = 0.0 because the initial state does not depend on `k`.
+    // The augmented state is [y, S].
+    let y0_aug = SVector::<f64, 2>::from([1.0, 0.0]);
 
     // Time span
-    let t0 = Dual64::from(0.0);
-    let tf = Dual64::from(2.0);
+    let t0 = 0.0;
+    let tf = 2.0;
 
-    // Specify the DOP853 scalar and state types so the solver uses Dual64.
-    let method = ExplicitRungeKutta::<_, _, Dual64, SVector<Dual64, 1>, 8, 12, 16>::dop853()
-        .rtol(Dual64::from(1e-8))
-        .atol(Dual64::from(1e-8));
+    let method = ExplicitRungeKutta::dop853().rtol(1e-8).atol(1e-8);
 
-    // Solve the ODE. The solver handles Dual64 through the same Real trait used
-    // by f64.
-    let solution = IVP::ode(&decay, t0, tf, y0).method(method).solve().unwrap();
+    // Solve the augmented system using Forward Sensitivity Analysis.
+    let solution = IVP::ode(&decay, t0, tf, y0)
+        .forward_sensitivity(y0_aug)
+        .method(method)
+        .solve()
+        .unwrap();
 
     // Extract the final state
-    let y_final_dual = solution.y.last().unwrap()[0];
-
-    // The real part is the actual solution value: y(tf)
-    let y_final = y_final_dual.re;
-    // The dual part is the derivative with respect to k: dy/dk(tf)
-    let sens_final = y_final_dual.eps;
+    let y_final_aug = solution.y.last().unwrap();
+    let y_final = y_final_aug[0];
+    let sens_final = y_final_aug[1];
 
     // Analytical solution for verification: y(t) = y0 * e^(-k*t)
     // dy/dk = -t * y0 * e^(-k*t)
@@ -68,7 +68,7 @@ fn main() {
     let expected_val = (-k_f64 * tf_f64).exp();
     let expected_sens = -tf_f64 * expected_val;
 
-    println!("Forward Sensitivity Analysis (FSA) using Dual Numbers");
+    println!("Forward Sensitivity Analysis (FSA)");
     println!("-----------------------------------------------------");
     println!("Numerical final state:       {:.8}", y_final);
     println!("Analytical final state:      {:.8}", expected_val);
