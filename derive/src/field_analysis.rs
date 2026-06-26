@@ -26,6 +26,7 @@ pub enum FieldTypeInfo {
         cols: usize,
     },
     VecOfComplex,
+    StateContainer,
 }
 
 impl FieldTypeInfo {
@@ -39,7 +40,8 @@ impl FieldTypeInfo {
             | FieldTypeInfo::ArrayOfComplex { .. } => false,
             FieldTypeInfo::Vec
             | FieldTypeInfo::VecOfSMatrix { .. }
-            | FieldTypeInfo::VecOfComplex => true,
+            | FieldTypeInfo::VecOfComplex
+            | FieldTypeInfo::StateContainer => true,
         }
     }
 }
@@ -109,11 +111,46 @@ pub fn analyze_field_type(ty: &Type) -> FieldTypeInfo {
                     }
                     panic!("Vec must have an element type Vec<T>");
                 }
+                // Handle feature-backed containers that already implement State<T> in the
+                // parent crate, such as ndarray arrays, faer matrices, and dynamic
+                // nalgebra matrices/vectors.
+                else if is_state_container_path(path, &type_name) {
+                    return FieldTypeInfo::StateContainer;
+                }
             }
             FieldTypeInfo::Single
         }
         _ => FieldTypeInfo::Single,
     }
+}
+
+fn is_state_container_path(path: &syn::Path, type_name: &str) -> bool {
+    let has_crate_segment = |crate_name: &str| {
+        path.segments
+            .iter()
+            .any(|segment| segment.ident == crate_name)
+    };
+
+    let is_ndarray = has_crate_segment("ndarray")
+        || matches!(
+            type_name,
+            "Array"
+                | "Array0"
+                | "Array1"
+                | "Array2"
+                | "Array3"
+                | "Array4"
+                | "Array5"
+                | "Array6"
+                | "ArrayD"
+        );
+    let is_faer = has_crate_segment("faer") || type_name == "Mat";
+    let is_dynamic_nalgebra = matches!(
+        type_name,
+        "DMatrix" | "DVector" | "RowDVector" | "OMatrix" | "OVector" | "Matrix" | "Vector"
+    );
+
+    is_ndarray || is_faer || is_dynamic_nalgebra
 }
 
 /// Get the dimensions for known nalgebra type aliases

@@ -130,6 +130,16 @@ pub fn generate_get_branches(
                     current_index = end_index;
                 });
             }
+            FieldTypeInfo::StateContainer => {
+                field_get_branches.push(quote! {
+                    let end_index = current_index + #field_len;
+                    if (current_index..end_index).contains(&i) {
+                        let offset = i - current_index;
+                        return differential_equations::traits::State::get_component(&#field_name, offset);
+                    }
+                    current_index = end_index;
+                });
+            }
         }
     }
 
@@ -387,6 +397,28 @@ pub fn generate_set_branches(
                     current_index = end_index;
                 });
             }
+            FieldTypeInfo::StateContainer => {
+                let state_setter = match &field.ident {
+                    Some(ident) => quote! {
+                        differential_equations::traits::State::set_component(&mut self.#ident, offset, value);
+                    },
+                    None => {
+                        let index = syn::Index::from(field_idx);
+                        quote! {
+                            differential_equations::traits::State::set_component(&mut self.#index, offset, value);
+                        }
+                    }
+                };
+                field_set_branches.push(quote! {
+                    let end_index = current_index + #field_len;
+                    if (current_index..end_index).contains(&i) {
+                        let offset = i - current_index;
+                        #state_setter
+                        return;
+                    }
+                    current_index = end_index;
+                });
+            }
         }
     }
 
@@ -419,6 +451,9 @@ pub fn generate_zeros_init(
                 | FieldTypeInfo::VecOfComplex => {
                     quote! { #ident: Vec::new() }
                 }
+                FieldTypeInfo::StateContainer => {
+                    quote! { #ident: differential_equations::traits::State::zeros() }
+                }
                 FieldTypeInfo::ArrayOfSMatrix {
                     array_size,
                     rows,
@@ -442,6 +477,9 @@ pub fn generate_zeros_init(
                 | FieldTypeInfo::VecOfSMatrix { .. }
                 | FieldTypeInfo::VecOfComplex => {
                     quote! { Vec::new() }
+                }
+                FieldTypeInfo::StateContainer => {
+                    quote! { differential_equations::traits::State::zeros() }
                 }
                 FieldTypeInfo::ArrayOfSMatrix {
                     array_size,
@@ -481,6 +519,9 @@ pub fn generate_zeros_like_init(
                     FieldTypeInfo::VecOfComplex => {
                         quote! { #ident: vec![num_complex::Complex::new(#zero, #zero); #source.len()] }
                     }
+                    FieldTypeInfo::StateContainer => {
+                        quote! { #ident: differential_equations::traits::State::zeros_like(&#source) }
+                    }
                     _ => generate_zeros_init_for_field(field, field_type, scalar_ty, zero),
                 },
                 None => match field_type {
@@ -491,6 +532,9 @@ pub fn generate_zeros_like_init(
                     }
                     FieldTypeInfo::VecOfComplex => {
                         quote! { vec![num_complex::Complex::new(#zero, #zero); #source.len()] }
+                    }
+                    FieldTypeInfo::StateContainer => {
+                        quote! { differential_equations::traits::State::zeros_like(&#source) }
                     }
                     _ => generate_zeros_init_for_field(field, field_type, scalar_ty, zero),
                 },
@@ -575,6 +619,9 @@ fn generate_zeros_init_for_field(
         FieldTypeInfo::Vec | FieldTypeInfo::VecOfSMatrix { .. } | FieldTypeInfo::VecOfComplex => {
             quote! { Vec::new() }
         }
+        FieldTypeInfo::StateContainer => {
+            quote! { differential_equations::traits::State::zeros() }
+        }
         FieldTypeInfo::ArrayOfSMatrix {
             array_size,
             rows,
@@ -624,6 +671,9 @@ fn generate_field_len_expr(
             quote! { #field.len() * #elements_per_matrix }
         }
         FieldTypeInfo::VecOfComplex => quote! { #field.len() * 2usize },
+        FieldTypeInfo::StateContainer => {
+            quote! { differential_equations::traits::State::len(&#field) }
+        }
     }
 }
 

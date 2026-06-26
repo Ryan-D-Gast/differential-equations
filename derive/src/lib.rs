@@ -87,7 +87,7 @@ pub fn derive_state(input: TokenStream) -> TokenStream {
         _ => panic!("State can only be derived for structs"),
     };
 
-    let (scalar_ty, zero_expr) = if has_generic_t {
+    let (scalar_ty, zero_expr, one_expr) = if has_generic_t {
         for param in generics.type_params_mut() {
             if param.ident == "T" {
                 param
@@ -95,11 +95,19 @@ pub fn derive_state(input: TokenStream) -> TokenStream {
                     .push(parse_quote!(differential_equations::traits::Real));
             }
         }
-        (quote::quote! { T }, quote::quote! { T::zero() })
+        (
+            quote::quote! { T },
+            quote::quote! { T::zero() },
+            quote::quote! { T::one() },
+        )
     } else {
         let scalar_ty = infer_scalar_type(&fields)
             .unwrap_or_else(|| panic!("State derive requires at least one scalar field"));
-        (scalar_ty.clone(), quote::quote! { 0.0 as #scalar_ty })
+        (
+            scalar_ty.clone(),
+            quote::quote! { 0.0 as #scalar_ty },
+            quote::quote! { 1.0 as #scalar_ty },
+        )
     };
 
     let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
@@ -109,6 +117,7 @@ pub fn derive_state(input: TokenStream) -> TokenStream {
         where_clause: quote::quote! { #where_clause },
         scalar_ty,
         zero_expr,
+        one_expr,
     };
 
     // Analyze field types and calculate total element count
@@ -195,8 +204,28 @@ fn infer_scalar_from_type(ty: &Type) -> Option<proc_macro2::TokenStream> {
                 });
             }
 
-            if (matches!(type_name.as_str(), "SMatrix" | "Complex")
-                || field_analysis::get_nalgebra_dimensions(&type_name).is_some())
+            if (matches!(
+                type_name.as_str(),
+                "SMatrix"
+                    | "Complex"
+                    | "Mat"
+                    | "DMatrix"
+                    | "DVector"
+                    | "RowDVector"
+                    | "OMatrix"
+                    | "OVector"
+                    | "Matrix"
+                    | "Vector"
+                    | "Array"
+                    | "Array0"
+                    | "Array1"
+                    | "Array2"
+                    | "Array3"
+                    | "Array4"
+                    | "Array5"
+                    | "Array6"
+                    | "ArrayD"
+            ) || field_analysis::get_nalgebra_dimensions(&type_name).is_some())
                 && let PathArguments::AngleBracketed(args) = &segment.arguments
             {
                 return args.args.iter().find_map(|arg| match arg {

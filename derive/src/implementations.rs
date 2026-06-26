@@ -11,6 +11,7 @@ pub struct ImplContext {
     pub where_clause: proc_macro2::TokenStream,
     pub scalar_ty: proc_macro2::TokenStream,
     pub zero_expr: proc_macro2::TokenStream,
+    pub one_expr: proc_macro2::TokenStream,
 }
 
 pub struct StateImplCode<'a> {
@@ -82,7 +83,7 @@ pub fn generate_add_assign_impl(
     fields: &Punctuated<Field, Comma>,
     field_info: &[FieldTypeInfo],
 ) -> proc_macro2::TokenStream {
-    let add_assign_ops = generate_assign_operations(fields, field_info);
+    let add_assign_ops = generate_assign_operations(fields, field_info, context);
     let ImplContext {
         impl_generics,
         type_generics,
@@ -253,6 +254,7 @@ pub fn generate_state_impl(
         where_clause,
         scalar_ty,
         zero_expr,
+        ..
     } = context;
     let zero = zero_expr;
 
@@ -445,6 +447,60 @@ fn generate_vec_operation_expr(
     }
 }
 
+fn generate_state_container_neg_expr(
+    field: proc_macro2::TokenStream,
+    one: &proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    quote! {
+        {
+            let mut result = #field;
+            differential_equations::traits::State::scale_mut(&mut result, -(#one));
+            result
+        }
+    }
+}
+
+fn generate_state_container_operation_expr(
+    lhs_field: proc_macro2::TokenStream,
+    rhs_field: proc_macro2::TokenStream,
+    scalar_rhs: proc_macro2::TokenStream,
+    op_type: OperationType,
+    one: &proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    match op_type {
+        OperationType::Add => quote! {
+            {
+                let mut result = #lhs_field;
+                let rhs = #rhs_field;
+                differential_equations::traits::State::mul_add_assign(&mut result, #one, &rhs);
+                result
+            }
+        },
+        OperationType::Sub => quote! {
+            {
+                let mut result = #lhs_field;
+                let rhs = #rhs_field;
+                differential_equations::traits::State::mul_add_assign(&mut result, -(#one), &rhs);
+                result
+            }
+        },
+        OperationType::Mul => quote! {
+            {
+                let mut result = #lhs_field;
+                differential_equations::traits::State::scale_mut(&mut result, #scalar_rhs);
+                result
+            }
+        },
+        OperationType::Div => quote! {
+            {
+                let mut result = #lhs_field;
+                differential_equations::traits::State::scale_mut(&mut result, (#one) / #scalar_rhs);
+                result
+            }
+        },
+    }
+}
+
 /// Generate Neg trait implementation (unary minus)
 pub fn generate_neg_impl(
     name: &Ident,
@@ -479,6 +535,7 @@ fn generate_neg_fields(
     context: &ImplContext,
 ) -> Vec<proc_macro2::TokenStream> {
     let zero = &context.zero_expr;
+    let one = &context.one_expr;
 
     fields
         .iter()
@@ -502,6 +559,10 @@ fn generate_neg_fields(
                 | FieldTypeInfo::VecOfSMatrix { .. }
                 | FieldTypeInfo::VecOfComplex => {
                     let expr = generate_vec_neg_expr(quote! { self.#ident });
+                    quote! { #ident: #expr }
+                }
+                FieldTypeInfo::StateContainer => {
+                    let expr = generate_state_container_neg_expr(quote! { self.#ident }, one);
                     quote! { #ident: #expr }
                 }
                 FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
@@ -541,6 +602,9 @@ fn generate_neg_fields(
                     FieldTypeInfo::Vec
                     | FieldTypeInfo::VecOfSMatrix { .. }
                     | FieldTypeInfo::VecOfComplex => generate_vec_neg_expr(quote! { self.#index }),
+                    FieldTypeInfo::StateContainer => {
+                        generate_state_container_neg_expr(quote! { self.#index }, one)
+                    }
                     FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
                         quote! {
                             {
@@ -600,6 +664,7 @@ fn generate_operation_fields(
     context: &ImplContext,
 ) -> Vec<proc_macro2::TokenStream> {
     let zero = &context.zero_expr;
+    let one = &context.one_expr;
 
     fields
         .iter()
@@ -672,6 +737,16 @@ fn generate_operation_fields(
                             quote! { #rhs },
                             op_symbol,
                             op_type,
+                        );
+                        quote! { #ident: #expr }
+                    }
+                    FieldTypeInfo::StateContainer => {
+                        let expr = generate_state_container_operation_expr(
+                            quote! { #lhs.#ident },
+                            quote! { #rhs.#ident },
+                            quote! { #rhs },
+                            op_type,
+                            one,
                         );
                         quote! { #ident: #expr }
                     }
@@ -784,6 +859,13 @@ fn generate_operation_fields(
                             op_symbol,
                             op_type,
                         ),
+                        FieldTypeInfo::StateContainer => generate_state_container_operation_expr(
+                            quote! { #lhs.#index },
+                            quote! { #rhs.#index },
+                            quote! { #rhs },
+                            op_type,
+                            one,
+                        ),
                         FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => match op_type {
                             OperationType::Add | OperationType::Sub => {
                                 quote! {
@@ -843,7 +925,10 @@ fn generate_operation_fields(
 fn generate_assign_operations(
     fields: &Punctuated<Field, Comma>,
     field_info: &[FieldTypeInfo],
+    context: &ImplContext,
 ) -> Vec<proc_macro2::TokenStream> {
+    let one = &context.one_expr;
+
     fields
         .iter()
         .enumerate()
@@ -868,6 +953,15 @@ fn generate_assign_operations(
                         for (lhs, rhs) in self.#ident.iter_mut().zip(rhs.#ident.into_iter()) {
                             *lhs += rhs;
                         }
+                    }
+                }
+                FieldTypeInfo::StateContainer => {
+                    quote! {
+                        differential_equations::traits::State::mul_add_assign(
+                            &mut self.#ident,
+                            #one,
+                            &rhs.#ident,
+                        );
                     }
                 }
                 FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
@@ -906,6 +1000,15 @@ fn generate_assign_operations(
                             for (lhs, rhs) in self.#index.iter_mut().zip(rhs.#index.into_iter()) {
                                 *lhs += rhs;
                             }
+                        }
+                    }
+                    FieldTypeInfo::StateContainer => {
+                        quote! {
+                            differential_equations::traits::State::mul_add_assign(
+                                &mut self.#index,
+                                #one,
+                                &rhs.#index,
+                            );
                         }
                     }
                     FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
