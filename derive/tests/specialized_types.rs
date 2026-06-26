@@ -199,3 +199,197 @@ fn test_complex_array_combinations() {
     assert_eq!(state.get_component(8), 9.0); // single_complex.re
     assert_eq!(state.get_component(9), 10.0); // single_complex.im
 }
+
+#[test]
+fn test_vec_fields() {
+    #[derive(State)]
+    struct DynamicState<T> {
+        x: T,
+        samples: Vec<T>,
+        tail: [T; 2],
+    }
+
+    let mut state = DynamicState {
+        x: 1.0,
+        samples: vec![2.0, 3.0, 4.0],
+        tail: [5.0, 6.0],
+    };
+
+    assert_eq!(state.len(), 6);
+    for i in 0..state.len() {
+        assert_eq!(state.get_component(i), i as f64 + 1.0);
+    }
+
+    state.set_component(2, 30.0);
+    assert_eq!(state.samples[1], 30.0);
+
+    let zero_state = state.zeros_like();
+    assert_eq!(zero_state.len(), state.len());
+    assert_eq!(zero_state.samples, vec![0.0; 3]);
+
+    let empty_zero = DynamicState::<f64>::zeros();
+    assert_eq!(empty_zero.len(), 3);
+    assert!(empty_zero.samples.is_empty());
+}
+
+#[test]
+fn test_vec_fields_arithmetic() {
+    #[derive(State)]
+    struct DynamicState<T> {
+        samples: Vec<T>,
+        z: T,
+    }
+
+    let lhs = DynamicState {
+        samples: vec![1.0, 2.0, 3.0],
+        z: 4.0,
+    };
+    let rhs = DynamicState {
+        samples: vec![10.0, 20.0, 30.0],
+        z: 40.0,
+    };
+
+    let sum = lhs.clone() + rhs.clone();
+    assert_eq!(sum.samples, vec![11.0, 22.0, 33.0]);
+    assert_eq!(sum.z, 44.0);
+
+    let scaled = lhs.clone() * 2.0;
+    assert_eq!(scaled.samples, vec![2.0, 4.0, 6.0]);
+    assert_eq!(scaled.z, 8.0);
+
+    let negated = -lhs;
+    assert_eq!(negated.samples, vec![-1.0, -2.0, -3.0]);
+    assert_eq!(negated.z, -4.0);
+}
+
+#[test]
+fn test_vec_complex_and_matrix_fields() {
+    #[derive(State)]
+    struct DynamicComposite<T> {
+        complexes: Vec<Complex<T>>,
+        matrices: Vec<SMatrix<T, 2, 2>>,
+    }
+
+    let mut state = DynamicComposite {
+        complexes: vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)],
+        matrices: vec![
+            SMatrix::<f64, 2, 2>::from_row_slice(&[5.0, 6.0, 7.0, 8.0]),
+            SMatrix::<f64, 2, 2>::from_row_slice(&[9.0, 10.0, 11.0, 12.0]),
+        ],
+    };
+
+    assert_eq!(state.len(), 12);
+    for i in 0..state.len() {
+        assert_eq!(state.get_component(i), i as f64 + 1.0);
+    }
+
+    state.set_component(10, 100.0);
+    assert_eq!(state.matrices[1][(1, 0)], 100.0);
+
+    let zero_state = state.zeros_like();
+    assert_eq!(zero_state.len(), 12);
+    assert_eq!(zero_state.complexes, vec![Complex::new(0.0, 0.0); 2]);
+    assert_eq!(zero_state.matrices.len(), 2);
+    assert_eq!(zero_state.matrices[0], SMatrix::<f64, 2, 2>::zeros());
+}
+
+#[cfg(feature = "nalgebra")]
+#[test]
+fn test_dynamic_nalgebra_fields() {
+    use nalgebra::{DMatrix, DVector};
+
+    #[derive(State)]
+    struct DynamicNalgebraState<T> {
+        vector: DVector<T>,
+        matrix: DMatrix<T>,
+    }
+
+    let mut state = DynamicNalgebraState {
+        vector: DVector::from_vec(vec![1.0, 2.0]),
+        matrix: DMatrix::from_row_slice(2, 2, &[3.0, 4.0, 5.0, 6.0]),
+    };
+
+    assert_eq!(state.len(), 6);
+    for i in 0..state.len() {
+        assert_eq!(state.get_component(i), i as f64 + 1.0);
+    }
+
+    state.set_component(4, 50.0);
+    assert_eq!(state.matrix[(1, 0)], 50.0);
+
+    let zero_state = state.zeros_like();
+    assert_eq!(zero_state.len(), state.len());
+    assert_eq!(zero_state.vector.len(), 2);
+    assert_eq!(zero_state.matrix.shape(), (2, 2));
+
+    let scaled = state.clone() * 2.0;
+    assert_eq!(scaled.vector[0], 2.0);
+    assert_eq!(scaled.matrix[(1, 0)], 100.0);
+}
+
+#[cfg(feature = "ndarray")]
+#[test]
+fn test_ndarray_fields() {
+    use ndarray::{Array1, array};
+
+    #[derive(State)]
+    struct NdArrayState<T> {
+        values: Array1<T>,
+        scalar: T,
+    }
+
+    let mut state = NdArrayState {
+        values: array![1.0, 2.0, 3.0],
+        scalar: 4.0,
+    };
+
+    assert_eq!(state.len(), 4);
+    for i in 0..state.len() {
+        assert_eq!(state.get_component(i), i as f64 + 1.0);
+    }
+
+    state.set_component(1, 20.0);
+    assert_eq!(state.values[1], 20.0);
+
+    let zero_state = state.zeros_like();
+    assert_eq!(zero_state.values.len(), 3);
+    assert_eq!(zero_state.values.sum(), 0.0);
+
+    let sum = state.clone() + state.clone();
+    assert_eq!(sum.values[1], 40.0);
+    assert_eq!(sum.scalar, 8.0);
+}
+
+#[cfg(feature = "faer")]
+#[test]
+fn test_faer_fields() {
+    use faer::Mat;
+
+    #[derive(State)]
+    struct FaerState<T> {
+        matrix: Mat<T>,
+        scalar: T,
+    }
+
+    let mut state = FaerState {
+        matrix: Mat::from_fn(2, 2, |row, col| (row * 2 + col + 1) as f64),
+        scalar: 5.0,
+    };
+
+    assert_eq!(state.len(), 5);
+    for i in 0..state.len() {
+        assert_eq!(state.get_component(i), i as f64 + 1.0);
+    }
+
+    state.set_component(3, 40.0);
+    assert_eq!(*state.matrix.get(1, 1), 40.0);
+
+    let zero_state = state.zeros_like();
+    assert_eq!(zero_state.matrix.nrows(), 2);
+    assert_eq!(zero_state.matrix.ncols(), 2);
+    assert_eq!(*zero_state.matrix.get(0, 0), 0.0);
+
+    let negated = -state;
+    assert_eq!(*negated.matrix.get(1, 1), -40.0);
+    assert_eq!(negated.scalar, -5.0);
+}

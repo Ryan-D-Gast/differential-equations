@@ -29,12 +29,12 @@ include = [
 
 [features]
 default = []
-nalgebra = ["dep:nalgebra"]
-num-complex = ["dep:num-complex"]
+nalgebra = ["dep:nalgebra", "differential-equations-derive/nalgebra"]
+num-complex = ["dep:num-complex", "differential-equations-derive/num-complex"]
 polars = ["dep:polars"]
 serde = ["dep:serde"]
-ndarray = ["dep:ndarray"]
-faer = ["dep:faer"]
+ndarray = ["dep:ndarray", "differential-equations-derive/ndarray"]
+faer = ["dep:faer", "differential-equations-derive/faer"]
 
 [lints.clippy]
 module_inception = "allow"
@@ -45,7 +45,7 @@ too_many_arguments = "allow"
 simba = "0.9.1" # Scalar traits shared with nalgebra without requiring nalgebra
 nalgebra = { version = "^0.34.2", optional = true } # Linear algebra state backend
 num-complex = { version = "^0.4.6", optional = true } # Complex number state backend
-differential-equations-derive = "0.2.0" # Derives State trait on structs
+differential-equations-derive = { version = "0.2.0", path = "derive", default-features = false } # Derives State trait on structs
 polars = { version = "^0.53.0", optional = true } # DataFrame integration for the solution
 serde = { version = "1.0.228", features = ["derive"], optional = true } # solution serialization/deserialization
 ndarray = { version = "0.17.2", optional = true }

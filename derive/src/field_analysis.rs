@@ -12,6 +12,7 @@ pub enum FieldTypeInfo {
         cols: usize,
     },
     Complex,
+    Vec,
     ArrayOfSMatrix {
         array_size: usize,
         rows: usize,
@@ -20,21 +21,27 @@ pub enum FieldTypeInfo {
     ArrayOfComplex {
         array_size: usize,
     },
+    VecOfSMatrix {
+        rows: usize,
+        cols: usize,
+    },
+    VecOfComplex,
+    StateContainer,
 }
 
 impl FieldTypeInfo {
-    pub fn element_count(&self) -> usize {
+    pub fn is_dynamic(&self) -> bool {
         match self {
-            FieldTypeInfo::Single => 1,
-            FieldTypeInfo::Array { array_size } => *array_size,
-            FieldTypeInfo::SMatrix { rows, cols } => rows * cols,
-            FieldTypeInfo::Complex => 2,
-            FieldTypeInfo::ArrayOfSMatrix {
-                array_size,
-                rows,
-                cols,
-            } => array_size * rows * cols,
-            FieldTypeInfo::ArrayOfComplex { array_size } => array_size * 2,
+            FieldTypeInfo::Single
+            | FieldTypeInfo::Array { .. }
+            | FieldTypeInfo::SMatrix { .. }
+            | FieldTypeInfo::Complex
+            | FieldTypeInfo::ArrayOfSMatrix { .. }
+            | FieldTypeInfo::ArrayOfComplex { .. } => false,
+            FieldTypeInfo::Vec
+            | FieldTypeInfo::VecOfSMatrix { .. }
+            | FieldTypeInfo::VecOfComplex
+            | FieldTypeInfo::StateContainer => true,
         }
     }
 }
@@ -89,11 +96,61 @@ pub fn analyze_field_type(ty: &Type) -> FieldTypeInfo {
                 else if type_name == "Complex" {
                     return FieldTypeInfo::Complex;
                 }
+                // Handle Vec<T>, Vec<Complex<T>>, and Vec<SMatrix<T, R, C>>.
+                else if type_name == "Vec" {
+                    if let PathArguments::AngleBracketed(args) = &segment.arguments
+                        && let Some(GenericArgument::Type(elem_ty)) = args.args.first()
+                    {
+                        return match analyze_field_type(elem_ty) {
+                            FieldTypeInfo::SMatrix { rows, cols } => {
+                                FieldTypeInfo::VecOfSMatrix { rows, cols }
+                            }
+                            FieldTypeInfo::Complex => FieldTypeInfo::VecOfComplex,
+                            _ => FieldTypeInfo::Vec,
+                        };
+                    }
+                    panic!("Vec must have an element type Vec<T>");
+                }
+                // Handle feature-backed containers that already implement State<T> in the
+                // parent crate, such as ndarray arrays, faer matrices, and dynamic
+                // nalgebra matrices/vectors.
+                else if is_state_container_path(path, &type_name) {
+                    return FieldTypeInfo::StateContainer;
+                }
             }
             FieldTypeInfo::Single
         }
         _ => FieldTypeInfo::Single,
     }
+}
+
+fn is_state_container_path(path: &syn::Path, type_name: &str) -> bool {
+    let has_crate_segment = |crate_name: &str| {
+        path.segments
+            .iter()
+            .any(|segment| segment.ident == crate_name)
+    };
+
+    let is_ndarray = has_crate_segment("ndarray")
+        || matches!(
+            type_name,
+            "Array"
+                | "Array0"
+                | "Array1"
+                | "Array2"
+                | "Array3"
+                | "Array4"
+                | "Array5"
+                | "Array6"
+                | "ArrayD"
+        );
+    let is_faer = has_crate_segment("faer") || type_name == "Mat";
+    let is_dynamic_nalgebra = matches!(
+        type_name,
+        "DMatrix" | "DVector" | "RowDVector" | "OMatrix" | "OVector" | "Matrix" | "Vector"
+    );
+
+    is_ndarray || is_faer || is_dynamic_nalgebra
 }
 
 /// Get the dimensions for known nalgebra type aliases
