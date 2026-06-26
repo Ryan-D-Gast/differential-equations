@@ -13,6 +13,14 @@ pub struct ImplContext {
     pub zero_expr: proc_macro2::TokenStream,
 }
 
+pub struct StateImplCode<'a> {
+    pub total_elements: proc_macro2::TokenStream,
+    pub field_get_branches: &'a [proc_macro2::TokenStream],
+    pub field_set_branches: &'a [proc_macro2::TokenStream],
+    pub zeros_init: &'a [proc_macro2::TokenStream],
+    pub zeros_like_init: &'a [proc_macro2::TokenStream],
+}
+
 /// Generate Add trait implementation
 pub fn generate_add_impl(
     name: &Ident,
@@ -148,7 +156,13 @@ pub fn generate_div_impl(
 }
 
 /// Generate Clone trait implementation
-pub fn generate_clone_impl(name: &Ident, context: &ImplContext) -> proc_macro2::TokenStream {
+pub fn generate_clone_impl(
+    name: &Ident,
+    context: &ImplContext,
+    fields: &Punctuated<Field, Comma>,
+) -> proc_macro2::TokenStream {
+    let clone_fields = generate_clone_fields(fields);
+    let constructor = generate_constructor_syntax(&clone_fields, fields);
     let ImplContext {
         impl_generics,
         type_generics,
@@ -159,7 +173,7 @@ pub fn generate_clone_impl(name: &Ident, context: &ImplContext) -> proc_macro2::
     quote! {
         impl #impl_generics Clone for #name #type_generics #where_clause {
             fn clone(&self) -> Self {
-                *self
+                #constructor
             }
         }
     }
@@ -177,6 +191,20 @@ pub fn generate_copy_impl(name: &Ident, context: &ImplContext) -> proc_macro2::T
     quote! {
         impl #impl_generics Copy for #name #type_generics #where_clause {}
     }
+}
+
+fn generate_clone_fields(fields: &Punctuated<Field, Comma>) -> Vec<proc_macro2::TokenStream> {
+    fields
+        .iter()
+        .enumerate()
+        .map(|(field_idx, field)| match &field.ident {
+            Some(ident) => quote! { #ident: self.#ident.clone() },
+            None => {
+                let index = syn::Index::from(field_idx);
+                quote! { self.#index.clone() }
+            }
+        })
+        .collect()
 }
 
 /// Generate Debug trait implementation
@@ -207,13 +235,18 @@ pub fn generate_debug_impl(
 pub fn generate_state_impl(
     name: &Ident,
     context: &ImplContext,
-    total_elements: usize,
-    field_get_branches: &[proc_macro2::TokenStream],
-    field_set_branches: &[proc_macro2::TokenStream],
-    zeros_init: &[proc_macro2::TokenStream],
+    code: StateImplCode<'_>,
     fields: &Punctuated<Field, Comma>,
 ) -> proc_macro2::TokenStream {
+    let StateImplCode {
+        total_elements,
+        field_get_branches,
+        field_set_branches,
+        zeros_init,
+        zeros_like_init,
+    } = code;
     let zeros_constructor = generate_constructor_syntax(zeros_init, fields);
+    let zeros_like_constructor = generate_constructor_syntax(zeros_like_init, fields);
     let ImplContext {
         impl_generics,
         type_generics,
@@ -253,7 +286,7 @@ pub fn generate_state_impl(
             }
 
             fn zeros_like(&self) -> Self {
-                Self::zeros()
+                #zeros_like_constructor
             }
 
             fn zeros() -> Self {
@@ -339,13 +372,17 @@ pub fn generate_state_impl(
 
         impl #impl_generics #name #type_generics #where_clause {
             fn __state_get(&self, i: usize) -> #scalar_ty {
-                assert!(i < #total_elements, "Index out of bounds");
+                let total_elements = #total_elements;
+                assert!(i < total_elements, "Index out of bounds");
+                let mut current_index = 0usize;
                 #(#field_get_branches)*
                 unreachable!()
             }
 
             fn __state_set(&mut self, i: usize, value: #scalar_ty) {
-                assert!(i < #total_elements, "Index out of bounds");
+                let total_elements = #total_elements;
+                assert!(i < total_elements, "Index out of bounds");
+                let mut current_index = 0usize;
                 #(#field_set_branches)*
                 unreachable!();
             }
@@ -354,11 +391,58 @@ pub fn generate_state_impl(
 }
 
 /// Enum for different operation types
+#[derive(Clone, Copy)]
 enum OperationType {
     Add,
     Sub,
     Mul,
     Div,
+}
+
+fn generate_vec_neg_expr(field: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+    quote! {
+        {
+            let values = #field;
+            let mut result = Vec::with_capacity(values.len());
+            for value in values {
+                result.push(-value);
+            }
+            result
+        }
+    }
+}
+
+fn generate_vec_operation_expr(
+    lhs_field: proc_macro2::TokenStream,
+    rhs_field: proc_macro2::TokenStream,
+    scalar_rhs: proc_macro2::TokenStream,
+    op_symbol: proc_macro2::TokenStream,
+    op_type: OperationType,
+) -> proc_macro2::TokenStream {
+    match op_type {
+        OperationType::Add | OperationType::Sub => quote! {
+            {
+                let lhs = #lhs_field;
+                let rhs = #rhs_field;
+                assert_eq!(lhs.len(), rhs.len(), "State length mismatch");
+                let mut result = Vec::with_capacity(lhs.len());
+                for (lhs_value, rhs_value) in lhs.into_iter().zip(rhs.into_iter()) {
+                    result.push(lhs_value #op_symbol rhs_value);
+                }
+                result
+            }
+        },
+        OperationType::Mul | OperationType::Div => quote! {
+            {
+                let values = #lhs_field;
+                let mut result = Vec::with_capacity(values.len());
+                for value in values {
+                    result.push(value #op_symbol #scalar_rhs);
+                }
+                result
+            }
+        },
+    }
 }
 
 /// Generate Neg trait implementation (unary minus)
@@ -414,6 +498,12 @@ fn generate_neg_fields(
                 }
                 FieldTypeInfo::SMatrix { .. } => quote! { #ident: -self.#ident },
                 FieldTypeInfo::Complex => quote! { #ident: -self.#ident },
+                FieldTypeInfo::Vec
+                | FieldTypeInfo::VecOfSMatrix { .. }
+                | FieldTypeInfo::VecOfComplex => {
+                    let expr = generate_vec_neg_expr(quote! { self.#ident });
+                    quote! { #ident: #expr }
+                }
                 FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
                     quote! {
                         #ident: {
@@ -448,6 +538,9 @@ fn generate_neg_fields(
                     }
                     FieldTypeInfo::SMatrix { .. } => quote! { -self.#index },
                     FieldTypeInfo::Complex => quote! { -self.#index },
+                    FieldTypeInfo::Vec
+                    | FieldTypeInfo::VecOfSMatrix { .. }
+                    | FieldTypeInfo::VecOfComplex => generate_vec_neg_expr(quote! { self.#index }),
                     FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
                         quote! {
                             {
@@ -570,6 +663,18 @@ fn generate_operation_fields(
                             quote! { #ident: #lhs.#ident #op_symbol #rhs }
                         }
                     },
+                    FieldTypeInfo::Vec
+                    | FieldTypeInfo::VecOfSMatrix { .. }
+                    | FieldTypeInfo::VecOfComplex => {
+                        let expr = generate_vec_operation_expr(
+                            quote! { #lhs.#ident },
+                            quote! { #rhs.#ident },
+                            quote! { #rhs },
+                            op_symbol,
+                            op_type,
+                        );
+                        quote! { #ident: #expr }
+                    }
                     FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => match op_type {
                         OperationType::Add | OperationType::Sub => {
                             quote! {
@@ -670,6 +775,15 @@ fn generate_operation_fields(
                                 quote! { #lhs.#index #op_symbol #rhs }
                             }
                         },
+                        FieldTypeInfo::Vec
+                        | FieldTypeInfo::VecOfSMatrix { .. }
+                        | FieldTypeInfo::VecOfComplex => generate_vec_operation_expr(
+                            quote! { #lhs.#index },
+                            quote! { #rhs.#index },
+                            quote! { #rhs },
+                            op_symbol,
+                            op_type,
+                        ),
                         FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => match op_type {
                             OperationType::Add | OperationType::Sub => {
                                 quote! {
@@ -746,6 +860,16 @@ fn generate_assign_operations(
                 }
                 FieldTypeInfo::SMatrix { .. } => quote! { self.#ident += rhs.#ident; },
                 FieldTypeInfo::Complex => quote! { self.#ident += rhs.#ident; },
+                FieldTypeInfo::Vec
+                | FieldTypeInfo::VecOfSMatrix { .. }
+                | FieldTypeInfo::VecOfComplex => {
+                    quote! {
+                        assert_eq!(self.#ident.len(), rhs.#ident.len(), "State length mismatch");
+                        for (lhs, rhs) in self.#ident.iter_mut().zip(rhs.#ident.into_iter()) {
+                            *lhs += rhs;
+                        }
+                    }
+                }
                 FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
                     quote! {
                         for i in 0..#array_size {
@@ -774,6 +898,16 @@ fn generate_assign_operations(
                     }
                     FieldTypeInfo::SMatrix { .. } => quote! { self.#index += rhs.#index; },
                     FieldTypeInfo::Complex => quote! { self.#index += rhs.#index; },
+                    FieldTypeInfo::Vec
+                    | FieldTypeInfo::VecOfSMatrix { .. }
+                    | FieldTypeInfo::VecOfComplex => {
+                        quote! {
+                            assert_eq!(self.#index.len(), rhs.#index.len(), "State length mismatch");
+                            for (lhs, rhs) in self.#index.iter_mut().zip(rhs.#index.into_iter()) {
+                                *lhs += rhs;
+                            }
+                        }
+                    }
                     FieldTypeInfo::ArrayOfSMatrix { array_size, .. } => {
                         quote! {
                             for i in 0..#array_size {
