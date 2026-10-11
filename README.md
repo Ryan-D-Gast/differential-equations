@@ -64,6 +64,8 @@ A high-performance library for solving differential equations in Rust, including
 - `polars`: Enables converting solutions to Polars data frames.
 - `serde`: Enables solution serialization and deserialization.
 
+The `polars` feature requires Rust 1.95 or newer.
+
 ## Contributing
 
 This library is looking for contributions to bring the future of scientific computing to Rust!

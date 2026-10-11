@@ -71,9 +71,10 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
         let mut evals = Evals::new();
 
         // Check Bounds
-        match validate_step_size_parameters::<T, Y>(self.h, T::zero(), T::infinity(), t0, tf) {
-            Ok(h) => self.h = h,
-            Err(e) => return Err(e),
+        {
+            let h =
+                validate_step_size_parameters::<T, Y>(self.h, T::zero(), T::infinity(), t0, tf)?;
+            self.h = h
         }
 
         // Initialize state

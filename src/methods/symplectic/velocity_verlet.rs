@@ -63,9 +63,9 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y>
             self.h = duration / default_steps;
         }
 
-        match validate_step_size_parameters::<T, Y>(self.h, self.h_min, self.h_max, t0, tf) {
-            Ok(h0) => self.h = h0,
-            Err(status) => return Err(status),
+        {
+            let h0 = validate_step_size_parameters::<T, Y>(self.h, self.h_min, self.h_max, t0, tf)?;
+            self.h = h0
         }
 
         self.t = t0;

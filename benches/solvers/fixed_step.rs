@@ -174,7 +174,7 @@ bench_fixed_step!(
 // Lorenz system benchmarks (chaotic)
 bench_fixed_step!(
     bench_euler_lorenz,
-    ExplicitRungeKutta::euler(0.001),
+    ExplicitRungeKutta::euler(0.001).max_steps(100_000),
     "Euler",
     &Lorenz {
         sigma: 10.0,
@@ -188,7 +188,7 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_midpoint_lorenz,
-    ExplicitRungeKutta::midpoint(0.001),
+    ExplicitRungeKutta::midpoint(0.001).max_steps(100_000),
     "Midpoint",
     &Lorenz {
         sigma: 10.0,
@@ -202,7 +202,7 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_heun_lorenz,
-    ExplicitRungeKutta::heun(0.001),
+    ExplicitRungeKutta::heun(0.001).max_steps(100_000),
     "Heun",
     &Lorenz {
         sigma: 10.0,
@@ -216,7 +216,7 @@ bench_fixed_step!(
 );
 bench_fixed_step!(
     bench_ralston_lorenz,
-    ExplicitRungeKutta::ralston(0.001),
+    ExplicitRungeKutta::ralston(0.001).max_steps(100_000),
     "Ralston",
     &Lorenz {
         sigma: 10.0,
