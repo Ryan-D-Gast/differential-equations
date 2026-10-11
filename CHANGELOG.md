@@ -2,12 +2,14 @@
 
 ## Unreleased
 
-- Updated dependencies: `simba v0.10`, `nalgebra v0.35`, `polars v0.55.2`, `serde v1.0.299`, `faer v0.24.4`.
+- Updated dependencies: `simba v0.10`, `nalgebra v0.35`, `polars v0.55.2`, `serde v1.0.229`, `faer v0.24.4`.
   - dev dependencies: `num-dual v0.15`, `rand v0.10.3`.
-- Updated `differential-equations-derive` dependencies: `syn v3.07`, `quote v1.0.47`, `proc-macro2 v1.0.107`.
+- The `polars` feature now requires Rust 1.95 or newer.
+- Updated `differential-equations-derive` dependencies: `syn v3.0.7`, `quote v1.0.47`, `proc-macro2 v1.0.107`.
   - dev dependencies: `nalgebra v0.35`.
 - Fixed clippy warnings.
-- Fixed tests in `benches/solvers/fixed_steps.rs` that were failing after reaching the maximum step count.
+- Added CI checks for optional features and a regression test for Polars conversions.
+- Fixed tests in `benches/solvers/fixed_step.rs` that were failing after reaching the maximum step count.
 
 ## v0.6.1 - Support `wasm` target
 
