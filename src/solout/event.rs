@@ -163,19 +163,19 @@ impl<'a, T: Real, Y: State<T>, E: Event<T, Y> + ?Sized> EventSolout<'a, T, Y, E>
             if e.abs() > tol && fa.abs() > fb.abs() {
                 // Inverse quadratic interpolation
                 let s = fb / fa;
-                let p;
-                let q;
-                if a == c {
+
+                let (p, q) = if a == c {
                     // Secant method
-                    p = two * m * s;
-                    q = one - s;
+                    (two * m * s, one - s)
                 } else {
                     // Inverse quadratic interpolation
                     let q1 = fa / fc;
                     let r = fb / fc;
-                    p = s * (two * m * q1 * (q1 - r) - (b - a) * (r - one));
-                    q = (q1 - one) * (r - one) * (s - one);
-                }
+                    (
+                        s * (two * m * q1 * (q1 - r) - (b - a) * (r - one)),
+                        (q1 - one) * (r - one) * (s - one),
+                    )
+                };
                 let mut q_mod = q;
                 let mut p_mod = p;
                 if q_mod > T::zero() {
@@ -443,17 +443,17 @@ where
             let mut use_bis = true;
             if e.abs() > tol && fa.abs() > fb.abs() {
                 let s = fb / fa;
-                let p;
-                let q;
-                if a == c {
-                    p = two * m * s;
-                    q = one - s;
+
+                let (p, q) = if a == c {
+                    (two * m * s, one - s)
                 } else {
                     let q1 = fa / fc;
                     let r = fb / fc;
-                    p = s * (two * m * q1 * (q1 - r) - (b - a) * (r - one));
-                    q = (q1 - one) * (r - one) * (s - one);
-                }
+                    (
+                        s * (two * m * q1 * (q1 - r) - (b - a) * (r - one)),
+                        (q1 - one) * (r - one) * (s - one),
+                    )
+                };
                 let mut q_mod = q;
                 let mut p_mod = p;
                 if q_mod > T::zero() {

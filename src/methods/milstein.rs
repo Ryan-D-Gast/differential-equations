@@ -84,9 +84,10 @@ impl<T: Real, Y: State<T>> StochasticNumericalMethod<T, Y> for Milstein<T, Y> {
             self.h0 = duration / T::from_f64(100.0).unwrap();
         }
 
-        match validate_step_size_parameters::<T, Y>(self.h0, self.h_min, self.h_max, t0, tf) {
-            Ok(h0) => self.h = h0,
-            Err(status) => return Err(status),
+        {
+            let h0 =
+                validate_step_size_parameters::<T, Y>(self.h0, self.h_min, self.h_max, t0, tf)?;
+            self.h = h0
         }
 
         self.steps = 0;

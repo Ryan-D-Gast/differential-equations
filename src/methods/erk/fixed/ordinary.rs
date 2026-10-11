@@ -28,9 +28,10 @@ impl<T: Real, Y: State<T>, const O: usize, const S: usize, const I: usize>
         }
 
         // Check bounds
-        match validate_step_size_parameters::<T, Y>(self.h0, self.h_min, self.h_max, t0, tf) {
-            Ok(h0) => self.h = h0,
-            Err(status) => return Err(status),
+        {
+            let h0 =
+                validate_step_size_parameters::<T, Y>(self.h0, self.h_min, self.h_max, t0, tf)?;
+            self.h = h0
         } // Initialize Statistics
 
         // Initialize State

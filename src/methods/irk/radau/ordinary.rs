@@ -27,11 +27,10 @@ impl<T: Real, Y: State<T>> OrdinaryNumericalMethod<T, Y> for Radau5<Ordinary, T,
         }
 
         // Validate h0 and align sign with tf direction
-        match validate_step_size_parameters::<T, Y>(self.h0, self.h_min, self.h_max, t0, tf) {
-            Ok(h0) => {
-                self.h = (self.filter)(h0);
-            }
-            Err(status) => return Err(status),
+        {
+            let h0 =
+                validate_step_size_parameters::<T, Y>(self.h0, self.h_min, self.h_max, t0, tf)?;
+            self.h = (self.filter)(h0);
         }
 
         // Delegate to new initializer
