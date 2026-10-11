@@ -15,9 +15,9 @@ license = "Apache-2.0"
 proc-macro = true
 
 [dependencies]
-syn = "2.0.117"
-quote = "1.0.45"
-proc-macro2 = "1.0.106"
+syn = "3.0.7"
+quote = "1.0.47"
+proc-macro2 = "1.0.107"
 
 [dev-dependencies]
 differential-equations = { path = ".." }
