@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Updated dependencies: `simba v0.10`, `nalgebra v0.35`, `polars v0.55.2`, `serde v1.0.299`, `faer v0.24.4`.
+  - dev dependencies: `num-dual v0.15`, `rand v0.10.3`.
+- Updated `differential-equations-derive` dependencies: `syn v3.07`, `quote v1.0.47`, `proc-macro2 v1.0.107`.
+  - dev dependencies: `nalgebra v0.35`.
+- Fixed clippy warnings.
+- Fixed tests in `benches/solvers/fixed_steps.rs` that were failing after reaching the maximum step count.
+
 ## v0.6.1 - Support `wasm` target
 
 Disables the timer in `Solution` when the `wasm` target is detected, allowing the crate to compile and run in WebAssembly environments.
