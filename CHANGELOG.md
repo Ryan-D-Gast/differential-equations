@@ -1,11 +1,16 @@
 # Changelog
 
-## Unreleased
+## v0.7.0 - 2026-10-11
 
+- Added PDE method of lines, finite volume, Yee grid, and incompressible flow projection backends.
+- Added symplectic integrators for Hamiltonian systems.
+- Added sparse LU decomposition and linear solves.
+- Added first-class forward and adjoint sensitivity analysis through the `IVP` builders.
 - Updated dependencies: `simba v0.10`, `nalgebra v0.35`, `polars v0.55.2`, `serde v1.0.229`, `faer v0.24.4`.
   - dev dependencies: `num-dual v0.15`, `rand v0.10.3`.
 - The `polars` feature now requires Rust 1.95 or newer.
-- Updated `differential-equations-derive` dependencies: `syn v3.0.7`, `quote v1.0.47`, `proc-macro2 v1.0.107`.
+- Released `differential-equations-derive v0.2.1` with updated dependencies:
+  `syn v3.0.7`, `quote v1.0.47`, `proc-macro2 v1.0.107`.
   - dev dependencies: `nalgebra v0.35`.
 - Fixed clippy warnings.
 - Added CI checks for optional features and a regression test for Polars conversions.

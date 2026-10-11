@@ -1,6 +1,6 @@
 [package]
 name = "differential-equations"
-version = "0.6.1"
+version = "0.7.0"
 authors = ["Ryan D. Gast <ryan.d.gast@gmail.com>"]
 description = "A Rust library for solving differential equations."
 edition = "2024"
@@ -45,7 +45,7 @@ too_many_arguments = "allow"
 simba = "0.10" # Scalar traits shared with nalgebra without requiring nalgebra
 nalgebra = { version = "0.35", optional = true } # Linear algebra state backend
 num-complex = { version = "^0.4.6", optional = true } # Complex number state backend
-differential-equations-derive = "0.2.0" # Derives State trait on structs
+differential-equations-derive = { version = "0.2.1", path = "derive" } # Derives State trait on structs
 polars = { version = "^0.55.2", optional = true } # DataFrame integration for the solution
 serde = { version = "1.0.229", features = ["derive"], optional = true } # solution serialization/deserialization
 ndarray = { version = "0.17.2", optional = true }
