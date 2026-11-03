@@ -393,3 +393,40 @@ fn test_faer_fields() {
     assert_eq!(*negated.matrix.get(1, 1), -40.0);
     assert_eq!(negated.scalar, -5.0);
 }
+
+#[test]
+fn test_dynamic_tuple_offsets_and_owned_arithmetic() {
+    #[derive(State)]
+    struct Samples<T>(Vec<T>, T, Vec<T>);
+
+    let mut state = Samples(vec![], 2.0, vec![4.0, 6.0]);
+    assert_eq!(state.len(), 3);
+    state.map_components_mut(|i, value| *value += i as f64);
+    assert_eq!(state.2, vec![5.0, 8.0]);
+    let mut copy = state.zeros_like();
+    copy.copy_from_state(&state);
+    copy += state.clone();
+    let recovered = (copy - state.clone()) / 1.0;
+    assert_eq!(recovered.2, state.2);
+    assert_eq!(recovered.1, state.1);
+    assert!(Samples::<f64>::zeros().0.is_empty());
+}
+
+#[test]
+#[should_panic(expected = "State length mismatch")]
+fn test_vec_add_rejects_mismatched_lengths() {
+    #[derive(State)]
+    struct Samples<T>(Vec<T>);
+
+    let _ = Samples(vec![1.0]) + Samples(vec![2.0, 3.0]);
+}
+
+#[test]
+#[should_panic(expected = "State length mismatch")]
+fn test_vec_copy_rejects_longer_source() {
+    #[derive(State)]
+    struct Samples<T>(Vec<T>);
+
+    let mut target = Samples(vec![0.0]);
+    target.copy_from_state(&Samples(vec![1.0, 2.0]));
+}

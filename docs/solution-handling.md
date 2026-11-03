@@ -130,6 +130,8 @@ The CSV will contain columns for the independent variable (t) and each component
 
 ### Polars Integration
 
+The `polars` feature requires Rust 1.95 or newer.
+
 If the `polars` feature is enabled, you can convert the solution to a Polars DataFrame:
 
 ```rust

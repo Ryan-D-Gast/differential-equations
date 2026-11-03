@@ -114,11 +114,9 @@ where
     };
 
     // Clear statistics in case it was used before and reset solver and check for errors
-    match solver.init(dae, t0, tf, y0) {
-        Ok(evals) => {
-            solution.evals += evals;
-        }
-        Err(e) => return Err(e),
+    {
+        let evals = solver.init(dae, t0, tf, y0)?;
+        solution.evals += evals;
     }
 
     // Call solout to initialize the output strategy
@@ -135,11 +133,9 @@ where
         ControlFlag::Continue => {}
         ControlFlag::ModifyState(tm, ym) => {
             // Reinitialize the solver with the modified state
-            match solver.init(dae, tm, tf, &ym) {
-                Ok(evals) => {
-                    solution.evals += evals;
-                }
-                Err(e) => return Err(e),
+            {
+                let evals = solver.init(dae, tm, tf, &ym)?;
+                solution.evals += evals;
             }
         }
         ControlFlag::Terminate => {
@@ -211,11 +207,9 @@ where
             ControlFlag::Continue => {}
             ControlFlag::ModifyState(tm, ym) => {
                 // Reinitialize the solver with the modified state
-                match solver.init(dae, tm, tf, &ym) {
-                    Ok(evals) => {
-                        solution.evals += evals;
-                    }
-                    Err(e) => return Err(e),
+                {
+                    let evals = solver.init(dae, tm, tf, &ym)?;
+                    solution.evals += evals;
                 }
             }
             ControlFlag::Terminate => {

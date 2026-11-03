@@ -460,6 +460,31 @@ where
 mod tests {
     use super::*;
 
+    #[cfg(feature = "polars")]
+    #[test]
+    fn test_polars_conversion() -> Result<(), PolarsError> {
+        let mut sol = Solution::new();
+        sol.push(0.0, [10.0, 30.0]);
+        sol.push(1.0, [20.0, 40.0]);
+
+        let default = sol.to_polars()?;
+        let named = sol.to_named_polars("time", vec!["x", "y"])?;
+
+        for (frame, names) in [(&default, ["t", "y0", "y1"]), (&named, ["time", "x", "y"])] {
+            assert_eq!(frame.shape(), (2, 3));
+            for (name, expected) in names
+                .into_iter()
+                .zip([[0.0, 1.0], [10.0, 20.0], [30.0, 40.0]])
+            {
+                let values = frame.column(name)?.f64()?;
+                assert_eq!(values.get(0), Some(expected[0]));
+                assert_eq!(values.get(1), Some(expected[1]));
+            }
+        }
+        assert!(sol.to_named_polars("time", vec!["x"]).is_err());
+        Ok(())
+    }
+
     #[test]
     fn test_into_tuple() {
         let mut sol: Solution<f64, f64> = Solution::new();

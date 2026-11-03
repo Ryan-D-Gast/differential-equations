@@ -317,6 +317,7 @@ pub fn generate_state_impl(
             }
 
             fn copy_from_state(&mut self, other: &Self) {
+                assert_eq!(self.len(), other.len(), "State length mismatch");
                 for i in 0..self.len() {
                     self.__state_set(i, other.__state_get(i));
                 }
