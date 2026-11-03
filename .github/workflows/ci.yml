@@ -43,3 +43,7 @@ jobs:
           components: clippy
       - run: cargo test --manifest-path derive/Cargo.toml
       - run: cargo clippy --manifest-path derive/Cargo.toml --all-targets -- -D warnings
+
+      - run: cargo test --manifest-path derive/Cargo.toml --all-features
+      - run: cargo clippy --manifest-path derive/Cargo.toml --all-features --all-targets -- -D warnings
+      - run: cargo run --example dynamic_state
