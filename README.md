@@ -71,3 +71,7 @@ The `polars` feature requires Rust 1.95 or newer.
 This library is looking for contributions to bring the future of scientific computing to Rust!
 
 Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for more information on how to contribute to this project.
+
+Custom states derived with `#[derive(State)]` can contain `Vec<T>` fields.
+Their lengths are determined at runtime, and `zeros_like()` preserves those lengths.
+See [dynamic state fields](docs/defining-a-differential-equation.md#dynamic-state-fields).

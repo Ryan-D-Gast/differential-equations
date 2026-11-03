@@ -282,3 +282,28 @@ impl ODE<f64, Vector3<f64>> for VectorModel {
 The `num-complex` feature enables `num_complex::Complex<T>`, the `ndarray`
 feature enables `ndarray::Array<T, D>`, and the `faer` feature enables
 `faer::Mat<T>`.
+
+## Dynamic state fields
+
+Use `Vec<T>` when a custom state's size is known at runtime:
+
+```rust
+use differential_equations::prelude::*;
+
+#[derive(State)]
+struct Samples<T> {
+    values: Vec<T>,
+    total: T,
+}
+```
+
+Components follow field order. Vector elements precede the next field.
+`zeros_like()` preserves vector lengths, while `zeros()` creates empty vectors.
+Dynamic states implement `Clone` but do not implement `Copy`.
+Keep field lengths fixed during a solve and use matching field lengths for arithmetic.
+
+Vectors of complex numbers and fixed nalgebra matrices are also supported.
+Dynamic nalgebra, ndarray, and faer fields use their backend's `State` implementation
+and require the corresponding crate feature.
+
+Run `cargo run --example dynamic_state` for a vector-valued decay problem.
